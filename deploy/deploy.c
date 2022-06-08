@@ -12,7 +12,7 @@
 /* #include "utarray.h" */
 /* #include "utstring.h" */
 
-#include "dune_crawl.h"
+#include "dune_load.h"
 #include "bazel_config.h"
 
 #include "deploy.h"
@@ -22,6 +22,7 @@
 /* char *history = ".ocamlark.history.txt"; */
 
 extern bool debug;
+extern bool trace;
 extern bool verbose;
 extern bool ini_error;
 /* extern UT_string *obazl_ini_path; */

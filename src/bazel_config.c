@@ -31,8 +31,8 @@
 
 #include "bazel_config.h"
 
-bool debug;
-bool verbose;
+/* bool debug; */
+/* bool verbose; */
 
 int rc;
 

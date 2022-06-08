@@ -1,8 +1,7 @@
-(dune-crawl "tweag/tezos" "src/lib_clic")
+(dune-load "tweag/tezos" "src/lib_clic")
 
-(dune-crawl "proto_000_Ps9mPmXa")
-
-(dune-crawl "lib_clic")
+;; (dune-load "proto_000_Ps9mPmXa")
+;; (dune-load "lib_clic")
 
 (begin
 (define opam-srcs ".opam/4.14.0/.opam-switch/sources")
@@ -49,6 +48,8 @@
       (set! dune-pkg-tbls-alist dune-pkg-tbls)
       '())))
 
+dune-pkg-tbls-alist
+
 ;; (length opam-tbl)
 ;; (hash-table-entries opam-tbl)
 ;; (opam-tbl 'lwt)
@@ -56,7 +57,6 @@
 ;;             (format #t "~A\n" kv))
 ;;           opam-tbl)
 
-dune-pkg-tbls-alist
 
 dune-pkg-tbls
 

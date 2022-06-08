@@ -65,20 +65,14 @@ LOCAL s7_pointer _read_dunefile(char *path, char *fname)
     error_config();
     /* repeat until all objects read */
     while(true) {
-        if ((errmsg) && (*errmsg)) {
-            log_error("PREEMPT ERRMSG: %s", TO_STR(errmsg));
-        }
         s7_pointer stanza = s7_read(s7, port);
-        log_error("READED");
         errmsg = s7_get_output_string(s7, s7_current_error_port(s7));
-        log_error("ERRCHK");
         if ((errmsg) && (*errmsg)) {
             if (debug)
                 log_error("[%s\n]", errmsg);
             s7_close_input_port(s7, port);
             //if ".)", read file into buffer, convert to "\.)", then
             // read with the scheme reader
-            log_error("FFFFFFFFFFFFFFFFUCK");
             if (strstr(errmsg, "\"unexpected close paren:")
                 != NULL) {
                 s7_close_input_port(s7, port);
@@ -94,8 +88,6 @@ LOCAL s7_pointer _read_dunefile(char *path, char *fname)
                                         /* s7_list(s7, 1, fixed)); */
                 }
             }
-            log_error("OKKKKK");
-
             /* s7_quit(s7); */
             /* exit(EXIT_FAILURE); */
             break;
@@ -143,7 +135,8 @@ LOCAL s7_pointer _read_dunefile(char *path, char *fname)
  */
 LOCAL void _handle_dir(s7_pointer pkg_tbl, FTS* tree, FTSENT *ftsentry)
 {
-    /* printf("_handle_dir %s\n", ftsentry->fts_name); */
+    if (debug)
+        log_debug("_handle_dir %s", ftsentry->fts_name);
 
     if (ftsentry->fts_name[0] == '.') {
         /* process the "." passed to fts_open, skip any others */
@@ -195,25 +188,29 @@ LOCAL void _handle_dir(s7_pointer pkg_tbl, FTS* tree, FTSENT *ftsentry)
                                           key));
             goto rest;
         }
-        fclose(fileStream);
+        fclose(fileStream);     /* end tuareg check */
 
         dunefile_ct++;
         s7_pointer stanzas = _read_dunefile(ftsentry->fts_path, "dune");
 
         /* add entry to pkg-tbl */
-        /* printf("DUNE PKG at %s\n", ftsentry->fts_path); */
+        if (debug)
+            log_debug("found dunefile in %s", ftsentry->fts_path);
+
         /* s7_pointer pkgs = s7_name_to_value(s7, "pkg-tbl"); */
         s7_pointer key = s7_make_string(s7, ftsentry->fts_path);
         s7_pointer dune_assoc = s7_cons(s7,
                                         s7_make_keyword(s7, "stanzas"),
                                         stanzas);
+
         s7_pointer result =
             s7_hash_table_set(s7, pkg_tbl, key,
                               /* s7_list(s7, 2, */
                               s7_append(s7,
                                       s7_list(s7, 1,
                                               s7_list(s7, 2,
-                                              s7_make_keyword(s7, "pkg-path"),
+                                              s7_make_keyword(s7,
+                                                              "pkg-path"),
                                                       key)
                                               ),
                                         s7_list(s7, 1,
@@ -954,8 +951,9 @@ EXPORT s7_pointer dune_load(char *root, char *path)
 
     if (NULL != tree) {
         while( (ftsentry = fts_read(tree)) != NULL) {
-            if (debug)
+            if (debug) {
                 log_debug("ftsentry: %s", ftsentry->fts_name);
+            }
             switch (ftsentry->fts_info)
                 {
                 case FTS_DOT : // not specified to fts_open

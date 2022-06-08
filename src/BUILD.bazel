@@ -2,7 +2,7 @@ load("@rules_cc//cc:defs.bzl", "cc_library")
 
 ##########
 cc_library(
-    name  = "load",
+    name  = "oibl",
     # alwayslink = True,
     # linkstatic = 1,
     srcs  = [
@@ -10,6 +10,7 @@ cc_library(
         "opam_config.c", "opam_config.h",
         "bazel_config.c",
         "s7_config.c", "s7_config.h",
+        "oibl_config.c", "oibl_config.h",
         "error_handler.c", "error_handler.h",
         "fs.c", "fs.h",
         "utils.c", "utils.h",
@@ -18,6 +19,7 @@ cc_library(
     hdrs = [
         "dune_load.h",
         "bazel_config.h",
+        "oibl_config.h",
         "fs.h",
         # "@libs7//src:s7.h",
         "@uthash//:include",
@@ -65,10 +67,12 @@ genrule(
         "dune_load.c",
         "opam_config.c",
         "bazel_config.c",
+        "oibl_config.c",
         "s7_config.c",
         "error_handler.c",
         "fs.c",
         "utils.c",
+
         "ansi_colors.h",
         # "@uthash//:include",
    ],
@@ -76,6 +80,7 @@ genrule(
         "dune_load.h",
         "opam_config.h",
         "bazel_config.h",
+        "oibl_config.h",
         "s7_config.h",
         "error_handler.h",
         "fs.h",
@@ -87,12 +92,13 @@ genrule(
         "$(location @makeheaders//:makeheaders) \\",
         "    $(location dune_load.c) \\",
         "    $(location opam_config.c) \\",
+        "    $(location oibl_config.c) \\",
         "    $(location s7_config.c) \\",
         "    $(location bazel_config.c) \\",
         "    $(location error_handler.c) \\",
         "    $(location fs.c) \\",
         "    $(location utils.c) \\",
-        "    $(location ansi_colors.h) ",
+        "    $(location ansi_colors.h)",
         # "    $(locations @uthash//:include)",
         "cp $${SRCDIR1}/*.h $(@D)",
     ]),

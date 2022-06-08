@@ -29,9 +29,6 @@
 
 #include "opam_config.h"
 
-bool debug;
-bool verbose;
-
 const char *errmsg = NULL;
 
 int rc;

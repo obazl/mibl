@@ -29,12 +29,10 @@
 
 #include "bazel_config.h"
 #include "deploy_config.h"
+#include "oibl_config.h"
 #include "fs.h"
 
-bool debug;
-bool verbose;
-bool dev_mode = false;
-
+UT_string *xdg_home_install_root; // $HOME/.local/share/libs7
 UT_string *xdg_install_dir;
 
 EXPORT void deploy(void)
@@ -144,7 +142,7 @@ LOCAL void _deploy_scm_files(UT_string *manifest)
         char *dest;
         token = strtok((char*)line, sep);
         dest = token;
-        log_debug("dest: %s", dest);
+        log_debug("\ndest: %s", dest);
 
         if (token != NULL) {
             token = strtok(NULL, sep);
@@ -178,7 +176,7 @@ LOCAL void _deploy_scm_files(UT_string *manifest)
                 int pfx_len;
                 if (dev_mode) {
                     pfx = "oibl/libs7/";
-                    pfx_len = 14;
+                    pfx_len = 11;
                     if (strncmp(dest, pfx, pfx_len) == 0) {
                         if (strlen(dirname(dest)) == pfx_len - 1) {
                             /* no path after pfx */
@@ -191,7 +189,7 @@ LOCAL void _deploy_scm_files(UT_string *manifest)
                             xdg_install(token, destdir);
                         }
                     } else {
-                        log_debug("checking libs7");
+                        /* log_debug("checking libs7"); */
                         pfx = "libs7/libs7/";
                         pfx_len = 12;
                         if (strncmp(dest, pfx, pfx_len) == 0) {
@@ -244,7 +242,7 @@ LOCAL void _deploy_scm_files(UT_string *manifest)
 const int libs7_pfx_len = 12;
 
 #define OIBL_PFX "oibl/libs7/"
-const int oibl_pfx_len = 14;
+const int oibl_pfx_len = 11;
 
 #define MAIN_PFX "__main__/"
 const int main_pfx_len = 9;
@@ -342,19 +340,20 @@ const int main_ext_pfx_len = 18;
 
 LOCAL void xdg_install(char *src, char *dst)
 {
-    log_debug("xdg_install: %s -> %s", src, dst);
-    log_debug("xdg_install_dir: %s", utstring_body(xdg_install_dir));
+    log_debug("xdg_install src: %s", src);
+    log_debug("xdg_install dst: %s", dst);
+    log_debug("xdg_install_dir: %s", utstring_body(xdg_home_install_root));
     rc = access(src, R_OK);
     if (rc) {
         if (verbose || debug)
             log_info("src not found: %s", src);
     }
 
-    mkdir_r(utstring_body(xdg_install_dir), dst);
+    mkdir_r(utstring_body(xdg_home_install_root), dst);
 
     static UT_string *destdir = NULL;
     utstring_renew(destdir);
-    utstring_concat(destdir, xdg_install_dir);
+    utstring_concat(destdir, xdg_home_install_root);
     utstring_printf(destdir, "/%s", dst);
     log_debug("install_dir: %s", utstring_body(destdir));
     _copy_file(src, utstring_body(destdir));
@@ -362,9 +361,6 @@ LOCAL void xdg_install(char *src, char *dst)
 
 LOCAL void _config_xdg_load_paths()
 {
-    UT_string *xdg_newdir;
-    utstring_new(xdg_newdir);
-
     /* system obazl script dirs:
        $XDG_DATA_DIRS/oibl, $XDG_DATA_DIRS/libs7, $XDG_DATA_DIRS/libs7/s7
        $XDG_DATA_DIRS default: /usr/local/share
@@ -380,109 +376,125 @@ LOCAL void _config_xdg_load_paths()
 
 /* https://developer.apple.com/library/archive/documentation/FileManagement/Conceptual/FileSystemProgrammingGuide/MacOSXDirectories/MacOSXDirectories.html#//apple_ref/doc/uid/TP40010672-CH10-SW1 */
 
-    char *xdg_data_dirs = getenv("XDG_DATA_DIRS");
-    if (xdg_data_dirs == NULL) {
-        xdg_data_dirs = "/usr/local/share";
-    }
-    utstring_new(xdg_install_dir);
-    utstring_printf(xdg_install_dir,
-                    "%s/libs7/s7",
-                    xdg_data_dirs);
-    rc = access(utstring_body(xdg_install_dir), R_OK);
-    if (rc) {
-        if (verbose || debug)
-            log_info("Not found: %s",
-                     utstring_body(xdg_install_dir));
-    } else {
-        if (verbose)
-            log_debug("FOUND: %s",
-                     utstring_body(xdg_install_dir));
-        /* s7_add_to_load_path(s7, utstring_body(xdg_install_dir)); */
-    }
+    /* char *xdg_data_dirs = getenv("XDG_DATA_DIRS"); */
+    /* if (xdg_data_dirs == NULL) { */
+    /*     xdg_data_dirs = "/usr/local/share"; */
+    /* } */
 
-    utstring_new(xdg_install_dir);
-    utstring_printf(xdg_install_dir, "%s/libs7", xdg_data_dirs);
-    rc = access(utstring_body(xdg_install_dir), R_OK);
-    if (rc) {
-        if (verbose || debug)
-            log_info("Not found: %s/libs7",
-                     utstring_body(xdg_install_dir));
-    } else {
-        /* s7_add_to_load_path(s7, utstring_body(xdg_install_dir)); */
-    }
+    /* utstring_new(xdg_install_dir); */
+    /* utstring_printf(xdg_install_dir, */
+    /*                 "%s/libs7/s7", */
+    /*                 xdg_data_dirs); */
+    /* rc = access(utstring_body(xdg_install_dir), R_OK); */
+    /* if (rc) { */
+    /*     if (verbose || debug) */
+    /*         log_info("Not found: %s", */
+    /*                  utstring_body(xdg_install_dir)); */
+    /*     //FIXME: mkdir_r */
+    /* } else { */
+    /*     if (verbose) */
+    /*         log_debug("FOUND: %s", */
+    /*                  utstring_body(xdg_install_dir)); */
+    /* } */
 
-    struct passwd *pw = getpwuid(getuid());
-    const char *homedir = pw->pw_dir;
-    /* log_debug("HOME DIR: %s", homedir); */
+    /* utstring_new(xdg_install_dir); */
+    /* utstring_printf(xdg_install_dir, "%s/libs7", xdg_data_dirs); */
+    /* rc = access(utstring_body(xdg_install_dir), R_OK); */
+    /* if (rc) { */
+    /*     if (verbose || debug) */
+    /*         log_info("Not found: %s/libs7", */
+    /*                  utstring_body(xdg_install_dir)); */
+    /* } else { */
+    /* } */
 
-    utstring_new(xdg_install_dir);
+    /* ******************************** */
+    /* ******************************** */
+    /* struct passwd *pw = getpwuid(getuid()); */
+    /* const char *homedir = pw->pw_dir; */
+    const char *homedir = getenv("HOME");
     const char *xdg_data_home = getenv("XDG_DATA_HOME");
-
-    /* **** libs7/s7 **** */
     if (xdg_data_home == NULL) {
         xdg_data_home = homedir;
     }
-    /* utstring_printf(xdg_install_dir, "%s/.local/share/libs7/s7", */
-    /*                 xdg_data_home); */
 
-    /* rc = access(utstring_body(xdg_install_dir), R_OK); */
-    /* if (rc) { */
-    /*     if (verbose || debug) */
-    /*         log_info("Not found: %s", utstring_body(xdg_install_dir)); */
-    /*     utstring_renew(xdg_newdir); */
-    /*     utstring_printf(xdg_newdir, "%s", xdg_data_home); */
-    /*     mkdir_r(xdg_data_home, ".local/share/libs7/s7"); */
-    /* } else { */
-    /*     if (verbose) */
-    /*         log_debug("FOUND: %s", */
-    /*                  utstring_body(xdg_install_dir)); */
-    /*     /\* s7_add_to_load_path(s7, utstring_body(xdg_install_dir)); *\/ */
-    /* } */
+    utstring_new(xdg_install_dir);
+    utstring_new(xdg_home_install_root);
+    utstring_printf(xdg_home_install_root, "%s/.local/share/libs7",
+                    xdg_data_home);
 
-    /* **** libs7 **** */
-    utstring_renew(xdg_install_dir);
-    /* if (xdg_data_home == NULL) { */
-    /*     utstring_printf(xdg_install_dir, */
-    /*                     "%s/.local/share/libs7", */
-    /*                     homedir); */
-    /* } else { */
-        utstring_printf(xdg_install_dir,
-                        "%s/.local/share/libs7",
-                        xdg_data_home);
-    /* } */
+    /* **** libs7/s7 **** */
+    utstring_printf(xdg_install_dir, "%s/.local/share/libs7/s7",
+                    xdg_data_home);
     rc = access(utstring_body(xdg_install_dir), R_OK);
     if (rc) {
         if (verbose || debug)
-            log_info("Not found: %s.",
-                     utstring_body(xdg_install_dir));
+            log_info("Creating: %s", utstring_body(xdg_install_dir));
+        mkdir_r(xdg_data_home, ".local/share/libs7/s7");
     } else {
         if (verbose)
             log_debug("FOUND: %s",
                      utstring_body(xdg_install_dir));
-        /* s7_add_to_load_path(s7, utstring_body(xdg_install_dir)); */
     }
 
-    /* **** oibl **** */
-    /* utstring_renew(xdg_install_dir); */
-    /* if (xdg_data_home == NULL) { */
-    /*     utstring_printf(xdg_install_dir, */
-    /*                     "%s/.local/share/libs7/oibl", */
-    /*                     homedir); */
-    /* } else { */
-    /*     utstring_printf(xdg_install_dir, */
-    /*                     "%s/.local/share/libs7/oibl", */
-    /*                     xdg_data_home); */
-    /* } */
-    /* rc = access(utstring_body(xdg_install_dir), R_OK); */
-    /* if (rc) { */
-    /*     if (verbose || debug) */
-    /*         log_info("Not found: %s.", */
-    /*                  utstring_body(xdg_install_dir)); */
-    /* } else { */
-    /*     if (verbose) */
-    /*         log_debug("FOUND: %s", */
-    /*                  utstring_body(xdg_install_dir)); */
-    /* } */
+    utstring_printf(xdg_install_dir, "%s/.local/share/libs7/lib",
+                    xdg_data_home);
+    rc = access(utstring_body(xdg_install_dir), R_OK);
+    if (rc) {
+        if (verbose || debug)
+            log_info("Creating: %s", utstring_body(xdg_install_dir));
+        mkdir_r(xdg_data_home, ".local/share/libs7/lib");
+    } else {
+        if (verbose)
+            log_debug("FOUND: %s",
+                     utstring_body(xdg_install_dir));
+    }
+
+    /* **** oibl: dune **** */
+    utstring_renew(xdg_install_dir);
+    utstring_printf(xdg_install_dir,
+                    "%s/.local/share/libs7/dune",
+                    xdg_data_home);
+    rc = access(utstring_body(xdg_install_dir), R_OK);
+    if (rc) {
+        if (verbose || debug)
+            log_info("Creating: %s.", utstring_body(xdg_install_dir));
+        mkdir_r(xdg_data_home, ".local/share/libs7/dune");
+    } else {
+        if (verbose)
+            log_debug("FOUND: %s",
+                     utstring_body(xdg_install_dir));
+    }
+
+    /* **** oibl: meta **** */
+    utstring_renew(xdg_install_dir);
+    utstring_printf(xdg_install_dir,
+                    "%s/.local/share/libs7/meta",
+                    xdg_data_home);
+    rc = access(utstring_body(xdg_install_dir), R_OK);
+    if (rc) {
+        if (verbose || debug)
+            log_info("Creating: %s.", utstring_body(xdg_install_dir));
+        mkdir_r(xdg_data_home, ".local/share/libs7/meta");
+    } else {
+        if (verbose)
+            log_debug("FOUND: %s",
+                     utstring_body(xdg_install_dir));
+    }
+    /* **** oibl: opam **** */
+    utstring_renew(xdg_install_dir);
+    utstring_printf(xdg_install_dir,
+                    "%s/.local/share/libs7/opam",
+                    xdg_data_home);
+    rc = access(utstring_body(xdg_install_dir), R_OK);
+    if (rc) {
+        if (verbose || debug)
+            log_info("Creating: %s.", utstring_body(xdg_install_dir));
+        mkdir_r(xdg_data_home, ".local/share/libs7/opam");
+    } else {
+        if (verbose)
+            log_debug("FOUND: %s",
+                     utstring_body(xdg_install_dir));
+    }
 }
 
 LOCAL void _copy_file(char *src, char *dst)

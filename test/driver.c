@@ -1,12 +1,17 @@
 #include <unistd.h>
 
 #include "bazel_config.h"
+#include "oibl_config.h"
 #include "s7_config.h"
 #include "dune_load.h"
 
+extern bool debug;
+extern bool trace;
+extern bool verbose;
+
 int main(int argc, char *argv[])
 {
-    char *opts = "hvd";
+    char *opts = "hdtv";
     int opt;
     while ((opt = getopt(argc, argv, opts)) != -1) {
         switch (opt) {
@@ -26,6 +31,9 @@ int main(int argc, char *argv[])
             printf("help msg ...\n");
             exit(EXIT_SUCCESS);
             break;
+        case 't':
+            trace = true;
+            break;
         case 'v':
             verbose = true;
         default:
@@ -43,7 +51,8 @@ int main(int argc, char *argv[])
 
     /* pathdir = "test/baddot"; */
     /* pathdir = "test/includes/mwe"; */
-    pathdir = "test/filetypes";
+    /* pathdir = "test/filetypes"; */
+    pathdir = "test/mwe";
 
     /* pathdir = "test/tezos/lib_clic"; */
     /* pathdir = "test/tezos/lib_requester"; */
@@ -76,9 +85,9 @@ int main(int argc, char *argv[])
     /*                              s7_load_path(s7) */
     /*                              )); */
 
-    printf("dir count: %d\n", dir_ct);
-    printf("file count: %d\n", file_ct);
-    printf("dunefile count: %d\n", dunefile_ct);
-
-    printf("done at %s\n", getcwd(NULL, 0));
+    if (verbose) {
+        printf("dir count: %d\n", dir_ct);
+        printf("file count: %d\n", file_ct);
+        printf("dunefile count: %d\n", dunefile_ct);
+    }
 }

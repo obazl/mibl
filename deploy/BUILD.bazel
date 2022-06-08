@@ -6,6 +6,7 @@ cc_binary(
     srcs  = [
         "deploy.c", "deploy.h",
         "deploy_config.c", "deploy_config.h",
+        "//src:oibl_config.h",
         "//src:fs.h"
     ],
     defines = select({
@@ -39,8 +40,8 @@ cc_binary(
     ],
     data = [
         "//repl", # so we can find it in MANIFEST
-        "//libs7:oibl.scm",
-        "//libs7/oibl:srcs",
+        "//libs7:dune.scm",
+        "//libs7/dune:srcs",
     ],
     linkopts = select({
         "//bzl/host:macos": [],
@@ -51,7 +52,7 @@ cc_binary(
     ],
     deps = [
         "//repl",
-        "//src:crawl", # since we depend on its config files
+        "//src:oibl", # since we depend on its config files
         "//external/libinih:inih",
         # "@logc//:logc",
         # "@libs7//src:s7",

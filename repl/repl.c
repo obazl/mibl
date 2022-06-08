@@ -23,6 +23,7 @@ extern s7_scheme *s7;
 char *history = ".ocamlark.history.txt";
 
 extern bool debug;
+/* extern bool trace; */
 extern bool verbose;
 extern bool ini_error;
 /* extern UT_string *obazl_ini_path; */
@@ -121,10 +122,13 @@ int main(int argc, char **argv)
     printf("repl main\n");
     /* Parse options, with --multiline we enable multi line editing. */
     int opt;
-    while ((opt = getopt(argc, argv, "edmkhvV")) != -1) {
+    while ((opt = getopt(argc, argv, "edmkhtvV")) != -1) {
         switch (opt) {
         case 'd':
             debug = true;
+            break;
+        case 't':
+            /* trace = true; */
             break;
         case 'm':
             linenoiseSetMultiLine(1);
@@ -153,9 +157,9 @@ int main(int argc, char **argv)
     /* initializes s7 */
     bazel_configure(getcwd(NULL, 0));
     s7_initialize();
-    s7_repl(s7);
 
-    /* xen_repl(argc, argv); */
+    s7_repl(s7);
+    xen_repl(argc, argv);
 
     return 0;
 }

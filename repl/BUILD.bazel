@@ -49,7 +49,7 @@ cc_binary(
         "-lm",
     ],
     deps = [
-        "//src:load",
+        "//src:oibl",
         # "//external/libinih:inih",
         "@logc//:logc",
         # "@libs7//src:s7",
