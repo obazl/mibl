@@ -23,8 +23,12 @@ cc_library(
         "@uthash//:include",
     ],
     data = [
-        "//libs7:oibl.scm",
-        "//libs7/oibl:srcs",
+        "//libs7:dune.scm",
+        "//libs7/dune:srcs",
+        "//libs7:meta.scm",
+        "//libs7/meta:srcs",
+        "//libs7:opam.scm",
+        "//libs7/opam:srcs",
     ],
     defines = select({
         "//bzl/host:debug": ["DEBUG_TRACE"],

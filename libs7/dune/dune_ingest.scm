@@ -1,4 +1,4 @@
-;; (format #t "loading @camlark//scm/dune_ingest.scm\n")
+(format #t "Loading oibl: dune/dune_ingest.scm\n")
 
 (load "alist.scm")
 (load "dune.scm")

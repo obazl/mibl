@@ -1,3 +1,4 @@
+(format #t "Loading oibl: dune/dune_actions.scm\n")
 
 ;; https://dune.readthedocs.io/en/stable/concepts.html?highlight=progn#user-actions
 

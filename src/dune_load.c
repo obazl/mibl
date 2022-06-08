@@ -61,19 +61,25 @@ LOCAL s7_pointer _read_dunefile(char *path, char *fname)
 
     s7_pointer stanzas = s7_list(s7, 0);
 
+    close_error_config();
+    error_config();
     /* repeat until all objects read */
     while(true) {
-
+        if ((errmsg) && (*errmsg)) {
+            log_error("PREEMPT ERRMSG: %s", TO_STR(errmsg));
+        }
         s7_pointer stanza = s7_read(s7, port);
-
+        log_error("READED");
         errmsg = s7_get_output_string(s7, s7_current_error_port(s7));
+        log_error("ERRCHK");
         if ((errmsg) && (*errmsg)) {
             if (debug)
                 log_error("[%s\n]", errmsg);
             s7_close_input_port(s7, port);
             //if ".)", read file into buffer, convert to "\.)", then
             // read with the scheme reader
-            if (strstr(errmsg, ";read-error (\"unexpected close paren:")
+            log_error("FFFFFFFFFFFFFFFFUCK");
+            if (strstr(errmsg, "\"unexpected close paren:")
                 != NULL) {
                 s7_close_input_port(s7, port);
                 /* clear out old error */
@@ -81,7 +87,6 @@ LOCAL s7_pointer _read_dunefile(char *path, char *fname)
                 s7_pointer fixed = fix_baddot(dunefile_name);
                 log_debug("FIXED: %s", TO_STR(fixed));
                 if (s7_is_null(s7,stanzas)) {
-                    log_debug("xxxxxxxxxxxxxxxx");
                     /* stanzas = s7_list(s7, 1, fixed); */
                     fixed;
                 } else{
@@ -89,6 +94,7 @@ LOCAL s7_pointer _read_dunefile(char *path, char *fname)
                                         /* s7_list(s7, 1, fixed)); */
                 }
             }
+            log_error("OKKKKK");
 
             /* s7_quit(s7); */
             /* exit(EXIT_FAILURE); */
@@ -135,7 +141,7 @@ LOCAL s7_pointer _read_dunefile(char *path, char *fname)
   create a pkg-tbl entry if dir contains a dune file or at least one
   OCaml source file.
  */
-LOCAL void _handle_dir(FTS* tree, FTSENT *ftsentry)
+LOCAL void _handle_dir(s7_pointer pkg_tbl, FTS* tree, FTSENT *ftsentry)
 {
     /* printf("_handle_dir %s\n", ftsentry->fts_name); */
 
@@ -177,13 +183,13 @@ LOCAL void _handle_dir(FTS* tree, FTSENT *ftsentry)
         if (r != NULL) {
             log_debug("TUAREG! %s/dune", ftsentry->fts_path);
             fclose(fileStream);
-            s7_pointer pkgs = s7_name_to_value(s7, "pkg-tbl");
+            /* s7_pointer pkgs = s7_name_to_value(s7, "pkg-tbl"); */
             s7_pointer key = s7_make_string(s7, ftsentry->fts_path);
             /* s7_pointer test_assoc = s7_list(s7, 2, */
             /*                                 s7_make_keyword(s7, "test"), */
             /*                                 s7_make_symbol(s7, "dummy")); */
             s7_pointer result =
-                s7_hash_table_set(s7, pkgs, key,
+                s7_hash_table_set(s7, pkg_tbl, key,
                                   s7_list(s7, 2,
                                           s7_make_keyword(s7, "pkg-path"),
                                           key));
@@ -196,13 +202,13 @@ LOCAL void _handle_dir(FTS* tree, FTSENT *ftsentry)
 
         /* add entry to pkg-tbl */
         /* printf("DUNE PKG at %s\n", ftsentry->fts_path); */
-        s7_pointer pkgs = s7_name_to_value(s7, "pkg-tbl");
+        /* s7_pointer pkgs = s7_name_to_value(s7, "pkg-tbl"); */
         s7_pointer key = s7_make_string(s7, ftsentry->fts_path);
         s7_pointer dune_assoc = s7_cons(s7,
                                         s7_make_keyword(s7, "stanzas"),
                                         stanzas);
         s7_pointer result =
-            s7_hash_table_set(s7, pkgs, key,
+            s7_hash_table_set(s7, pkg_tbl, key,
                               /* s7_list(s7, 2, */
                               s7_append(s7,
                                       s7_list(s7, 1,
@@ -216,15 +222,15 @@ LOCAL void _handle_dir(FTS* tree, FTSENT *ftsentry)
         /* printf("hts res: %s\n", s7_object_to_c_string(s7, result)); */
     } else {
         /* no dunefile in dir, make empty :stanzas alist */
-        s7_pointer pkgs = s7_name_to_value(s7, "pkg-tbl");
+        /* s7_pointer pkgs = s7_name_to_value(s7, "pkg-tbl"); */
         s7_pointer key = s7_make_string(s7, ftsentry->fts_path);
         /* s7_pointer test_assoc = s7_list(s7, 2, */
         /*                                 s7_make_keyword(s7, "test"), */
         /*                                 s7_make_symbol(s7, "dummy")); */
-        /* s7_pointer result = s7_hash_table_set(s7, pkgs, key, */
+        /* s7_pointer result = s7_hash_table_set(s7, pkg_tbl, key, */
         /*                                       s7_list(s7, 1, test_assoc)); */
         s7_pointer result =
-            s7_hash_table_set(s7, pkgs, key,
+            s7_hash_table_set(s7, pkg_tbl, key,
                               s7_list(s7, 2,
                                       s7_list(s7, 2,
                                               s7_make_keyword(s7, "pkg-path"),
@@ -271,14 +277,13 @@ LOCAL bool _exclusions(FTSENT *ftsentry, char *ext)
         if (strncmp(ext, ".gitignore", 10) == 0)
             return true;
     }
-
     return false;
 }
 
 #define TAG_MLI 0
 #define TAG_ML  1
 
-LOCAL void _update_pkg_files(FTSENT *ftsentry, char *ext)
+LOCAL void _update_pkg_files(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 {
     if (debug)
         log_debug("_update_pkg_files: %s, ext: %s",
@@ -290,7 +295,7 @@ LOCAL void _update_pkg_files(FTSENT *ftsentry, char *ext)
         return;
     }
 
-    s7_pointer pkg_tbl = s7_name_to_value(s7, "pkg-tbl");
+    /* s7_pointer pkg_tbl = s7_name_to_value(s7, "pkg-tbl"); */
     if (debug)
         log_debug("pkg_tbl: %s", s7_object_to_c_string(s7, pkg_tbl));
 
@@ -371,7 +376,8 @@ LOCAL void _update_pkg_files(FTSENT *ftsentry, char *ext)
     }
 }
 
-LOCAL void _update_pkg_script_files(FTSENT *ftsentry, char *ext)
+LOCAL void _update_pkg_script_files(s7_pointer pkg_tbl,
+                                    FTSENT *ftsentry, char *ext)
 {
     if (debug)
         log_debug("_update_pkg_script_files: %s, ext: %s",
@@ -383,7 +389,7 @@ LOCAL void _update_pkg_script_files(FTSENT *ftsentry, char *ext)
         return;
     }
 
-    s7_pointer pkg_tbl = s7_name_to_value(s7, "pkg-tbl");
+    /* s7_pointer pkg_tbl = s7_name_to_value(s7, "pkg-tbl"); */
     if (debug)
         log_debug("pkg_tbl: %s", s7_object_to_c_string(s7, pkg_tbl));
 
@@ -463,10 +469,11 @@ LOCAL void _update_pkg_script_files(FTSENT *ftsentry, char *ext)
     }
 }
 
-LOCAL void _update_pkg_modules(char *pkg_name, char *mname,
+LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
+                               char *pkg_name, char *mname,
                                char *fname, int ftype)
 {
-    s7_pointer pkg_tbl = s7_name_to_value(s7, "pkg-tbl");
+    /* s7_pointer pkg_tbl = s7_name_to_value(s7, "pkg-tbl"); */
     if (debug)
         log_debug("pkg_tbl: %s", s7_object_to_c_string(s7, pkg_tbl));
 
@@ -574,9 +581,10 @@ LOCAL void _update_pkg_modules(char *pkg_name, char *mname,
                                          /* srcs_kw, */
                                          modules_kw,
                                          mname_sym);
-            if (debug)
+            if (debug) {
                 log_debug("keypath: %s",
                    s7_object_to_c_string(s7, keypath));
+            }
             s7_pointer module_alist = s7_call(s7, assoc_in,
                                               s7_list(s7, 2,
                                                       keypath,
@@ -648,32 +656,32 @@ LOCAL void _update_pkg_modules(char *pkg_name, char *mname,
     }
 }
 
-LOCAL void _update_mli(FTSENT *ftsentry, char *ext)
+LOCAL void _update_mli(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 {
     /* printf("_update_mli: "); */
     char *pkg_name = dirname(ftsentry->fts_path);
     char *mname = _module_name(ftsentry, ext);
     printf(BLU ":module" CRESET " %s; ", mname);
     printf("pkg name: %s; fname: %s\n", pkg_name, ftsentry->fts_name);
-    _update_pkg_modules(pkg_name, mname,
-                                ftsentry->fts_name, TAG_MLI);
+    _update_pkg_modules(pkg_tbl, pkg_name, mname,
+                        ftsentry->fts_name, TAG_MLI);
 }
 
-LOCAL void _update_ml(FTSENT *ftsentry, char *ext)
+LOCAL void _update_ml(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 {
     /* printf("_update_ml: "); */
     char *pkg_name = dirname(ftsentry->fts_path);
     char *mname = _module_name(ftsentry, ext);
     printf(BLU ":module" CRESET " %s; ", mname);
     printf("pkg name: %s; fname: %s\n", pkg_name, ftsentry->fts_name);
-    _update_pkg_modules(pkg_name, mname,
-                                ftsentry->fts_name, TAG_ML);
+    _update_pkg_modules(pkg_tbl, pkg_name, mname,
+                        ftsentry->fts_name, TAG_ML);
 }
 
 /*
   if no entry in pkg-tbl for ctx dir, add one
  */
-LOCAL void _handle_ml_file(FTSENT *ftsentry, char *ext)
+LOCAL void _handle_ml_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 {
     /* log_debug("_handle_ml_file %s, %s\n", */
     /*           ftsentry->fts_name, ext); */
@@ -681,18 +689,17 @@ LOCAL void _handle_ml_file(FTSENT *ftsentry, char *ext)
 
     /* char *ext = strrchr(ftsentry->fts_name, '.'); */
     _indent(ftsentry->fts_level);
-
     printf("%d. " CRESET, ftsentry->fts_level);
 
     if ((strncmp(ext, ".ml", 3) == 0)
         && (strlen(ext) == 3)) {
         /* printf(":%-6s", "ml"); */
-        _update_ml(ftsentry, ext);
+        _update_ml(pkg_tbl, ftsentry, ext);
     }
     else if ((strncmp(ext, ".mli", 4) == 0)
         && (strlen(ext) == 4)) {
         /* printf("%s", "mli"); */
-        _update_mli(ftsentry, ext);
+        _update_mli(pkg_tbl, ftsentry, ext);
     }
     else if ((strncmp(ext, ".mlt", 4) == 0)
         /* .mlt - ocamlformat file, not a module */
@@ -738,7 +745,7 @@ LOCAL void _handle_ml_file(FTSENT *ftsentry, char *ext)
     /* printf("\n"); */
 }
 
-LOCAL void _handle_file(FTSENT *ftsentry, char *ext)
+LOCAL void _handle_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 {
     /* if (debug) */
     /*     log_debug("_handle_file %s, %s\n", ftsentry->fts_name, ext); */
@@ -747,14 +754,10 @@ LOCAL void _handle_file(FTSENT *ftsentry, char *ext)
     _indent(ftsentry->fts_level);
     printf("%d. %s\n", ftsentry->fts_level, ftsentry->fts_name);
 
-    /* if ((strncmp(ext, ".ml", 3) == 0) */
-    /*     && (strlen(ext) == 3)) { */
-        /* printf(":%-6s", "ml"); */
-        _update_pkg_files(ftsentry, ext);
-    /* } */
+    _update_pkg_files(pkg_tbl, ftsentry, ext);
 }
 
-LOCAL void _handle_dune_file(FTSENT *ftsentry)
+LOCAL void _handle_dune_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
 {
     /* && (ftsentry->fts_namelen = 4) == 0)) { */
     _indent(ftsentry->fts_level);
@@ -764,7 +767,7 @@ LOCAL void _handle_dune_file(FTSENT *ftsentry)
     printf(CRESET "\n");
 }
 
-LOCAL void _handle_opam_file(FTSENT *ftsentry)
+LOCAL void _handle_opam_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
 {
     /* printf("_handle_opam_file %s\n", ftsentry->fts_name); */
     /* printf("    pkg: %s\n", dirname(ftsentry->fts_path)); */
@@ -780,7 +783,7 @@ LOCAL void _handle_opam_file(FTSENT *ftsentry)
     /* _update_ml(ftsentry, ext); */
 }
 
-LOCAL void _handle_ocamlformat_file(FTSENT *ftsentry)
+LOCAL void _handle_ocamlformat_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
 {
     _indent(ftsentry->fts_level);
 
@@ -792,7 +795,8 @@ LOCAL void _handle_ocamlformat_file(FTSENT *ftsentry)
     /* _update_ml(ftsentry, ext); */
 }
 
-LOCAL void _handle_script_file(FTSENT *ftsentry, char *ext)
+LOCAL void _handle_script_file(s7_pointer pkg_tbl,
+                               FTSENT *ftsentry, char *ext)
 {
     /* if (debug) */
     /*     log_debug("_handle_script_file %s, %s\n", ftsentry->fts_name, ext); */
@@ -801,10 +805,10 @@ LOCAL void _handle_script_file(FTSENT *ftsentry, char *ext)
     _indent(ftsentry->fts_level);
     printf("%d. %s\n", ftsentry->fts_level, ftsentry->fts_name);
 
-    _update_pkg_script_files(ftsentry, ext);
+    _update_pkg_script_files(pkg_tbl, ftsentry, ext);
 }
 
-LOCAL void _handle_symlink(FTS *tree, FTSENT *ftsentry)
+LOCAL void _handle_symlink(s7_pointer pkg_tbl, FTS *tree, FTSENT *ftsentry)
 {
     if (strncmp(ftsentry->fts_name, "bazel-", 6) == 0) {
         /* skip Bazel dirs, e.g. bazel-bin */
@@ -848,7 +852,7 @@ int _compare(const FTSENT** one, const FTSENT** two)
     return (strcmp((*one)->fts_name, (*two)->fts_name));
 }
 
-EXPORT s7_pointer g_dune_load(s7_scheme *s7, s7_pointer args)
+EXPORT s7_pointer g_dune_load(s7_scheme *s7,  s7_pointer args)
 {
     char *rootdir, *pathdir;
 
@@ -867,8 +871,13 @@ EXPORT s7_pointer g_dune_load(s7_scheme *s7, s7_pointer args)
             pathdir = s7_string(s7_cadr(args));
         }
         else if (args_ct == 1) {
-            rootdir = getcwd(NULL,0);
+            /* one arg == path relative to current wd */
             pathdir = s7_string(s7_car(args));
+            if (pathdir[0] == '/') {
+                log_error("Path arg must be relative");
+                return s7_nil(s7);
+            }
+            rootdir = getcwd(NULL,0);
         }
         else if (args_ct == 0) {
             rootdir = getcwd(NULL,0);
@@ -886,14 +895,15 @@ EXPORT s7_pointer g_dune_load(s7_scheme *s7, s7_pointer args)
         /* strlcpy(rootdir, s, 256); */
         /* rootdir = "test"; */
     }
-    dune_load(rootdir, pathdir);
-    printf("g_dune_load done\n");
-    printf("cwd: %s\n", getcwd(NULL, 0));
+    s7_pointer pkgs = dune_load(rootdir, pathdir);
+    /* printf("g_dune_load done\n"); */
+    /* printf("cwd: %s\n", getcwd(NULL, 0)); */
     /* free(rootdir); */
-    return s7_name_to_value(s7, "pkg-tbl");
+    /* return s7_name_to_value(s7, "pkg-tbl"); */
+    return pkgs;
 }
 
-EXPORT void dune_load(char *root, char *path)
+EXPORT s7_pointer dune_load(char *root, char *path)
 {
     printf("dune_load root: %s, path: %s\n", root, path);
 
@@ -926,12 +936,19 @@ EXPORT void dune_load(char *root, char *path)
                     // NULL
                     &_compare
                     );
-    if (errno != 0)
-        printf("fts_open %s RC %d: %s\n",
-               dir,
-               errno, strerror(errno));
+    if (errno != 0) {
+        log_error("fts_open(%s), RC %d: %s",
+                  dir, errno, strerror(errno));
+        log_info("cwd: %s", getcwd(NULL, 0));
+        return s7_nil(s7);
+    }
+    if (verbose)
+        log_info("loading...\n");
 
-    printf("loading...\n");
+    // pkg-tbl
+#define PKG_CT 50
+    s7_pointer pkg_tbl = s7_make_hash_table(s7, PKG_CT);
+    s7_define_variable(s7, "pkg-tbl", pkg_tbl);
 
     char *ext;
 
@@ -947,7 +964,7 @@ EXPORT void dune_load(char *root, char *path)
                     break;
                 case FTS_D : // dir visited in pre-order
                     dir_ct++;
-                    _handle_dir(tree, ftsentry);
+                    _handle_dir(pkg_tbl, tree, ftsentry);
                     break;
                 case FTS_DP:
                     /* postorder directory */
@@ -956,7 +973,7 @@ EXPORT void dune_load(char *root, char *path)
                     file_ct++;
                     /* _handle_regular_file(ftsentry); */
                     if (strncmp(ftsentry->fts_name, "dune", 4) == 0) {
-                        _handle_dune_file(ftsentry);
+                        _handle_dune_file(pkg_tbl, ftsentry);
                         break;
                     }
 
@@ -964,55 +981,44 @@ EXPORT void dune_load(char *root, char *path)
 
                     if (ext) {
                         if ((strncmp(ext, ".ml", 3) == 0)) {
-                            _handle_ml_file(ftsentry, ext);
+                            _handle_ml_file(pkg_tbl, ftsentry, ext);
                         }
                         else if ((strncmp(ext, ".md", 3) == 0)
                                  && (strlen(ext) == 3)) {
-                            _handle_ml_file(ftsentry, ext);
+                            _handle_ml_file(pkg_tbl, ftsentry, ext);
                         }
                         else if ((strncmp(ext, ".sh", 3) == 0)
                                  && (strlen(ext) == 3)) {
-                            _handle_script_file(ftsentry, ext);
+                            _handle_script_file(pkg_tbl, ftsentry, ext);
                         }
                         else if ((strncmp(ext, ".py", 3) == 0)
                                  && (strlen(ext) == 3)) {
-                            _handle_script_file(ftsentry, ext);
+                            _handle_script_file(pkg_tbl, ftsentry, ext);
                         }
                         else if ((strncmp(ext, ".opam", 5) == 0)
                                  && (strlen(ext) == 5)) {
-                            _handle_opam_file(ftsentry);
+                            _handle_opam_file(pkg_tbl, ftsentry);
                         }
                         else if (strncmp(ext, ".ocamlformat", 12) == 0) {
-                            _handle_ocamlformat_file(ftsentry);
+                            _handle_ocamlformat_file(pkg_tbl, ftsentry);
                         }
                         else {
-                            _handle_file(ftsentry, ext);
-                            /* FTSENT *p = ftsentry->fts_parent; */
-                            /* while (p) { */
-                            /*     if (strlen(p->fts_name) > 0) */
-                            /*         printf("\\%s", p->fts_name); */
-                            /*     p = p->fts_parent; */
-                            /* } */
-                            /* printf("\n"); */
+                            _handle_file(pkg_tbl, ftsentry, ext);
                         }
                     }
                     else {
                         /* no extension */
                         if (strstr(ftsentry->fts_name, "opam")) {
-                            _handle_opam_file(ftsentry);
+                            _handle_opam_file(pkg_tbl, ftsentry);
                         }
                         else {
-                            _handle_file(ftsentry, ext);
-                            /* _indent(ftsentry->fts_level); */
-                            /* printf("%d. " CYN "%s" CRESET "\n", */
-                            /*        ftsentry->fts_level, */
-                            /*        ftsentry->fts_name); */
+                            _handle_file(pkg_tbl, ftsentry, ext);
                         }
                     }
                     break;
                 case FTS_SL: // symlink
                     file_ct++;
-                    _handle_symlink(tree, ftsentry);
+                    _handle_symlink(pkg_tbl, tree, ftsentry);
                     break;
                 default:
                     log_error(RED "Unhandled FTS type %d\n",
@@ -1023,5 +1029,5 @@ EXPORT void dune_load(char *root, char *path)
         }
     }
     printf("done\n");
-    return;
+    return pkg_tbl;
 }

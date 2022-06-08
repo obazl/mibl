@@ -1,2 +1,2 @@
-exports_files(["oibl.scm"])
+exports_files(["dune.scm", "meta.scm", "opam.scm"])
 

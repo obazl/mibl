@@ -12,7 +12,7 @@
 /* #include "utarray.h" */
 /* #include "utstring.h" */
 
-#include "dune_crawl.h"
+#include "dune_load.h"
 /* #include "opam_config.h" */
 #include "bazel_config.h"
 #include "s7_config.h"
@@ -153,11 +153,9 @@ int main(int argc, char **argv)
     /* initializes s7 */
     bazel_configure(getcwd(NULL, 0));
     s7_initialize();
+    s7_repl(s7);
 
-    /* s7_repl(argc, argv); */
-    // or: load repl.scm
-
-    xen_repl(argc, argv);
+    /* xen_repl(argc, argv); */
 
     return 0;
 }

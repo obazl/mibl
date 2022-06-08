@@ -94,7 +94,7 @@ EXPORT void bazel_configure(char *_exec_root)
     utstring_new(exec_root);
     utstring_printf(exec_root, "%s", _exec_root);
     if (debug)
-        log_debug("EXEC ROOT (launch dir): %s", utstring_body(exec_root));
+        log_debug("EXEC ROOT (Bazel): %s", utstring_body(exec_root));
 
     utstring_new(runfiles_root);
     utstring_printf(runfiles_root, "%s", getcwd(NULL, 0));
@@ -110,6 +110,13 @@ EXPORT void bazel_configure(char *_exec_root)
             log_debug("BUILD_WORKSPACE_DIRECTORY: %s", _ws_root);
     }
 
+    utstring_new(ws_root);
+    if (_ws_root == NULL)
+        utstring_printf(ws_root, "%s", getcwd(NULL, 0));
+    else
+        utstring_printf(ws_root, "%s", _ws_root);
+
+    /* **************** */
     char *_wd = getenv("BUILD_WORKING_DIRECTORY");
     if (_wd == NULL) {
         if (debug)
@@ -118,12 +125,8 @@ EXPORT void bazel_configure(char *_exec_root)
         if (debug)
             log_debug("BUILD_WORKING_DIRECTORY: %s", _wd);
     }
-
-    utstring_new(ws_root);
-    if (_ws_root == NULL)
-        utstring_printf(ws_root, "%s", getcwd(NULL, 0));
-    else
-        utstring_printf(ws_root, "%s", _ws_root);
+    if (debug)
+        log_debug("LAUNCH DIR: %s", _wd);
 
     /* .obazlrc config file */
     utstring_new(obazl_ini_path);
@@ -154,9 +157,9 @@ EXPORT void bazel_configure(char *_exec_root)
 
     utarray_new(src_files,&ut_str_icd);
 
-    /* chdir(_ws_root); */
-    /* if (debug) */
-    /*     log_debug("CWD: %s\n", getcwd(NULL, 0)); */
+    chdir(_wd);
+    if (debug)
+        log_debug("Set CWD to: %s\n", getcwd(NULL, 0));
 }
 
 EXPORT int config_handler(void* config, const char* section, const char* name, const char* value)

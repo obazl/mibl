@@ -81,8 +81,6 @@ s7_pointer s7_error_handler(s7_scheme *sc, s7_pointer args)
 
 /* s7_pointer pkg_tbl; */
 
-#define PKG_CT 50
-
 /* EXPORT UT_array *inventory_opam(void) */
 /* { */
 /*     config_opam(NULL); */
@@ -194,6 +192,10 @@ LOCAL void _config_bazel_load_path(char *scriptfile, UT_string *manifest)
 
         char *ext = strrchr(token, '.');
         if (ext != NULL) {
+            if (strncmp(ext, ".so", 3) == 0) {
+                log_info("SHARED: %s", token);
+            }
+
             if ( (strncmp(ext, ".scm", 4) == 0) && strlen(ext) == 4) {
                 char *scriptdir = dirname(token);
                 /* log_info("SCRIPTDIR: %s", scriptdir); */
@@ -350,10 +352,7 @@ LOCAL void _config_xdg_load_path(void)
     if (xdg_data_home == NULL) {
         xdg_data_home = homedir;
     }
-    /* utstring_printf(xdg_script_dir, "%s/%s", */
-    /*                 homedir, ".local/share/s7"); */
-    /* } else { */
-    /* utstring_printf(xdg_script_dir, "%s/%s", xdg_data_home, "libs7"); */
+
     utstring_printf(xdg_script_dir,
                     "%s/.local/share/libs7",
                     xdg_data_home);
@@ -368,17 +367,12 @@ LOCAL void _config_xdg_load_path(void)
         s7_add_to_load_path(s7, utstring_body(xdg_script_dir));
     }
 
-    /* utstring_renew(xdg_script_dir); */
-    /* if (xdg_data_home == NULL) { */
-    /*     utstring_printf(xdg_script_dir, "%s/%s", */
-    /*                     homedir, ".local/share/obazl/scm"); */
-    /* } else { */
-    /*     utstring_printf(xdg_script_dir, "%s/%s", */
-    /*                     xdg_data_home, "obazl/scm"); */
-    /* } */
-    /* /\* log_debug("s7 xdg_script_dir: %s", *\/ */
-    /* /\*           utstring_body(xdg_script_dir)); *\/ */
-    /* rc = access(utstring_body(xdg_script_dir), R_OK); */
+    utstring_renew(xdg_script_dir);
+    utstring_printf(xdg_script_dir, "%s/%s",
+                    xdg_data_home, ".local/share/libs7/s7");
+    log_debug("s7 xdg_script_dir: %s",
+              utstring_body(xdg_script_dir));
+    rc = access(utstring_body(xdg_script_dir), R_OK);
 
     /* if (rc) { */
     /*     if (verbose || debug) */
@@ -469,8 +463,9 @@ bazel run is similar, but not identical, to directly invoking the binary built b
         s7_pointer lp = s7_load_path(s7);
         log_debug("*load-path*: %s", s7_object_to_c_string(s7, lp));
     }
-
 }
+
+/* void libc_s7_init(s7_scheme *sc); */
 
 EXPORT void s7_initialize(void)
 {
@@ -485,18 +480,12 @@ EXPORT void s7_initialize(void)
                             DUNE_LOAD_HELP);
 
     set_load_path(callback_script_file);
-
-    s7_repl(s7);
+    s7_load(s7, "dune.scm");
+    s7_load(s7, "alist.scm");
 
     s7_pointer lf;
     /* log_info("loading default script: %s", callback_script_file); */
-    lf =  s7_load(s7, callback_script_file);
-
-    lf =  s7_load(s7, "alist.scm");
-
-    // pkg-tbl
-    s7_pointer pkg_tbl = s7_make_hash_table(s7, PKG_CT);
-    s7_define_variable(s7, "pkg-tbl", pkg_tbl);
+    /* lf =  s7_load(s7, callback_script_file); */
 }
 
 EXPORT void s7_shutdown(s7_scheme *s7)

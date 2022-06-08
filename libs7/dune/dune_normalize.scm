@@ -1,3 +1,5 @@
+(format #t "Loading oibl: dune/dune_normalize.scm\n")
+
 (define (normalize-stanzas pkg-path
                            ;; dune-project-stanzas
                            srcfiles stanzas)

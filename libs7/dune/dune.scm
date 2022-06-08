@@ -1,4 +1,4 @@
-;; (format #t "Loading .obazl.d/scm/dune.scm\n")
+(format #t "Loading oibl: dune/dune.scm\n")
 
 (load "alist.scm")
 (load "dune_normalize.scm")

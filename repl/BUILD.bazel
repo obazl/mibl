@@ -3,6 +3,7 @@ load("@rules_cc//cc:defs.bzl", "cc_binary")
 ##########
 cc_binary(
     name  = "repl",
+    linkstatic = True,
     srcs  = [
         "repl.c", "repl.h",
         "xen_repl.c", "xen_repl.h",
@@ -48,7 +49,7 @@ cc_binary(
         "-lm",
     ],
     deps = [
-        "//src:crawl",
+        "//src:load",
         # "//external/libinih:inih",
         "@logc//:logc",
         # "@libs7//src:s7",
