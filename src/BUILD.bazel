@@ -1,0 +1,131 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+##########
+cc_library(
+    name  = "load",
+    # alwayslink = True,
+    # linkstatic = 1,
+    srcs  = [
+        "dune_load.c",
+        "opam_config.c", "opam_config.h",
+        "bazel_config.c",
+        "s7_config.c", "s7_config.h",
+        "error_handler.c", "error_handler.h",
+        "fs.c", "fs.h",
+        "utils.c", "utils.h",
+        "@uthash//:include",
+    ],
+    hdrs = [
+        "dune_load.h",
+        "bazel_config.h",
+        "fs.h",
+        # "@libs7//src:s7.h",
+        "@uthash//:include",
+    ],
+    data = [
+        "//libs7:oibl.scm",
+        "//libs7/oibl:srcs",
+    ],
+    defines = select({
+        "//bzl/host:debug": ["DEBUG_TRACE"],
+        "//conditions:default":   []
+    }),
+    copts = [
+        "-std=c11",
+        "-g",
+        "-Wall",
+        "-Wno-unused-function",
+
+        "-I$(GENDIR)/src",
+        "-I$(GENDIR)/external/oibl/src",
+
+        "-Iexternal/libs7/src",
+
+        "-Iexternal/libinih",
+        "-Iexternal/logc/src",
+        "-Iexternal/uthash/include",
+    ],
+    deps = [
+        "//external/libinih:inih",
+        "@logc//:logc",
+        "@libs7//src:s7",
+        "@libs7//vendored/linenoise",
+    ],
+    visibility = ["//visibility:public"]
+)
+
+########
+genrule(
+    name = "mkhdrs",
+    srcs = [
+        "dune_load.c",
+        "opam_config.c",
+        "bazel_config.c",
+        "s7_config.c",
+        "error_handler.c",
+        "fs.c",
+        "utils.c",
+        "ansi_colors.h",
+        # "@uthash//:include",
+   ],
+    outs = [
+        "dune_load.h",
+        "opam_config.h",
+        "bazel_config.h",
+        "s7_config.h",
+        "error_handler.h",
+        "fs.h",
+        "utils.h",
+    ],
+    cmd = "\n".join([
+        "SRC1=$(location dune_load.c)",
+        "SRCDIR1=`dirname $$SRC1`",
+        "$(location @makeheaders//:makeheaders) \\",
+        "    $(location dune_load.c) \\",
+        "    $(location opam_config.c) \\",
+        "    $(location s7_config.c) \\",
+        "    $(location bazel_config.c) \\",
+        "    $(location error_handler.c) \\",
+        "    $(location fs.c) \\",
+        "    $(location utils.c) \\",
+        "    $(location ansi_colors.h) ",
+        # "    $(locations @uthash//:include)",
+        "cp $${SRCDIR1}/*.h $(@D)",
+    ]),
+    tools = ["@makeheaders//:makeheaders"],
+    visibility = ["//visibility:public"]
+)
+
+########
+# genrule(
+#     name = "mkhdrs-export",
+#     srcs = [
+#         "cmd_runner.c",
+#         # "codept.c",
+#         # "codept_emit.c",
+#         # "codept_parser.c",
+#         "opam_config.c",
+#         # "fs.c",
+#         # "utils.c",
+#         "@uthash//:include",
+#     ],
+#     outs = [
+#         "camlark.h",
+#     ],
+#     cmd = "\n".join([
+#         "SRC1=$(location opam_config.c)",
+#         "SRCDIR1=`dirname $$SRC1`",
+#         "$(location @makeheaders//:makeheaders) -H \\",
+#         "    $(locations @uthash//:include) \\",
+#         "    $(location cmd_runner.c) \\",
+#         # "    $(location codept.c) \\",
+#         # "    $(location codept_emit.c) \\",
+#         # "    $(location codept_parser.c) \\",
+#         "    $(location opam_config.c) \\",
+#         # "    $(location fs.c) \\",
+#         # "    $(location utils.c) \\",
+#         "    > $@",
+#     ]),
+#     tools = ["@makeheaders//:makeheaders"],
+#     visibility = ["//visibility:public"]
+# )

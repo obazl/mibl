@@ -1,0 +1,84 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary")
+
+##########
+cc_binary(
+    name  = "deploy",
+    srcs  = [
+        "deploy.c", "deploy.h",
+        "deploy_config.c", "deploy_config.h",
+        "//src:fs.h"
+    ],
+    defines = select({
+        "//bzl/host:debug": ["DEBUG_TRACE"],
+        "//conditions:default":   []
+    }) + [
+        # "LD_LIBRARY_PATH=external/libs7/src"
+    ],
+    copts = select({
+        # strdup is non-standard, not supported on linux in strict c11 mode
+        "//bzl/host:macos": ["-std=c11"],
+        "//bzl/host:linux": ["-std=gnu11"],
+        "//conditions:default": ["-std=c11"],
+    }) + [
+        # "-pedantic-errors",
+        "-Wall",
+        "-Wno-unused-function",
+
+        "-I$(GENDIR)/src",
+        "-I$(GENDIR)/external/oibl/src",
+
+        "-I$(GENDIR)/deploy",
+        "-I$(GENDIR)/external/oibl/deploy",
+
+        "-Iexternal/uthash/include",
+        "-Iexternal/libinih",
+        "-Iexternal/logc/src",
+
+        "-Iexternal/libs7/src",
+        "-Iexternal/oibl/libs7/src",
+    ],
+    data = [
+        "//repl", # so we can find it in MANIFEST
+        "//libs7:oibl.scm",
+        "//libs7/oibl:srcs",
+    ],
+    linkopts = select({
+        "//bzl/host:macos": [],
+        "//bzl/host:linux": [ "-Wl,-E", "-ldl"],
+        "//conditions:default": {}
+    }) + [
+        "-lm",
+    ],
+    deps = [
+        "//repl",
+        "//src:crawl", # since we depend on its config files
+        "//external/libinih:inih",
+        # "@logc//:logc",
+        # "@libs7//src:s7",
+        # "@libs7//vendored/linenoise",
+    ],
+    visibility = ["//visibility:public"]
+)
+
+########
+genrule(
+    name = "mkhdrs",
+    srcs = [
+        "deploy.c",
+        "deploy_config.c"
+    ],
+    outs = [
+        "deploy.h",
+        "deploy_config.h"
+    ],
+    cmd = "\n".join([
+        "SRC1=$(location deploy.c)",
+        "SRCDIR1=`dirname $$SRC1`",
+        "$(location @makeheaders//:makeheaders) \\",
+        "    $(location deploy.c) \\",
+        "    $(location deploy_config.c)",
+        "cp $${SRCDIR1}/*.h $(@D)",
+    ]),
+    tools = ["@makeheaders//:makeheaders"],
+    visibility = ["//visibility:public"]
+)

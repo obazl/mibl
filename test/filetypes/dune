@@ -1,0 +1,6 @@
+;; test dunefile
+(library
+    (name libfoo))
+
+(rule
+ (action (foo bar)))
