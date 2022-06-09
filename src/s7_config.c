@@ -38,6 +38,13 @@ char *callback = "camlark_handler"; /* fn in callback_script_file  */
 
 s7_scheme *s7;                  /* GLOBAL s7 */
 
+#define CONFIG_LIBS7 ".config/libs7"
+#if INTERFACE
+#define LIBS7_INI_FILE ".config/libs7rc"
+#endif
+
+UT_string *config_libs7;        /* work string */
+
 int rc;
 
 #define LIBS7    "libs7"
@@ -46,19 +53,19 @@ int rc;
 #define XDG_LOCAL_SHARE ".local/share"
 
 /* load-path script directories: sys, user, proj, in order
-   obazl (sys) scripts:
+   sys scripts:
        run under `bazel run`: dir in runfiles containing callback script
            @camlark//scm/s7, @camlark//scm
        run directly: XDG_DATA_DIRS default: /usr/local/share
            XDG_DATA_DIRS/libs7
            XDG_DATA_DIRS/libs7/s7
    user scripts:
-       ($HOME)/.obazl.d/scm
+       ($HOME)/.config/libs7
        $XDG_DATA_HOME default: $HOME/.local/share
-           XDG_DATA_HOME/s7
-           XDG_DATA_HOME/obazl/scm
+           XDG_DATA_HOME/libs7
+           XDG_DATA_HOME/libs7/s7
    proj scripts:
-       .obazl.d
+       .config/libs7
 
  */
 
@@ -96,7 +103,7 @@ s7_pointer s7_error_handler(s7_scheme *sc, s7_pointer args)
 /*     return opam_dirs; */
 /* } */
 
-LOCAL void _config_libs7_load_path(/*char *scriptfile,*/ UT_string *manifest)
+LOCAL void _config_runfiles_load_path(/*char *scriptfile,*/ UT_string *manifest)
 {
     if (verbose)
         log_info("Configuring for `bazel run`");
@@ -105,27 +112,14 @@ LOCAL void _config_libs7_load_path(/*char *scriptfile,*/ UT_string *manifest)
     size_t len = 0;
     ssize_t read;
 
-    /* if running under bazel .obazl.d must exist, for codept output */
-    utstring_new(obazl_d);
-    utstring_printf(obazl_d, "%s/%s", utstring_body(ws_root), ".obazl.d");
-    rc = access(utstring_body(obazl_d), R_OK);
-    if (rc) {
-        if (verbose)
-            log_info("Creating project obazl workdir: %s", utstring_body(obazl_ini_path));
-        rc = mkdir(utstring_body(obazl_d), S_IRWXU | S_IRGRP | S_IWGRP);
-        if (rc != 0) {
-            if (errno != EEXIST) {
-                perror(utstring_body(obazl_d));
-                log_error("mkdir error");
-            }
-        }
-    }
+    /* put project-local .config/libs7 on load-path if it exits. do
+       not create it. */
 
     /* utstring_new(codept_args_file); */
-    /* utstring_printf(codept_args_file, "%s/%s", utstring_body(obazl_d), codept_args_filename); */
+    /* utstring_printf(codept_args_file, "%s/%s", utstring_body(config_libs7), codept_args_filename); */
 
     /* utstring_new(codept_deps_file); */
-    /* utstring_printf(codept_deps_file, "%s/%s", utstring_body(obazl_d), codept_deps_filename); */
+    /* utstring_printf(codept_deps_file, "%s/%s", utstring_body(config_libs7), codept_deps_filename); */
 
     /*
       build scripts list their scm srcs in the 'data' attrib, which
@@ -144,7 +138,7 @@ LOCAL void _config_libs7_load_path(/*char *scriptfile,*/ UT_string *manifest)
     if (debug)
         log_debug("Reading MANIFEST");
 
-    char *dune_ed_scm = NULL;
+    char *oibl_libs7 = NULL;
 
     s7_pointer load_dirs = s7_make_hash_table(s7, 5);
     s7_pointer sdir;
@@ -211,10 +205,10 @@ LOCAL void _config_libs7_load_path(/*char *scriptfile,*/ UT_string *manifest)
                 if (substr != NULL) {
                     /* log_debug("FOUND dune_ed path: %s, %s", */
                     /*           line, scriptdir); */
-                    if (dune_ed_scm == NULL) {
+                    if (oibl_libs7 == NULL) {
                         int len = strlen(scriptdir) + 1;
-                        dune_ed_scm = calloc(len, 1);
-                        strlcpy(dune_ed_scm, scriptdir, len);
+                        oibl_libs7 = calloc(len, 1);
+                        strlcpy(oibl_libs7, scriptdir, len);
                     }
                     continue;
                 }
@@ -236,14 +230,14 @@ LOCAL void _config_libs7_load_path(/*char *scriptfile,*/ UT_string *manifest)
     }
     fclose(fp);
 
-    /* put dune_ed/scm on top of tmp stack */
+    /* put oibl/libs7 on top of tmp stack */
     tmp_load_path = s7_cons(s7,
-                            s7_make_string(s7, dune_ed_scm),
+                            s7_make_string(s7, oibl_libs7),
                             tmp_load_path);
 
     /* now put default "." on top of tmp stack */
-    s7_pointer loadp = s7_load_path(s7);
-    tmp_load_path = s7_append(s7, loadp, tmp_load_path);
+    /* s7_pointer loadp = s7_load_path(s7); */
+    /* tmp_load_path = s7_append(s7, loadp, tmp_load_path); */
     /* log_debug("lp: %s", s7_object_to_c_string(s7, tmp_load_path)); */
 
     /* replace *load-path* with our shiny new stack */
@@ -252,7 +246,7 @@ LOCAL void _config_libs7_load_path(/*char *scriptfile,*/ UT_string *manifest)
 
 LOCAL void _config_project_load_path(void)
 {
-    char *project_script_dir = ".obazl.d/scm";
+    char *project_script_dir = CONFIG_LIBS7;
 
     UT_string *proj_script_dir;
     utstring_new(proj_script_dir);
@@ -271,27 +265,28 @@ LOCAL void _config_project_load_path(void)
     }
 
     /* private project script dir */
-    UT_string *private_script_dir;
-    utstring_new(private_script_dir);
-    utstring_printf(private_script_dir, "%s/.private/scm",
-                    utstring_body(ws_root));
-    rc = access(utstring_body(private_script_dir), R_OK);
-    if (rc) {
-        if (verbose || debug)
-            log_warn("private script dir %s not found",
-                     utstring_body(private_script_dir));
-    } else {
-        if (verbose)
-            log_debug("adding to *load-path*: %s",
-                     utstring_body(private_script_dir));
-        s7_add_to_load_path(s7, utstring_body(private_script_dir));
-    }
+    /* user can add this by hand */
+    /* UT_string *private_script_dir; */
+    /* utstring_new(private_script_dir); */
+    /* utstring_printf(private_script_dir, "%s/.private/scm", */
+    /*                 utstring_body(ws_root)); */
+    /* rc = access(utstring_body(private_script_dir), R_OK); */
+    /* if (rc) { */
+    /*     if (verbose || debug) */
+    /*         log_warn("private script dir %s not found", */
+    /*                  utstring_body(private_script_dir)); */
+    /* } else { */
+    /*     if (verbose) */
+    /*         log_debug("adding to *load-path*: %s", */
+    /*                  utstring_body(private_script_dir)); */
+    /*     s7_add_to_load_path(s7, utstring_body(private_script_dir)); */
+    /* } */
 }
 
 LOCAL void _config_user_load_path(void)
 {
     char *_home_dir = getenv("HOME");
-    char *_user_script_dir = ".obazl.d/scm";
+    char *_user_script_dir = CONFIG_LIBS7;
     UT_string *user_script_dir;
 
     utstring_new(user_script_dir);
@@ -301,7 +296,7 @@ LOCAL void _config_user_load_path(void)
     rc = access(utstring_body(user_script_dir), R_OK);
     if (rc) {
         if (verbose || debug)
-            log_info("Not found: user script dir: %s.",
+            log_info("Not found: user script dir: %s",
                      utstring_body(user_script_dir));
     } else {
         if (verbose)
@@ -484,7 +479,7 @@ bazel run is similar, but not identical, to directly invoking the binary built b
             log_info("Configuring for non-bazel run");
         _config_xdg_home_load_path();
     } else {
-        _config_libs7_load_path(/*scriptfile,*/ manifest);
+        _config_runfiles_load_path(/*scriptfile,*/ manifest);
     }
     _config_user_load_path();
     _config_project_load_path();

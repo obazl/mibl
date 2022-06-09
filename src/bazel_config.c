@@ -39,37 +39,17 @@ int rc;
 UT_string *exec_root;
 UT_string *runfiles_root;
 UT_string *ws_root;
-UT_string *obazl_d;
+/* UT_string *config_obazl; // obazl_d; */
 
 #define LIBS7    "libs7"
 #define LIBS7_S7 LIBS7 "/s7"
 #define OIBL   "oibl"
 #define XDG_LOCAL_SHARE ".local/share"
 
-/* load-path script directories: sys, user, proj, in order
-   obazl (sys) scripts:
-       run under `bazel run`: dir in runfiles containing callback script
-           @camlark//scm/s7, @camlark//scm
-       run directly: XDG_DATA_DIRS default: /usr/local/share
-           XDG_DATA_DIRS/libs7
-           XDG_DATA_DIRS/libs7/s7
-   user scripts:
-       ($HOME)/.obazl.d/scm
-       $XDG_DATA_HOME default: $HOME/.local/share
-           XDG_DATA_HOME/s7
-           XDG_DATA_HOME/obazl/scm
-   proj scripts:
-       .obazl.d
-
- */
-
-/* char *bazel_script_dir = NULL; */
-
 UT_string *runtime_data_dir;
 
 bool ini_error; // = false;
-UT_string *obazl_ini_path;
-const char *obazl_ini_file = ".obazlrc";
+UT_string *obazl_ini_path; // .config
 
 #if EXPORT_INTERFACE
 struct configuration_s {
@@ -128,23 +108,30 @@ EXPORT void bazel_configure(char *_exec_root)
     if (debug)
         log_debug("LAUNCH DIR: %s", _wd);
 
-    /* .obazlrc config file */
+    /* .config/libs7 config file */
     utstring_new(obazl_ini_path);
-    utstring_printf(obazl_ini_path, "%s/%s", utstring_body(ws_root), obazl_ini_file);
+    utstring_printf(obazl_ini_path, "%s/%s",
+                    utstring_body(ws_root), LIBS7_INI_FILE);
 
     rc = access(utstring_body(obazl_ini_path), R_OK);
     if (rc) {
         if (verbose || debug)
-            log_warn("Config file %s not found.", utstring_body(obazl_ini_path));
+            log_warn("NOT FOUND: libs7rc config file %s",
+                     utstring_body(obazl_ini_path));
     } else {
         ini_error = false;
+        if (verbose || debug)
+            log_warn("FOUND: libs7rc config file %s",
+                     utstring_body(obazl_ini_path));
+
         utarray_new(bazel_config.src_dirs, &ut_str_icd);
         utarray_new(bazel_config.watch_dirs, &ut_str_icd);
         rc = ini_parse(utstring_body(obazl_ini_path), config_handler, &bazel_config);
         if (rc < 0) {
             //FIXME: deal with missing .obazl
             perror("ini_parse");
-            log_fatal("Can't load/parse ini file: %s", utstring_body(obazl_ini_path));
+            log_fatal("Can't load/parse ini file: %s",
+                      utstring_body(obazl_ini_path));
             exit(EXIT_FAILURE);
         }
         if (ini_error) {
