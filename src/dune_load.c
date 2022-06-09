@@ -36,6 +36,20 @@ void _indent(int i)
         printf("    ");
 }
 
+s7_pointer assoc;
+
+s7_pointer _load_assoc()
+{
+    assoc = s7_name_to_value(s7, "assoc");
+    if (assoc == s7_undefined(s7)) {
+        log_error("unbound symbol: assoc");
+        log_info("*load-path*: %s", TO_STR(s7_load_path(s7)));
+        s7_error(s7, s7_make_symbol(s7, "unbound-symbol"),
+                 s7_list(s7, 1, s7_make_string(s7, "assoc")));
+    }
+    return assoc;
+}
+
 UT_string *dunefile_name;
 
 LOCAL s7_pointer _read_dunefile(char *path) //, char *fname)
@@ -246,8 +260,7 @@ LOCAL void _update_pkg_files(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
     } else {
         s7_pointer files_kw = s7_make_keyword(s7, "files");
 
-        s7_pointer assoc = s7_name_to_value(s7, "assoc");
-
+        s7_pointer assoc = _load_assoc();
         s7_pointer files_list
             = s7_call(s7, assoc, s7_list(s7, 2, files_kw, pkg_alist));
         if (debug)
@@ -290,7 +303,21 @@ LOCAL void _update_pkg_files(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
                        s7_object_to_c_string(s7, new_files_list));
 
             s7_pointer sort = s7_name_to_value(s7, "sort!");
+            if (assoc == s7_undefined(s7)) {
+                log_error("unbound symbol: sort!");
+                log_info("*load-path*: %s", TO_STR(s7_load_path(s7)));
+                s7_error(s7, s7_make_symbol(s7, "unbound-symbol"),
+                         s7_list(s7, 1, s7_make_string(s7, "sort!")));
+            }
+
             s7_pointer lt = s7_name_to_value(s7, "string<?");
+            if (assoc == s7_undefined(s7)) {
+                log_error("unbound symbol: string<?");
+                log_info("*load-path*: %s", TO_STR(s7_load_path(s7)));
+                s7_error(s7, s7_make_symbol(s7, "unbound-symbol"),
+                         s7_list(s7, 1, s7_make_string(s7, "string<?")));
+            }
+
             s7_pointer sorted
                 = s7_call(s7, sort, s7_list(s7, 2,
                                             new_files_list,
@@ -340,7 +367,7 @@ LOCAL void _update_pkg_script_files(s7_pointer pkg_tbl,
     } else {
         s7_pointer scripts_kw = s7_make_keyword(s7, "scripts");
 
-        s7_pointer assoc = s7_name_to_value(s7, "assoc");
+        s7_pointer assoc = _load_assoc();
 
         s7_pointer scripts_list
             = s7_call(s7, assoc, s7_list(s7, 2, scripts_kw, pkg_alist));
@@ -427,7 +454,7 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
         s7_pointer modules_kw = s7_make_keyword(s7, "modules");
         s7_pointer srcs_kw    = s7_make_keyword(s7, "srcs");
 
-        s7_pointer assoc = s7_name_to_value(s7, "assoc");
+        s7_pointer assoc = _load_assoc();
         s7_pointer modules_alist
             = s7_call(s7, assoc, s7_list(s7, 2, modules_kw, pkg_alist));
         if (debug)
@@ -772,7 +799,14 @@ LOCAL void _handle_dune_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
 
     /* we added (:stanzas ()) when we processed the dir */
     /* now replace it */
-    s7_pointer assoc = s7_name_to_value(s7, "assoc");
+    s7_pointer assoc = _load_assoc();
+    if (assoc == s7_undefined(s7)) {
+        log_error("unbound symbol: assoc");
+        log_info("*load-path*: %s", TO_STR(s7_load_path(s7)));
+        s7_error(s7, s7_make_symbol(s7, "unbound-symbol"),
+                 s7_list(s7, 1, s7_make_string(s7, "assoc")));
+    }
+
     s7_pointer stanzas_alist =
         s7_call(s7, assoc, s7_list(s7, 2,
                                    //FIXME: make such kws global consts
