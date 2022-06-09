@@ -326,19 +326,22 @@ LOCAL void _config_xdg_home_load_path(void)
 
     /* start with lib/libc_s7.o, oibl dlopens it */
 
-    utstring_printf(xdg_script_dir,
-                    "%s/.local/share/libs7/lib",
-                    xdg_data_home);
-    rc = access(utstring_body(xdg_script_dir), R_OK);
-    if (rc) {
-        if (verbose || debug)
-            log_info("Not found: %s.", utstring_body(xdg_script_dir));
-    } else {
-        if (verbose)
-            log_debug("adding to *load-path*: %s",
-                      utstring_body(xdg_script_dir));
-        s7_add_to_load_path(s7, utstring_body(xdg_script_dir));
-    }
+    // instead of adding another dir with only one file to the load-path,
+    // we store libc_s7.o in .local/share/libs7, which is already on the path
+
+    /* utstring_printf(xdg_script_dir, */
+    /*                 "%s/.local/share/libs7/lib", */
+    /*                 xdg_data_home); */
+    /* rc = access(utstring_body(xdg_script_dir), R_OK); */
+    /* if (rc) { */
+    /*     if (verbose || debug) */
+    /*         log_info("Not found: %s.", utstring_body(xdg_script_dir)); */
+    /* } else { */
+    /*     if (verbose) */
+    /*         log_debug("adding to *load-path*: %s", */
+    /*                   utstring_body(xdg_script_dir)); */
+    /*     s7_add_to_load_path(s7, utstring_body(xdg_script_dir)); */
+    /* } */
 
     utstring_renew(xdg_script_dir);
     utstring_printf(xdg_script_dir,
