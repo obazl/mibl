@@ -1,8 +1,10 @@
-(load "opam.scm")
-(load "string.scm")
-(load "srfi.scm")
-(load "utils.scm")
-(require pp.scm)
+(display "dune/dune_stanza_fields.scm loading ...") (newline)
+
+;; (load "opam.scm")
+;; (load "string.scm")
+;; (load "srfi.scm")
+;; (load "utils.scm")
+;; (require pp.scm)
 
 ;;fld: (name tezos_sapling)
 ;; FIXME: remove
@@ -325,3 +327,5 @@
                                  (remove :item :standard lib-flags)
                                  lib-flags)))))))
       #f))
+
+(display "loaded dune/dune_stanza_fields.scm") (newline)

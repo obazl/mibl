@@ -1,9 +1,8 @@
-(format #t "Loading oibl: dune/dune_ingest.scm\n")
+(display "dune/dune_ingest.scm loading...") (newline)
 
-(load "alist.scm")
-(load "dune.scm")
-(load "dune_stanzas.scm")
-(load "utils.scm")
+;; (load "alist.scm")
+;; (load "dune_stanzas.scm")
+;; (load "utils.scm")
 
 ;; data structures
 
@@ -378,3 +377,5 @@
            )))
          ;; (fold-dirtree fold->srcfiles dir))
        dirs)))
+
+(display "loaded dune/dune_ingest.scm") (newline)

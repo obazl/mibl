@@ -1,8 +1,10 @@
-(load "dune_stanza_executable.scm")
-(load "dune_stanza_library.scm")
-(load "dune_stanza_rule.scm")
-(load "resolve_fs_refs.scm")
-(load "utils.scm")
+(display "dune/dune_stanzas.scm loading ...") (newline)
+
+;; (load "dune_stanza_executable.scm")
+;; (load "dune_stanza_library.scm")
+;; (load "dune_stanza_rule.scm")
+;; (load "resolve_fs_refs.scm")
+;; (load "utils.scm")
 
 (define (normalize-dune-stanza pkg-path
                                ;;dune-project-stanzas
@@ -557,3 +559,5 @@
   ;; (display (format #f "normalize-stanza-tests: ~A" stanza)) (newline)
   (normalize-stanza-executables :tests
                                 pkg-path ocaml-srcs stanza))
+
+(display "loaded dune/dune_stanzas.scm") (newline)

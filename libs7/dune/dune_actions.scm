@@ -1,5 +1,4 @@
-(format #t "Loading oibl: dune/dune_actions.scm\n")
-
+(display "dune/dune_actions.scm loading...") (newline)
 ;; https://dune.readthedocs.io/en/stable/concepts.html?highlight=progn#user-actions
 
 ;; available actions:
@@ -1777,3 +1776,5 @@
       (else
        (format #t "UNHANDLED ACTION\n")
        stanza))))
+
+(display "loaded dune/dune_actions.scm") (newline)

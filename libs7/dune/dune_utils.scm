@@ -1,8 +1,8 @@
-(format #t "Loading oibl: dune/dune.scm\n")
+(display "dune/dune_utils.scm") (newline)
 
-(load "alist.scm")
-(load "dune_normalize.scm")
-(load "srfi.scm")
+;; (load "alist.scm")
+;; (load "dune_normalize.scm")
+;; (load "srfi.scm")
 
 ;; dune-alist:
 ;;     ((:nss nss-alist) ...)
@@ -370,4 +370,4 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
+(display "loaded dune/dune_utils.scm") (newline)

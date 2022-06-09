@@ -1,4 +1,5 @@
-;; lookup_tables.scm
+(display "dune/lookup_tables.scm loading ...") (newline)
+
 
 ;; (define opam-bin-dir (string-right-trim " \n" (system "opam var bin" #t)))
 
@@ -473,3 +474,4 @@
      ;;  (cons :modules (list (car modules)))
      ;; (else (cons :modules modules)))))
 
+(display "loaded dune/lookup_tables.scm") (newline)

@@ -1,3 +1,4 @@
+(display "dune/dune_stanza_executable.scm loading ...") (newline)
 
 (define (normalize-executable typ ;; :executable || :test
                               pkg-path privname pubname
@@ -354,3 +355,4 @@
                )
              (cdr privnames)))))
 
+(display "loaded dune/dune_stanza_executable.scm") (newline)

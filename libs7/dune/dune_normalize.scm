@@ -1,4 +1,4 @@
-(format #t "Loading oibl: dune/dune_normalize.scm\n")
+(display "dune/dune_normalize.scm loading ...") (newline)
 
 (define (normalize-stanzas pkg-path
                            ;; dune-project-stanzas
@@ -160,3 +160,5 @@
                       pkg-tbl)))
   ;; return updated pkg table
     pkg-tbl))
+
+(display "loaded dune/dune_normalize.scm") (newline)

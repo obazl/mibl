@@ -1,4 +1,4 @@
-(load "dune_actions.scm")
+(display "dune/dune_stanza_rule.scm loading ...") (newline)
 
 (define (rule->ocaml-outfile-names stanza)
   ;; (format #t "rule->ocaml-outfile-names: ~A\n" stanza)
@@ -309,3 +309,4 @@
 ;;                      (cdr stanza))))
 ;;     (cons 'rule (list result))))
 
+(display "loaded dune/dune_stanza_rule.scm") (newline)
