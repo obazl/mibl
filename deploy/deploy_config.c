@@ -585,10 +585,16 @@ LOCAL void _copy_file(char *src, char *dst)
 
     static UT_string *outpath;
     utstring_renew(outpath);
-    if (strncmp(basename(src), "repl", 4) == 0)
-        utstring_printf(outpath, "%s/oibl", dst);
-    else
+    if (strncmp(basename(src), "repl", 4) == 0) {
+        char *bn = basename(src);
+        if (strlen(bn) == 4) {
+            utstring_printf(outpath, "%s/oibl", dst);
+        } else {
+            utstring_printf(outpath, "%s/%s", dst, basename(src));
+        }
+    } else {
         utstring_printf(outpath, "%s/%s", dst, basename(src));
+    }
     /* log_debug("opening for write: %s", utstring_body(outpath)); */
 
     errno = 0;
@@ -621,8 +627,11 @@ LOCAL void _copy_file(char *src, char *dst)
     fclose(outFp);
 
     if (strncmp(basename(src), "repl", 4) == 0) {
-        if (trace)
-            log_debug("setting permissions on %s", utstring_body(outpath));
-        chmod(utstring_body(outpath), S_IRWXU | S_IRGRP | S_IXGRP);
+        char *bn = basename(src);
+        if (strlen(bn) == 4) {
+            if (trace)
+                log_debug("setting permissions on %s", utstring_body(outpath));
+            chmod(utstring_body(outpath), S_IRWXU | S_IRGRP | S_IXGRP);
+        }
     }
 }

@@ -29,7 +29,7 @@
 
 #include "s7_config.h"
 
-char *callback_script_file = "dune.scm"; // passed in 'data' attrib
+/* char *callback_script_file = "dune.scm"; // passed in 'data' attrib */
 char *callback = "camlark_handler"; /* fn in callback_script_file  */
 
 #if INTERFACE
@@ -96,7 +96,7 @@ s7_pointer s7_error_handler(s7_scheme *sc, s7_pointer args)
 /*     return opam_dirs; */
 /* } */
 
-LOCAL void _config_libs7_load_path(char *scriptfile, UT_string *manifest)
+LOCAL void _config_libs7_load_path(/*char *scriptfile,*/ UT_string *manifest)
 {
     if (verbose)
         log_info("Configuring for `bazel run`");
@@ -344,21 +344,6 @@ LOCAL void _config_xdg_home_load_path(void)
     /* } */
 
     utstring_renew(xdg_script_dir);
-    utstring_printf(xdg_script_dir,
-                    "%s/.local/share/libs7",
-                    xdg_data_home);
-    rc = access(utstring_body(xdg_script_dir), R_OK);
-    if (rc) {
-        if (verbose || debug)
-            log_info("Not found: %s.", utstring_body(xdg_script_dir));
-    } else {
-        if (verbose)
-            log_debug("adding to *load-path*: %s",
-                      utstring_body(xdg_script_dir));
-        s7_add_to_load_path(s7, utstring_body(xdg_script_dir));
-    }
-
-    utstring_renew(xdg_script_dir);
     utstring_printf(xdg_script_dir, "%s/%s",
                     xdg_data_home, ".local/share/libs7/s7");
     rc = access(utstring_body(xdg_script_dir), R_OK);
@@ -374,7 +359,7 @@ LOCAL void _config_xdg_home_load_path(void)
 
     utstring_renew(xdg_script_dir);
     utstring_printf(xdg_script_dir, "%s/%s",
-                    xdg_data_home, ".local/share/libs7/oibl");
+                    xdg_data_home, ".local/share/libs7/dune");
     rc = access(utstring_body(xdg_script_dir), R_OK);
     if (rc) {
         if (verbose || debug)
@@ -383,6 +368,48 @@ LOCAL void _config_xdg_home_load_path(void)
         if (verbose)
             log_debug("adding to *load-path*: %s",
                      utstring_body(xdg_script_dir));
+        s7_add_to_load_path(s7, utstring_body(xdg_script_dir));
+    }
+
+    utstring_renew(xdg_script_dir);
+    utstring_printf(xdg_script_dir, "%s/%s",
+                    xdg_data_home, ".local/share/libs7/meta");
+    rc = access(utstring_body(xdg_script_dir), R_OK);
+    if (rc) {
+        if (verbose || debug)
+            log_info("Not found: %s.", utstring_body(xdg_script_dir));
+    } else {
+        if (verbose)
+            log_debug("adding to *load-path*: %s",
+                     utstring_body(xdg_script_dir));
+        s7_add_to_load_path(s7, utstring_body(xdg_script_dir));
+    }
+
+    utstring_renew(xdg_script_dir);
+    utstring_printf(xdg_script_dir, "%s/%s",
+                    xdg_data_home, ".local/share/libs7/opam");
+    rc = access(utstring_body(xdg_script_dir), R_OK);
+    if (rc) {
+        if (verbose || debug)
+            log_info("Not found: %s.", utstring_body(xdg_script_dir));
+    } else {
+        if (verbose)
+            log_debug("adding to *load-path*: %s",
+                     utstring_body(xdg_script_dir));
+        s7_add_to_load_path(s7, utstring_body(xdg_script_dir));
+    }
+
+    utstring_renew(xdg_script_dir);
+    utstring_printf(xdg_script_dir, "%s/.local/share/libs7",
+                    xdg_data_home);
+    rc = access(utstring_body(xdg_script_dir), R_OK);
+    if (rc) {
+        if (verbose || debug)
+            log_info("Not found: %s.", utstring_body(xdg_script_dir));
+    } else {
+        if (verbose)
+            log_debug("adding to *load-path*: %s",
+                      utstring_body(xdg_script_dir));
         s7_add_to_load_path(s7, utstring_body(xdg_script_dir));
     }
 }
@@ -427,7 +454,7 @@ LOCAL void _config_xdg_sys_load_path(void)
 
 }
 
-EXPORT void set_load_path(char *scriptfile)
+EXPORT void set_load_path(void) // char *scriptfile)
 {
     /* char *_wd = getcwd(NULL, 0); */
 
@@ -457,7 +484,7 @@ bazel run is similar, but not identical, to directly invoking the binary built b
             log_info("Configuring for non-bazel run");
         _config_xdg_home_load_path();
     } else {
-        _config_libs7_load_path(scriptfile, manifest);
+        _config_libs7_load_path(/*scriptfile,*/ manifest);
     }
     _config_user_load_path();
     _config_project_load_path();
@@ -497,9 +524,9 @@ EXPORT void s7_initialize(void)
                                  /* DUNE_LOAD_FORMAL_PARAMS, */
                             DUNE_LOAD_HELP);
 
-    set_load_path(callback_script_file);
-    s7_load(s7, "dune.scm");
-    s7_load(s7, "alist.scm");
+    set_load_path(); //callback_script_file);
+    /* s7_load(s7, "dune.scm"); */
+    /* s7_load(s7, "alist.scm"); */
 }
 
 EXPORT void s7_shutdown(s7_scheme *s7)
