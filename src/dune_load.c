@@ -37,14 +37,14 @@ void _indent(int i)
 
 UT_string *dunefile_name;
 
-LOCAL s7_pointer _read_dunefile(char *path, char *fname)
+LOCAL s7_pointer _read_dunefile(char *path) //, char *fname)
 {
     if (debug)
-        log_debug("_read_dunefile %s/%s", path, fname);
+        log_debug("_read_dunefile %s", path); //, fname);
 
     /* read dunefile */
     utstring_renew(dunefile_name);
-    utstring_printf(dunefile_name, "%s/%s", path, fname);
+    utstring_printf(dunefile_name, "%s", path); //, fname);
     /* log_debug("reading dunefile: %s", utstring_body(dunefile_name)); */
 
     s7_pointer port = s7_open_input_file(s7,
@@ -108,7 +108,11 @@ LOCAL s7_pointer _read_dunefile(char *path, char *fname)
 
             s7_pointer inc_file = s7_cadr(stanza);
             log_debug("    including %s", TO_STR(inc_file));
-            s7_pointer nested = _read_dunefile(path, TO_STR(inc_file));
+            UT_string *dunepath;
+            utstring_new(dunepath);
+            utstring_printf(dunepath, "%s/%s", path, TO_STR(inc_file));
+            s7_pointer nested = _read_dunefile(utstring_body(dunepath));
+            /* s7_pointer nested = _read_dunefile(path, TO_STR(inc_file)); */
             log_debug("nested:", TO_STR(nested));
             stanzas = s7_append(s7,stanzas, nested);
             /* alt: (:include "(include dune.inc)" (included ...)) */
@@ -138,6 +142,16 @@ LOCAL void _handle_dir(s7_pointer pkg_tbl, FTS* tree, FTSENT *ftsentry)
     if (debug)
         log_debug("_handle_dir %s", ftsentry->fts_name);
 
+    /* stdout */
+    _indent(ftsentry->fts_level);
+    printf("%d. %s",
+           ftsentry->fts_level,
+           /* ftsentry->fts_name, */
+           ftsentry->fts_path);
+    printf("\n");
+
+    /* create pkg table entry for this dir */
+
     if (ftsentry->fts_name[0] == '.') {
         /* process the "." passed to fts_open, skip any others */
         if (ftsentry->fts_pathlen > 1) {
@@ -155,100 +169,21 @@ LOCAL void _handle_dir(s7_pointer pkg_tbl, FTS* tree, FTSENT *ftsentry)
     /* // fts_accpath is relative to current dir */
     /* printf("DIR accpath %s\n", ftsentry->fts_accpath); */
 
-    static char buf[256];
-    strlcpy(buf, ftsentry->fts_path, 256);
-    strlcat(buf, "/dune", 256);
-    /* printf("checking %s\n", buf); */
-
-    char *s1;
-    if (access(buf, F_OK) == 0) {
-        /* should only happen once per directory */
-        /* in case 'dune' is a directory, access fails */
-
-        /* avoid tuareg dunefiles! */
-        FILE *fileStream;
-        char fileText [100];
-        utstring_renew(dunefile_name);
-        utstring_printf(dunefile_name, "%s/dune", ftsentry->fts_path);
-        fileStream = fopen(utstring_body(dunefile_name), "r");
-        fgets(fileText, 100, fileStream);
-        char *r = strstr(fileText, "tuareg");
-        if (r != NULL) {
-            log_debug("TUAREG! %s/dune", ftsentry->fts_path);
-            fclose(fileStream);
-            /* s7_pointer pkgs = s7_name_to_value(s7, "pkg-tbl"); */
-            s7_pointer key = s7_make_string(s7, ftsentry->fts_path);
-            /* s7_pointer test_assoc = s7_list(s7, 2, */
-            /*                                 s7_make_keyword(s7, "test"), */
-            /*                                 s7_make_symbol(s7, "dummy")); */
-            s7_pointer result =
-                s7_hash_table_set(s7, pkg_tbl, key,
+    s7_pointer key = s7_make_string(s7, ftsentry->fts_path);
+    /* s7_pointer test_assoc = s7_list(s7, 2, */
+    /*                                 s7_make_keyword(s7, "test"), */
+    /*                                 s7_make_symbol(s7, "dummy")); */
+    /* s7_pointer result = s7_hash_table_set(s7, pkg_tbl, key, */
+    /*                                       s7_list(s7, 1, test_assoc)); */
+    s7_pointer result =
+        s7_hash_table_set(s7, pkg_tbl, key,
+                          s7_list(s7, 2,
                                   s7_list(s7, 2,
                                           s7_make_keyword(s7, "pkg-path"),
-                                          key));
-            goto rest;
-        }
-        fclose(fileStream);     /* end tuareg check */
-
-        dunefile_ct++;
-        s7_pointer stanzas = _read_dunefile(ftsentry->fts_path, "dune");
-
-        /* add entry to pkg-tbl */
-        if (debug)
-            log_debug("found dunefile in %s", ftsentry->fts_path);
-
-        /* s7_pointer pkgs = s7_name_to_value(s7, "pkg-tbl"); */
-        s7_pointer key = s7_make_string(s7, ftsentry->fts_path);
-        s7_pointer dune_assoc = s7_cons(s7,
-                                        s7_make_keyword(s7, "stanzas"),
-                                        stanzas);
-
-        s7_pointer result =
-            s7_hash_table_set(s7, pkg_tbl, key,
-                              /* s7_list(s7, 2, */
-                              s7_append(s7,
-                                      s7_list(s7, 1,
-                                              s7_list(s7, 2,
-                                              s7_make_keyword(s7,
-                                                              "pkg-path"),
-                                                      key)
-                                              ),
-                                        s7_list(s7, 1,
-                                                dune_assoc)));
-
-        /* printf("hts res: %s\n", s7_object_to_c_string(s7, result)); */
-    } else {
-        /* no dunefile in dir, make empty :stanzas alist */
-        /* s7_pointer pkgs = s7_name_to_value(s7, "pkg-tbl"); */
-        s7_pointer key = s7_make_string(s7, ftsentry->fts_path);
-        /* s7_pointer test_assoc = s7_list(s7, 2, */
-        /*                                 s7_make_keyword(s7, "test"), */
-        /*                                 s7_make_symbol(s7, "dummy")); */
-        /* s7_pointer result = s7_hash_table_set(s7, pkg_tbl, key, */
-        /*                                       s7_list(s7, 1, test_assoc)); */
-        s7_pointer result =
-            s7_hash_table_set(s7, pkg_tbl, key,
-                              s7_list(s7, 2,
-                                      s7_list(s7, 2,
-                                              s7_make_keyword(s7, "pkg-path"),
-                                              key),
-                                      s7_list(s7, 2,
-                                              s7_make_keyword(s7, "stanzas"),
-                                              s7_nil(s7))));
-    }
- rest:
-    _indent(ftsentry->fts_level);
-    printf("%d. %s",
-           ftsentry->fts_level,
-           /* ftsentry->fts_name, */
-           ftsentry->fts_path);
-    /* FTSENT *p = ftsentry->fts_parent; */
-    /* while (p) { */
-    /*     if (strlen(p->fts_name) > 0) */
-    /*         printf("\\%s", p->fts_name); */
-    /*     p = p->fts_parent; */
-    /* } */
-    printf("\n");
+                                          key),
+                                  s7_list(s7, 2,
+                                          s7_make_keyword(s7, "dune-stanzas"),
+                                          s7_nil(s7))));
 }
 
 static char principal[256];
@@ -758,12 +693,142 @@ LOCAL void _handle_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 
 LOCAL void _handle_dune_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
 {
+    if (debug)
+        log_debug("_handle_dune_file: %s", ftsentry->fts_path);
+
     /* && (ftsentry->fts_namelen = 4) == 0)) { */
     _indent(ftsentry->fts_level);
     printf("%d. " RED "%s ",
            ftsentry->fts_level,
            ftsentry->fts_name);
     printf(CRESET "\n");
+
+    static char buf[256];
+    strlcpy(buf, ftsentry->fts_path, 256);
+    /* strlcat(buf, "/dune", 256); */
+    /* printf("checking %s\n", buf); */
+
+    char *s1;
+    /* avoid tuareg dunefiles! */
+    FILE *fileStream;
+    char fileText [100];
+    utstring_renew(dunefile_name);
+    utstring_printf(dunefile_name, "%s", ftsentry->fts_path);
+    fileStream = fopen(utstring_body(dunefile_name), "r");
+    if (fileStream == NULL) {
+        log_error("FAIL: fopen(%s)", utstring_body(dunefile_name));
+        //FIXME: cleanup
+        exit(EXIT_FAILURE);
+    }
+    fgets(fileText, 100, fileStream);
+    char *r = strstr(fileText, "tuareg");
+    if (r != NULL) {
+        log_debug("TUAREG! %s/dune", ftsentry->fts_path);
+        fclose(fileStream);
+        /* s7_pointer pkgs = s7_name_to_value(s7, "pkg-tbl"); */
+        s7_pointer key = s7_make_string(s7, ftsentry->fts_path);
+        /* s7_pointer test_assoc = s7_list(s7, 2, */
+        /*                                 s7_make_keyword(s7, "test"), */
+        /*                                 s7_make_symbol(s7, "dummy")); */
+        s7_pointer result =
+            s7_hash_table_set(s7, pkg_tbl, key,
+                              s7_list(s7, 2,
+                                      s7_make_keyword(s7, "pkg-path"),
+                                      key));
+        return;
+    }
+    fclose(fileStream);     /* end tuareg check */
+
+    dunefile_ct++;
+
+    s7_pointer stanzas = _read_dunefile(ftsentry->fts_path); //, "dune");
+
+    /* add entry to pkg-tbl */
+    /* if (debug) */
+    /*     log_debug("found dunefile in %s", ftsentry->fts_path); */
+
+    /* if (debug) */
+    /*     log_debug("pkg-tbl: %s", s7_object_to_c_string(s7, pkg_tbl)); */
+
+    s7_pointer key = s7_make_string(s7, dirname(ftsentry->fts_path));
+
+    if (debug)
+        log_debug("pkg key: %s", s7_object_to_c_string(s7, key));
+
+    s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, key);
+    if (debug)
+        log_debug("pkg_alist: %s", s7_object_to_c_string(s7, pkg_alist));
+
+    /* we added (:stanzas ()) when we processed the dir */
+    /* now replace it */
+    s7_pointer assoc = s7_name_to_value(s7, "assoc");
+    s7_pointer stanzas_alist =
+        s7_call(s7, assoc, s7_list(s7, 2,
+                                   //FIXME: make such kws global consts
+                                   s7_make_keyword(s7, "dune-stanzas"),
+                                   pkg_alist));
+    if (debug)
+        log_debug("stanzas_alist: %s", s7_object_to_c_string(s7, stanzas_alist));
+
+    s7_set_cdr(stanzas_alist, stanzas);
+
+    /* s7_pointer dune_assoc = s7_cons(s7, */
+    /*                                 s7_make_keyword(s7, "dune-stanzas"), */
+    /*                                 stanzas); */
+
+    if (debug)
+        log_debug("updated pkg-tbl: %s", s7_object_to_c_string(s7, pkg_tbl));
+
+    /* s7_pointer result = */
+    /*     s7_hash_table_set(s7, pkg_tbl, key, */
+    /*                       /\* s7_list(s7, 2, *\/ */
+    /*                       s7_append(s7, */
+    /*                                 pkg_alist, */
+    /*                                 s7_list(s7, 1, */
+    /*                                         dune_assoc))); */
+}
+
+LOCAL void _handle_dune_project_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
+{
+    if (debug)
+        log_debug("_handle_dune_project_file: %s", ftsentry->fts_path);
+
+    _indent(ftsentry->fts_level);
+    printf("%d. " RED "%s ",
+           ftsentry->fts_level,
+           ftsentry->fts_name);
+    printf(CRESET "\n");
+
+    static char buf[256];
+    strlcpy(buf, ftsentry->fts_path, 256);
+
+    char *s1;
+
+    s7_pointer stanzas = _read_dunefile(ftsentry->fts_path);
+
+    s7_pointer key = s7_make_string(s7, dirname(ftsentry->fts_path));
+    if (debug)
+        log_debug("pkg key: %s", s7_object_to_c_string(s7, key));
+
+    s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, key);
+    if (debug)
+        log_debug("pkg_alist: %s", s7_object_to_c_string(s7, pkg_alist));
+
+    s7_pointer dune_project_assoc = s7_cons(s7,
+                                    s7_make_keyword(s7, "dune-project"),
+                                    stanzas);
+
+    s7_pointer result =
+        s7_hash_table_set(s7, pkg_tbl, key,
+                          /* s7_list(s7, 2, */
+                          s7_append(s7, pkg_alist,
+                                    s7_list(s7, 1,
+                                            dune_project_assoc)));
+
+    if (debug)
+        log_debug("updated pkg-tbl: %s", s7_object_to_c_string(s7, pkg_tbl));
+
+    /* return pkg_tbl; */
 }
 
 LOCAL void _handle_opam_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
@@ -954,7 +1019,8 @@ EXPORT s7_pointer dune_load(char *root, char *path)
     if (NULL != tree) {
         while( (ftsentry = fts_read(tree)) != NULL) {
             if (debug) {
-                log_debug("ftsentry: %s", ftsentry->fts_name);
+                log_debug("ftsentry: %s, type: %d",
+                          ftsentry->fts_name, ftsentry->fts_info);
             }
             switch (ftsentry->fts_info)
                 {
@@ -972,6 +1038,11 @@ EXPORT s7_pointer dune_load(char *root, char *path)
                 case FTS_F : // regular file
                     file_ct++;
                     /* _handle_regular_file(ftsentry); */
+                    if (strncmp(ftsentry->fts_name, "dune-project", 12)
+                        == 0) {
+                        _handle_dune_project_file(pkg_tbl, ftsentry);
+                        break;
+                    }
                     if (strncmp(ftsentry->fts_name, "dune", 4) == 0) {
                         _handle_dune_file(pkg_tbl, ftsentry);
                         break;
