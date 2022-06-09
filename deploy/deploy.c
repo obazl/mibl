@@ -38,9 +38,9 @@ void print_usage(void)
 
 int main(int argc, char **argv)
 {
-    printf("deploy\n");
+    /* printf("deploy\n"); */
     int opt;
-    while ((opt = getopt(argc, argv, "hdvV")) != -1) {
+    while ((opt = getopt(argc, argv, "hdtvV")) != -1) {
         switch (opt) {
         case 'd':
             debug = true;
@@ -48,6 +48,9 @@ int main(int argc, char **argv)
         case 'h':
             print_usage();
             exit(EXIT_SUCCESS);
+            break;
+        case 't':
+            trace =true;
             break;
         case 'v':
             verbose =true;

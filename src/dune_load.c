@@ -470,8 +470,7 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
                                char *pkg_name, char *mname,
                                char *fname, int ftype)
 {
-    /* s7_pointer pkg_tbl = s7_name_to_value(s7, "pkg-tbl"); */
-    if (debug)
+    /* if (debug) */
         log_debug("pkg_tbl: %s", s7_object_to_c_string(s7, pkg_tbl));
 
     s7_pointer pkg_kw = s7_make_string(s7, pkg_name);
@@ -586,6 +585,9 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
                                               s7_list(s7, 2,
                                                       keypath,
                                                       pkg_alist));
+            if (debug) {
+                log_debug("module_alist: %s", TO_STR(module_alist));
+            }
             if (module_alist == s7_f(s7)) {
                 /* new */
                 if (debug)

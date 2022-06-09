@@ -96,11 +96,7 @@ s7_pointer s7_error_handler(s7_scheme *sc, s7_pointer args)
 /*     return opam_dirs; */
 /* } */
 
-/*
-  sets bazel_script_dir to dir containing scriptfile, which must be
-  passed in 'data' attrib of cc_binary rule
- */
-LOCAL void _config_bazel_load_path(char *scriptfile, UT_string *manifest)
+LOCAL void _config_libs7_load_path(char *scriptfile, UT_string *manifest)
 {
     if (verbose)
         log_info("Configuring for `bazel run`");
@@ -184,6 +180,20 @@ LOCAL void _config_bazel_load_path(char *scriptfile, UT_string *manifest)
             token = strtok(NULL, sep);
         } else {
             /* log_debug("skipping entry"); */
+            continue;
+        }
+
+        if ( (strncmp(basename(token),
+                      "libc_s7.so", 10) == 0) ) {
+            if (trace)
+                log_info("FOUND LIBC_S7.SO: %s", token);
+
+            tmp_load_path =
+                s7_append(s7, tmp_load_path,
+                          s7_list(s7, 1,
+                                  s7_make_string(s7,
+                                                 dirname(token))));
+
             continue;
         }
 
@@ -444,7 +454,7 @@ bazel run is similar, but not identical, to directly invoking the binary built b
             log_info("Configuring for non-bazel run");
         _config_xdg_home_load_path();
     } else {
-        _config_bazel_load_path(scriptfile, manifest);
+        _config_libs7_load_path(scriptfile, manifest);
     }
     _config_user_load_path();
     _config_project_load_path();

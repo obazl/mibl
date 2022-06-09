@@ -47,12 +47,12 @@ int main(int argc, char *argv[])
     //TODO: cli args for root and path
     char *rootdir;
     char *pathdir;
-    rootdir = "obazl/oibl";
+    /* rootdir = "obazl/oibl"; */
 
     /* pathdir = "test/baddot"; */
     /* pathdir = "test/includes/mwe"; */
     /* pathdir = "test/filetypes"; */
-    pathdir = "test/mwe";
+    /* pathdir = "test/mwe"; */
 
     /* pathdir = "test/tezos/lib_clic"; */
     /* pathdir = "test/tezos/lib_requester"; */
@@ -66,7 +66,9 @@ int main(int argc, char *argv[])
     /* pathdir = "test/mina/ocaml-sodium"; */
 
     /* **************** */
-    /* rootdir = "tweag/tezos"; */
+    rootdir = "tweag/tezos";
+    /* pathdir = "src/bin_node"; */
+    pathdir = "src/lib_stdlib_unix";
     /* pathdir = "src/proto_alpha"; */
     /* pathdir = "src/lib_protocol_environment"; */
 
