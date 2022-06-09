@@ -405,13 +405,17 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
                                char *pkg_name, char *mname,
                                char *fname, int ftype)
 {
+    if (trace)
+        log_trace("_UPDATE_PKG_MODULES");
     /* if (debug) */
         log_debug("pkg_tbl: %s", s7_object_to_c_string(s7, pkg_tbl));
 
     s7_pointer pkg_kw = s7_make_string(s7, pkg_name);
+    if (debug)
+        log_debug("pkg_kw: %s", TO_STR(pkg_kw));
     s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_kw);
     if (debug)
-        log_debug("pkg_alist: %s", s7_object_to_c_string(s7, pkg_alist));
+        log_debug("pkg_alist: %s", TO_STR(pkg_alist));
 
     if (pkg_alist == s7_f(s7)) {
         if (debug)
@@ -500,42 +504,48 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
         } else {
             if (debug) {
                 log_debug("updating :modules");
-                /* log_debug("srcs_alist: %s", */
-                /*        s7_object_to_c_string(s7, srcs_alist)); */
-                log_debug("modules_alist: %s",
-                       s7_object_to_c_string(s7, modules_alist));
-                log_debug("mname_sym: %s", s7_object_to_c_string(s7, mname_sym));
+                log_debug("modules_alist: %s", TO_STR(modules_alist));
+                log_debug("mname_sym: %s", TO_STR(mname_sym));
             }
 
             s7_pointer assoc_in = s7_name_to_value(s7, "assoc-in");
+            if (assoc_in == s7_undefined(s7)) {
+                log_error("unbound symbol: assoc-in");
+                log_info("*load-path*: %s", TO_STR(s7_load_path(s7)));
+                s7_error(s7, s7_make_symbol(s7, "unbound-symbol"),
+                         s7_list(s7, 1, s7_make_string(s7, "assoc-in")));
+            }
+
             s7_pointer keypath = s7_list(s7, 2,
                                          /* srcs_kw, */
                                          modules_kw,
                                          mname_sym);
             if (debug) {
-                log_debug("keypath: %s",
-                   s7_object_to_c_string(s7, keypath));
+                log_debug("assoc-in: %s", TO_STR(assoc_in));
+                log_debug("keypath: %s", TO_STR(keypath));
+                log_debug("pkg_alist: %s", TO_STR(pkg_alist));
             }
+
             s7_pointer module_alist = s7_call(s7, assoc_in,
                                               s7_list(s7, 2,
                                                       keypath,
                                                       pkg_alist));
+
             if (debug) {
                 log_debug("module_alist: %s", TO_STR(module_alist));
             }
             if (module_alist == s7_f(s7)) {
                 /* new */
                 if (debug)
-                    log_debug("New module at %s",
-                              s7_object_to_c_string(s7, keypath));
-                keypath = s7_list(s7, 1,
-                                  /* srcs_kw, */
+                    log_debug("New module at %s", TO_STR(mname_sym));
+                s7_pointer keypath = s7_list(s7, 1,
                                   modules_kw);
                 if (debug)
                     log_debug("trying keypath: %s",
                               s7_object_to_c_string(s7, keypath));
-                s7_pointer modules_alist =
-                    s7_call(s7, assoc_in, s7_list(s7, 2, keypath, pkg_alist));
+                /* s7_pointer modules_alist = */
+                /*     s7_call(s7, assoc_in, */
+                /*             s7_list(s7, 2, keypath, pkg_alist)); */
                 if (debug)
                     log_debug("modules_alist: %s",
                            s7_object_to_c_string(s7, modules_alist));
@@ -959,6 +969,7 @@ EXPORT s7_pointer g_dune_load(s7_scheme *s7,  s7_pointer args)
         /* strlcpy(rootdir, s, 256); */
         /* rootdir = "test"; */
     }
+    s7_load(s7, "dune.scm");
     s7_pointer pkgs = dune_load(rootdir, pathdir);
     /* printf("g_dune_load done\n"); */
     /* printf("cwd: %s\n", getcwd(NULL, 0)); */
