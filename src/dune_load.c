@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -949,6 +950,12 @@ EXPORT s7_pointer g_dune_load(s7_scheme *s7,  s7_pointer args)
             pathdir = s7_string(s7_car(args));
             if (pathdir[0] == '/') {
                 log_error("Path arg must be relative");
+                return s7_nil(s7);
+            }
+            struct stat path_stat;
+            stat(pathdir, &path_stat);
+            if ( !S_ISDIR(path_stat.st_mode) ) {
+                log_error("Path arg must be a directory: %s", pathdir);
                 return s7_nil(s7);
             }
             rootdir = getcwd(NULL,0);
