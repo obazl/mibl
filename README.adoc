@@ -26,7 +26,11 @@ git_repository(
 
 NOTE: Once `mibl` is officially released this should be replaced with an `http_archive` rule.
 
-Then:
+There are two ways to run `mibl`: with or without Bazel.
+
+== Running mibl in a Bazel environment
+
+From within a Bazel project:
 
 [source,shell]
 ----
@@ -68,4 +72,38 @@ the `src/foo` and `test/bar` directories of that project (i.e.
 Finally, running without any args - `(dune-load)` - will crawl the
 tree rooted at the current directory.
 
+== Running mibl as a standalone executable
 
+You can install `mibl` in your local system by running:
+
+[source,shelll]
+----
+$ bazel run @mibl//deploy
+----
+
+Installation follows the link:[XDG] standard:
+
+* the `mibl` executable will go in `$HOME/.local/bin`; put this in your `$PATH`.
+* `mibl` dynamically loads (`dlopen`) file `libc_s7.so`; this will be
+  installed in `$XDG_DATA_HOME/mibl`. By default, `XDG_DATA_HOME` =
+  `$HOME/.local/share`.
+* Scheme script files used by `mibl` will be installed in `$XDG_DATA_HOME/mibl`.
+
+The `*load-path* of `mibl` will be configured to include:
+
+* `.`  (current directory)
+* `$PWD/.mibl`
+* `$HOME/.mibl`
+* `$XDG_DATA_HOME/.local/share/mibl`
+* `$XDG_DATA_HOME/.local/share/mibl/s7`
+
+Then run `$ mibl` to launch the repl.
+
+== Configuring mibl
+
+At launch, `mibl` will try to read the first config file if finds by searching:
+
+* `$PWD/.config/miblrc`
+* `$HOME/.config/miblrc`
+
+TODO: miblrc docs

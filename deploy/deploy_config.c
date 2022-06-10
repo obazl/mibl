@@ -32,7 +32,7 @@
 #include "mibl_config.h"
 #include "fs.h"
 
-UT_string *xdg_home_install_root; // $HOME/.local/share/libs7
+UT_string *xdg_home_install_root; // $HOME/.local/share/mibl
 UT_string *xdg_install_dir;
 UT_string *xdg_home_bin;
 
@@ -129,7 +129,7 @@ LOCAL void _deploy_scm_files(UT_string *manifest)
     if (debug)
         log_debug("Reading MANIFEST");
 
-    char *mibl_libs7 = NULL;
+    char *mibl_mibl = NULL;
 
     while ((read_ct = getline(&line, &len, fp)) != -1) {
         /* log_debug("Retrieved line of length %zu:", read_ct); */
@@ -140,8 +140,8 @@ LOCAL void _deploy_scm_files(UT_string *manifest)
         /* two tokens per line, first is path relative to exec dir,
            second is corresponding absolute path */
 
-        /* 1st token: get xdg subdir by removing pre __main__/libs7 or
-           libs7*/
+        /* 1st token: get xdg subdir by removing pre __main__/mibl or
+           mibl*/
 
         /* 2nd token: file to copy to xdg */
 
@@ -188,12 +188,12 @@ LOCAL void _deploy_scm_files(UT_string *manifest)
                 /*
                   if mibl is imported as an external repo we get
                   lines like:
-                  __main__/external/mibl/libs7/mibl/dune.scm
-                  __main__/external/mibl/libs7/mibl/dune_actions.scm
+                  __main__/external/mibl/mibl/mibl/dune.scm
+                  __main__/external/mibl/mibl/mibl/dune_actions.scm
 
                   otherwise, in dev mode (launch from projroot) we get:
-                  __main__/libs7/mibl.scm
-                  __main__/libs7/mibl/dune_actions.scm
+                  __main__/mibl/mibl.scm
+                  __main__/mibl/mibl/dune_actions.scm
 
                   EXCEPT: sometimes we don't get __main__. No idea
                   what controls.
@@ -202,7 +202,7 @@ LOCAL void _deploy_scm_files(UT_string *manifest)
                 const char *pfx;
                 int pfx_len;
                 if (dev_mode) {
-                    pfx = "mibl/libs7/";
+                    pfx = "mibl/mibl/";
                     pfx_len = 11;
                     if (strncmp(dest, pfx, pfx_len) == 0) {
                         if (strlen(dirname(dest)) == pfx_len - 1) {
@@ -230,7 +230,7 @@ LOCAL void _deploy_scm_files(UT_string *manifest)
                     }
                 } else {
                     /* external mode */
-                    pfx = "__main__/external/mibl/libs7/";
+                    pfx = "__main__/external/mibl/mibl/";
                     pfx_len = 32;
                     if (strncmp(dest, pfx, pfx_len) == 0) {
                         if (strlen(dirname(dest)) == pfx_len - 1) {
@@ -260,95 +260,6 @@ LOCAL void _deploy_scm_files(UT_string *manifest)
                         }
                     }
                 }
-/* #define LIBS7_PFX "libs7/libs7/" */
-/* const int libs7_pfx_len = 12; */
-
-/* #define OIBL_PFX "mibl/libs7/" */
-/* const int mibl_pfx_len = 11; */
-
-/* #define MAIN_PFX "__main__/" */
-/* const int main_pfx_len = 9; */
-
-/*                 if (strncmp(dest, OIBL_PFX, mibl_pfx_len) == 0) { */
-
-/*                     if (strlen(destdir) == mibl_pfx_len - 1) { */
-/*                         /\* log_debug("destdir: %s", destdir); *\/ */
-/*                     } else { */
-/*                         /\* log_debug("destdir: %s", destdir + mibl_pfx_len); *\/ */
-/*                     } */
-/*                 } */
-
-/*                 else if (strncmp(dest, */
-/*                                  MAIN_PFX OIBL_PFX, */
-/*                                  main_pfx_len + mibl_pfx_len) == 0) { */
-/*                     if (strlen(destdir) == main_pfx_len + mibl_pfx_len - 1) { */
-/*                         /\* pfx len includes trailing '/' *\/ */
-/*                         /\* destdir = "."; *\/ */
-/*                         log_debug("destdir: %s", destdir); */
-/*                     } else { */
-/*                         log_debug("destdir: %s", */
-/*                                   destdir + main_pfx_len + mibl_pfx_len); */
-/*                     } */
-/*                 } */
-
-                // libs7
-                // __main__/external/libs7/libs7/alist.scm
-                // __main__/external/libs7/libs7/s7/case.scm
-                // pfx: __main__/external/libs7/libs7/
-                // AND
-                // libs7/libs7/alist.scm
-                // libs7/libs7/s7/case.scm
-                // pfx: libs7/libs7/
-
-                /* else if (strncmp(dest, LIBS7_PFX, libs7_pfx_len) == 0) { */
-                /*     if (strlen(destdir) == libs7_pfx_len - 1) { */
-                /*         /\* pfx len includes trailing '/' *\/ */
-                /*         /\* destdir = "."; *\/ */
-                /*         /\* log_debug("destdir: %s", destdir); *\/ */
-                /*     } else { */
-                /*         /\* log_debug("DESTDIR: %s", destdir + libs7_pfx_len); *\/ */
-                /*     } */
-                /* } */
-                /* else if (strncmp(dest, */
-                /*                  MAIN_PFX LIBS7_PFX, */
-                /*                  main_pfx_len + libs7_pfx_len) == 0) { */
-                /*     if (strlen(destdir) == main_pfx_len + libs7_pfx_len - 1) { */
-                /*         /\* pfx len includes trailing '/' *\/ */
-                /*         destdir = "."; */
-                /*         /\* log_debug("destdir: %s", destdir); *\/ */
-                /*     } else { */
-                /*         /\* log_debug("destdir: %s", *\/ */
-                /*         /\*           destdir + main_pfx_len + libs7_pfx_len); *\/ */
-                /*     } */
-                /* } */
-
-                /* char *scriptdir = dirname(token); */
-                /* /\* log_info("SCRIPTDIR: %s", scriptdir); *\/ */
-
-                /* char *substr = strstr(scriptdir, "dune_ed/scm"); */
-                /* if (substr != NULL) { */
-                /*     /\* log_debug("FOUND dune_ed path: %s, %s", *\/ */
-                /*     /\*           line, scriptdir); *\/ */
-                /*     if (mibl_libs7 == NULL) { */
-                /*         int len = strlen(scriptdir) + 1; */
-                /*         mibl_libs7 = calloc(len, 1); */
-                /*         strlcpy(mibl_libs7, scriptdir, len); */
-                /*     } */
-                /*     continue; */
-                /* } */
-
-                /* sdir = s7_make_string(s7, scriptdir); */
-                /* s7_pointer r = s7_hash_table_ref(s7, load_dirs, sdir); */
-                /* if (r == s7_f(s7)) { */
-                /*     // add to hash to ensure uniqueness */
-                /*     /\* log_debug("adding to hash"); *\/ */
-                /*     s7_hash_table_set(s7, load_dirs, */
-                /*                       sdir, s7_t(s7)); */
-
-                /*     tmp_load_path = s7_append(s7, tmp_load_path, */
-                /*                     s7_list(s7, 1, */
-                /*                             s7_make_string(s7, scriptdir))); */
-                /* } */
             }
         }
     }
@@ -387,11 +298,11 @@ LOCAL void _config_xdg_home_load_paths()
       xdg home bin:
       $XDG_DATA_HOME/.local/bin
       scripts:
-      $XDG_DATA_HOME/libs7/
-      $XDG_DATA_HOME/libs7/dune,
-      $XDG_DATA_HOME/libs7/meta,
-      $XDG_DATA_HOME/libs7/opam,
-      $XDG_DATA_HOME/libs7/s7
+      $XDG_DATA_HOME/mibl/
+      $XDG_DATA_HOME/mibl/dune,
+      $XDG_DATA_HOME/mibl/meta,
+      $XDG_DATA_HOME/mibl/opam,
+      $XDG_DATA_HOME/mibl/s7
     */
 /* https://practical.li/blog/posts/adopt-FreeDesktop.org-XDG-standard-for-configuration-files/ */
 
@@ -413,7 +324,7 @@ LOCAL void _config_xdg_home_load_paths()
     /* xdg_home_install_root is fixed */
     utstring_new(xdg_home_install_root);
     utstring_printf(xdg_home_install_root,
-                    "%s/.local/share/libs7",
+                    "%s/.local/share/mibl",
                     utstring_body(xdg_data_home));
     if (trace)
         log_debug("xdg_home_install_root: %s",
@@ -451,7 +362,7 @@ LOCAL void _config_xdg_home_load_paths()
                      utstring_body(xdg_install_dir));
     }
 
-    /* **** libs7/s7 **** */
+    /* **** mibl/s7 **** */
     /* utstring_renew(xdg_install_dir); */
     /* utstring_printf(xdg_install_dir, "%s", */
     /*                 utstring_body(xdg_home_install_root)); */
@@ -472,7 +383,7 @@ LOCAL void _config_xdg_home_load_paths()
     /* if (rc) { */
     /*     if (verbose || debug) */
     /*         log_info("Creating: %s", utstring_body(xdg_install_dir)); */
-    /*     mkdir_r(utstring_body(xdg_home_install_root), ".local/share/libs7/lib"); */
+    /*     mkdir_r(utstring_body(xdg_home_install_root), ".local/share/mibl/lib"); */
     /* } else { */
     /*     if (verbose) */
     /*         log_debug("FOUND XDG: %s", */
@@ -528,7 +439,7 @@ LOCAL void _config_xdg_sys_load_paths()
 {
     /*
       xdg sys dirs:
-       $XDG_DATA_DIRS/mibl, $XDG_DATA_DIRS/libs7, $XDG_DATA_DIRS/libs7/s7
+       $XDG_DATA_DIRS/mibl, $XDG_DATA_DIRS/mibl, $XDG_DATA_DIRS/mibl/s7
        $XDG_DATA_DIRS default: /usr/local/share
 
        macos:
@@ -546,7 +457,7 @@ LOCAL void _config_xdg_sys_load_paths()
 
     /* utstring_new(xdg_install_dir); */
     /* utstring_printf(xdg_install_dir, */
-    /*                 "%s/libs7/s7", */
+    /*                 "%s/mibl/s7", */
     /*                 xdg_data_dirs); */
     /* rc = access(utstring_body(xdg_install_dir), R_OK); */
     /* if (rc) { */
@@ -561,11 +472,11 @@ LOCAL void _config_xdg_sys_load_paths()
     /* } */
 
     /* utstring_new(xdg_install_dir); */
-    /* utstring_printf(xdg_install_dir, "%s/libs7", xdg_data_dirs); */
+    /* utstring_printf(xdg_install_dir, "%s/mibl", xdg_data_dirs); */
     /* rc = access(utstring_body(xdg_install_dir), R_OK); */
     /* if (rc) { */
     /*     if (verbose || debug) */
-    /*         log_info("Not found: %s/libs7", */
+    /*         log_info("Not found: %s/mibl", */
     /*                  utstring_body(xdg_install_dir)); */
     /* } else { */
     /* } */

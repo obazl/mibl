@@ -25,8 +25,8 @@ cc_binary(
              "@uthash//:include",
              ],
     data = [
-        "//libs7:dune.scm",
-        "//libs7/dune:srcs"
+        "//mibl:dune.scm",
+        "//mibl/dune:srcs"
     ],
     # defines = select({
     #     "//bzl/debug/trace": [], # "DEBUG_TRACE"],

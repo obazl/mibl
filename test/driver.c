@@ -3,6 +3,7 @@
 #include "bazel_config.h"
 #include "mibl_config.h"
 #include "s7_config.h"
+#include "ansi_colors.h"
 #include "dune_load.h"
 
 extern bool debug;
@@ -79,10 +80,9 @@ int main(int argc, char *argv[])
     /* pathdir = "src"; */
     /* pathdir = "src/lib/snarky/src"; */
 
-    dune_load(rootdir, pathdir);
+    s7_pointer pkg_tbl = dune_load(rootdir, pathdir);
 
-    s7_pointer pkg_tbl = s7_name_to_value(s7, "pkg-tbl");
-    printf("pkg_tbl: %s\n", s7_object_to_c_string(s7, pkg_tbl));
+    printf(BGRN "pkg_tbl:" CRESET "\n%s\n", s7_object_to_c_string(s7, pkg_tbl));
 
     /* printf("*load-path*: %s\n", */
     /*        s7_object_to_c_string(s7, */

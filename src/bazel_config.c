@@ -41,8 +41,8 @@ UT_string *runfiles_root;
 UT_string *ws_root;
 /* UT_string *config_obazl; // obazl_d; */
 
-#define LIBS7    "libs7"
-#define LIBS7_S7 LIBS7 "/s7"
+#define MIBL    "mibl"
+#define MIBL_S7 MIBL "/s7"
 #define OIBL   "mibl"
 #define XDG_LOCAL_SHARE ".local/share"
 
@@ -145,21 +145,21 @@ EXPORT void bazel_configure(char *_exec_root)
     if (debug)
         log_debug("LAUNCH DIR: %s", _wd);
 
-    /* project-local .config/libs7rc config file */
+    /* project-local .config/miblrc config file */
     utstring_new(obazl_ini_path);
     utstring_printf(obazl_ini_path, "%s/%s",
-                    utstring_body(ws_root), LIBS7_INI_FILE);
+                    utstring_body(ws_root), MIBL_INI_FILE);
 
     rc = access(utstring_body(obazl_ini_path), R_OK);
     if (rc) {
         if (verbose || debug)
-            log_warn("NOT FOUND: libs7rc config file %s",
+            log_warn("NOT FOUND: miblrc config file %s",
                      utstring_body(obazl_ini_path));
         //FIXME: also look in XDG_CONFIG_HOME
     } else {
         ini_error = false;
         if (verbose || debug)
-            log_warn("FOUND: libs7rc config file %s",
+            log_warn("FOUND: miblrc config file %s",
                      utstring_body(obazl_ini_path));
 
         utarray_new(bazel_config.src_dirs, &ut_str_icd);

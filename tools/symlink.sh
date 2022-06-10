@@ -1,20 +1,22 @@
 #!/bin/sh
 
-mkdir -vp $HOME/.local/share/libs7
-mkdir -vp $HOME/.local/share/libs7/dune
-mkdir -vp $HOME/.local/share/libs7/meta
-mkdir -vp $HOME/.local/share/libs7/opam
-mkdir -vp $HOME/.local/share/libs7/s7
+mkdir -vp $HOME/.local/share/mibl
+mkdir -vp $HOME/.local/share/mibl/dune
+mkdir -vp $HOME/.local/share/mibl/meta
+mkdir -vp $HOME/.local/share/mibl/opam
+mkdir -vp $HOME/.local/share/mibl/s7
 
-ln -sfv $PWD/libs7/*scm $HOME/.local/share/libs7
-ln -sfv $PWD/libs7/dune/*scm $HOME/.local/share/libs7/dune
-ln -sfv $PWD/libs7/meta/*scm $HOME/.local/share/libs7/meta
-ln -sfv $PWD/libs7/opam/*scm $HOME/.local/share/libs7/opam
+echo "Linking scripts"
+ln -sfv $PWD/mibl/*scm $HOME/.local/share/mibl
+ln -sfv $PWD/mibl/dune/*scm $HOME/.local/share/mibl/dune
+ln -sfv $PWD/mibl/meta/*scm $HOME/.local/share/mibl/meta
+ln -sfv $PWD/mibl/opam/*scm $HOME/.local/share/mibl/opam
 
-ln -sfv $HOME/obazl/libs7/libs7/*scm $HOME/.local/share/libs7
-ln -sfv $HOME/obazl/libs7/libs7/s7/*scm $HOME/.local/share/libs7/s7
+ln -sfv $HOME/obazl/mibl/mibl/*scm $HOME/.local/share/mibl
+ln -sfv $HOME/obazl/mibl/mibl/s7/*scm $HOME/.local/share/mibl/s7
 
 ## don't forget the executble and lib
 cp -fv `realpath bazel-bin/repl/repl` $HOME/.local/bin/mibl
 chmod u+rwx $HOME/.local/bin/mibl
-cp -fv `realpath bazel-bin/external/libs7/src/libc_s7.so` $HOME/.local/share/libs7
+
+cp -fv `realpath bazel-bin/external/libs7/src/libc_s7.so` $HOME/.local/share/mibl

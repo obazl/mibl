@@ -38,17 +38,17 @@ char *callback = "camlark_handler"; /* fn in callback_script_file  */
 
 s7_scheme *s7;                  /* GLOBAL s7 */
 
-#define HOME_LIBS7 ".libs7"
+#define HOME_MIBL ".mibl"
 #if INTERFACE
-#define LIBS7_INI_FILE ".config/libs7rc"
+#define MIBL_INI_FILE ".config/miblrc"
 #endif
 
-UT_string *config_libs7;        /* work string */
+UT_string *config_mibl;        /* work string */
 
 int rc;
 
-#define LIBS7    "libs7"
-#define LIBS7_S7 LIBS7 "/s7"
+#define MIBL    "mibl"
+#define MIBL_S7 MIBL "/s7"
 #define OIBL   "mibl"
 
 /* XDG
@@ -82,7 +82,7 @@ UT_string *xdg_data_home;
 /* #define XDG_RUNTIME_DIR */
 
 /* in addition we define a project-local directory for scm scripts */
-#define PROJ_LIBS7 ".libs7"
+#define PROJ_MIBL ".mibl"
 
 /* preference-ordered base directories in addition to XDG_DATA_HOME */
 #define XDG_DATA_DIRS   "/usr/local/share/:/usr/share/"
@@ -94,15 +94,15 @@ UT_string *xdg_data_home;
        run under `bazel run`: dir in runfiles containing callback script
            @camlark//scm/s7, @camlark//scm
        run directly: XDG_DATA_DIRS default: /usr/local/share/:/usr/share/
-           XDG_DATA_DIRS/libs7
-           XDG_DATA_DIRS/libs7/s7
+           XDG_DATA_DIRS/mibl
+           XDG_DATA_DIRS/mibl/s7
    user scripts:
-       ($HOME)/.config/libs7
+       ($HOME)/.config/mibl
        $XDG_DATA_HOME default: $HOME/.local/share
-           XDG_DATA_HOME/libs7
-           XDG_DATA_HOME/libs7/s7
+           XDG_DATA_HOME/mibl
+           XDG_DATA_HOME/mibl/s7
    proj scripts:
-       .config/libs7
+       .mibl
 
  */
 
@@ -147,14 +147,14 @@ LOCAL void _config_s7_load_path_bazel_runfiles(UT_string *manifest)
     size_t len = 0;
     ssize_t read;
 
-    /* put project-local .config/libs7 on load-path if it exits. do
+    /* put project-local .mibl on load-path if it exits. do
        not create it. */
 
     /* utstring_new(codept_args_file); */
-    /* utstring_printf(codept_args_file, "%s/%s", utstring_body(config_libs7), codept_args_filename); */
+    /* utstring_printf(codept_args_file, "%s/%s", utstring_body(config_mibl), codept_args_filename); */
 
     /* utstring_new(codept_deps_file); */
-    /* utstring_printf(codept_deps_file, "%s/%s", utstring_body(config_libs7), codept_deps_filename); */
+    /* utstring_printf(codept_deps_file, "%s/%s", utstring_body(config_mibl), codept_deps_filename); */
 
     /*
       build scripts list their scm srcs in the 'data' attrib, which
@@ -173,23 +173,20 @@ LOCAL void _config_s7_load_path_bazel_runfiles(UT_string *manifest)
     if (debug)
         log_debug("Reading MANIFEST");
 
-    /* char *mibl_libs7 = NULL; */
+    /* char *mibl_mibl = NULL; */
 
     s7_pointer load_dirs = s7_make_hash_table(s7, 5);
     s7_pointer sdir;
 
     /*
-      WARNING: we have to jump thru some hoops to get the order right:
-      "." > dune_ed/scm > libs7/scm > libs7/scm/s7
-
       We we need to get these paths from the MANIFEST since it has
       absolute paths, and we could be running from any dir (when used
       as a tool lib).
 
       We build the path list by following the MANIFEST order for
-      libs7, but not dune_ed since the MANIFEST seems to put that
+      libs7, but not mibl since the MANIFEST seems to put that
       last. So we save the latter when we find it, then when done with
-      the MANIFEST we put the dune_ed/scm on top of the stack. Finally
+      the MANIFEST we put the mibl/scm on top of the stack. Finally
       we append our list to *load-path*, which puts "." on top.
     */
 
@@ -236,14 +233,14 @@ LOCAL void _config_s7_load_path_bazel_runfiles(UT_string *manifest)
                 char *scriptdir = dirname(token);
                 /* log_info("SCRIPTDIR: %s", scriptdir); */
 
-                /* char *substr = strstr(scriptdir, "dune_ed/scm"); */
+                /* char *substr = strstr(scriptdir, "mibl/scm"); */
                 /* if (substr != NULL) { */
-                /*     /\* log_debug("FOUND dune_ed path: %s, %s", *\/ */
+                /*     /\* log_debug("FOUND mibl path: %s, %s", *\/ */
                 /*     /\*           line, scriptdir); *\/ */
-                /*     if (mibl_libs7 == NULL) { */
+                /*     if (mibl_mibl == NULL) { */
                 /*         int len = strlen(scriptdir) + 1; */
-                /*         mibl_libs7 = calloc(len, 1); */
-                /*         strlcpy(mibl_libs7, scriptdir, len); */
+                /*         mibl_mibl = calloc(len, 1); */
+                /*         strlcpy(mibl_mibl, scriptdir, len); */
                 /*     } */
                 /*     continue; */
                 /* } */
@@ -267,7 +264,7 @@ LOCAL void _config_s7_load_path_bazel_runfiles(UT_string *manifest)
 
     /* log_debug("tmp_load_path: %s", TO_STR(tmp_load_path)); */
     /* tmp_load_path = s7_cons(s7, */
-    /*                         s7_make_string(s7, mibl_libs7), */
+    /*                         s7_make_string(s7, mibl_mibl), */
     /*                         tmp_load_path); */
     /* log_debug("2 tmp_load_path: %s", TO_STR(tmp_load_path)); */
 
@@ -282,13 +279,13 @@ LOCAL void _config_s7_load_path_bazel_runfiles(UT_string *manifest)
 
 LOCAL void _config_s7_load_path_proj(void)
 {
-    char *project_script_dir = PROJ_LIBS7;
+    char *project_script_dir = PROJ_MIBL;
 
     UT_string *proj_script_dir;
     utstring_new(proj_script_dir);
     utstring_printf(proj_script_dir, "%s/%s",
                     utstring_body(ws_root),
-                    PROJ_LIBS7);
+                    PROJ_MIBL);
     rc = access(utstring_body(proj_script_dir), R_OK);
     if (rc) {
         if (verbose || debug)
@@ -304,7 +301,7 @@ LOCAL void _config_s7_load_path_proj(void)
 
 LOCAL void _config_user_load_path(void)
 {
-    char *_user_script_dir = HOME_LIBS7;
+    char *_user_script_dir = HOME_MIBL;
     UT_string *user_script_dir;
 
     utstring_new(user_script_dir);
@@ -348,10 +345,10 @@ LOCAL void _config_s7_load_path_xdg_home(void)
     /* start with lib/libc_s7.o, mibl dlopens it */
 
     // instead of adding another dir with only one file to the load-path,
-    // we store libc_s7.o in .local/share/libs7, which is already on the path
+    // we store libc_s7.o in .local/share/mibl, which is already on the path
 
     /* utstring_printf(xdg_script_dir, */
-    /*                 "%s/.local/share/libs7/lib", */
+    /*                 "%s/.local/share/mibl/lib", */
     /*                 utstring_body(xdg_data_home)); */
     /* rc = access(utstring_body(xdg_script_dir), R_OK); */
     /* if (rc) { */
@@ -365,7 +362,7 @@ LOCAL void _config_s7_load_path_xdg_home(void)
     /* } */
 
     utstring_renew(xdg_script_dir);
-    utstring_printf(xdg_script_dir, "%s/libs7/s7",
+    utstring_printf(xdg_script_dir, "%s/mibl/s7",
                     utstring_body(xdg_data_home));
     rc = access(utstring_body(xdg_script_dir), R_OK);
     if (rc) {
@@ -380,7 +377,7 @@ LOCAL void _config_s7_load_path_xdg_home(void)
 
     /* utstring_renew(xdg_script_dir); */
     /* utstring_printf(xdg_script_dir, "%s/%s", */
-    /*                 utstring_body(xdg_data_home), "/libs7/dune"); */
+    /*                 utstring_body(xdg_data_home), "/mibl/dune"); */
     /* rc = access(utstring_body(xdg_script_dir), R_OK); */
     /* if (rc) { */
     /*     if (verbose || debug) */
@@ -394,7 +391,7 @@ LOCAL void _config_s7_load_path_xdg_home(void)
 
     /* utstring_renew(xdg_script_dir); */
     /* utstring_printf(xdg_script_dir, "%s/%s", */
-    /*                 utstring_body(xdg_data_home), "/libs7/meta"); */
+    /*                 utstring_body(xdg_data_home), "/mibl/meta"); */
     /* rc = access(utstring_body(xdg_script_dir), R_OK); */
     /* if (rc) { */
     /*     if (verbose || debug) */
@@ -408,7 +405,7 @@ LOCAL void _config_s7_load_path_xdg_home(void)
 
     /* utstring_renew(xdg_script_dir); */
     /* utstring_printf(xdg_script_dir, "%s/%s", */
-    /*                 utstring_body(xdg_data_home), "/libs7/opam"); */
+    /*                 utstring_body(xdg_data_home), "/mibl/opam"); */
     /* rc = access(utstring_body(xdg_script_dir), R_OK); */
     /* if (rc) { */
     /*     if (verbose || debug) */
@@ -421,7 +418,7 @@ LOCAL void _config_s7_load_path_xdg_home(void)
     /* } */
 
     utstring_renew(xdg_script_dir);
-    utstring_printf(xdg_script_dir, "%s/libs7",
+    utstring_printf(xdg_script_dir, "%s/mibl",
                     utstring_body(xdg_data_home));
     rc = access(utstring_body(xdg_script_dir), R_OK);
     if (rc) {
@@ -439,8 +436,8 @@ LOCAL void _config_s7_load_path_xdg_sys(void)
 {
     UT_string *xdg_script_dir;
 
-    /* system libs7 script dirs:
-       $XDG_DATA_DIRS/libs7
+    /* system mibl script dirs:
+       $XDG_DATA_DIRS/mibl
     */
     char *xdg_data_dirs = getenv("XDG_DATA_DIRS");
     if (xdg_data_dirs == NULL) {
@@ -449,7 +446,7 @@ LOCAL void _config_s7_load_path_xdg_sys(void)
 
     utstring_new(xdg_script_dir);
     utstring_printf(xdg_script_dir, "%s/%s",
-                    xdg_data_dirs, "libs7");
+                    xdg_data_dirs, "mibl");
     rc = access(utstring_body(xdg_script_dir), R_OK);
     if (rc) {
         if (verbose || debug)
