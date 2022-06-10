@@ -235,11 +235,9 @@ LOCAL void _deploy_scm_files(UT_string *manifest)
                     if (strncmp(dest, pfx, pfx_len) == 0) {
                         if (strlen(dirname(dest)) == pfx_len - 1) {
                             /* no path after pfx */
-                            log_debug("OIBL to: .");
                             destdir = dirname(dest) + pfx_len;
                             xdg_install(token, ".");
                         } else {
-                            log_debug("OIBL to: %s", destdir);
                             destdir = dirname(dest) + pfx_len;
                             xdg_install(token, destdir);
                         }

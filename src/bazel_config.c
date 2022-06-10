@@ -104,7 +104,7 @@ EXPORT void bazel_configure(char *_exec_root)
     /* log_debug("bazel_configure"); */
 
     homedir = getenv("HOME");
-    log_debug("HOME: %s", homedir);
+    /* log_debug("HOME: %s", homedir); */
 
     utstring_new(exec_root);
     utstring_printf(exec_root, "%s", _exec_root);
