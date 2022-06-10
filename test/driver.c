@@ -42,14 +42,19 @@ int main(int argc, char *argv[])
         }
     }
     /* config in this order: bazel then s7 */
-    bazel_configure(getcwd(NULL, 0));
+    bazel_configure(); // getcwd(NULL, 0));
     s7_configure();
 
     //TODO: cli args for root and path
     char *rootdir;
     char *pathdir;
 
-    /* rootdir = "obazl/mibl"; */
+    rootdir = "obazl/mibl";
+
+    pathdir = "test/a";
+
+    /* launching from test/ws */
+    /* pathdir = "a/b"; // ws/a/WORKSPACE.bazel */
 
     /* pathdir = "test/baddot"; */
     /* pathdir = "test/includes/mwe"; */
@@ -68,9 +73,9 @@ int main(int argc, char *argv[])
     /* pathdir = "test/mina/ocaml-sodium"; */
 
     /* **************** */
-    rootdir = "tweag/tezos";
+    /* rootdir = "tweag/tezos"; */
     /* pathdir = "src/bin_node"; */
-    pathdir = "src/lib_clic";
+    /* pathdir = "src/lib_clic"; */
     /* pathdir = "src/lib_stdlib_unix"; */
     /* pathdir = "src/proto_alpha"; */
     /* pathdir = "src/lib_protocol_environment"; */

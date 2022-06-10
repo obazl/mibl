@@ -154,8 +154,8 @@ int main(int argc, char **argv)
         }
     }
 
-    /* initialize in this order: bazel then s7 */
-    bazel_configure(getcwd(NULL, 0));
+   /* initialize in this order: bazel then s7 */
+    bazel_configure(); // getcwd(NULL, 0));
     s7_configure();
 
     s7_repl(s7);

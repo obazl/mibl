@@ -284,8 +284,7 @@ LOCAL void _config_s7_load_path_proj(void)
     UT_string *proj_script_dir;
     utstring_new(proj_script_dir);
     utstring_printf(proj_script_dir, "%s/%s",
-                    utstring_body(ws_root),
-                    PROJ_MIBL);
+                    ews_root, PROJ_MIBL);
     rc = access(utstring_body(proj_script_dir), R_OK);
     if (rc) {
         if (verbose || debug)
@@ -340,7 +339,7 @@ LOCAL void _config_s7_load_path_xdg_home(void)
     } else {
         utstring_printf(xdg_data_home, "%s", _xdg_data_home);
     }
-    log_trace("xdg_data_home %s", utstring_body(xdg_data_home));
+    log_trace("xdg_data_home: %s", utstring_body(xdg_data_home));
 
     /* start with lib/libc_s7.o, mibl dlopens it */
 
@@ -488,10 +487,9 @@ bazel run is similar, but not identical, to directly invoking the binary built b
   */
 
     /* so if we find MANIFEST, we're running a test? */
-    char *mdir = dirname(utstring_body(exec_root)); // _wd);
     UT_string *manifest;
     utstring_new(manifest);
-    utstring_printf(manifest, "%s%s", mdir, "/MANIFEST");
+    utstring_printf(manifest, "%s%s", exec_dir, "/MANIFEST");
     if (debug)
         log_debug("MANIFEST: %s", utstring_body(manifest));
 
@@ -525,10 +523,10 @@ bazel run is similar, but not identical, to directly invoking the binary built b
     /* log_debug("new lp: %s", s7_object_to_c_string(s7, new_lp)); */
 
 
-    if (debug) {
-        s7_pointer lp = s7_load_path(s7);
-        log_debug("*load-path*: %s", s7_object_to_c_string(s7, lp));
-    }
+    /* if (debug) { */
+    /*     s7_pointer lp = s7_load_path(s7); */
+    /*     log_debug("*load-path*: %s", s7_object_to_c_string(s7, lp)); */
+    /* } */
 }
 
 /* void libc_s7_init(s7_scheme *sc); */

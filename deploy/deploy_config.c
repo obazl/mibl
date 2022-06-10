@@ -44,7 +44,7 @@ EXPORT void deploy(void)
         log_debug("deploy_configure");
 
     /* FIXME: s7_config detects manifest too */
-    char *mdir = dirname(utstring_body(exec_root)); // _wd);
+    char *mdir = dirname(utstring_body(launch_dir)); // _wd);
     UT_string *manifest;
     utstring_new(manifest);
     utstring_printf(manifest, "%s%s", mdir, "/MANIFEST");
@@ -78,15 +78,15 @@ LOCAL void _deploy_scm_files(UT_string *manifest)
 
     /* are we running in dev mode (launched from mibl proj root) or
        as an external import? */
-    if (utstring_len(ws_root) != 0) {
+    if (strlen(ws_root) != 0) {
         /* bazel_configure detected BUILD_WORKSPACE_DIRECTORY */
 
         if (trace)
-            log_debug("WS ROOT: %s", utstring_body(ws_root));
+            log_debug("WS ROOT: %s", ws_root);
         UT_string *ws_file;
         utstring_new(ws_file);
         utstring_printf(ws_file,
-                        "%s/WORKSPACE.bazel", utstring_body(ws_root));
+                        "%s/WORKSPACE.bazel", ws_root);
         rc = access(utstring_body(ws_file), R_OK);
         if (rc) {
             if (verbose || debug)

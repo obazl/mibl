@@ -1,6 +1,6 @@
 .bazel
 bazel-*
-user.bazelrc
+private
 *.history.txt
 
 *.log

@@ -151,14 +151,56 @@ LOCAL s7_pointer _read_dunefile(char *path) //, char *fname)
     /* s7_gc_unprotect_at(s7, gc_loc); */
 }
 
+bool _is_ws_root(FTSENT *ftsentry)
+{
+    if (trace)
+        log_trace("_is_ws_root: %s", ftsentry->fts_path);
+
+    UT_string *pathdir;
+    utstring_new(pathdir);
+    utstring_printf(pathdir, ftsentry->fts_path);
+    utstring_printf(pathdir, "/WORKSPACE.bazel");
+    /* log_trace("accessing %s", utstring_body(pathdir)); */
+    int rc = access(utstring_body(pathdir), R_OK);
+    /* log_debug("RC: %d", rc); */
+    if (!rc) {
+        return true;
+    } else {
+        utstring_new(pathdir);
+        utstring_printf(pathdir, ftsentry->fts_path);
+        utstring_printf(pathdir, "/WORKSPACE");
+        rc = access(utstring_body(pathdir), R_OK);
+        if (!rc) {
+            return true;
+        }
+    }
+    return false;
+}
+
 /*
   create a pkg-tbl entry if dir contains a dune file or at least one
   OCaml source file.
  */
 LOCAL void _handle_dir(s7_pointer pkg_tbl, FTS* tree, FTSENT *ftsentry)
 {
-    if (debug)
+    if (debug) {
         log_debug("_handle_dir %s", ftsentry->fts_name);
+        log_info("%-20s%s", "base ws:", bws_root);
+        log_info("%-20s%s", "effective ws:",ews_root);
+        log_info("%-20s%s", "ftsentry->path:", ftsentry->fts_path);
+        log_info("%-20s%s", "ftsentry->accpath:", ftsentry->fts_accpath);
+    }
+
+    if (strncmp(ews_root, ftsentry->fts_path,
+                 strlen(ftsentry->fts_path)) != 0) {
+        /* is this a ws root? */
+        if (_is_ws_root(ftsentry)) {
+            log_debug("SKIPPING ws root: %s", ftsentry->fts_path);
+            /* do not process */
+            fts_set(tree, ftsentry, FTS_SKIP);
+            return;
+        }
+    }
 
     /* stdout */
     _indent(ftsentry->fts_level);
@@ -193,16 +235,18 @@ LOCAL void _handle_dir(s7_pointer pkg_tbl, FTS* tree, FTSENT *ftsentry)
     /*                                 s7_make_symbol(s7, "dummy")); */
     /* s7_pointer result = s7_hash_table_set(s7, pkg_tbl, key, */
     /*                                       s7_list(s7, 1, test_assoc)); */
+
+    /* MB: result of realpath must be freed */
+    char *rpath = realpath(ftsentry->fts_path, NULL);
     s7_pointer result =
         s7_hash_table_set(s7, pkg_tbl, key,
-                          s7_list(s7, 1,
+                          s7_list(s7, 2,
                                   s7_list(s7, 2,
                                           s7_make_keyword(s7, "pkg-path"),
-                                          key)));
-                                  /* s7_nil(s7))); */
-                                  /* s7_list(s7, 2, */
-                                  /*         s7_make_keyword(s7, "dune-stanzas"), */
-                                  /*         s7_nil(s7)))); */
+                                          key),
+                                  s7_list(s7, 2,
+                                          s7_make_keyword(s7, "realpath"),
+                                          s7_make_string(s7, rpath))));
 }
 
 static char principal[256];
@@ -437,11 +481,13 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
                                char *pkg_name, char *mname,
                                char *fname, int ftype)
 {
-    if (trace)
+    if (trace) {
         log_trace("_UPDATE_PKG_MODULES");
-    if (debug)
-        log_debug("pkg_tbl: %s", s7_object_to_c_string(s7, pkg_tbl));
-
+    }
+    if (debug) {
+        log_debug("pkg_name: %s", pkg_name);
+        log_debug("pkg_tbl: %s", TO_STR(pkg_tbl));
+    }
     s7_pointer pkg_kw = s7_make_string(s7, pkg_name);
     if (debug)
         log_debug("pkg_kw: %s", TO_STR(pkg_kw));
@@ -1031,11 +1077,11 @@ EXPORT s7_pointer g_dune_load(s7_scheme *s7,  s7_pointer args)
 
         s7_pointer rootarg;
 
-        if (args_ct == 2) {
-            rootdir = s7_string(s7_car(args));
-            pathdir = s7_string(s7_cadr(args));
-        }
-        else if (args_ct == 1) {
+        /* if (args_ct == 2) { */
+        /*     rootdir = s7_string(s7_car(args)); */
+        /*     pathdir = s7_string(s7_cadr(args)); */
+        /* } */
+        if (args_ct == 1) {
             s7_pointer arg = s7_car(args);
             if (s7_is_list(s7, arg)) {
                 if (trace)
@@ -1101,35 +1147,63 @@ EXPORT s7_pointer g_dune_load(s7_scheme *s7,  s7_pointer args)
     return _pkg_tbl;
 }
 
-EXPORT s7_pointer dune_load(char *root, char *path)
+EXPORT s7_pointer dune_load(char *home_sfx, char *traversal_root)
 {
-    if (debug)
-        log_debug("dune_load root: %s, path: %s\n", root, path);
+    if (debug) {
+        log_debug("dune_load");
+        log_debug("%-16s%s", "launch_dir:", launch_dir);
+        log_debug("%-16s%s", "base ws:", bws_root);
+        log_debug("%-16s%s", "effective ws:", ews_root);
+        log_debug("%-16s%s", "home_sfx:", home_sfx);
+        log_debug("%-16s%s", "traversal_root:", traversal_root);
+    }
+    if (verbose) {
+        printf(YEL "%-16s%s\n" CRESET, "current dir:", launch_dir);
+        printf(YEL "%-16s%s\n" CRESET, "traversal_root:", traversal_root);
+    }
+
+    UT_string *abs_troot;
+    utstring_new(abs_troot);
+    utstring_printf(abs_troot, "%s/%s", launch_dir, traversal_root);
+    char *_ews = find_ws_root(utstring_body(abs_troot));
+    log_debug("ews: %s", _ews);
+    ews_root = _ews;
+
+    log_debug("haystack (troot): %s", utstring_body(abs_troot));
+    log_debug("needle (ews): %s", ews_root);
+    char *sfx = strnstr(utstring_body(abs_troot),
+                        ews_root, strlen(ews_root));
+    log_debug("truncated: %s", sfx);
+    if (sfx)
+        sfx = utstring_body(abs_troot) + strlen(ews_root) + 1; // + for '/'
+    log_debug("truncated: %s", sfx);
 
     errno = 0;
-    int rc = chdir(getenv("HOME"));
+    rc = chdir(ews_root);
     if (rc != 0) {
-        fprintf(stderr, RED "ERROR chdir(%s): %s", root, strerror(errno));
+        fprintf(stderr, RED "ERROR chdir(%s): %s",
+                ews_root, strerror(errno));
         exit(EXIT_FAILURE);
     }
-    rc = chdir(root);
 
-    if (trace)
-        printf("cwd: %s\n", getcwd(NULL, 0));
+    if (debug)
+
+        log_debug("%-16s%s", "cwd:",  getcwd(NULL, 0));
 
     FTS* tree = NULL;
     FTSENT *ftsentry     = NULL;
 
     errno = 0;
-    char *const dir = path;
 
-    /* WARING: fts_open will segfault on macos if the access
+    char *const _traversal_root = sfx; // traversal_root;
+
+    /* WARNING: fts_open will segfault on macos if the access
        specifiers are not right. first (path) arg is char *const *
     */
     /* FTS * fts_open(char * const *path_argv, int options, int (*compar)(const FTSENT **, const FTSENT **)); */
 
     errno = 0;
-    tree = fts_open(&dir,
+    tree = fts_open(&_traversal_root,
                     FTS_COMFOLLOW
                     | FTS_NOCHDIR
                     | FTS_PHYSICAL,
@@ -1138,12 +1212,8 @@ EXPORT s7_pointer dune_load(char *root, char *path)
                     );
     if (errno != 0) {
         log_error("fts_open(%s), RC %d: %s",
-                  dir, errno, strerror(errno));
-        log_info("cwd: %s", getcwd(NULL, 0));
-        return s7_nil(s7);
+                  _traversal_root, errno, strerror(errno));
     }
-    if (verbose)
-        log_info("loading...\n");
 
     s7_pointer pkg_tbl = s7_make_hash_table(s7, PKG_CT);
     /* s7_define_variable(s7, "pkg-tbl", pkg_tbl); */
@@ -1165,6 +1235,7 @@ EXPORT s7_pointer dune_load(char *root, char *path)
                 case FTS_D : // dir visited in pre-order
                     dir_ct++;
                     _handle_dir(pkg_tbl, tree, ftsentry);
+                    printf("pkg tbl: %s\n", TO_STR(pkg_tbl));
                     break;
                 case FTS_DP:
                     /* postorder directory */

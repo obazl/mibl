@@ -64,7 +64,7 @@ int main(int argc, char **argv)
         }
     }
 
-    bazel_configure(getcwd(NULL, 0));
+    bazel_configure(); // getcwd(NULL, 0));
 
     deploy();
 

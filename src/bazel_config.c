@@ -36,9 +36,16 @@
 
 int rc;
 
-UT_string *exec_root;
-UT_string *runfiles_root;
-UT_string *ws_root;
+char *exec_dir; /* BUILD_WORKING_DIRECTORY else NULL */
+char *launch_dir; /* Bazel: BUILD_WORKING_DIRECTORY; otherwise getcwd() */
+/* path args passed to mibl relative to launch_dir */
+
+/* UT_string *ws_root; */
+char *bws_root;                 /* base ws root */
+char *ews_root;                 /* effective ws root */
+char *traversal_root;           /* maybe not same as ws root */
+
+/* UT_string *runfiles_root;       /\* bazel only *\/ */
 /* UT_string *config_obazl; // obazl_d; */
 
 #define MIBL    "mibl"
@@ -66,12 +73,12 @@ struct configuration_s {
 
 struct configuration_s bazel_config = {.obazl_version = OBAZL_VERSION, .libct = 0};
 
-UT_array *src_files;            /* FIXME: put this in configuration_s? */
+/* UT_array *src_files;            /\* FIXME: put this in configuration_s? *\/ */
 char *homedir;
 
-LOCAL char *_find_ws_root(char *dir)
+char *find_ws_root(char *dir)
 {
-   log_debug("_find_ws_root: %s", dir);
+   /* log_debug("find_ws_root: %s", dir); */
 
    if (strncmp(homedir, dir, strlen(dir)) == 0) {
        log_debug("xxxx");
@@ -81,7 +88,7 @@ LOCAL char *_find_ws_root(char *dir)
    UT_string *_ws_path;
    utstring_new(_ws_path);
    utstring_printf(_ws_path, "%s/%s", dir, "WORKSPACE.bazel");
-   log_debug("Testing %s", utstring_body(_ws_path));
+   /* log_debug("Testing %s", utstring_body(_ws_path)); */
    int rc = access(utstring_body(_ws_path), R_OK);
     if (rc == 0) {
         log_debug("found %s", utstring_body(_ws_path));
@@ -94,61 +101,75 @@ LOCAL char *_find_ws_root(char *dir)
             log_debug("found %s", utstring_body(_ws_path));
             return dir;
         } else {
-            return _find_ws_root(dirname(dir));
+            return find_ws_root(dirname(dir));
         }
     }
 }
 
-EXPORT void bazel_configure(char *_exec_root)
+/*
+ */
+void _set_base_ws_root(void)
+{
+    bws_root = getenv("BUILD_WORKSPACE_DIRECTORY");
+    if (debug) log_debug("BUILD_WORKSPACE_DIRECTORY: %s", bws_root);
+
+    if (bws_root == NULL) {
+        /* we're not in Bazel rte, but we may be in a Bazel WS. So
+           look for nearest WORKSPACE.bazel (or WORKSPACE) file
+           ancestor. */
+        bws_root = find_ws_root(getcwd(NULL,0));
+        if (debug)
+            log_debug("Found WS file at %s", bws_root);
+    }
+    ews_root = bws_root;  /* by default, effective ws == base ws */
+    if (debug)
+        log_debug("base ws root: %s", bws_root);
+
+    /* utstring_new(ws_root); */
+    /* if (bws_root == NULL) */
+    /*     utstring_printf(ws_root, "%s", getcwd(NULL, 0)); */
+    /* else */
+    /*     utstring_printf(ws_root, "%s", bws_root); */
+}
+
+/* should always be called first, so launch dir gets set to cwd */
+EXPORT void bazel_configure(void) // char *_exec_root)
 {
     /* log_debug("bazel_configure"); */
+
+    exec_dir = getenv("BUILD_WORKING_DIRECTORY");
+    if (debug)
+        log_debug("BUILD_WORKING_DIRECTORY: %s", exec_dir);
+
+    if (exec_dir == NULL) {
+        /* running outside of bazel */
+        if (debug)
+            log_debug("BUILD_WORKING_DIRECTORY: null");
+        launch_dir = getcwd(NULL, 0);
+    } else {
+        launch_dir = exec_dir;
+    }
+
+    if (debug) {
+        log_debug("exec_dir: %s (=BUILD_WORKING_DIRECTORY)", exec_dir);
+        log_debug("launch_dir: %s", launch_dir);
+    }
 
     homedir = getenv("HOME");
     /* log_debug("HOME: %s", homedir); */
 
-    utstring_new(exec_root);
-    utstring_printf(exec_root, "%s", _exec_root);
-    if (debug)
-        log_debug("EXEC ROOT (Bazel): %s", utstring_body(exec_root));
+    /* utstring_new(runfiles_root); */
+    /* utstring_printf(runfiles_root, "%s", getcwd(NULL, 0)); */
+    /* if (debug) */
+    /*     log_debug("runfiles_root: %s", utstring_body(runfiles_root)); */
 
-    utstring_new(runfiles_root);
-    utstring_printf(runfiles_root, "%s", getcwd(NULL, 0));
-    if (debug)
-        log_debug("runfiles_root: %s", utstring_body(runfiles_root));
-
-    char *_ws_root = getenv("BUILD_WORKSPACE_DIRECTORY");
-    if (_ws_root == NULL) {
-        /* we're not in Bazel rte, but we may be in a Bazel WS. So
-           look for nearest WORKSPACE.bazel (or WORKSPACE) file ancestor. */
-        _ws_root = _find_ws_root(getcwd(NULL,0));
-        if (debug)
-            log_debug("Found WS file at %s", _ws_root);
-    }
-
-    utstring_new(ws_root);
-    if (_ws_root == NULL)
-        utstring_printf(ws_root, "%s", getcwd(NULL, 0));
-    else
-        utstring_printf(ws_root, "%s", _ws_root);
+    _set_base_ws_root();
 
     /* **************** */
-    char *_wd = getenv("BUILD_WORKING_DIRECTORY");
-    if (_wd == NULL) {
-        if (debug)
-            log_debug("BUILD_WORKING_DIRECTORY: null");
-    } else {
-        if (debug)
-            log_debug("BUILD_WORKING_DIRECTORY: %s", _wd);
-    }
-    if (debug) log_debug("BUILD_WORKSPACE_DIRECTORY: %s", _ws_root);
-
-    if (debug)
-        log_debug("LAUNCH DIR: %s", _wd);
-
     /* project-local .config/miblrc config file */
     utstring_new(obazl_ini_path);
     utstring_printf(obazl_ini_path, "%s/%s",
-                    utstring_body(ws_root), MIBL_INI_FILE);
+                    bws_root, MIBL_INI_FILE);
 
     rc = access(utstring_body(obazl_ini_path), R_OK);
     if (rc) {
@@ -159,7 +180,7 @@ EXPORT void bazel_configure(char *_exec_root)
     } else {
         ini_error = false;
         if (verbose || debug)
-            log_warn("FOUND: miblrc config file %s",
+            log_info("FOUND: miblrc config file %s",
                      utstring_body(obazl_ini_path));
 
         utarray_new(bazel_config.src_dirs, &ut_str_icd);
@@ -179,12 +200,11 @@ EXPORT void bazel_configure(char *_exec_root)
             /*     log_debug("Config loaded from %s", utstring_body(obazl_ini_path)); */
         }
     }
+    /* utarray_new(src_files,&ut_str_icd); */
 
-    utarray_new(src_files,&ut_str_icd);
-
-    chdir(_wd);
+    chdir(launch_dir);
     if (debug)
-        log_debug("Set CWD to: %s\n", getcwd(NULL, 0));
+        log_debug("Set CWD to launch dir: %s", launch_dir);
 }
 
 EXPORT int config_handler(void* config, const char* section, const char* name, const char* value)

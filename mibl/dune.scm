@@ -1,4 +1,4 @@
-(format #t "Oibl: dune.scm loading...") (newline)
+(format #t "mibl: dune.scm loading...") (newline)
 
 (load "alist.scm")
 (load "srfi.scm")
