@@ -67,10 +67,45 @@ struct configuration_s {
 struct configuration_s bazel_config = {.obazl_version = OBAZL_VERSION, .libct = 0};
 
 UT_array *src_files;            /* FIXME: put this in configuration_s? */
+char *homedir;
+
+LOCAL char *_find_ws_root(char *dir)
+{
+   log_debug("_find_ws_root: %s", dir);
+
+   if (strncmp(homedir, dir, strlen(dir)) == 0) {
+       log_debug("xxxx");
+       return NULL;
+   }
+
+   UT_string *_ws_path;
+   utstring_new(_ws_path);
+   utstring_printf(_ws_path, "%s/%s", dir, "WORKSPACE.bazel");
+   log_debug("Testing %s", utstring_body(_ws_path));
+   int rc = access(utstring_body(_ws_path), R_OK);
+    if (rc == 0) {
+        log_debug("found %s", utstring_body(_ws_path));
+        return dir;
+    } else {
+        utstring_new(_ws_path);
+        utstring_printf(_ws_path, "%s/%s", dir, "WORKSPACE");
+        int rc = access(utstring_body(_ws_path), R_OK);
+        if (rc == 0) {
+            log_debug("found %s", utstring_body(_ws_path));
+            return dir;
+        } else {
+            return _find_ws_root(dirname(dir));
+        }
+    }
+}
 
 EXPORT void bazel_configure(char *_exec_root)
 {
     /* log_debug("bazel_configure"); */
+
+    homedir = getenv("HOME");
+    log_debug("HOME: %s", homedir);
+
     utstring_new(exec_root);
     utstring_printf(exec_root, "%s", _exec_root);
     if (debug)
@@ -83,11 +118,11 @@ EXPORT void bazel_configure(char *_exec_root)
 
     char *_ws_root = getenv("BUILD_WORKSPACE_DIRECTORY");
     if (_ws_root == NULL) {
+        /* we're not in Bazel rte, but we may be in a Bazel WS. So
+           look for nearest WORKSPACE.bazel (or WORKSPACE) file ancestor. */
+        _ws_root = _find_ws_root(getcwd(NULL,0));
         if (debug)
-            log_debug("BUILD_WORKSPACE_DIRECTORY: null");
-    } else {
-        if (debug)
-            log_debug("BUILD_WORKSPACE_DIRECTORY: %s", _ws_root);
+            log_debug("Found WS file at %s", _ws_root);
     }
 
     utstring_new(ws_root);
@@ -105,10 +140,12 @@ EXPORT void bazel_configure(char *_exec_root)
         if (debug)
             log_debug("BUILD_WORKING_DIRECTORY: %s", _wd);
     }
+    if (debug) log_debug("BUILD_WORKSPACE_DIRECTORY: %s", _ws_root);
+
     if (debug)
         log_debug("LAUNCH DIR: %s", _wd);
 
-    /* .config/libs7 config file */
+    /* project-local .config/libs7rc config file */
     utstring_new(obazl_ini_path);
     utstring_printf(obazl_ini_path, "%s/%s",
                     utstring_body(ws_root), LIBS7_INI_FILE);
@@ -118,6 +155,7 @@ EXPORT void bazel_configure(char *_exec_root)
         if (verbose || debug)
             log_warn("NOT FOUND: libs7rc config file %s",
                      utstring_body(obazl_ini_path));
+        //FIXME: also look in XDG_CONFIG_HOME
     } else {
         ini_error = false;
         if (verbose || debug)
@@ -137,8 +175,8 @@ EXPORT void bazel_configure(char *_exec_root)
         if (ini_error) {
             log_error("Error parsing ini file");
             exit(EXIT_FAILURE);
-        /* } else { */
-        /*     log_debug("Config loaded from %s", utstring_body(obazl_ini_path)); */
+            /* } else { */
+            /*     log_debug("Config loaded from %s", utstring_body(obazl_ini_path)); */
         }
     }
 
