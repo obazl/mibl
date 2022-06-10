@@ -260,36 +260,36 @@ LOCAL void _deploy_scm_files(UT_string *manifest)
                         }
                     }
                 }
-#define LIBS7_PFX "libs7/libs7/"
-const int libs7_pfx_len = 12;
+/* #define LIBS7_PFX "libs7/libs7/" */
+/* const int libs7_pfx_len = 12; */
 
-#define OIBL_PFX "oibl/libs7/"
-const int oibl_pfx_len = 11;
+/* #define OIBL_PFX "oibl/libs7/" */
+/* const int oibl_pfx_len = 11; */
 
-#define MAIN_PFX "__main__/"
-const int main_pfx_len = 9;
+/* #define MAIN_PFX "__main__/" */
+/* const int main_pfx_len = 9; */
 
-                if (strncmp(dest, OIBL_PFX, oibl_pfx_len) == 0) {
+/*                 if (strncmp(dest, OIBL_PFX, oibl_pfx_len) == 0) { */
 
-                    if (strlen(destdir) == oibl_pfx_len - 1) {
-                        /* log_debug("destdir: %s", destdir); */
-                    } else {
-                        /* log_debug("destdir: %s", destdir + oibl_pfx_len); */
-                    }
-                }
+/*                     if (strlen(destdir) == oibl_pfx_len - 1) { */
+/*                         /\* log_debug("destdir: %s", destdir); *\/ */
+/*                     } else { */
+/*                         /\* log_debug("destdir: %s", destdir + oibl_pfx_len); *\/ */
+/*                     } */
+/*                 } */
 
-                else if (strncmp(dest,
-                                 MAIN_PFX OIBL_PFX,
-                                 main_pfx_len + oibl_pfx_len) == 0) {
-                    if (strlen(destdir) == main_pfx_len + oibl_pfx_len - 1) {
-                        /* pfx len includes trailing '/' */
-                        /* destdir = "."; */
-                        log_debug("destdir: %s", destdir);
-                    } else {
-                        log_debug("destdir: %s",
-                                  destdir + main_pfx_len + oibl_pfx_len);
-                    }
-                }
+/*                 else if (strncmp(dest, */
+/*                                  MAIN_PFX OIBL_PFX, */
+/*                                  main_pfx_len + oibl_pfx_len) == 0) { */
+/*                     if (strlen(destdir) == main_pfx_len + oibl_pfx_len - 1) { */
+/*                         /\* pfx len includes trailing '/' *\/ */
+/*                         /\* destdir = "."; *\/ */
+/*                         log_debug("destdir: %s", destdir); */
+/*                     } else { */
+/*                         log_debug("destdir: %s", */
+/*                                   destdir + main_pfx_len + oibl_pfx_len); */
+/*                     } */
+/*                 } */
 
                 // libs7
                 // __main__/external/libs7/libs7/alist.scm
@@ -300,42 +300,42 @@ const int main_pfx_len = 9;
                 // libs7/libs7/s7/case.scm
                 // pfx: libs7/libs7/
 
-                else if (strncmp(dest, LIBS7_PFX, libs7_pfx_len) == 0) {
-                    if (strlen(destdir) == libs7_pfx_len - 1) {
-                        /* pfx len includes trailing '/' */
-                        /* destdir = "."; */
-                        /* log_debug("destdir: %s", destdir); */
-                    } else {
-                        /* log_debug("DESTDIR: %s", destdir + libs7_pfx_len); */
-                    }
-                }
-                else if (strncmp(dest,
-                                 MAIN_PFX LIBS7_PFX,
-                                 main_pfx_len + libs7_pfx_len) == 0) {
-                    if (strlen(destdir) == main_pfx_len + libs7_pfx_len - 1) {
-                        /* pfx len includes trailing '/' */
-                        destdir = ".";
-                        /* log_debug("destdir: %s", destdir); */
-                    } else {
-                        /* log_debug("destdir: %s", */
-                        /*           destdir + main_pfx_len + libs7_pfx_len); */
-                    }
-                }
+                /* else if (strncmp(dest, LIBS7_PFX, libs7_pfx_len) == 0) { */
+                /*     if (strlen(destdir) == libs7_pfx_len - 1) { */
+                /*         /\* pfx len includes trailing '/' *\/ */
+                /*         /\* destdir = "."; *\/ */
+                /*         /\* log_debug("destdir: %s", destdir); *\/ */
+                /*     } else { */
+                /*         /\* log_debug("DESTDIR: %s", destdir + libs7_pfx_len); *\/ */
+                /*     } */
+                /* } */
+                /* else if (strncmp(dest, */
+                /*                  MAIN_PFX LIBS7_PFX, */
+                /*                  main_pfx_len + libs7_pfx_len) == 0) { */
+                /*     if (strlen(destdir) == main_pfx_len + libs7_pfx_len - 1) { */
+                /*         /\* pfx len includes trailing '/' *\/ */
+                /*         destdir = "."; */
+                /*         /\* log_debug("destdir: %s", destdir); *\/ */
+                /*     } else { */
+                /*         /\* log_debug("destdir: %s", *\/ */
+                /*         /\*           destdir + main_pfx_len + libs7_pfx_len); *\/ */
+                /*     } */
+                /* } */
 
-                char *scriptdir = dirname(token);
-                /* log_info("SCRIPTDIR: %s", scriptdir); */
+                /* char *scriptdir = dirname(token); */
+                /* /\* log_info("SCRIPTDIR: %s", scriptdir); *\/ */
 
-                char *substr = strstr(scriptdir, "dune_ed/scm");
-                if (substr != NULL) {
-                    /* log_debug("FOUND dune_ed path: %s, %s", */
-                    /*           line, scriptdir); */
-                    if (dune_ed_scm == NULL) {
-                        int len = strlen(scriptdir) + 1;
-                        dune_ed_scm = calloc(len, 1);
-                        strlcpy(dune_ed_scm, scriptdir, len);
-                    }
-                    continue;
-                }
+                /* char *substr = strstr(scriptdir, "dune_ed/scm"); */
+                /* if (substr != NULL) { */
+                /*     /\* log_debug("FOUND dune_ed path: %s, %s", *\/ */
+                /*     /\*           line, scriptdir); *\/ */
+                /*     if (oibl_libs7 == NULL) { */
+                /*         int len = strlen(scriptdir) + 1; */
+                /*         oibl_libs7 = calloc(len, 1); */
+                /*         strlcpy(oibl_libs7, scriptdir, len); */
+                /*     } */
+                /*     continue; */
+                /* } */
 
                 /* sdir = s7_make_string(s7, scriptdir); */
                 /* s7_pointer r = s7_hash_table_ref(s7, load_dirs, sdir); */
