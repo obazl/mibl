@@ -27,19 +27,19 @@ cc_binary(
         "-Wno-unused-function",
 
         "-I$(GENDIR)/src",
-        "-I$(GENDIR)/external/oibl/src",
+        "-I$(GENDIR)/external/mibl/src",
 
         "-I$(GENDIR)/repl",
-        "-I$(GENDIR)/external/oibl/repl",
+        "-I$(GENDIR)/external/mibl/repl",
 
         "-Iexternal/uthash/include",
         # "-Iexternal/libinih",
         "-Iexternal/logc/src",
 
         "-Iexternal/libs7/src",
-        "-Iexternal/oibl/libs7/src",
+        "-Iexternal/mibl/libs7/src",
         "-Iexternal/libs7/vendored/linenoise",
-        "-Iexternal/oibl/libs7/vendored/linenoise",
+        "-Iexternal/mibl/libs7/vendored/linenoise",
     ],
     linkopts = select({
         "//bzl/host:macos": [],
@@ -49,7 +49,7 @@ cc_binary(
         "-lm",
     ],
     deps = [
-        "//src:oibl",
+        "//src:mibl",
         # "//external/libinih:inih",
         "@logc//:logc",
         # "@libs7//src:s7",

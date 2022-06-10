@@ -2,7 +2,7 @@ load("@rules_cc//cc:defs.bzl", "cc_library")
 
 ##########
 cc_library(
-    name  = "oibl",
+    name  = "mibl",
     # alwayslink = True,
     # linkstatic = 1,
     srcs  = [
@@ -10,7 +10,7 @@ cc_library(
         "opam_config.c", "opam_config.h",
         "bazel_config.c",
         "s7_config.c", "s7_config.h",
-        "oibl_config.c", "oibl_config.h",
+        "mibl_config.c", "mibl_config.h",
         "error_handler.c", "error_handler.h",
         "fs.c", "fs.h",
         "utils.c", "utils.h",
@@ -19,7 +19,7 @@ cc_library(
     hdrs = [
         "dune_load.h",
         "bazel_config.h",
-        "oibl_config.h",
+        "mibl_config.h",
         "fs.h",
         # "@libs7//src:s7.h",
         "@uthash//:include",
@@ -43,7 +43,7 @@ cc_library(
         "-Wno-unused-function",
 
         "-I$(GENDIR)/src",
-        "-I$(GENDIR)/external/oibl/src",
+        "-I$(GENDIR)/external/mibl/src",
 
         "-Iexternal/libs7/src",
 
@@ -67,7 +67,7 @@ genrule(
         "dune_load.c",
         "opam_config.c",
         "bazel_config.c",
-        "oibl_config.c",
+        "mibl_config.c",
         "s7_config.c",
         "error_handler.c",
         "fs.c",
@@ -80,7 +80,7 @@ genrule(
         "dune_load.h",
         "opam_config.h",
         "bazel_config.h",
-        "oibl_config.h",
+        "mibl_config.h",
         "s7_config.h",
         "error_handler.h",
         "fs.h",
@@ -92,7 +92,7 @@ genrule(
         "$(location @makeheaders//:makeheaders) \\",
         "    $(location dune_load.c) \\",
         "    $(location opam_config.c) \\",
-        "    $(location oibl_config.c) \\",
+        "    $(location mibl_config.c) \\",
         "    $(location s7_config.c) \\",
         "    $(location bazel_config.c) \\",
         "    $(location error_handler.c) \\",

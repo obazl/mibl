@@ -1,4 +1,4 @@
-(format #t "Oibl: dune.scm loading...") (newline)
+;; (format #t "Oibl: dune.scm loading...") (newline)
 
 (load "alist.scm")
 (load "srfi.scm")
@@ -16,4 +16,4 @@
 (load "dune/dune_stanzas.scm")
 (load "dune/lookup_tables.scm")
 
-(display "loaded oibl: dune.scm") (newline)
+;; (display "loaded mibl: dune.scm") (newline)

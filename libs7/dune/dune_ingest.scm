@@ -1,4 +1,4 @@
-(display "dune/dune_ingest.scm loading...") (newline)
+;; (display "dune/dune_ingest.scm loading...") (newline)
 
 ;; (load "alist.scm")
 ;; (load "dune_stanzas.scm")
@@ -371,11 +371,11 @@
            ;; (subdir-pfx (string-append pfx "/" hd-file))
            (let ((pkg-tbl
                   (-dir-fold fold-file (make-hash-table) dir dirents)))
-             ;; (format #t "PKG-TBL: ~A\n" pkg-tbl)
-             ;; (list dir (normalize-pkg-tbl pkg-tbl))
+             (format #t "PKG-TBL: ~A\n" pkg-tbl)
+             (list dir (normalize-pkg-tbl pkg-tbl))
              pkg-tbl
            )))
          ;; (fold-dirtree fold->srcfiles dir))
        dirs)))
 
-(display "loaded dune/dune_ingest.scm") (newline)
+;; (display "loaded dune/dune_ingest.scm") (newline)

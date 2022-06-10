@@ -1,4 +1,4 @@
-(display "dune/dune_stanzas.scm loading ...") (newline)
+;; (display "dune/dune_stanzas.scm loading ...") (newline)
 
 ;; (load "dune_stanza_executable.scm")
 ;; (load "dune_stanza_library.scm")
@@ -560,4 +560,4 @@
   (normalize-stanza-executables :tests
                                 pkg-path ocaml-srcs stanza))
 
-(display "loaded dune/dune_stanzas.scm") (newline)
+;; (display "loaded dune/dune_stanzas.scm") (newline)

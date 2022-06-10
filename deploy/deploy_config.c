@@ -29,7 +29,7 @@
 
 #include "bazel_config.h"
 #include "deploy_config.h"
-#include "oibl_config.h"
+#include "mibl_config.h"
 #include "fs.h"
 
 UT_string *xdg_home_install_root; // $HOME/.local/share/libs7
@@ -76,7 +76,7 @@ LOCAL void _deploy_scm_files(UT_string *manifest)
     ssize_t read_ct;
     int rc = 0;
 
-    /* are we running in dev mode (launched from oibl proj root) or
+    /* are we running in dev mode (launched from mibl proj root) or
        as an external import? */
     if (utstring_len(ws_root) != 0) {
         /* bazel_configure detected BUILD_WORKSPACE_DIRECTORY */
@@ -101,11 +101,11 @@ LOCAL void _deploy_scm_files(UT_string *manifest)
             wsfile = fopen(utstring_body(ws_file), "r");
             fgets(fileText, 100, wsfile);
             char *r = strstr(fileText,
-                             "workspace(name = \"oibl\")");
+                             "workspace(name = \"mibl\")");
             if (r != NULL) {
                 dev_mode = true;
                 if (trace)
-                    log_debug("WS name: oibl");
+                    log_debug("WS name: mibl");
                 fclose(wsfile);
             }
             fclose(wsfile);
@@ -129,7 +129,7 @@ LOCAL void _deploy_scm_files(UT_string *manifest)
     if (debug)
         log_debug("Reading MANIFEST");
 
-    char *oibl_libs7 = NULL;
+    char *mibl_libs7 = NULL;
 
     while ((read_ct = getline(&line, &len, fp)) != -1) {
         /* log_debug("Retrieved line of length %zu:", read_ct); */
@@ -186,14 +186,14 @@ LOCAL void _deploy_scm_files(UT_string *manifest)
                 char *destdir = dirname(dest);
 
                 /*
-                  if oibl is imported as an external repo we get
+                  if mibl is imported as an external repo we get
                   lines like:
-                  __main__/external/oibl/libs7/oibl/dune.scm
-                  __main__/external/oibl/libs7/oibl/dune_actions.scm
+                  __main__/external/mibl/libs7/mibl/dune.scm
+                  __main__/external/mibl/libs7/mibl/dune_actions.scm
 
                   otherwise, in dev mode (launch from projroot) we get:
-                  __main__/libs7/oibl.scm
-                  __main__/libs7/oibl/dune_actions.scm
+                  __main__/libs7/mibl.scm
+                  __main__/libs7/mibl/dune_actions.scm
 
                   EXCEPT: sometimes we don't get __main__. No idea
                   what controls.
@@ -202,7 +202,7 @@ LOCAL void _deploy_scm_files(UT_string *manifest)
                 const char *pfx;
                 int pfx_len;
                 if (dev_mode) {
-                    pfx = "oibl/libs7/";
+                    pfx = "mibl/libs7/";
                     pfx_len = 11;
                     if (strncmp(dest, pfx, pfx_len) == 0) {
                         if (strlen(dirname(dest)) == pfx_len - 1) {
@@ -230,7 +230,7 @@ LOCAL void _deploy_scm_files(UT_string *manifest)
                     }
                 } else {
                     /* external mode */
-                    pfx = "__main__/external/oibl/libs7/";
+                    pfx = "__main__/external/mibl/libs7/";
                     pfx_len = 32;
                     if (strncmp(dest, pfx, pfx_len) == 0) {
                         if (strlen(dirname(dest)) == pfx_len - 1) {
@@ -263,31 +263,31 @@ LOCAL void _deploy_scm_files(UT_string *manifest)
 /* #define LIBS7_PFX "libs7/libs7/" */
 /* const int libs7_pfx_len = 12; */
 
-/* #define OIBL_PFX "oibl/libs7/" */
-/* const int oibl_pfx_len = 11; */
+/* #define OIBL_PFX "mibl/libs7/" */
+/* const int mibl_pfx_len = 11; */
 
 /* #define MAIN_PFX "__main__/" */
 /* const int main_pfx_len = 9; */
 
-/*                 if (strncmp(dest, OIBL_PFX, oibl_pfx_len) == 0) { */
+/*                 if (strncmp(dest, OIBL_PFX, mibl_pfx_len) == 0) { */
 
-/*                     if (strlen(destdir) == oibl_pfx_len - 1) { */
+/*                     if (strlen(destdir) == mibl_pfx_len - 1) { */
 /*                         /\* log_debug("destdir: %s", destdir); *\/ */
 /*                     } else { */
-/*                         /\* log_debug("destdir: %s", destdir + oibl_pfx_len); *\/ */
+/*                         /\* log_debug("destdir: %s", destdir + mibl_pfx_len); *\/ */
 /*                     } */
 /*                 } */
 
 /*                 else if (strncmp(dest, */
 /*                                  MAIN_PFX OIBL_PFX, */
-/*                                  main_pfx_len + oibl_pfx_len) == 0) { */
-/*                     if (strlen(destdir) == main_pfx_len + oibl_pfx_len - 1) { */
+/*                                  main_pfx_len + mibl_pfx_len) == 0) { */
+/*                     if (strlen(destdir) == main_pfx_len + mibl_pfx_len - 1) { */
 /*                         /\* pfx len includes trailing '/' *\/ */
 /*                         /\* destdir = "."; *\/ */
 /*                         log_debug("destdir: %s", destdir); */
 /*                     } else { */
 /*                         log_debug("destdir: %s", */
-/*                                   destdir + main_pfx_len + oibl_pfx_len); */
+/*                                   destdir + main_pfx_len + mibl_pfx_len); */
 /*                     } */
 /*                 } */
 
@@ -329,10 +329,10 @@ LOCAL void _deploy_scm_files(UT_string *manifest)
                 /* if (substr != NULL) { */
                 /*     /\* log_debug("FOUND dune_ed path: %s, %s", *\/ */
                 /*     /\*           line, scriptdir); *\/ */
-                /*     if (oibl_libs7 == NULL) { */
+                /*     if (mibl_libs7 == NULL) { */
                 /*         int len = strlen(scriptdir) + 1; */
-                /*         oibl_libs7 = calloc(len, 1); */
-                /*         strlcpy(oibl_libs7, scriptdir, len); */
+                /*         mibl_libs7 = calloc(len, 1); */
+                /*         strlcpy(mibl_libs7, scriptdir, len); */
                 /*     } */
                 /*     continue; */
                 /* } */
@@ -479,7 +479,7 @@ LOCAL void _config_xdg_home_load_paths()
     /*                  utstring_body(xdg_install_dir)); */
     /* } */
 
-    /* **** oibl: dune **** */
+    /* **** mibl: dune **** */
     utstring_renew(xdg_install_dir);
     utstring_printf(xdg_install_dir, "%s/dune",
                     utstring_body(xdg_home_install_root));
@@ -494,7 +494,7 @@ LOCAL void _config_xdg_home_load_paths()
                      utstring_body(xdg_install_dir));
     }
 
-    /* **** oibl: meta **** */
+    /* **** mibl: meta **** */
     utstring_renew(xdg_install_dir);
     utstring_printf(xdg_install_dir, "%s/meta",
                     utstring_body(xdg_home_install_root));
@@ -508,7 +508,7 @@ LOCAL void _config_xdg_home_load_paths()
             log_debug("FOUND XDG: %s",
                      utstring_body(xdg_install_dir));
     }
-    /* **** oibl: opam **** */
+    /* **** mibl: opam **** */
     utstring_renew(xdg_install_dir);
     utstring_printf(xdg_install_dir, "%s/opam",
                     utstring_body(xdg_home_install_root));
@@ -528,7 +528,7 @@ LOCAL void _config_xdg_sys_load_paths()
 {
     /*
       xdg sys dirs:
-       $XDG_DATA_DIRS/oibl, $XDG_DATA_DIRS/libs7, $XDG_DATA_DIRS/libs7/s7
+       $XDG_DATA_DIRS/mibl, $XDG_DATA_DIRS/libs7, $XDG_DATA_DIRS/libs7/s7
        $XDG_DATA_DIRS default: /usr/local/share
 
        macos:
@@ -588,7 +588,7 @@ LOCAL void _copy_file(char *src, char *dst)
     if (strncmp(basename(src), "repl", 4) == 0) {
         char *bn = basename(src);
         if (strlen(bn) == 4) {
-            utstring_printf(outpath, "%s/oibl", dst);
+            utstring_printf(outpath, "%s/mibl", dst);
         } else {
             utstring_printf(outpath, "%s/%s", dst, basename(src));
         }

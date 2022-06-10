@@ -43,7 +43,7 @@ UT_string *ws_root;
 
 #define LIBS7    "libs7"
 #define LIBS7_S7 LIBS7 "/s7"
-#define OIBL   "oibl"
+#define OIBL   "mibl"
 #define XDG_LOCAL_SHARE ".local/share"
 
 UT_string *runtime_data_dir;

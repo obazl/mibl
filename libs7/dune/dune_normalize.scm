@@ -1,4 +1,4 @@
-(display "dune/dune_normalize.scm loading ...") (newline)
+;; (display "dune/dune_normalize.scm loading ...") (newline)
 
 (define (normalize-stanzas pkg-path
                            ;; dune-project-stanzas
@@ -75,53 +75,52 @@
                      (recur (cdr stanzas) genfiles)))
                   )))))
 
-(define (normalize-pkg-tbl pkg-tbl)
-  ;; (format #t "NORMALIZE-PKG-TBL ct: ~A\n" (hash-table-entries pkg-tbl))
+(define (xnormalize-pkg-tbl pkg-tbl)
+  (format #t "xNORMALIZE-PKG-TBL ct: ~A\n" (hash-table-entries pkg-tbl))
   (let ((pt (for-each (lambda (pkg-kv)
-                        (format #t "PKG: ~A\n" pkg-kv)
-                        (let* ((pkg-path (car pkg-kv))
-                               (_ (format #t "NORM PKG: ~A\n"  pkg-path))
-                               (pkg-alist (cdr pkg-kv))
-                               ;; (pkg-path (if-let ((pp (assoc :pkg-path pkg-alist)))
-                               ;;                   (cadr pp)
-                               ;;                   ""))
-                               (dune-project-stanzas (read-dune-project-file pkg-path))
-                               (static-files (if-let ((s (assoc
-                                                          :srcfiles
-                                                          pkg-alist)))
-                                                     s;;(cadr s)
-                                                     '()))
-                               (_ (format #t "static-files: ~A\n"
-                                          static-files))
+                        (format #t "xPKG-KV: ~A\n" pkg-kv)
+                        (let* ((pkg-alist (cdr pkg-kv))
+                               (format #t "pkg-alist: ~A\n" pkg-alist)
+                               (pkg-path (assoc-val :pkg-path pkg-alist))
+                               (_ (format #t "pkg-path: ~A\n"  pkg-path))
 
-                               (genfiles (if (assoc :pkg-path pkg-alist)
-                                             (pkg-genfiles pkg-alist)
-                                             '()))
-                               (_ (format #t "genfiles: ~A\n"
-                                          genfiles))
+                               ;; (dune-project-stanzas (read-dune-project-file pkg-path))
+                               ;; (static-files (if-let ((s (assoc
+                               ;;                            :srcfiles
+                               ;;                            pkg-alist)))
+                               ;;                       s;;(cadr s)
+                               ;;                       '()))
+                               ;; (_ (format #t "static-files: ~A\n"
+                               ;;            static-files))
 
-                               ;; (_ (if (not (null? genfiles))
-                               ;;        (begin
-                               ;;          (format #t "aaaa ~A\n" static-files)
-                               ;;          (format #t "xxxx ~A\n" genfiles))
-                               ;;        ))
-                               (srcfiles (if (null? genfiles)
-                                             static-files
-                                             (list
-                                              :srcfiles
-                                              (if (null? static-files)
-                                                  `((:ocaml
-                                                     ((:generated ,genfiles))))
-                                                  (alist-update-in!
-                                                   (cadr static-files)
-                                                   '(:ocaml)
-                                                   (lambda (old-assoc)
-                                                     ;; (format #t "old srcs: ~A\n" old-assoc)
-                                                     (list
-                                                      (cons `(:generated ,genfiles)
-                                                            (cadr old-assoc)))))))))
+                               ;; (genfiles (if (assoc :pkg-path pkg-alist)
+                               ;;               (pkg-genfiles pkg-alist)
+                               ;;               '()))
+                               ;; (_ (format #t "genfiles: ~A\n"
+                               ;;            genfiles))
+
+                               ;; ;; (_ (if (not (null? genfiles))
+                               ;; ;;        (begin
+                               ;; ;;          (format #t "aaaa ~A\n" static-files)
+                               ;; ;;          (format #t "xxxx ~A\n" genfiles))
+                               ;; ;;        ))
+                               ;; (srcfiles (if (null? genfiles)
+                               ;;               static-files
+                               ;;               (list
+                               ;;                :srcfiles
+                               ;;                (if (null? static-files)
+                               ;;                    `((:ocaml
+                               ;;                       ((:generated ,genfiles))))
+                               ;;                    (alist-update-in!
+                               ;;                     (cadr static-files)
+                               ;;                     '(:ocaml)
+                               ;;                     (lambda (old-assoc)
+                               ;;                       ;; (format #t "old srcs: ~A\n" old-assoc)
+                               ;;                       (list
+                               ;;                        (cons `(:generated ,genfiles)
+                               ;;                              (cadr old-assoc)))))))))
                                )
-                          (format #t "SRCFILES: ~A\n" srcfiles)
+                          ;; (format #t "SRCFILES: ~A\n" srcfiles)
                           (if-let ((stanzas-lst (assoc :stanzas pkg-alist)))
                                   (let* ((stanzas (normalize-stanzas
                                                    pkg-path
@@ -156,9 +155,10 @@
                                                        pkg-path
                                                        new-pkg))
                                     )
-                                  )))
+                                  )
+                          #f))
                       pkg-tbl)))
   ;; return updated pkg table
     pkg-tbl))
 
-(display "loaded dune/dune_normalize.scm") (newline)
+;; (display "loaded dune/dune_normalize.scm") (newline)

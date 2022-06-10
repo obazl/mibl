@@ -1,4 +1,4 @@
-(display "dune/dune_stanza_executable.scm loading ...") (newline)
+;; (display "dune/dune_stanza_executable.scm loading ...") (newline)
 
 (define (normalize-executable typ ;; :executable || :test
                               pkg-path privname pubname
@@ -293,6 +293,7 @@
 ;; "The optional fields [for 'tests stanza] that are supported are a
 ;; subset of the alias and executables fields. In particular, all
 ;; fields except for public_names are supported from the executables
+
 ;; stanza. Alias fields apart from name are allowed."
 (define (normalize-stanza-executables typ pkg-path srcfiles stanza)
   ;; typ:: :executables || :tests
@@ -355,4 +356,4 @@
                )
              (cdr privnames)))))
 
-(display "loaded dune/dune_stanza_executable.scm") (newline)
+;; (display "loaded dune/dune_stanza_executable.scm") (newline)

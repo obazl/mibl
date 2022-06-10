@@ -49,7 +49,7 @@ int rc;
 
 #define LIBS7    "libs7"
 #define LIBS7_S7 LIBS7 "/s7"
-#define OIBL   "oibl"
+#define OIBL   "mibl"
 
 /* XDG
    https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
@@ -173,7 +173,7 @@ LOCAL void _config_s7_load_path_bazel_runfiles(UT_string *manifest)
     if (debug)
         log_debug("Reading MANIFEST");
 
-    /* char *oibl_libs7 = NULL; */
+    /* char *mibl_libs7 = NULL; */
 
     s7_pointer load_dirs = s7_make_hash_table(s7, 5);
     s7_pointer sdir;
@@ -240,10 +240,10 @@ LOCAL void _config_s7_load_path_bazel_runfiles(UT_string *manifest)
                 /* if (substr != NULL) { */
                 /*     /\* log_debug("FOUND dune_ed path: %s, %s", *\/ */
                 /*     /\*           line, scriptdir); *\/ */
-                /*     if (oibl_libs7 == NULL) { */
+                /*     if (mibl_libs7 == NULL) { */
                 /*         int len = strlen(scriptdir) + 1; */
-                /*         oibl_libs7 = calloc(len, 1); */
-                /*         strlcpy(oibl_libs7, scriptdir, len); */
+                /*         mibl_libs7 = calloc(len, 1); */
+                /*         strlcpy(mibl_libs7, scriptdir, len); */
                 /*     } */
                 /*     continue; */
                 /* } */
@@ -267,7 +267,7 @@ LOCAL void _config_s7_load_path_bazel_runfiles(UT_string *manifest)
 
     /* log_debug("tmp_load_path: %s", TO_STR(tmp_load_path)); */
     /* tmp_load_path = s7_cons(s7, */
-    /*                         s7_make_string(s7, oibl_libs7), */
+    /*                         s7_make_string(s7, mibl_libs7), */
     /*                         tmp_load_path); */
     /* log_debug("2 tmp_load_path: %s", TO_STR(tmp_load_path)); */
 
@@ -345,7 +345,7 @@ LOCAL void _config_s7_load_path_xdg_home(void)
     }
     log_trace("xdg_data_home %s", utstring_body(xdg_data_home));
 
-    /* start with lib/libc_s7.o, oibl dlopens it */
+    /* start with lib/libc_s7.o, mibl dlopens it */
 
     // instead of adding another dir with only one file to the load-path,
     // we store libc_s7.o in .local/share/libs7, which is already on the path
@@ -510,7 +510,7 @@ bazel run is similar, but not identical, to directly invoking the binary built b
         /* Running under bazel: do NOT put XDG dirs in load-path. This
            ensures a pristine runtime env. The user can always add
            directories to load-path. The only exception is the
-           project-local script directory in <projroot>/.oibl . */
+           project-local script directory in <projroot>/.mibl . */
         s7_pointer lp = s7_load_path(s7);
         log_debug("1 *LOAD-PATH*: %s", TO_STR(lp));
         _config_s7_load_path_bazel_runfiles(manifest);
@@ -549,8 +549,7 @@ EXPORT void s7_configure(void)
                             DUNE_LOAD_HELP);
 
     set_load_path(); //callback_script_file);
-    /* s7_load(s7, "dune.scm"); */
-    /* s7_load(s7, "alist.scm"); */
+    s7_load(s7, "dune.scm");
 }
 
 EXPORT void s7_shutdown(s7_scheme *s7)

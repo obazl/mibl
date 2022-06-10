@@ -1,4 +1,69 @@
-(dune-load "tweag/tezos" "src/lib_clic")
+(load "dune.scm")
+(define pkgs (dune-load ;; "obazl/mibl/test",
+             ;; "dune/stanzas/library"
+             ;; "dune/tezos/lib_test"
+              "a"
+             ))
+pkgs
+(define pkg (hash-table-ref pkgs "a"))
+pkg
+
+(load "pkg_api.scm")
+(define mnames (pkg->module-names pkg))
+mnames
+
+(hash-table-keys newtbl)
+(define tpkg (hash-table-ref newtbl
+                             ;; "src/lib_clic/test"
+                             "src/lib_clic/test"
+                             ))
+tpkg
+
+(let* ((_   (load "dune.scm"))
+       (_   (load "normalize.scm"))
+       (_   (load "pkg_api.scm"))
+       (pkgs (dune-load
+              "a"
+              ;; "dune/predicates/standard/flags"
+              ;; "dune/stanzas/library"
+              ))
+       (pkg (hash-table-ref pkgs
+                            "a"
+                            ;;"dune/predicates/standard/flags"
+                            ))
+       (path (assoc-val :pkg-path pkg))
+       (stanzas (assoc-val :dune-stanzas pkg))
+       (modules (assoc-val :modules pkg))
+       (mnames (pkg->module-names pkg))
+       )
+  mnames)
+  modules)
+
+(let* ((lib '(library (name mylib_a)
+               (public_name mylib)
+               (preprocess (pps ppx_jane))
+               (libraries core_kernel ppx_version)))
+       (lib-alist (cdr lib))
+       (name (assoc 'name lib-alist))
+       (pubname (assoc 'public_name lib-alist))
+       (preproc (assoc 'preprocess lib-alist))
+       (libs (assoc 'libraries lib-alist))
+       )
+  libs)
+  preproc)
+  pubname)
+  lib-alist)
+
+(let ((pkg (
+  (define norm (normalize-pkg-tbl newtbl))
+  )
+
+(define palist (cdr '("src/lib_clic/unix" (:pkg-path "src/lib_clic/unix") (:dune-stanzas (library (name tezos_clic_unix) (public_name tezos-clic.unix) (flags (:standard -open Tezos_stdlib -open Tezos_clic -open Tezos_error_monad -open Tezos_error_monad.TzLwtreslib)) (libraries tezos-clic tezos-stdlib-unix tezos-error-monad tezos-lwt-result-stdlib))) (:files "BUILD.bazel") (:modules (Scriptable (:mli "scriptable.mli") (:ml "scriptable.ml"))))))
+
+(assoc-val :pkg-path palist)
+
+(cdr e)
+norm
 
 ;; (dune-load "proto_000_Ps9mPmXa")
 ;; (dune-load "lib_clic")
@@ -19,34 +84,20 @@
 (define dune-pkg-tbls-alist '())
 )
 
-;; this sets global pkg-tbls without printing:
-(begin
-  (load "repl.scm")
-  (load "codept.scm")
-  (load "dune.scm")
-  (load "string.scm")
-  (load "utils.scm")
-  (load "pp.scm")
-  (load "dune_ingest.scm")
-  (let-values (((stdlib execs-tbl) (make-stdlib-tbl)))
-    (set! executables-tbl execs-tbl)
-    (set! stdlib-tbl stdlib)
-    ;; (for-each (lambda (k) (format #t "~A\n" k)) executables-tbl)
-    ;; map dune executable names to bazel labels
-    ;; (define public-exe->label (make-hash-table))
-    (define opam-tbl (make-hash-table))
-    (define dune-pkg-tbls ;; alist: srcdir -> pkg-tbl
+(define opam-tbl (make-hash-table))
+(load "dune.scm")
+(define dune-pkg-tbls ;; alist: srcdir -> pkg-tbl
                (dune-fold-dirs
                 pkg-paths
                 ;;(list "src" "vendors")
                 ))
-    (let ((x (define dune-pkg-tbls ;; alist: srcdir -> pkg-tbl
-               (dune-fold-dirs
-                pkg-paths
-                ;;(list "src" "vendors")
-                ))))
-      (set! dune-pkg-tbls-alist dune-pkg-tbls)
-      '())))
+dune-pkg-tbls
+
+(define norm (normalize-pkg-tbl dune-pkg-tbls))
+norm
+
+
+(set! dune-pkg-tbls-alist dune-pkg-tbls)
 
 dune-pkg-tbls-alist
 

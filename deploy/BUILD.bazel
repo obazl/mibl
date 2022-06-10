@@ -6,7 +6,7 @@ cc_binary(
     srcs  = [
         "deploy.c", "deploy.h",
         "deploy_config.c", "deploy_config.h",
-        "//src:oibl_config.h",
+        "//src:mibl_config.h",
         "//src:fs.h"
     ],
     defines = select({
@@ -26,17 +26,17 @@ cc_binary(
         "-Wno-unused-function",
 
         "-I$(GENDIR)/src",
-        "-I$(GENDIR)/external/oibl/src",
+        "-I$(GENDIR)/external/mibl/src",
 
         "-I$(GENDIR)/deploy",
-        "-I$(GENDIR)/external/oibl/deploy",
+        "-I$(GENDIR)/external/mibl/deploy",
 
         "-Iexternal/uthash/include",
         "-Iexternal/libinih",
         "-Iexternal/logc/src",
 
         "-Iexternal/libs7/src",
-        "-Iexternal/oibl/libs7/src",
+        "-Iexternal/mibl/libs7/src",
     ],
     data = [
         "//repl", # so we can find it in MANIFEST
@@ -52,7 +52,7 @@ cc_binary(
     ],
     deps = [
         "//repl",
-        "//src:oibl", # since we depend on its config files
+        "//src:mibl", # since we depend on its config files
         "//external/libinih:inih",
         # "@logc//:logc",
         # "@libs7//src:s7",

@@ -1,7 +1,7 @@
 #include <unistd.h>
 
 #include "bazel_config.h"
-#include "oibl_config.h"
+#include "mibl_config.h"
 #include "s7_config.h"
 #include "dune_load.h"
 
@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
     char *rootdir;
     char *pathdir;
 
-    /* rootdir = "obazl/oibl"; */
+    /* rootdir = "obazl/mibl"; */
 
     /* pathdir = "test/baddot"; */
     /* pathdir = "test/includes/mwe"; */

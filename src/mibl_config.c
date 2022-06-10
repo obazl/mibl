@@ -2,7 +2,7 @@
 
 #include <stdbool.h>
 
-#include "oibl_config.h"
+#include "mibl_config.h"
 
 bool debug = false;
 bool dev_mode = false;

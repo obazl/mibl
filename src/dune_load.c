@@ -19,6 +19,7 @@
 #include "utstring.h"
 #endif
 
+#include "s7.h"
 #include "log.h"
 #include "dune_load.h"
 
@@ -28,6 +29,8 @@ UT_string *group_tag;
 int dunefile_ct = 0;
 int file_ct = 0;
 int dir_ct  = 0;
+
+#define PKG_CT 50
 
 void _indent(int i)
 {
@@ -192,13 +195,14 @@ LOCAL void _handle_dir(s7_pointer pkg_tbl, FTS* tree, FTSENT *ftsentry)
     /*                                       s7_list(s7, 1, test_assoc)); */
     s7_pointer result =
         s7_hash_table_set(s7, pkg_tbl, key,
-                          s7_list(s7, 2,
+                          s7_list(s7, 1,
                                   s7_list(s7, 2,
                                           s7_make_keyword(s7, "pkg-path"),
-                                          key),
-                                  s7_list(s7, 2,
-                                          s7_make_keyword(s7, "dune-stanzas"),
-                                          s7_nil(s7))));
+                                          key)));
+                                  /* s7_nil(s7))); */
+                                  /* s7_list(s7, 2, */
+                                  /*         s7_make_keyword(s7, "dune-stanzas"), */
+                                  /*         s7_nil(s7)))); */
 }
 
 static char principal[256];
@@ -435,7 +439,7 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
 {
     if (trace)
         log_trace("_UPDATE_PKG_MODULES");
-    /* if (debug) */
+    if (debug)
         log_debug("pkg_tbl: %s", s7_object_to_c_string(s7, pkg_tbl));
 
     s7_pointer pkg_kw = s7_make_string(s7, pkg_name);
@@ -961,17 +965,69 @@ int _compare(const FTSENT** one, const FTSENT** two)
     return (strcmp((*one)->fts_name, (*two)->fts_name));
 }
 
+LOCAL char *_get_path_dir(s7_pointer arg)
+{
+    char *pathdir = s7_string(arg);
+
+    if (pathdir[0] == '/') {
+        log_error("Path arg must be relative");
+        return NULL;
+    }
+    int rc = access(pathdir, R_OK);
+    if (rc) {
+        log_error("NOT FOUND: %s", pathdir);
+        return NULL;
+    }
+    struct stat path_stat;
+    stat(pathdir, &path_stat);
+    if ( !S_ISDIR(path_stat.st_mode) ) {
+        log_error("Path arg must be a directory: %s", pathdir);
+        return NULL;
+    }
+    return pathdir;
+}
+
+s7_pointer _merge_pkg_tbls(s7_scheme *s7, s7_pointer ht1, s7_pointer ht2)
+{
+    log_debug("merging: %s", TO_STR(ht2));
+    log_debug(" into: %s", TO_STR(ht1));
+
+    s7_pointer _iter = s7_make_iterator(s7, ht2);
+    s7_int _gc = s7_gc_protect(s7, _iter);
+
+    s7_pointer _item = s7_iterate(s7, _iter);
+
+    while ( ! s7_is_eq(s7_eof_object(s7), _item) ) {
+        if (debug) {
+            /* log_info("item: %s\n", TO_STR(_item)); */
+            log_info("merging key: %s", TO_STR(s7_car(_item)));
+            log_info("    val: %s", TO_STR(s7_cdr(_item)));
+        }
+        s7_hash_table_set(s7, ht1,
+                          s7_car(_item),
+                          s7_cdr(_item));
+        _item = s7_iterate(s7, _iter);
+    }
+
+    s7_gc_unprotect_at(s7, _gc);
+    return ht1;
+}
+
 EXPORT s7_pointer g_dune_load(s7_scheme *s7,  s7_pointer args)
 {
-    char *rootdir, *pathdir;
+    if (debug)
+        log_debug("g_dune_load, args: %s", TO_STR(args));
 
-    printf("args: %s\n", s7_object_to_c_string(s7, args));
+    char *rootdir, *pathdir;
+    s7_pointer _pkg_tbl = s7_make_hash_table(s7, PKG_CT);
+
     if ( s7_is_null(s7, args) ) {
         rootdir = getcwd(NULL, 0);
         pathdir = ".";
     } else {
         s7_int args_ct = s7_list_length(s7, args);
-        printf("args ct: %d\n", args_ct);
+        if (debug)
+            log_debug("args ct: %d\n", args_ct);
 
         s7_pointer rootarg;
 
@@ -980,25 +1036,56 @@ EXPORT s7_pointer g_dune_load(s7_scheme *s7,  s7_pointer args)
             pathdir = s7_string(s7_cadr(args));
         }
         else if (args_ct == 1) {
-            /* one arg == path relative to current wd */
-            pathdir = s7_string(s7_car(args));
-            if (pathdir[0] == '/') {
-                log_error("Path arg must be relative");
+            s7_pointer arg = s7_car(args);
+            if (s7_is_list(s7, arg)) {
+                if (trace)
+                    log_info("Arg is list: %s", TO_STR(arg));
+
+                rootdir = getcwd(NULL,0);
+
+                s7_int gc1;
+                s7_pointer _pkgs, _iter;
+
+                s7_pointer arglist = arg;
+                while ( !s7_is_null(s7, arglist)) {
+                    s7_pointer item = s7_car(arglist);
+                    if (trace)
+                        log_info("item: %s", TO_STR(item));
+                    pathdir = _get_path_dir(item);
+                    if (pathdir) {
+
+                        s7_pointer _pkgs = dune_load(rootdir, pathdir);
+                        if (s7_is_hash_table(_pkgs)) {
+                            _pkg_tbl = _merge_pkg_tbls(s7, _pkg_tbl, _pkgs);
+                            log_debug("merged result: %s", TO_STR(_pkg_tbl));
+                        } else {
+                            log_error("dune_load returned %s", TO_STR(_pkgs));
+                            return s7_nil(s7);
+                        }
+                    }
+                    arglist = s7_cdr(arglist);
+                }
+                return _pkg_tbl;
+            }
+            else if (s7_is_string(arg)) {
+                /* one string arg == path relative to current wd */
+                rootdir = getcwd(NULL,0);
+                pathdir = _get_path_dir(arg);
+                if (pathdir)
+                    return dune_load(rootdir, pathdir);
+                else
+                    return s7_nil(s7);
+            } else {
+                log_error("Arg must be string or list of strings");
                 return s7_nil(s7);
             }
-            struct stat path_stat;
-            stat(pathdir, &path_stat);
-            if ( !S_ISDIR(path_stat.st_mode) ) {
-                log_error("Path arg must be a directory: %s", pathdir);
-                return s7_nil(s7);
-            }
-            rootdir = getcwd(NULL,0);
         }
         else if (args_ct == 0) {
             rootdir = getcwd(NULL,0);
             pathdir = ".";
         }
         else {
+            log_error("Too many args");
             fprintf(stderr,
                     RED "ERROR: unexpected arg count %d for dune-load\n",
                     args_ct);
@@ -1010,18 +1097,14 @@ EXPORT s7_pointer g_dune_load(s7_scheme *s7,  s7_pointer args)
         /* strlcpy(rootdir, s, 256); */
         /* rootdir = "test"; */
     }
-    s7_load(s7, "dune.scm");
-    s7_pointer pkgs = dune_load(rootdir, pathdir);
-    /* printf("g_dune_load done\n"); */
-    /* printf("cwd: %s\n", getcwd(NULL, 0)); */
-    /* free(rootdir); */
-    /* return s7_name_to_value(s7, "pkg-tbl"); */
-    return pkgs;
+    _pkg_tbl = dune_load(rootdir, pathdir);
+    return _pkg_tbl;
 }
 
 EXPORT s7_pointer dune_load(char *root, char *path)
 {
-    printf("dune_load root: %s, path: %s\n", root, path);
+    if (debug)
+        log_debug("dune_load root: %s, path: %s\n", root, path);
 
     errno = 0;
     int rc = chdir(getenv("HOME"));
@@ -1031,7 +1114,8 @@ EXPORT s7_pointer dune_load(char *root, char *path)
     }
     rc = chdir(root);
 
-    printf("cwd: %s\n", getcwd(NULL, 0));
+    if (trace)
+        printf("cwd: %s\n", getcwd(NULL, 0));
 
     FTS* tree = NULL;
     FTSENT *ftsentry     = NULL;
@@ -1061,10 +1145,8 @@ EXPORT s7_pointer dune_load(char *root, char *path)
     if (verbose)
         log_info("loading...\n");
 
-    // pkg-tbl
-#define PKG_CT 50
     s7_pointer pkg_tbl = s7_make_hash_table(s7, PKG_CT);
-    s7_define_variable(s7, "pkg-tbl", pkg_tbl);
+    /* s7_define_variable(s7, "pkg-tbl", pkg_tbl); */
 
     char *ext;
 
@@ -1151,6 +1233,8 @@ EXPORT s7_pointer dune_load(char *root, char *path)
                 }
         }
     }
-    printf("done\n");
+    if (trace)
+        printf("done\n");
+
     return pkg_tbl;
 }

@@ -1,4 +1,4 @@
-(display "dune/dune_stanza_fields.scm loading ...") (newline)
+;; (display "dune/dune_stanza_fields.scm loading ...") (newline)
 
 ;; (load "opam.scm")
 ;; (load "string.scm")
@@ -328,4 +328,4 @@
                                  lib-flags)))))))
       #f))
 
-(display "loaded dune/dune_stanza_fields.scm") (newline)
+;; (display "loaded dune/dune_stanza_fields.scm") (newline)

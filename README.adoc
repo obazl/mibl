@@ -1,4 +1,4 @@
-= oibl
+= mibl - tools for meta-programming OCaml builds
 
 Scheme tools for herding OCaml projects; in particular analyzing and
 editing link:https://dune.readthedocs.io/en/latest/[Dune],
@@ -6,14 +6,7 @@ link:https://opam.ocaml.org/doc/Manual.html[OPAM], and
 link:http://projects.camlcity.org/projects/dl/findlib-1.9.4/doc/ref-html/r759.html[META]
 files.
 
-"oibl" doesn't exactly roll off the tongue, but it has two virtues:
-it's short, and it's easy to remember once you know that "ibl" is
-Arabic for "camel". If you must say it aloud, you can pronounce t as
-_oh-ibil_, or you can make it ryhme with "gerbil": _oybull_.
-
-If you prefer acronyms, you can treat it as an English-Arabic hybrid,
-"Objective Ibl". So unimaginative! Why not invent your own, like "Oibl
-Integrates Build Languages" or "Oibl Is Built Leculsively". Go crazy!
+"Ibl" is Arabic for "camel". If you prefer acronyms: **M**ibl **i**ntegrates **b**uild **l**anguages".
 
 IMPORTANT: Currently only the (beta version of the) Dune API is implemented. The code (in C)
 for the OPAM and META APIs is written but the Scheme bindings are
@@ -25,19 +18,19 @@ still under construction.
 ----
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 git_repository(
-    name = "oibl",
-    remote = "https://github.com/obazl/oibl",
+    name = "mibl",
+    remote = "https://github.com/obazl/mibl",
     branch = "main"
 )
 ----
 
-NOTE: Once `oibl` is officially released this should be replaced with an `http_archive` rule.
+NOTE: Once `mibl` is officially released this should be replaced with an `http_archive` rule.
 
 Then:
 
 [source,shell]
 ----
-$ bazel run @oibl//repl
+$ bazel run @mibl//repl
 ----
 
 Options: `-v` (verbose) and `-d` (debug).

@@ -50,7 +50,7 @@ char *hints(const char *buf, int *color, int *bold) {
 
 void print_usage(void)
 {
-    printf("Usage: oibl [-m | -k | -v | -h ]\n");
+    printf("Usage: mibl [-m | -k | -v | -h ]\n");
 }
 
 void std_repl()
@@ -119,7 +119,7 @@ void std_repl()
 
 int main(int argc, char **argv)
 {
-    printf("oibl repl v 0.1\n");
+    printf("mibl repl v 0.1\n");
     /* Parse options, with --multiline we enable multi line editing. */
     int opt;
     while ((opt = getopt(argc, argv, "edmkhtvV")) != -1) {

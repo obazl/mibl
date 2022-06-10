@@ -1,4 +1,4 @@
-(display "dune/dune_stanza_library.scm loading ...") (newline)
+;; (display "dune/dune_stanza_library.scm loading ...") (newline)
 
 ;; (load "dune_stanza_fields.scm")
 ;; (load "lookup_tables.scm")
@@ -500,4 +500,4 @@
 (define (normalize-inline_tests fld-assoc stanza-alist)
   (format #t "normalize-inline_tests: ~A\n" fld-assoc))
 
-(display "loaded dune/dune_stanza_library.scm") (newline)
+;; (display "loaded dune/dune_stanza_library.scm") (newline)

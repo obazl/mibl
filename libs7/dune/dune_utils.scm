@@ -1,4 +1,4 @@
-(display "dune/dune_utils.scm") (newline)
+;; (display "dune/dune_utils.scm") (newline)
 
 ;; (load "alist.scm")
 ;; (load "dune_normalize.scm")
@@ -370,4 +370,4 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(display "loaded dune/dune_utils.scm") (newline)
+;; (display "loaded dune/dune_utils.scm") (newline)

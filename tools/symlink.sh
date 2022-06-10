@@ -15,6 +15,6 @@ ln -sfv $HOME/obazl/libs7/libs7/*scm $HOME/.local/share/libs7
 ln -sfv $HOME/obazl/libs7/libs7/s7/*scm $HOME/.local/share/libs7/s7
 
 ## don't forget the executble and lib
-cp -fv `realpath bazel-bin/repl/repl` $HOME/.local/bin/oibl
-chmod u+rwx $HOME/.local/bin/oibl
+cp -fv `realpath bazel-bin/repl/repl` $HOME/.local/bin/mibl
+chmod u+rwx $HOME/.local/bin/mibl
 cp -fv `realpath bazel-bin/external/libs7/src/libc_s7.so` $HOME/.local/share/libs7

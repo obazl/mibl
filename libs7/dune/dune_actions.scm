@@ -1,4 +1,5 @@
-(display "dune/dune_actions.scm loading...") (newline)
+;; (display "dune/dune_actions.scm loading...") (newline)
+
 ;; https://dune.readthedocs.io/en/stable/concepts.html?highlight=progn#user-actions
 
 ;; available actions:
@@ -1777,4 +1778,4 @@
        (format #t "UNHANDLED ACTION\n")
        stanza))))
 
-(display "loaded dune/dune_actions.scm") (newline)
+;; (display "loaded dune/dune_actions.scm") (newline)

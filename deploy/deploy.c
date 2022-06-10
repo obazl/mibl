@@ -33,7 +33,7 @@ extern struct configuration_s obazl_config;
 
 void print_usage(void)
 {
-    printf("Usage: oibl [-m | -k | -v | -h ]\n");
+    printf("Usage: mibl [-m | -k | -v | -h ]\n");
 }
 
 int main(int argc, char **argv)
