@@ -203,7 +203,7 @@ LOCAL void _deploy_scm_files(UT_string *manifest)
                 int pfx_len;
                 if (dev_mode) {
                     pfx = "mibl/mibl/";
-                    pfx_len = 11;
+                    pfx_len = strlen(pfx);
                     if (strncmp(dest, pfx, pfx_len) == 0) {
                         if (strlen(dirname(dest)) == pfx_len - 1) {
                             /* no path after pfx */
@@ -216,7 +216,7 @@ LOCAL void _deploy_scm_files(UT_string *manifest)
                     } else {
                         /* log_debug("checking libs7"); */
                         pfx = "libs7/libs7/";
-                        pfx_len = 12;
+                        pfx_len = strlen(pfx);
                         if (strncmp(dest, pfx, pfx_len) == 0) {
                             if (strlen(dirname(dest)) == pfx_len - 1) {
                                 /* no path after pfx */
@@ -231,7 +231,7 @@ LOCAL void _deploy_scm_files(UT_string *manifest)
                 } else {
                     /* external mode */
                     pfx = "__main__/external/mibl/mibl/";
-                    pfx_len = 32;
+                    pfx_len = strlen(pfx);
                     if (strncmp(dest, pfx, pfx_len) == 0) {
                         if (strlen(dirname(dest)) == pfx_len - 1) {
                             /* no path after pfx */
@@ -247,7 +247,7 @@ LOCAL void _deploy_scm_files(UT_string *manifest)
                         if (trace)
                             log_debug("checking libs7");
                         pfx = "__main__/external/libs7/libs7/";
-                        pfx_len = 30;
+                        pfx_len = strlen(pfx);
                         if (strncmp(dest, pfx, pfx_len) == 0) {
                             if (strlen(dirname(dest)) == pfx_len - 1) {
                                 /* no path after pfx */

@@ -20,3 +20,4 @@ cp -fv `realpath bazel-bin/repl/repl` $HOME/.local/bin/mibl
 chmod u+rwx $HOME/.local/bin/mibl
 
 cp -fv `realpath bazel-bin/external/libs7/src/libc_s7.so` $HOME/.local/share/mibl
+chmod u+rwx $HOME/.local/share/mibl/libc_s7.so

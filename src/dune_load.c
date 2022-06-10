@@ -17,9 +17,9 @@
 #if INTERFACE
 #include "utarray.h"
 #include "utstring.h"
+#include "s7.h"
 #endif
 
-#include "s7.h"
 #include "log.h"
 #include "dune_load.h"
 

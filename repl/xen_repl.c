@@ -270,7 +270,7 @@ void xen_repl(int argc, char **argv)
   int size = 512;
   bool expr_ok = true;
   char *buffer;
-  char *repl_prompt = xen_strdup("bzl> ");
+  char *repl_prompt = xen_strdup("mibl> ");
 
   buffer = (char *)calloc(size, sizeof(char));
 

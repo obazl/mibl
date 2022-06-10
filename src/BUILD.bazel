@@ -22,7 +22,7 @@ cc_library(
         "mibl_config.h",
         "ansi_colors.h",
         "fs.h",
-        # "@libs7//src:s7.h",
+        "@libs7//src:s7.h",
         "@uthash//:include",
     ],
     data = [
