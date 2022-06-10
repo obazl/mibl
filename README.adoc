@@ -6,7 +6,7 @@ link:https://opam.ocaml.org/doc/Manual.html[OPAM], and
 link:http://projects.camlcity.org/projects/dl/findlib-1.9.4/doc/ref-html/r759.html[META]
 files.
 
-"Ibl" is Arabic for "camel". If you prefer acronyms: **M**ibl **i**ntegrates **b**uild **l**anguages".
+"Ibl" is Arabic for "camel". If you prefer acronyms: **M**ibl **i**ntegrates **b**uild **l**anguages.
 
 IMPORTANT: Currently only the (beta version of the) Dune API is implemented. The code (in C)
 for the OPAM and META APIs is written but the Scheme bindings are
@@ -44,11 +44,16 @@ hash-table of package specs:
 ----
 
 By default, `dune-load` will interpret a single string arg as a file
-path relative to the launch directory. You can also pass it a path and
-a list of paths; the first will be interpreted as a path relative to
-your `$HOME` directory, which will serve as the traversal root; the
-paths in the second arg will be interpreted relative to that root
-directory.
+path relative to the launch directory. You can also give it a list of
+directories to crawl: [source,scheme]
+----
+(dune-load '("src/a" "src/b"))
+----
+
+You can also pass it two arguments: a path and a list of paths; the
+first will be interpreted as a path relative to your `$HOME`
+directory, which will serve as the traversal root; the paths in the
+second arg will be interpreted relative to that root directory.
 
 For example, suppose your current directory is `$HOME/myproj` and you
 are also working on a related project at `$HOME/mylib`. Then to crawl
@@ -57,7 +62,7 @@ the `src/foo` and `test/bar` directories of that project (i.e.
 
 [source,scheme]
 ----
-(dune-load "myproj" ("src/foo" "src/bar"))
+(dune-load "myproj" '("src/foo" "src/bar"))
 ----
 
 Finally, running without any args - `(dune-load)` - will crawl the
