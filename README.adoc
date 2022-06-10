@@ -1,7 +1,66 @@
-= oibl
+= mibl - tools for meta-programming OCaml builds
 
 Scheme tools for herding OCaml projects; in particular analyzing and
-editing Dune and OPAM files.
+editing link:https://dune.readthedocs.io/en/latest/[Dune],
+link:https://opam.ocaml.org/doc/Manual.html[OPAM], and
+link:http://projects.camlcity.org/projects/dl/findlib-1.9.4/doc/ref-html/r759.html[META]
+files.
 
-"Ibl" is Arabic for "Camel". You can pronounce "oibl" as "oh-ibil" if
-you prefer, but "oybull" is more amusing.
+"Ibl" is Arabic for "camel". If you prefer acronyms: **M**ibl **i**ntegrates **b**uild **l**anguages".
+
+IMPORTANT: Currently only the (beta version of the) Dune API is implemented. The code (in C)
+for the OPAM and META APIs is written but the Scheme bindings are
+still under construction.
+
+== Getting Started
+
+[source,starlark, title="WORKSPACE.bazel"]
+----
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
+git_repository(
+    name = "mibl",
+    remote = "https://github.com/obazl/mibl",
+    branch = "main"
+)
+----
+
+NOTE: Once `mibl` is officially released this should be replaced with an `http_archive` rule.
+
+Then:
+
+[source,shell]
+----
+$ bazel run @mibl//repl
+----
+
+Options: `-v` (verbose) and `-d` (debug).
+
+Once in the repl, run `dune-load` to crawl your project and produce a
+hash-table of package specs:
+
+[source,scheme]
+----
+(dune-load "src/lib_stdlib_unix")
+----
+
+By default, `dune-load` will interpret a single string arg as a file
+path relative to the launch directory. You can also pass it a path and
+a list of paths; the first will be interpreted as a path relative to
+your `$HOME` directory, which will serve as the traversal root; the
+paths in the second arg will be interpreted relative to that root
+directory.
+
+For example, suppose your current directory is `$HOME/myproj` and you
+are also working on a related project at `$HOME/mylib`. Then to crawl
+the `src/foo` and `test/bar` directories of that project (i.e.
+`$HOME/mylib/src/foo` and `$HOME/mylib/test/bar`), run:
+
+[source,scheme]
+----
+(dune-load "myproj" ("src/foo" "src/bar"))
+----
+
+Finally, running without any args - `(dune-load)` - will crawl the
+tree rooted at the current directory.
+
+
