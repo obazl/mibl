@@ -1,0 +1,46 @@
+;; mix options and flags
+(library
+ (name mixed_a)
+ (flags (:standard -open amod -open bmod -nopervasives -nostdlib)))
+
+(library
+ (name mixed_b)
+ (flags (:standard -open amod -nopervasives
+                   -open bmod -nostdlib)))
+
+;; dyadic options only
+(library
+ (name flags_a)
+ (flags (:standard -open amod -open bmod)))
+
+;; boolean flags only
+(library
+ (name flags_b)
+ (flags (:standard -nopervasives -nostdlib)))
+
+(library
+ (name flags_c)
+ (flags (:standard -w +a-4-6-7-9-29-32-40..42-44-45-48-60-67)))
+
+(library
+ (name flags_d)
+ (flags (:standard -w +a-4-6-7-9-29-32-40..42-44-45-48-60-67
+                   -warn-error +a)))
+
+(library
+ (name flags_dstr)
+ (flags -w "+a-4-6-7-9-29-40..42-44-45-48-60-67"
+        -warn-error "+a"
+        -nopervasives))
+
+(library
+ (name flags_e)
+ (flags (:standard -open amod -open bmod
+                   -nopervasives -nostdlib
+                   -w +a-4-6-7-9-29-32-40..42-44-45-48-60-67
+                   -warn-error +a)))
+
+(library
+ (name libflags_a)
+ (library_flags (:standard -linkall)))
+
