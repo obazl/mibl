@@ -76,6 +76,9 @@ struct configuration_s bazel_config = {.obazl_version = OBAZL_VERSION, .libct = 
 /* UT_array *src_files;            /\* FIXME: put this in configuration_s? *\/ */
 char *homedir;
 
+/*
+  FIXME: also deal with dune workspace roots
+ */
 char *find_ws_root(char *dir)
 {
    /* log_debug("find_ws_root: %s", dir); */

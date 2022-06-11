@@ -5,6 +5,7 @@
 
 #include "log.h"
 #include "s7.h"
+#include "s7_config.h"
 #include "xen_repl.h"
 
 extern s7_scheme *s7;
@@ -271,6 +272,7 @@ void xen_repl(int argc, char **argv)
   bool expr_ok = true;
   char *buffer;
   char *repl_prompt = xen_strdup("mibl> ");
+  s7_pointer evalres;
 
   buffer = (char *)calloc(size, sizeof(char));
 
@@ -310,7 +312,13 @@ void xen_repl(int argc, char **argv)
 	      temp = (char *)malloc(len * sizeof(char));
 	      snprintf(temp, len, "(write %s)", str);
 	      /* Xen_eval_C_string(temp); */
-	      s7_eval_c_string(s7, temp);
+
+	      evalres = s7_eval_c_string(s7, temp);
+/* /\* The s7-built-in catch tags are 'wrong-type-arg, 'syntax-error, 'read-error, 'unbound-variable, 'out-of-memory, 'wrong-number-of-args, 'format-error, 'out-of-range, 'division-by-zero, 'io-error, and 'bignum-error. *\/ */
+/*               log_debug("evalres: %s", TO_STR(evalres)); */
+/*               log_debug("evalres t: %s", TO_STR(s7_type_of(s7, evalres))); */
+              /* if (s7_ */
+
 	      free(temp);
 	      stdin_free_str();
 /* #else */

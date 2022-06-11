@@ -8,6 +8,27 @@ s7_pointer old_err_port;
 const char *errmsg = NULL;
 int gc_loc = -1;
 
+s7_pointer s7_error_handler(s7_scheme *sc, s7_pointer args)
+{
+    /* log_error("error: %s\n", s7_string(s7_car(args))); */
+    fprintf(stdout, "ERROR: %s\n", s7_string(s7_car(args)));
+    return(s7_f(sc));
+}
+
+void init_error_handling(void)
+{
+    s7_define_function(s7, "error-handler",
+                       s7_error_handler, 1, 0, false,
+                       "our error handler");
+
+    /* if (with_error_hook) */
+    s7_eval_c_string(s7, "(set! (hook-functions *error-hook*) \n\
+                            (list (lambda (hook) \n\
+                                    (error-handler \n\
+                                      (apply format #f (hook 'data))) \n\
+                                    (set! (hook 'result) 'our-error))))");
+}
+
 void error_config(void)
 {
     old_err_port = s7_set_current_error_port(s7, s7_open_output_string(s7));
@@ -16,9 +37,6 @@ void error_config(void)
     /* s7_flush_output_port(s7, old_err_port); */
     /* s7_flush_output_port(s7, s7_current_error_port(s7)); */
 
-    s7_define_function(s7, "error-handler",
-                       s7_error_handler, 1, 0, false,
-                       "our error handler");
 }
 
 void close_error_config(void) // s7_pointer err_port)

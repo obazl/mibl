@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
 
     rootdir = "obazl/mibl";
 
-    pathdir = "test/a";
+    pathdir = "ws/a/b";
 
     /* launching from test/ws */
     /* pathdir = "a/b"; // ws/a/WORKSPACE.bazel */

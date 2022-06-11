@@ -158,7 +158,7 @@ int main(int argc, char **argv)
     bazel_configure(); // getcwd(NULL, 0));
     s7_configure();
 
-    s7_repl(s7);
+    /* s7_repl(s7); */
     xen_repl(argc, argv);
 
     return 0;

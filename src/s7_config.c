@@ -106,13 +106,6 @@ UT_string *xdg_data_home;
 
  */
 
-s7_pointer s7_error_handler(s7_scheme *sc, s7_pointer args)
-{
-    log_error("error: %s\n", s7_string(s7_car(args)));
-    fprintf(stdout, "error: %s\n", s7_string(s7_car(args)));
-    return(s7_f(sc));
-}
-
 #if INTERFACE
 #define DUNE_LOAD_HELP "(dune-load rootdir pathdir) rootdir is relative to $HOME; pathdir is relative to rootdir.  Change dir to rootdir and load pathdir, creating pkg-tbl"
 
@@ -277,7 +270,7 @@ LOCAL void _config_s7_load_path_bazel_runfiles(UT_string *manifest)
     s7_define_variable(s7, "*load-path*", tmp_load_path);
 }
 
-LOCAL void _config_s7_load_path_proj(void)
+LOCAL void _config_s7_load_path_bws_root(void)
 {
     char *project_script_dir = PROJ_MIBL;
 
@@ -512,7 +505,7 @@ bazel run is similar, but not identical, to directly invoking the binary built b
         lp = s7_load_path(s7);
         log_debug("2 *LOAD-PATH*: %s", TO_STR(lp));
     }
-    _config_s7_load_path_proj();
+    _config_s7_load_path_bws_root();
 
     s7_add_to_load_path(s7, ".");
 
@@ -531,11 +524,82 @@ bazel run is similar, but not identical, to directly invoking the binary built b
 
 /* void libc_s7_init(s7_scheme *sc); */
 
+LOCAL void s7_config_repl(s7_scheme *sc)
+{
+    printf("mibl: s7_repl\n");
+#if (!WITH_C_LOADER)
+  dumb_repl(sc);
+#else
+#if WITH_NOTCURSES
+  s7_load(sc, "nrepl.scm");
+#else
+  s7_pointer old_e, e, val;
+  s7_int gc_loc;
+  bool repl_loaded = false;
+  /* try to get lib_s7.so from the repl's directory, and set *libc*.
+   *   otherwise repl.scm will try to load libc.scm which will try to build libc_s7.so locally, but that requires s7.h
+   */
+  e = s7_inlet(sc,
+               s7_list(sc, 2,
+                       s7_make_symbol(sc, "init_func"),
+                      s7_make_symbol(sc, "libc_s7_init")));
+               /* list_2(sc, s7_make_symbol(sc, "init_func"), */
+               /*        s7_make_symbol(sc, "libc_s7_init"))); */
+  gc_loc = s7_gc_protect(sc, e);
+  old_e = s7_set_curlet(sc, e);   /* e is now (curlet) so loaded names from libc will be placed there, not in (rootlet) */
+
+  /* printf("loading %s/%s\n", TOSTRING(OBAZL_RUNFILES_DIR), "/libc_s7.o"); */
+  printf("loading libc_s7.o\n");
+  printf("cwd: %s\n", getcwd(NULL, 0));
+
+  val = s7_load_with_environment(sc, "libc_s7.so", e);
+  if (val)
+    {
+      s7_pointer libs;
+      uint64_t hash;
+      /* hash = raw_string_hash((const uint8_t *)"*libc*", 6);  /\* hack around an idiotic gcc 10.2.1 warning *\/ */
+      /* s7_define(sc, sc->nil, new_symbol(sc, "*libc*", 6, hash, hash % SYMBOL_TABLE_SIZE), e); */
+      /* libs = global_slot(sc->libraries_symbol); */
+      /* slot_set_value(libs, cons(sc, cons(sc, make_permanent_string("libc.scm"), e), slot_value(libs))); */
+    }
+  /* else */
+  /*   { */
+  /*       printf("mibl: load libc_s7.so failed\n"); */
+  /*     val = s7_load(sc, "repl.scm"); */
+  /*     if (val) repl_loaded = true; */
+  /*   } */
+  s7_set_curlet(sc, old_e);       /* restore incoming (curlet) */
+  s7_gc_unprotect_at(sc, gc_loc);
+
+  if (!val) /* s7_load was unable to find/load libc_s7.so or repl.scm */
+      {
+          log_error("Unable to load libc_s7.so");
+          exit(EXIT_FAILURE);
+    /* dumb_repl(sc); */
+      }
+  else
+    {
+      s7_provide(sc, "libc.scm");
+
+      printf("repl_loaded? %d\n", repl_loaded); /* OBAZL */
+      /* if (!repl_loaded) { */
+      /*     printf("Loading repl.scm\n"); /\* OBAZL *\/ */
+      /*     s7_load(sc, "s7/repl.scm"); */
+      /*             /\* TOSTRING(OBAZL_RUNFILES_DIR) *\/ */
+      /*             /\* "/repl.scm"); /\\* OBAZL *\\/ *\/ */
+      /* } */
+      /* s7_eval_c_string(sc, "((*repl* 'run))"); */
+    }
+#endif
+#endif
+}
+
 EXPORT void s7_configure(void)
 {
     s7 = s7_init();
 
     /* trap error messages */
+    init_error_handling();
     error_config();
 
     s7_define_safe_function(s7, "dune-load", g_dune_load,
@@ -544,6 +608,7 @@ EXPORT void s7_configure(void)
                             DUNE_LOAD_HELP);
 
     set_load_path(); //callback_script_file);
+
     s7_load(s7, "dune.scm");
 }
 
