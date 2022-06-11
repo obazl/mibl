@@ -1,0 +1,5 @@
+
+(library
+ (name libflags_a)
+ (library_flags (:standard -linkall)))
+

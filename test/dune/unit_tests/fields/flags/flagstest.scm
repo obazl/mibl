@@ -1,5 +1,10 @@
 (load "dune.scm")
 
+;; same routine used for both 'flags and 'library_flags
+
+;; library_flags is for building archives, only -linkall in general
+(normalize-stanza-fld-flags '(library_flags (:standard -linkall)))
+
 ;; flags only
 (normalize-stanza-fld-flags '(flags (:standard -nopervasives -nostdlib)))
 (normalize-stanza-fld-flags '(flags (-nopervasives :standard -nostdlib)))
@@ -104,6 +109,10 @@
 (normalize-stanza-fld-flags
  '(flags -flaga -open amod -foo a -open bmod -bar b -flagb))
 
+;; Not seen in the wild, but possible:
+;; (:standard \ ...) - meaning std flags except for the following
+(normalize-stanza-fld-flags '(flags (:standard \  -flaga)))
+
 ;; other stuff
 (normalize-stanza-fld-flags
  '(flags (:standard -w +a-4-6-7-9-29-32-40..42-44-45-48-60-67)))
@@ -128,5 +137,3 @@
                     -nopervasives -nostdlib
                     -w +a-4-6-7-9-29-32-40..42-44-45-48-60-67
                     -warn-error +a)))
-
-

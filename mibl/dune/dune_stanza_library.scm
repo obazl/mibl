@@ -51,12 +51,9 @@
        ((name) fld-assoc)
        ((public_name) fld-assoc)
 
-       ((flags) (normalize-stanza-fld-flags fld-assoc))
+       ((flags) (normalize-stanza-fld-flags fld-assoc :mod))
+       ((library_flags) (normalize-stanza-fld-flags fld-assoc :lib))
 
-  ;;    ;;   ((library_flags)
-  ;;    ;;    (let ((lf (normalize-stanza-fld-lib_flags fld-assoc)))
-  ;;    ;;      ;; (format #t "lib flags: ~A\n" lf)
-  ;;    ;;      lf))
   ;;    ;;   ((libraries) (normalize-stanza-fld-libraries fld-assoc))
   ;;    ;;   ((modules)
   ;;    ;;    ;; (let-values (((direct indirect)
