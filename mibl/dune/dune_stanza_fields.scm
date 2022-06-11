@@ -29,12 +29,12 @@
   ;; `(:name ((:private ,fld)
   ;;          (:module ,(normalize-module-name fld)))))
 
-(define (normalize-stanza-fld-names fld)
-  ;; (format #t "normalize-stanza-fld-names ~A\n" fld)
-  (if (> (length fld) 1)
-      (list :names fld)
-      `(:name ((:private ,(car fld))
-               (:module ,(normalize-module-name (car fld)))))))
+;; (define (normalize-stanza-fld-names fld)
+;;   ;; (format #t "normalize-stanza-fld-names ~A\n" fld)
+;;   (if (> (length fld) 1)
+;;       (list :names fld)
+;;       `(:name ((:private ,(car fld))
+;;                (:module ,(normalize-module-name (car fld)))))))
  ;; (list :name (cons (car fld) (normalize-module-name (car fld))))))
 
 ;;fld: (public_name tezos-sapling)
@@ -229,81 +229,6 @@
   ;;             result)
   ;;           ostr))
   opener)
-
-(define (split-opens flags)
-  ;; (format #t "split-opens: ~A\n" flags)
-  ;; WARNING: preserve order of '-open' args!
-  (let recur ((flags flags)
-              (opens '())
-              (opts  '())
-              (std  #f))
-    (if (null? flags)
-        (values
-         (reverse opens)
-         opts std)
-        (cond
-         ((list? (car flags))
-          (let-values (((-opens -opts -std) (split-opens (car flags))))
-            (recur (cdr flags)
-                   (concatenate -opens opens)
-                   (concatenate -opts opts)
-                   -std)))
-         ((symbol? (car flags))
-          (cond
-           ((equal? (car flags) '-open)
-            (recur (cddr flags)
-                   (cons (normalize-open (cadr flags)) opens)
-                   opts std))
-           ((equal? (car flags) ':standard)
-            (recur (cdr flags) opens opts #t))
-           (else
-            (recur (cdr flags) opens (cons (car flags) opts) std))))
-         ((number? (car flags))
-          ;; e.g. (flags (:standard -w -9 -nolabels))
-          (recur (cdr flags) opens (cons (car flags) opts) std))
-         (else
-          ;; not symbol
-          (if (string? (car flags))
-              (if (string=? (car flags) "-open")
-                  (recur (cddr flags)
-                         (cons (normalize-open (cadr flags)) opens)
-                         std)
-                  (recur (cdr flags) opens (cons (car flags) opts)
-                         std))
-              ;; not symbol, not string
-              (error 'bad-arg
-                     (format #f "ERROR: unexpected flag type ~A"
-                             flags))))))))
-
-;; (flags :standard)
-;; (flags (:standard -open Tezos_base__TzPervasives -open Tezos_micheline))
-;; (:standard -linkall)
-(define (normalize-stanza-fld-flags flags)
-  (format #t "normalize-stanza-fld-flags: ~A\n" flags)
-  (if flags
-      ;; (let* ((flags (if (list? (cadr flags))
-      ;;                   (cadr flags)
-      ;;                   (list (cdr flags))))
-      (let* ((flags (cdr flags))
-             ;; FIXME: expand :standard
-             ;; e.g. src/lib_store/legacy_store:
-             ;;     (modules (:standard \ legacy_store_builder))
-             (std (any (lambda (flag) (equal? flag :standard)) flags))
-             (clean-flags (if std (remove :item :standard flags) flags)))
-        ;; (format #t "DIRTY: ~A\n" flags)
-        ;; (format #t "STD: ~A\n" std)
-        ;; (format #t "CLEAN: ~A\n" clean-flags)
-        (let-values (((opens opts std) (split-opens clean-flags)))
-          ;; (format #t "OPENS: ~A\n" (reverse opens))
-          ;; (format #t "OPTS: ~A\n" (reverse opts))
-          ;; (format #t "STD: ~A\n" std)
-          (list :opts
-                (concatenate
-                 (if std '((:standard)) '()) ;; FIXME: expand :standard flags
-                 (if (null? opens) '() `((:opens ,opens)))
-                 `((:raw (,flags)))
-                 `((:flags ,(reverse opts)))))))
-      #f))
 
 ;; library_flags
 (define (normalize-stanza-fld-lib_flags lib-flags)

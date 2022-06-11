@@ -6,11 +6,11 @@
 ;; (load "resolve_fs_refs.scm")
 ;; (load "utils.scm")
 
-(define (normalize-dune-stanza pkg-path
+(define (normalize-stanza pkg-path
                                ;;dune-project-stanzas
                                srcfiles
                                stanza)
-  (format #t "NORMALIZE-DUNE-STANZA: ~A\n" stanza)
+  (format #t "NORMALIZE-STANZA: ~A\n" stanza)
   (format #t "    srcfiles: ~A\n" srcfiles)
   ;; dune-project-stanzas: sexp from (local) 'dune-project' file
   ;;    FIXME: used only for install stanzas, no need to read otherwise
