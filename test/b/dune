@@ -1,0 +1,13 @@
+(library
+ (name test_b)
+ (public_name test-b)
+ (flags (:standard -open alib
+                   -open blib
+                   -open clib.foo
+                   ))
+ (libraries alib
+            lwt
+            re
+            blib
+            clib
+            ))

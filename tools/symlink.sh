@@ -12,6 +12,9 @@ ln -sfv $PWD/mibl/dune/*scm $HOME/.local/share/mibl/dune
 ln -sfv $PWD/mibl/meta/*scm $HOME/.local/share/mibl/meta
 ln -sfv $PWD/mibl/opam/*scm $HOME/.local/share/mibl/opam
 
+ln -sfv $HOME/obazl/libs7/libs7/*scm $HOME/.local/share/mibl
+ln -sfv $HOME/obazl/libs7/libs7/s7/*scm $HOME/.local/share/mibl/s7
+
 ln -sfv $HOME/obazl/mibl/mibl/*scm $HOME/.local/share/mibl
 ln -sfv $HOME/obazl/mibl/mibl/s7/*scm $HOME/.local/share/mibl/s7
 

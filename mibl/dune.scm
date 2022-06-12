@@ -18,7 +18,8 @@
 
 (load "dune/fields.scm")
 (load "dune/flags.scm")
+(load "dune/modules.scm")
 (load "dune/normalize.scm")
 (load "dune/pkg_api.scm")
 
-(display "loaded mibl/dune.scm") (newline)
+(format #t "loaded mibl/dune.scm") (newline)

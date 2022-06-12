@@ -377,7 +377,7 @@
 
 ;; make a hash table, key: module name, value: :direct
 (define (srcfiles->modstbl srcfiles)
-  ;; (format #t "srcfiles->modstbl: ~A\n" srcfiles)
+  (format #t "srcfiles->modstbl: ~A\n" srcfiles)
   (let* ((submods (srcs->module-names srcfiles))
         (submods-tbl (make-hash-table (length submods))))
     (for-each (lambda (submod)
@@ -390,6 +390,7 @@
 ;; vals are :direct | :indirect | :resolver
 ;; uses srcfiles to determine if a module is src or generated
 ;; handles :standard etc.
+;; replaced by expand-modules-fld in modules.scm
 (define (modules->modstbl modules srcfiles)
   ;; (format #t "modules->modstbl: ~A\n" modules)
   ;; modules-assoc:: (modules <list of lists>)

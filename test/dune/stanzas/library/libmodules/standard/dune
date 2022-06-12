@@ -1,0 +1,13 @@
+(library
+ (name lib_a)
+ (public_name lib-a)
+ (modules :standard) ;; same as omitting, include all
+ (libraries foo bar)
+ (flags (:standard -open foo -open bar -linkall)))
+
+(library
+ (name lib_b)
+ (public_name lib-b)
+ ;;(modules :standard) ;; include all
+ (libraries foo bar)
+ (flags (:standard -open foo -open bar -linkall)))

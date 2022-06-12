@@ -370,4 +370,62 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define (modules<? s1 s2)
+  (let ((x1 (if (symbol? s1) (symbol->string s1) s1))
+        (x2 (if (symbol? s2) (symbol->string s2) s2)))
+    (string<? x1 x2)))
+
+;; (modules Registerer), (modules (:standard \ legacy_store_builder))
+;; (modules)
+;; (modules (:standard) \ Plugin_registerer)
+;; (modules (:standard (symbol "\\") delegate_commands delegate_commands_registration))
+;; (modules (:standard (symbol "\\") legacy_store_builder))
+;; (modules :standard (symbol "\\") gen)
+;; NB: modules may be generated rather than srcfile modules!
+;; ex: src/lib_protocol_environment/sigs:Tezos_protocol_environment_sigs:
+;; (include v0.dune.inc)
+;; (include v1.dune.inc)
+;; (include v2.dune.inc)
+;; (include v3.dune.inc)
+;; (library ... (modules ("V0" "V1" "V2" "V3"))))
+;; v0.dune.inc: (rule (targets v0.ml) ...)
+
+(define (libdep->module-name libdep)
+  (let ((mname (copy libdep)))
+    libdep))
+
+(define (normalize-module-name mname)
+  (let ((s (if (symbol? mname)
+               (symbol->string mname)
+               (if (string? mname)
+                   mname
+                   (error 'bad-type
+                          (format #f "module name not sym or string: ~A"
+                                  mname))))))
+    (string-set! s 0 (char-upcase (string-ref s 0)))
+    (string->symbol s)))
+
+(define filename-cache (make-hash-table))
+
+(define (file-name->module-name path)
+  (if-let ((modname (filename-cache path)))
+          modname
+          (let* ((last-slash (string-index-right path
+                                                 (lambda (c) (eq? c #\/))))
+                 (fname (if last-slash
+                            (string-drop path (+ last-slash 1))
+                            path))
+                 (mraw (if (string-suffix? ".ml" fname)
+                           (string-drop-right fname 3)
+                           (if (string-suffix? ".mli" fname)
+                               (string-drop-right fname 4)
+                               (error 'bad-filename
+                                      (string-append "extension should be .ml or .mli: "
+                                                     fname)))))
+                 (modname (normalize-module-name mraw)))
+            (hash-table-set! filename-cache path modname)
+            modname)))
+
+
+
 ;; (display "loaded dune/dune_utils.scm") (newline)

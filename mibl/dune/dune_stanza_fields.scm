@@ -51,8 +51,24 @@
 ;;              (-> ledger.none.ml)))
 ;;  [why is a .ml file in a 'libraries' field?
 (define (analyze-select deps directs selects)
+;; see normalize-lib-select in dune_stanzas.scm
   ;; FIXME: extract module dep from select sexp and add to directs
   directs)
+
+;; (libraries a b c.d a.b.c ...)
+;; uncommon: "alternative deps"
+;; see https://dune.readthedocs.io/en/stable/concepts.html#alternative-deps
+;; example from tezos:
+ ;; (libraries a b c
+ ;;            (select void_for_linking-genesis from
+ ;;              (tezos-client-genesis -> void_for_linking-genesis.empty)
+;;              (-> void_for_linking-genesis.empty))
+;;              ...
+ ;;            (select void_for_linking-demo-counter from
+ ;;              (tezos-client-demo-counter -> void_for_linking-demo-counter.empty)
+ ;;              (-> void_for_linking-demo-counter.empty)))
+
+;; also:  (libraries (re_export foo))
 
 (define (analyze-libdeps libdeps)
   ;; (format #t "analyze-libdeps: ~A\n" libdeps)
@@ -114,65 +130,6 @@
           (if (member m modnames) ;; avoid .ml/.mli dups
               (recur (cdr srcfiles) modnames)
               (recur (cdr srcfiles) (cons m modnames)))))))
-
-;;;;; expand dune constant ':standard' for modules
-;; e.g.
-;; src/proto_alpha/lib_parmeters: (modules :standard \ gen)
-;; lib_client_base:: (modules (:standard bip39_english))
-(define (standard-modules modules srcfiles)
-  ;; modules arg: everything after :standard
-  ;; (format #t "standard-modules: ~A\n" modules)
-  ;; WARNING: the '\' is a symbol, but it does not print as '\,
-  ;; rather it prints as (symbol "\\"); use same to compare, do
-  ;; not compare car to 'symbol, like so:
-
-  ;; (if (not (null? modules))
-  ;;     (if (equal? (car modules) (symbol "\\"))
-  ;;         (format #t "EXCEPTING ~A\n" (cdr modules))))
-
-  ;; (format #t "  srcfiles: ~A\n" srcfiles)
-  (let ((module-names (srcs->module-names srcfiles)))
-    (if (null? modules)
-        ;; (modules (:standard)) means same as omitting (modules), i.e.
-        ;; all modules
-        (values module-names '())
-
-        ;; NB: (:standard \ ...) => (:standard (symbol "\\") ...)
-        (if (pair? (car modules))
-            (if (equal? (caar modules) (symbol "\\"))
-                (let ((exception (cadr modules)))
-                  ;; (format #t "EXCEPTION1: ~A\n" exception)
-                  (values (remove-if list
-                                     (lambda (m)
-                                       ;; (format #t "remove? ~A\n" m)
-                                       (equal? exception m))
-                                     module-names)
-                          '()))
-                ;; else :standard adds to default list, e.g.
-                ;; (:standard (foo bar baz))
-                ;; tezos example: src/lib_client_base:
-                ;;     (modules (:standard bip39_english))
-                (values (concatenate (map
-                                      normalize-module-name
-                                      (car modules))
-                                     module-names)
-                        '()))
-            ;; else (car modules) is atom,
-            ;; e.g. (:standard \ foo) or (:standard foo bar baz) ...
-            (if (equal? (car modules) (symbol "\\"))
-                (let ((exception (normalize-module-name (cadr modules))))
-                  ;; (format #t "EXCEPTION2: ~A\n" exception)
-                  (values (remove-if list
-                                     (lambda (m)
-                                       ;; (format #t "remove? ~A\n" m)
-                                       (equal? exception m))
-                                     module-names)
-                          '()))
-                (values (concatenate (map
-                                      normalize-module-name
-                                      modules)
-                                     module-names)
-                        '()))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; fields:  foreign_stubs (src files); foreign_archives (precompiled imports)
@@ -324,61 +281,61 @@
 ;; (flags :standard)
 ;; (flags (:standard -open Tezos_base__TzPervasives -open Tezos_micheline))
 ;; (:standard -linkall)
-(define (normalize-stanza-fld-flags flags type)
-  (format #t "normalize-stanza-fld-flags: ~A\n" flags)
-  (if flags
-      ;; (let* ((flags (if (list? (cadr flags))
-      ;;                   (cadr flags)
-      ;;                   (list (cdr flags))))
-      (let* ((flags-val (cdr flags))
-             ;; FIXME: expand :standard
-             ;; e.g. src/lib_store/legacy_store:
-             ;;     (modules (:standard \ legacy_store_builder))
-             (std (any (lambda (flag) (equal? flag :standard)) flags-val))
-             (clean-flags (if std (remove :item :standard flags-val) flags-val)))
-        ;; (format #t "DIRTY: ~A\n" flags-val)
-        ;; (format #t "STD: ~A\n" std)
-        ;; (format #t "CLEAN: ~A\n" clean-flags)
-        (let-values (((opens opts std) (split-opens clean-flags)))
-          (let-values (((options bools) (split-opts (reverse opts))))
-            ;; (format #t "OPENS: ~A\n" (reverse opens))
-            ;; (format #t "OPTS: ~A\n" (reverse opts))
-            ;; (format #t "STD: ~A\n" std)
-            (format #t "OPTIONS: ~A\n" options)
-            (format #t "FLAGS: ~A\n" bools)
-            (list (if (eq? type :mod) :module-opts
-                      (if (eq? type :lib) :archive-opts
-                          :unknown-opts))
-                  (concatenate
-                   (if std '((:standard)) '()) ;; FIXME: expand :standard flags
-                   (if (null? opens) '() (list (cons :opens
-                                                     (reverse opens))))
-                   `((:raw ,flags))
-                   (list (cons :options (reverse options)))
-                   `((:flags ,(reverse bools))))))))
-      #f))
+;; (define (normalize-stanza-fld-flags flags type)
+;;   (format #t "normalize-stanza-fld-flags: ~A\n" flags)
+;;   (if flags
+;;       ;; (let* ((flags (if (list? (cadr flags))
+;;       ;;                   (cadr flags)
+;;       ;;                   (list (cdr flags))))
+;;       (let* ((flags-val (cdr flags))
+;;              ;; FIXME: expand :standard
+;;              ;; e.g. src/lib_store/legacy_store:
+;;              ;;     (modules (:standard \ legacy_store_builder))
+;;              (std (any (lambda (flag) (equal? flag :standard)) flags-val))
+;;              (clean-flags (if std (remove :item :standard flags-val) flags-val)))
+;;         ;; (format #t "DIRTY: ~A\n" flags-val)
+;;         ;; (format #t "STD: ~A\n" std)
+;;         ;; (format #t "CLEAN: ~A\n" clean-flags)
+;;         (let-values (((opens opts std) (split-opens clean-flags)))
+;;           (let-values (((options bools) (split-opts (reverse opts))))
+;;             ;; (format #t "OPENS: ~A\n" (reverse opens))
+;;             ;; (format #t "OPTS: ~A\n" (reverse opts))
+;;             ;; (format #t "STD: ~A\n" std)
+;;             (format #t "OPTIONS: ~A\n" options)
+;;             (format #t "FLAGS: ~A\n" bools)
+;;             (list (if (eq? type :mod) :module-opts
+;;                       (if (eq? type :lib) :archive-opts
+;;                           :unknown-opts))
+;;                   (concatenate
+;;                    (if std '((:standard)) '()) ;; FIXME: expand :standard flags
+;;                    (if (null? opens) '() (list (cons :opens
+;;                                                      (reverse opens))))
+;;                    `((:raw ,flags))
+;;                    (list (cons :options (reverse options)))
+;;                    `((:flags ,(reverse bools))))))))
+;;       #f))
 
-;; library_flags (meaning archive_flags)
-(define (normalize-stanza-fld-lib_flags lib-flags)
-  ;; (format #t "normalize-stanza-fld-lib_flags: ~A" lib-flags)
-  (if lib-flags
-      (let ((lib-flags (if (list? (cadr lib-flags))
-                       (cadr lib-flags)
-                       (list (cdr lib-flags))))
-            ;; FIXME: expand :standard
-            (std (any (lambda (flag) (equal? flag :standard)) lib-flags)))
-        (let-values (((opens opts std) (split-opens lib-flags)))
-          ;; (format #t "  opens: ~A" opens)
-          ;; (format #t "  opts: ~A"  opts)
-          ;; (format #t "  std:  ~A"  std)
-          (list :lib-flags
-                (concatenate
-                 (if std '((:standard)) '()) ;;FIXME: expand :standard flags
-                 (if (null? opens) '() `((:opens ,opens)))
-                 `((:raw ,lib-flags))
-                 `((:flags ,@(if std
-                                 (remove :item :standard lib-flags)
-                                 lib-flags)))))))
-      #f))
+;; ;; library_flags (meaning archive_flags)
+;; (define (normalize-stanza-fld-lib_flags lib-flags)
+;;   ;; (format #t "normalize-stanza-fld-lib_flags: ~A" lib-flags)
+;;   (if lib-flags
+;;       (let ((lib-flags (if (list? (cadr lib-flags))
+;;                        (cadr lib-flags)
+;;                        (list (cdr lib-flags))))
+;;             ;; FIXME: expand :standard
+;;             (std (any (lambda (flag) (equal? flag :standard)) lib-flags)))
+;;         (let-values (((opens opts std) (split-opens lib-flags)))
+;;           ;; (format #t "  opens: ~A" opens)
+;;           ;; (format #t "  opts: ~A"  opts)
+;;           ;; (format #t "  std:  ~A"  std)
+;;           (list :lib-flags
+;;                 (concatenate
+;;                  (if std '((:standard)) '()) ;;FIXME: expand :standard flags
+;;                  (if (null? opens) '() `((:opens ,opens)))
+;;                  `((:raw ,lib-flags))
+;;                  `((:flags ,@(if std
+;;                                  (remove :item :standard lib-flags)
+;;                                  lib-flags)))))))
+;;       #f))
 
 ;; (display "loaded dune/dune_stanza_fields.scm") (newline)
