@@ -25,7 +25,7 @@ tpkg
        ;; which may not be the same.
        (arg
 
-        "dune/stanzas/library/libmodules/standard"
+        ;; "dune/stanzas/library/libmodules/standard"
         ;; "dune/unit_tests/fields/flags/modflags"
         ;; "dune/unit_tests/fields/flags/libflags"
         ;; "dune/unit_tests/fields/modules/a"
@@ -39,7 +39,7 @@ tpkg
 
         ;; "dune/stanzas/rule/action/run/bash"
         ;; "dune/stanzas/rule/action/run/cp"
-        ;; "dune/stanzas/rule/action/run/env"
+        "dune/stanzas/rule/action/run/env"
         ;; "dune/stanzas/rule/action/run/literal"
         ;; "dune/stanzas/rule/action/run/nostatic"
         ;; "dune/stanzas/rule/action/run/targets"
@@ -47,7 +47,7 @@ tpkg
         ;; "dune/stanzas/rule/action/run/var/b"
 
         ;; "dune/filetypes"
-        "a"
+        ;; "a"
         )
        (pkgs (dune-load arg))
        (pkg (hash-table-ref pkgs arg))
