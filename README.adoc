@@ -12,7 +12,7 @@ If you prefer acronyms: **M**eta-**ibl**
 
 IMPORTANT: **STATUS**: Alpha. The code (in C) for the crawling the
 file system and parsing Dune, Meta, and OPAM and META files is written
-but the Scheme bindings are still under construction. An earlier
+but the Scheme APIs are still under construction. An earlier
 version of the Dune API was sufficient for generating Bazel build
 files, but it is undergoing major revisions. What's there is
 sufficient for exploration.
