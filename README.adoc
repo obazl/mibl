@@ -10,9 +10,12 @@ If you prefer acronyms: **M**eta-**ibl**
 ("ibl" is Arabic for "camel"). If you prefer recursion: **M**ibl **i**ntegrates
 **b**uild **l**anguages.
 
-IMPORTANT: Currently only the (beta version of the) Dune API is implemented. The code (in C)
-for the OPAM and META APIs is written but the Scheme bindings are
-still under construction.
+IMPORTANT: **STATUS**: Alpha. The code (in C) for the crawling the
+file system and parsing Dune, Meta, and OPAM and META files is written
+but the Scheme bindings are still under construction. An earlier
+version of the Dune API was sufficient for generating Bazel build
+files, but it is undergoing major revisions. What's there is
+sufficient for exploration.
 
 == Getting Started
 
