@@ -37,12 +37,13 @@
                  ;;         (assoc-val 'name stanza-alist))
                  (if (null-library? stanza)
                      '()
-                     (let ((submodules-assoc (expand-modules-fld
+                     (let ((submodules-assoc (modules-fld->submodules-fld
                                               (assoc 'modules (cdr stanza))
                                               (assoc :modules pkg)
                                               modules-ht))
                            ;; add submodules-assoc to stanza
                            )
+                       (format #t "submodules-assoc: ~A\n" submodules-assoc)
                        (normalize-library-stanza with-submodules)))))
                       ;; pkg-path ocaml-srcs stanza))))
 

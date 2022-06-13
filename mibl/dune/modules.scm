@@ -114,57 +114,61 @@
       (format #t "modules-fld->submodules-fld\n")
       (format #t "modules-spec: ~A\n" modules-spec)
       (format #t "pkg-modules: ~A\n" pkg-modules)
-      (let* ((modules (cdr modules-spec))
-             (pkg-module-names (get-pkg-module-names pkg-modules))
-             (_ (format #t "modules: ~A\n" modules))
-             (tmp (let recur ((modules modules)
-                             (direct '()) ;; src files
-                             (indirect '())) ;; generated files
-                   (format #t "RECUR modules ~A\n" modules)
-                   (format #t "direct: ~A\n" direct)
-                   (cond
-                    ((null? modules)
-                     (if (null? direct)
-                         (begin
-                           (format #t "null modules\n")
-                           '())
-                         (reverse direct)))
+      (if modules-spec
+          (let* ((modules (cdr modules-spec))
+                 (pkg-module-names (get-pkg-module-names pkg-modules))
+                 (_ (format #t "modules: ~A\n" modules))
+                 (tmp (let recur ((modules modules)
+                                  (direct '()) ;; src files
+                                  (indirect '())) ;; generated files
+                        (format #t "RECUR modules ~A\n" modules)
+                        (format #t "direct: ~A\n" direct)
+                        (cond
+                         ((null? modules)
+                          (if (null? direct)
+                              (begin
+                                (format #t "null modules\n")
+                                '())
+                              (reverse direct)))
 
-                    ((equal? :standard (car modules))
-                     (begin
-                       (format #t "(equal? :standard (car modules))\n")
-                       (let ((std-modules (expand-std-modules (cdr modules-spec)
-                                                              pkg-modules)))
-                         (format #t "std-modules: ~A\n" std-modules)
-                         std-modules)))
+                         ((equal? :standard (car modules))
+                          (begin
+                            (format #t "(equal? :standard (car modules))\n")
+                            (let ((std-modules (expand-std-modules (cdr modules-spec)
+                                                                   pkg-modules)))
+                              (format #t "std-modules: ~A\n" std-modules)
+                              std-modules)))
 
-                    ((pair? (car modules))
-                     (begin
-                       (format #t "(pair? (car modules))\n")
-                       ;; e.g. (:standard), (:standard foo), (:standard \ foo)
-                       ;; or (modules (:standard) \ foo)
-                       ;; or (A B C)
-                       (if (equal? '(:standard) (car modules))
-                           (modules-fld->submodules-fld
-                            (append
-                             (list 'modules :standard) (cdr modules))
-                            pkg-modules modules-ht)
-                           (modules-fld->submodules-fld (cons 'modules (car modules))
-                                                        pkg-modules modules-ht))))
+                         ((pair? (car modules))
+                          (begin
+                            (format #t "(pair? (car modules))\n")
+                            ;; e.g. (:standard), (:standard foo), (:standard \ foo)
+                            ;; or (modules (:standard) \ foo)
+                            ;; or (A B C)
+                            (if (equal? '(:standard) (car modules))
+                                (modules-fld->submodules-fld
+                                 (append
+                                  (list 'modules :standard) (cdr modules))
+                                 pkg-modules modules-ht)
+                                (modules-fld->submodules-fld (cons 'modules (car modules))
+                                                             pkg-modules modules-ht))))
 
-                    ;; inclusions, e.g. (modules a b c)
-                    (else
-                     (begin
-                       (format #t "other - inclusions: ~A\n" modules)
-                       (format #t "pkg-modules: ~A\n" pkg-module-names)
-                       (if (member (normalize-module-name (car modules))
-                                 pkg-module-names)
-                         (recur (cdr modules) (cons (car modules) direct)
-                                indirect)
-                         (error 'bad-arg "included module not in list"))))
-                    ) ;; cond
-                   ))) ;; recur
-        tmp) ;; let
+                         ;; inclusions, e.g. (modules a b c)
+                         (else
+                          (begin
+                            (format #t "other - inclusions: ~A\n" modules)
+                            (format #t "pkg-modules: ~A\n" pkg-module-names)
+                            (if (member (normalize-module-name (car modules))
+                                        pkg-module-names)
+                                (recur (cdr modules) (cons (car modules) direct)
+                                       indirect)
+                                (error 'bad-arg "included module not in list"))))
+                         ) ;; cond
+                        ))) ;; recur
+            tmp) ;; let*
+          ;; no modules-spec - default is all
+          (get-pkg-module-names pkg-modules)
+          ) ;; if modules-spec
       ) ;; lamda
     ) ;; let
   ) ;; define
