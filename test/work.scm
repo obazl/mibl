@@ -2,10 +2,10 @@
 (define pkgs (dune-load ;; "obazl/mibl/test",
              ;; "dune/stanzas/library"
              ;; "dune/tezos/lib_test"
-              "a"
+              "d"
              ))
 pkgs
-(define pkg (hash-table-ref pkgs "a"))
+(define pkg (hash-table-ref pkgs "test/a"))
 pkg
 
 (load "pkg_api.scm")
@@ -20,24 +20,77 @@ mnames
 tpkg
 
 (let* ((_   (load "dune.scm"))
-       (_   (load "normalize.scm"))
-       (_   (load "pkg_api.scm"))
-       (pkgs (dune-load
-              "a"
-              ;; "dune/predicates/standard/flags"
-              ;; "dune/stanzas/library"
-              ))
-       (pkg (hash-table-ref pkgs
-                            "a"
-                            ;;"dune/predicates/standard/flags"
-                            ))
-       (path (assoc-val :pkg-path pkg))
-       (stanzas (assoc-val :dune-stanzas pkg))
-       (modules (assoc-val :modules pkg))
-       (mnames (pkg->module-names pkg))
+       ;; WARNING: arg to dune-load is relative to cwd,
+       ;; but arg to hash-table-ref below is relative to ws root,
+       ;; which may not be the same.
+       (arg
+
+        "dune/stanzas/library/libmodules/standard"
+        ;; "dune/unit_tests/fields/flags/modflags"
+        ;; "dune/unit_tests/fields/flags/libflags"
+        ;; "dune/unit_tests/fields/modules/a"
+        ;; "dune/unit_tests/fields/flags/a"
+        ;; "dune/predicates/standard/flags"
+        ;; "dune/stanzas/library"
+
+        ;; "dune/stanzas/rule/action/copy"
+        ;; "dune/stanzas/rule/action/diff"
+        ;; "dune/stanzas/rule/action/with-stdout-to"
+
+        ;; "dune/stanzas/rule/action/run/bash"
+        ;; "dune/stanzas/rule/action/run/cp"
+        ;; "dune/stanzas/rule/action/run/env"
+        ;; "dune/stanzas/rule/action/run/literal"
+        ;; "dune/stanzas/rule/action/run/nostatic"
+        ;; "dune/stanzas/rule/action/run/targets"
+        ;; "dune/stanzas/rule/action/run/var/a"
+        ;; "dune/stanzas/rule/action/run/var/b"
+
+        ;; "dune/filetypes"
+        "a"
+        )
+       (pkgs (dune-load arg))
+       (pkg (hash-table-ref pkgs arg))
+       (stanzas (assoc :dune-stanzas pkg))
+       (nzs (normalize-dune-stanzas pkg))
        )
-  mnames)
-  modules)
+  (display "done\n")
+  nzs)
+
+  ;; (format #t "nzs: ~A\n" nzs))
+
+  ;; modules)
+  ;; pkg)
+
+
+(define xpkg
+  '((:ws-path "/Users/gar/obazl/mibl/test")
+    (:pkg-path "dune/unit_tests/fields/modules/a")
+    (:realpath "/Users/gar/obazl/mibl/test/dune/unit_tests/fields/modules/a")
+    (:files "BUILD.bazel")
+    (:modules (Client_proto_programs_commands
+               (:mli "client_proto_programs_commands.mli")
+               (:ml "client_proto_programs_commands.ml"))
+              (Client_proto_contracts_commands
+               (:ml "client_proto_contracts_commands.ml"))
+              (Client_proto_context_commands
+               (:ml "client_proto_context_commands.ml"))
+              (Alpha_commands_registration
+               (:ml "alpha_commands_registration.ml"))
+              )
+    (:dune-stanzas
+     (library
+         (name tezos_client_004_Pt24m4xi_commands)
+       (public_name tezos-client-004-Pt24m4xi-commands)
+       (libraries tezos-base tezos-stdlib-unix tezos-protocol-004-Pt24m4xi tezos-protocol-environment tezos-shell-services tezos-client-004-Pt24m4xi tezos-client-commands tezos-rpc)
+       (library_flags (:standard -linkall))
+       (modules (:standard (symbol "\\") alpha_commands_registration))
+       (flags (:standard -open Tezos_base__TzPervasives -open Tezos_protocol_004_Pt24m4xi -open Tezos_stdlib_unix -open Tezos_shell_services -open Tezos_client_base -open Tezos_client_004_Pt24m4xi -open Tezos_client_commands -open Tezos_rpc))))
+    (:dune-project (lang dune 2.0) (formatting (enabled_for ocaml)) (name tezos-client-004-Pt24m4xi-commands))
+    ))
+xpkg
+(load "normalize.scm")
+(normalize-dune-stanzas xpkg)
 
 (let* ((lib '(library (name mylib_a)
                (public_name mylib)

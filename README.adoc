@@ -6,8 +6,8 @@ link:https://opam.ocaml.org/doc/Manual.html[OPAM], and
 link:http://projects.camlcity.org/projects/dl/findlib-1.9.4/doc/ref-html/r759.html[META]
 files.
 
-"Ibl" is Arabic for "camel". If you prefer acronyms: **M**eta-**ibl**
-(i.e. meta-caml). If you prefer recursion: **M**ibl **i**ntegrates
+If you prefer acronyms: **M**eta-**ibl**
+("ibl" is Arabic for "camel"). If you prefer recursion: **M**ibl **i**ntegrates
 **b**uild **l**anguages.
 
 IMPORTANT: Currently only the (beta version of the) Dune API is implemented. The code (in C)

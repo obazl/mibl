@@ -244,52 +244,6 @@
   ;; (display (format #f "normalize-stanza-env: ~A" stanza)) (newline)
   (cons 'env (list (cdr stanza))))
 
-(define (expand-modules-fld modules srcfiles)
-  ;; modules:: (modules Test_tezos)
-  ;; (format #t "  expand-modules-fld: ~A\n" modules)
-  ;; see also modules->modstbl in dune_stanza_fields.scm
-  (let* ((modules (cdr modules)))
-    (if (null? modules)
-        (values '() '())
-        ;; (let ((result
-        (let recur ((modules modules)
-                    (direct '())
-                    (indirect '()))
-          ;; (format #t "ms: ~A; direct: ~A\n" modules direct)
-          (cond
-           ((null? modules)
-            (values direct indirect))
-
-           ((equal? :standard (car modules))
-            (let ((newseq (srcs->module-names srcfiles))) ;;  direct
-              ;; (format #t "modules :STANDARD ~A\n" newseq)
-              ;; (format #t "CDRMODS ~A\n" (cdr modules))
-              (recur (cdr modules) (append newseq direct) indirect)))
-           ;; (concatenate direct
-           ;;              (norm-std-modules (cdr modules))))
-           ((pair? (car modules))
-            (let-values (((exp gen)
-                          (recur (car modules) '() '())))
-              (recur (cdr modules)
-                     (concatenate exp direct)
-                     (concatenate gen indirect))))
-
-           ((indirect-module-dep? (car modules) srcfiles)
-            (begin
-              ;; (format #t "INDIRECT: ~A\n" (car modules))
-              (recur (cdr modules)
-                     direct (cons (car modules) indirect))))
-
-           (else
-            (recur (cdr modules)
-                   (cons (car modules) direct)
-                   indirect))))
-        ;;      ))
-        ;; ;;(format #t "RESULT: ~A\n" result)
-        ;; (reverse result))
-        ))
-  )
-
 ;; (define (update-public-exe-table pkg-path pubname filename)
 ;;   ;; (format #t "update-public-exe-table: ~A => ~A/~A\n"
 ;;   ;;         pubname pkg-path filename)

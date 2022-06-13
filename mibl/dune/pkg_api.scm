@@ -1,5 +1,16 @@
 (display "pkg_api.scm") (newline)
 
+;;FIXME: put this in file_utils.scm?
+(define filename->file-assoc
+  (let ((+documentation+ "For now just stringify and pair with ext."))
+    (lambda (filename)
+      (let* ((fname (if (symbol? filename) (symbol->string filename)
+                        filename))
+             (ext (filename-extension fname))
+             (pname (principal-name fname)))
+        (cons (string->keyword
+               (string-drop ext 1)) fname)))))
+
 (define (filename->kind filename)
   (let* ((fname (if (symbol? filename) (symbol->string filename)
                     (if (string? filename) filename
@@ -27,14 +38,17 @@
   (let ((+documentation+ "INTERNAL. Add tgts to :modules (or :files etc) fld of pkg."))
     (lambda (pkg tgts)
       (format #t "update-pkg-with-targets!\n")
+      (format #t "  package: ~A\n" pkg)
       (format #t "  targets: ~A\n" tgts)
 
       ;; get the alists we might update
-      (let* ((modules-assoc (assoc :modules pkg))
-             (modules       (cdr modules-assoc))
-             (scripts (assoc-val :scripts pkg))
-             (data    (assoc-val :data pkg))
-             (files   (assoc-val :scripts pkg)))
+      (let* (;;(pkg (car pkg*))
+             (modules-assoc (assoc :modules pkg))
+             ;; (modules (if modules-assoc (cdr modules-assoc) #f))
+             (scripts (if modules-assoc (assoc-val :scripts pkg) #f))
+             (data    (if modules-assoc (assoc-val :data pkg) #f))
+             (files-assoc (if (assoc :files pkg)
+                              (assoc-val :files pkg) #f)))
 
         ;; for each tgt, decide its kind: ml/mli, or other
         ;; then update the pkg fld: :modules, :scripts, :files, :data
@@ -44,8 +58,7 @@
            (let ((kind (filename->kind tgt)))
              (case kind
                ((:module)
-                (begin
-                  (format #t ":module: ~A\n" tgt))
+                (format #t ":module: ~A\n" tgt)
                 (if modules-assoc
                     (begin
                       (format #t "modules-assoc (before): ~A\n"
@@ -55,12 +68,51 @@
                                         (cdr modules-assoc)))
                       (format #t "modules-assoc (after): ~A\n"
                               modules-assoc))
-                    (set-cdr! modules-assoc (list tgt)))
-                )
-               (else (format #t ":other: ~A\n" tgt)))))
-         tgts)
-        (format #t "modules-assoc: ~A\n" modules-assoc)
-        #t))))
+                    ;; else
+                    (begin
+                      (format #t "initializing modules-assoc\n")
+                      (set! modules-assoc (cons :modules (list tgt)))
+                      (format #t "modules-assoc (after): ~A\n"
+                              modules-assoc))))
+               (else
+                (format #t ":other: ~A\n" tgt)
+                (format #t "files-assoc: ~A\n" files-assoc)
+                (alist-update-in! pkg '(:files :dynamic)
+                                  (lambda (old)
+                                    (format #t "OLD: ~A\n" old)
+                                    (if (null? old)
+                                        (filename->file-assoc tgt)
+                                        (cons
+                                         (filename->file-assoc tgt)
+                                         old))))
+                ;; (if-let (files-assoc (assoc-in '(:files :dynamic) pkg))
+                ;;     (begin
+                ;;       (format #t "files-assoc (before): ~A\n"
+                ;;               files-assoc)
+                ;;       (alist-update-in! pkg '(:files :dynamic)
+                ;;                         (lambda (old)
+                ;;                           (append
+                ;;                            old (filename->file-assoc tgt))))
+                ;;       ;; (set-cdr! files-assoc
+                ;;       ;;           (cons (filename->file-assoc tgt)
+                ;;       ;;                 (cdr files-assoc)))
+                ;;       (format #t "files-assoc (after): ~A\n"
+                ;;               files-assoc))
+                ;;     ;; else
+                ;;     (begin
+                ;;       (format #t "initializing files-assoc of pkg ~A\n" pkg)
+                ;;       (set! pkg
+                ;;             (append pkg
+                ;;                     (list
+                ;;                      (list :files
+                ;;                            (list :dynamic
+                ;;                                  (filename->file-assoc tgt))))))
+                ;;       ))
+                )) ;; case
+             )) ;; lambda
+         tgts) ;; for-each
+        (format #t "pkg (after): ~A\n" pkg)
+        pkg))))
 
 ;; e.g. (cdr (:standard (symbol "\\") legacy_store_builder))
 (define (pkg->module-names pkg) ;; seq)

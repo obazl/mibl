@@ -1,0 +1,121 @@
+load("@obazl_rules_ocaml//ocaml:rules.bzl",
+    "ocaml_archive",
+    "ocaml_module",
+    "ocaml_ns_archive",
+    "ocaml_signature",
+)
+
+###############################################
+########### Archive/Library Targets ###########
+
+######## tezos-client-004-Pt24m4xi-commands ########
+TEZOS_CLIENT_004_PT24M4XI_COMMANDS_OPTS = [
+    "-open", "Tezos_base__TzPervasives",
+    "-open", "Tezos_client_004_Pt24m4xi",
+    "-open", "Tezos_client_base",
+    "-open", "Tezos_client_commands",
+    "-open", "Tezos_protocol_004_Pt24m4xi",
+    "-open", "Tezos_rpc",
+    "-open", "Tezos_shell_services",
+    "-open", "Tezos_stdlib_unix",
+]
+
+TEZOS_CLIENT_004_PT24M4XI_COMMANDS_DEPS = [
+    "//src/lib_base:tezos-base",
+    "//src/lib_client_commands:tezos-client-commands",
+    "//src/lib_protocol_environment:tezos-protocol-environment",
+    "//src/lib_rpc:tezos-rpc",
+    "//src/lib_shell_services:tezos-shell-services",
+    "//src/lib_stdlib_unix:tezos-stdlib-unix",
+    "//src/proto_004_Pt24m4xi/lib_client:tezos-client-004-Pt24m4xi",
+    "//src/proto_004_Pt24m4xi/lib_protocol:tezos-protocol-004-Pt24m4xi",
+]
+
+ocaml_ns_archive(
+    name       = "tezos-client-004-Pt24m4xi-commands",
+    ns         = "Tezos_client_004_Pt24m4xi_commands",
+    visibility = ["//visibility:public"],
+    submodules = [
+        ":Client_proto_context_commands",
+        ":Client_proto_contracts_commands",
+        ":Client_proto_programs_commands",
+    ],
+)
+
+######## tezos-client-004-Pt24m4xi-commands.registration ########
+TEZOS_CLIENT_004_PT24M4XI_COMMANDS_REGISTRATION_OPTS = [
+    "-open", "Tezos_base__TzPervasives",
+    "-open", "Tezos_client_004_Pt24m4xi",
+    "-open", "Tezos_client_004_Pt24m4xi_commands",
+    "-open", "Tezos_client_base",
+    "-open", "Tezos_client_commands",
+    "-open", "Tezos_protocol_004_Pt24m4xi",
+    "-open", "Tezos_rpc",
+    "-open", "Tezos_shell_services",
+]
+
+TEZOS_CLIENT_004_PT24M4XI_COMMANDS_REGISTRATION_DEPS = [
+    "//src/lib_base:tezos-base",
+    "//src/lib_client_base:tezos-client-base",
+    "//src/lib_client_commands:tezos-client-commands",
+    "//src/lib_protocol_environment:tezos-protocol-environment",
+    "//src/lib_rpc:tezos-rpc",
+    "//src/lib_shell_services:tezos-shell-services",
+    "//src/proto_004_Pt24m4xi/lib_client:tezos-client-004-Pt24m4xi",
+    "//src/proto_004_Pt24m4xi/lib_client_commands:tezos-client-004-Pt24m4xi-commands",
+    "//src/proto_004_Pt24m4xi/lib_protocol:tezos-protocol-004-Pt24m4xi",
+]
+
+ocaml_ns_archive(
+    name       = "tezos-client-004-Pt24m4xi-commands.registration",
+    ns         = "Tezos_client_004_Pt24m4xi_commands_registration",
+    visibility = ["//visibility:public"],
+    submodules = [
+        ":Alpha_commands_registration",
+    ],
+)
+
+#############################
+####  Singleton Targets  ####
+
+ocaml_module(
+    name     = "Alpha_commands_registration",
+    struct   = "alpha_commands_registration.ml",
+    opts     = TEZOS_CLIENT_004_PT24M4XI_COMMANDS_REGISTRATION_OPTS,
+    deps     = TEZOS_CLIENT_004_PT24M4XI_COMMANDS_REGISTRATION_DEPS + [
+    ]
+)
+
+ocaml_module(
+    name     = "Client_proto_context_commands",
+    struct   = "client_proto_context_commands.ml",
+    opts     = TEZOS_CLIENT_004_PT24M4XI_COMMANDS_OPTS,
+    deps     = TEZOS_CLIENT_004_PT24M4XI_COMMANDS_DEPS + [
+    ]
+)
+
+ocaml_module(
+    name     = "Client_proto_contracts_commands",
+    struct   = "client_proto_contracts_commands.ml",
+    opts     = TEZOS_CLIENT_004_PT24M4XI_COMMANDS_OPTS,
+    deps     = TEZOS_CLIENT_004_PT24M4XI_COMMANDS_DEPS + [
+    ]
+)
+
+ocaml_module(
+    name     = "Client_proto_programs_commands",
+    struct   = "client_proto_programs_commands.ml",
+    sig      = ":Client_proto_programs_commands_cmi",
+    opts     = TEZOS_CLIENT_004_PT24M4XI_COMMANDS_OPTS,
+    deps     = TEZOS_CLIENT_004_PT24M4XI_COMMANDS_DEPS + [
+    ]
+)
+
+ocaml_signature(
+    name     = "Client_proto_programs_commands_cmi",
+    src      = "client_proto_programs_commands.mli",
+    opts     = TEZOS_CLIENT_004_PT24M4XI_COMMANDS_OPTS,
+    deps     = TEZOS_CLIENT_004_PT24M4XI_COMMANDS_DEPS + [
+    ]
+)
+

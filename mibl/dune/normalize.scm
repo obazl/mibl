@@ -7,8 +7,10 @@
          (_ (if-let ((nm (assoc 'name stanza-alist)))
                     (format #t "name: ~A\n" nm)
                     (format #t "unnamed\n")))
-         (xstanza (case (car stanza)
-              ((rule) (normalize-rule-stanza! pkg stanza))
+         (xstanza
+          (case (car stanza)
+            ((rule)
+             (set! pkg (normalize-rule-stanza! pkg stanza)))
                        ;; pkg-path ocaml-srcs stanza))
 
               ;; ((alias) (normalize-stanza-alias stanza))
@@ -36,7 +38,7 @@
                  (if (null-library? stanza)
                      '()
                      (let ((submodules-assoc (expand-modules-fld
-                                              (assoc 'modules stanza)
+                                              (assoc 'modules (cdr stanza))
                                               (assoc :modules pkg)
                                               modules-ht))
                            ;; add submodules-assoc to stanza
@@ -55,7 +57,8 @@
 
               (else
                (format #t "normalize-dune-stanza unhandled: ~A\n" stanza)))))
-    xstanza))
+    (format #t "nds pkg: ~A\n" pkg)
+    pkg))
 
   ;;   ;; update global public -> private name table
   ;;   ;; (case (car stanza)
@@ -85,12 +88,13 @@
   (map
    (lambda (stanza)
      ;; (format #t "STANZA: ~A" (cdr stanza)) (newline)
-     (format #t "STANZA nm: ~A" (assoc-val 'name (cdr stanza))) (newline)
+     (format #t "STANZA nm: ~A" (car stanza)) (newline)
      (let ((normed (normalize-dune-stanza pkg stanza)))
                     ;; pkg-path
                     ;; ;; dune-project-stanzas
                     ;; srcfiles ;; s/b '() ??
                     ;; stanza)))
+       (format #t "normalized: ~A\n" normed)
        normed))
    (assoc-val :dune-stanzas pkg))
   )

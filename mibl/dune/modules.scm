@@ -1,3 +1,5 @@
+(format #t "loading modules.scm\n")
+
 ;; mibl/dune/modules.scm
 
 (define (filename->module-assoc filename)
@@ -32,14 +34,30 @@
                         #f
                         (recur (cdr srcfiles)))))))))))
 
+;; modules-assoc:
+;;   (modules (:static (A (:ml "a.ml")) (:dynamic (B (:ml "b.ml")))))
+;; (define (expand-std-modules modules-spec pkg-modules)
+(define (get-pkg-module-names modules-assoc)
+  ;; (format #t "GET-pkg-module-names, massoc: ~A\n" modules-assoc)
+  (let* ((statics (assoc-val :static (cdr modules-assoc)))
+         ;; (_ (format #t "statics: ~A\n" statics))
+         (dynamics (assoc-val :dynamic (cdr modules-assoc)))
+         ;; (_ (format #t "dynamics: ~A\n" dynamics))
+         (both (map first (append statics dynamics)))
+         )
+    ;; (format #t "both: ~A\n" both)
+    both))
 
 ;;;;; expand dune constant ':standard' for modules
 ;; e.g.
 ;; src/proto_alpha/lib_parmeters: (modules :standard \ gen)
 ;; lib_client_base:: (modules (:standard bip39_english))
-(define (standard-modules modules srcfiles)
+
+;; (define (expand-std-modules modules srcfiles)
+
+(define (expand-std-modules modules-spec pkg-modules)
+  (format #t "EXPAND-std-modules: ~A\n" modules-spec)
   ;; modules arg: everything after :standard
-  ;; (format #t "standard-modules: ~A\n" modules)
   ;; WARNING: the '\' is a symbol, but it does not print as '\,
   ;; rather it prints as (symbol "\\"); use same to compare, do
   ;; not compare car to 'symbol, like so:
@@ -49,48 +67,33 @@
   ;;         (format #t "EXCEPTING ~A\n" (cdr modules))))
 
   ;; (format #t "  srcfiles: ~A\n" srcfiles)
-  (let ((module-names (srcs->module-names srcfiles)))
-    (if (null? modules)
-        ;; (modules (:standard)) means same as omitting (modules), i.e.
-        ;; all modules:
-        (values module-names '())
-
-        ;; NB: (:standard \ ...) => (:standard (symbol "\\") ...)
-        (if (pair? (car modules))
-            (if (equal? (caar modules) (symbol "\\"))
-                (let ((exception (cadr modules)))
-                  ;; (format #t "EXCEPTION1: ~A\n" exception)
-                  (values (remove-if list
-                                     (lambda (m)
-                                       ;; (format #t "remove? ~A\n" m)
-                                       (equal? exception m))
-                                     module-names)
-                          '()))
-                ;; else :standard adds to default list, e.g.
-                ;; (:standard (foo bar baz))
-                ;; tezos example: src/lib_client_base:
-                ;;     (modules (:standard bip39_english))
-                (values (concatenate (map
-                                      normalize-module-name
-                                      (car modules))
-                                     module-names)
-                        '()))
-            ;; else (car modules) is atom,
-            ;; e.g. (:standard \ foo) or (:standard foo bar baz) ...
-            (if (equal? (car modules) (symbol "\\"))
-                (let ((exception (normalize-module-name (cadr modules))))
-                  ;; (format #t "EXCEPTION2: ~A\n" exception)
-                  (values (remove-if list
-                                     (lambda (m)
-                                       ;; (format #t "remove? ~A\n" m)
-                                       (equal? exception m))
-                                     module-names)
-                          '()))
-                (values (concatenate (map
-                                      normalize-module-name
-                                      modules)
-                                     module-names)
-                        '()))))))
+  ;; (let ((module-names (srcs->module-names srcfiles)))
+  (let ((spec (cdr modules-spec)) ;; car is always :standard
+        (pkg-module-names (get-pkg-module-names pkg-modules)))
+    (format #t "pkg-module-names: ~A\n" pkg-module-names)
+    (format #t "spec: ~A\n" spec)
+    ;; handling '/': in principle it can go anywhere:
+    ;; (<sets1> \ <sets2>) is how the docs put it.
+    ;; in practice it only seems to be used after :standard
+    ;; e.g. (:standard \ foo) includes all modules except foo
+    ;; also found: (modules (:standard) \ foo)
+    (if-let ((slash (member (symbol "\\") spec)))
+            (let* ((exclusions (cdr slash))
+                   (exclusions (if (list? (car exclusions))
+                                   (car exclusions) exclusions))
+                   (exclusions (map normalize-module-name exclusions)))
+              (format #t "exclusions: ~A\n" exclusions)
+              (let ((winnowed (remove-if
+                               list
+                               (lambda (item)
+                                 (let ((norm (normalize-module-name item)))
+                                   ;; (format #t "item ~A\n" norm)
+                                   ;; (format #t "mem? ~A: ~A\n" exclusions
+                                   ;;         (member norm exclusions))
+                                   (if (member norm exclusions) #t #f)))
+                               pkg-module-names)))
+                winnowed))
+            pkg-module-names)))
 
 ;; was (define (modules->modstbl modules srcfiles) ;; lookup_tables.scm
 ;; expand (modules ...) and convert to (:submodules ...)
@@ -102,89 +105,115 @@
 ;; the package have been processed to discover generated files, e.g.
 ;; rule stanzas may generate files, (expressed by 'target' flds).
 ;; so rules should be processed first.
-(define expand-modules-fld!
-  (let ((+documentation+ "Expand  'modules' field and convert to :submodules assoc. modules-spec is a '(modules ...)' field from a library stanza; fs-modules is the list of modules in the package: an alist whose assocs have the form (A (:ml a.ml)(:mli a.mli)), i.e. keys are module names. Updates global modules-tbl.")
-        (+signature+ '(expand-modules-fld! modules-spec pkg-modules modules-ht)))
+
+;;  expand-modules-fld!
+(define modules-fld->submodules-fld
+  (let ((+documentation+ "Expand  'modules' field (of library or executable stanzas) and convert to :submodules assoc. modules-spec is a '(modules ...)' field from a library stanza; fs-modules is the list of modules in the package: an alist whose assocs have the form (A (:ml a.ml)(:mli a.mli)), i.e. keys are module names. Updates global modules-tbl.")
+        (+signature+ '(modules-fld->submodules-fld modules-spec pkg-modules modules-ht)))
     (lambda (modules-spec pkg-modules modules-ht)
-      (format #t "expand-modules-fld!\n")
+      (format #t "modules-fld->submodules-fld\n")
       (format #t "modules-spec: ~A\n" modules-spec)
       (format #t "pkg-modules: ~A\n" pkg-modules)
-      ;; #t)
-      (let ((modules (cdr modules-spec)))
-        (let recur ((modules modules)
-                    (direct '()) ;; src files
-                    (indirect '())) ;; generated files
-          ;; (format #t "recur modules ~A\n" modules)
-          (cond
-           ((null? modules)
-            (begin
-              ;; (format #t "result mtbl: ~A\n" modules-tbl)
-              (values direct indirect)))
+      (let* ((modules (cdr modules-spec))
+             (pkg-module-names (get-pkg-module-names pkg-modules))
+             (_ (format #t "modules: ~A\n" modules))
+             (tmp (let recur ((modules modules)
+                             (direct '()) ;; src files
+                             (indirect '())) ;; generated files
+                   (format #t "RECUR modules ~A\n" modules)
+                   (format #t "direct: ~A\n" direct)
+                   (cond
+                    ((null? modules)
+                     (if (null? direct)
+                         (begin
+                           (format #t "null modules\n")
+                           '())
+                         (reverse direct)))
 
-    ;;        ((equal? :standard (car modules))
-    ;;         (let-values (((std-modules rest)
-    ;;                       (standard-modules (cdr modules) srcfiles)))
-    ;;           (for-each (lambda (m)
-    ;;                       (hash-table-set! modules-tbl
-    ;;                                        m :direct))
-    ;;                     std-modules)
-    ;;           ;; (format #t "xxxx ~A\n" rest)
-    ;;           (recur rest)))
-    ;;        ;; e.g. lib_client_base::
-    ;;        ;; (modules (:standard bip39_english))
-    ;;        ;; or: (modules (:standard \ foo))
+                    ((equal? :standard (car modules))
+                     (begin
+                       (format #t "(equal? :standard (car modules))\n")
+                       (let ((std-modules (expand-std-modules (cdr modules-spec)
+                                                              pkg-modules)))
+                         (format #t "std-modules: ~A\n" std-modules)
+                         std-modules)))
 
-    ;;        ;; (let ((newseq (srcs->module-names srcfiles))) ;;  direct
-    ;;        ;;    ;; (format #t "modules :STANDARD ~A\n" newseq)
-    ;;        ;;    ;; (format #t "CDRMODS ~A\n" (cdr modules))
-    ;;        ;;    (recur (cdr modules)
-    ;;        ;;           (append newseq direct)
-    ;;        ;;           indirect))
+                    ((pair? (car modules))
+                     (begin
+                       (format #t "(pair? (car modules))\n")
+                       ;; e.g. (:standard), (:standard foo), (:standard \ foo)
+                       ;; or (modules (:standard) \ foo)
+                       ;; or (A B C)
+                       (if (equal? '(:standard) (car modules))
+                           (modules-fld->submodules-fld
+                            (append
+                             (list 'modules :standard) (cdr modules))
+                            pkg-modules modules-ht)
+                           (modules-fld->submodules-fld (cons 'modules (car modules))
+                                                        pkg-modules modules-ht))))
 
-    ;;        ;; )
-
-    ;;        ;; (concatenate direct
-    ;;        ;;              (norm-std-modules (cdr modules))))
-
-    ;;        ((pair? (car modules)) ;; e.g. ???
-    ;;         ;; (format #t "TTTT ~A\n" (pair? (car modules)))
-    ;;         ;; e.g. ? (modules foo (bar) baz)?
-    ;;         ;; (let-values (((exp gen)
-    ;;         ;;               (recur (car modules)))) ;;  '() '())))
-    ;;         (let ((tbl (recur (car modules)))) ;;  '() '())))
-    ;;           (recur (cdr modules))))
-    ;;        ;; (concatenate exp direct)
-    ;;        ;; (concatenate gen indirect))))
-
-           ;; ((indirect-module-dep? (car modules) srcfiles)
-           ((module-is-generated? (car modules) srcfiles)
-            ;; module name has no corresponding file
-            (begin
-              ;; (format #t "INDIRECT: ~A\n" (car modules))
-              (hash-table-set! modules-tbl
-                               (car modules)
-                               pkp-path)
-                               ;; :indirect)
-              (recur (cdr modules))))
-           ;; direct
-           ;; (cons (car modules) indirect))))
-
-    ;;        (else
-    ;;         (hash-table-set! modules-tbl
-    ;;                          (normalize-module-name (car modules))
-    ;;                          :direct)
-    ;;         ;; (format #t "yyyy ~A\n" modules)
-    ;;         (recur (cdr modules))))
-    ;;       ;; (cons (car modules) direct)
-    ;;       ;; indirect))
-    ;;       ))
-    ;;   ;;      ))
-    ;;   ;; ;;(format #t "RESULT: ~A\n" result)
-    ;;   ;; (reverse result))
-    ;;   ) ;; end lambda
-           ))
-        ) ;; let
+                    ;; inclusions, e.g. (modules a b c)
+                    (else
+                     (begin
+                       (format #t "other - inclusions: ~A\n" modules)
+                       (format #t "pkg-modules: ~A\n" pkg-module-names)
+                       (if (member (normalize-module-name (car modules))
+                                 pkg-module-names)
+                         (recur (cdr modules) (cons (car modules) direct)
+                                indirect)
+                         (error 'bad-arg "included module not in list"))))
+                    ) ;; cond
+                   ))) ;; recur
+        tmp) ;; let
       ) ;; lamda
     ) ;; let
-  )
+  ) ;; define
 
+;; (define (expand-modules-fld modules srcfiles)
+;;   ;; modules:: (modules Test_tezos)
+;;   ;; (format #t "  expand-modules-fld: ~A\n" modules)
+;;   ;; see also modules->modstbl in dune_stanza_fields.scm
+;;   (let* ((modules (cdr modules)))
+;;     (if (null? modules)
+;;         (values '() '())
+;;         ;; (let ((result
+;;         (let recur ((modules modules)
+;;                     (direct '())
+;;                     (indirect '()))
+;;           ;; (format #t "ms: ~A; direct: ~A\n" modules direct)
+;;           (cond
+;;            ((null? modules)
+;;             (values direct indirect))
+
+;;            ((equal? :standard (car modules))
+;;             (let ((newseq (srcs->module-names srcfiles))) ;;  direct
+;;               ;; (format #t "modules :STANDARD ~A\n" newseq)
+;;               ;; (format #t "CDRMODS ~A\n" (cdr modules))
+;;               (recur (cdr modules) (append newseq direct) indirect)))
+;;            ;; (concatenate direct
+;;            ;;              (norm-std-modules (cdr modules))))
+;;            ((pair? (car modules))
+;;             (let-values (((exp gen)
+;;                           (recur (car modules) '() '())))
+;;               (recur (cdr modules)
+;;                      (concatenate exp direct)
+;;                      (concatenate gen indirect))))
+
+;;            ((indirect-module-dep? (car modules) srcfiles)
+;;             (begin
+;;               ;; (format #t "INDIRECT: ~A\n" (car modules))
+;;               (recur (cdr modules)
+;;                      direct (cons (car modules) indirect))))
+
+;;            (else
+;;             (recur (cdr modules)
+;;                    (cons (car modules) direct)
+;;                    indirect))))
+;;         ;;      ))
+;;         ;; ;;(format #t "RESULT: ~A\n" result)
+;;         ;; (reverse result))
+;;         ))
+;;   )
+
+
+(format #t "loaded modules.scm\n")

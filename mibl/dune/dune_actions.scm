@@ -1749,33 +1749,38 @@
 ;; (define (normalize-action pkg-path action stanza srcfiles)
 ;;   action)
 
-(define (normalize-action pkg-path action stanza srcfiles)
-  (format #t "NORMALIZE-ACTION: ~A: ~A\n" pkg-path action)
-  (let ((key (if (pair? (cadr action))
-                 ;; e.g. (action (run ...)), (action (progn))
-                 (caadr action)
-                 ;; e.g. (action progn)
-                 (cadr action))))
-    ;; (format #t "  action key: ~A\n" key)
-    (case key  ;; (car action)
-      ((copy#) (normalize-copy-action pkg-path action stanza srcfiles))
-      ((copy) (normalize-copy-action pkg-path action stanza srcfiles))
+;; (define (normalize-action pkg-path action stanza srcfiles)
+(define (normalize-action pkg rule-alist)
+  (format #t "NORMALIZE-action: ~A\n" (assoc 'action rule-alist))
+  (let* ((action-list (assoc-val 'action rule-alist))
+         (action (if (pair? (car action-list)) ;; e.g. (action (tool ...))
+                     (caar action-list)
+                     ;; else (action tool ...)
+                     (cadr action-list))))
+    (format #t "  action action: ~A\n" action)
+    #t
+    ;; (case action  ;; (car action)
+    ;;   ((copy#) (normalize-copy-action pkg-path action stanza srcfiles))
+    ;;   ((copy) (normalize-copy-action pkg-path action stanza srcfiles))
 
-      ((run) (normalize-run-action pkg-path action stanza srcfiles))
+    ;;   ((run) (normalize-run-action pkg-path action stanza srcfiles))
 
-      ((progn) (normalize-progn-action pkg-path action stanza srcfiles))
+    ;;   ((progn) (normalize-progn-action pkg-path action stanza srcfiles))
 
-      ((with-stdout-to)
-       (normalize-with-stdout-to pkg-path action stanza srcfiles))
+    ;;   ((with-stdout-to)
+    ;;    (normalize-with-stdout-to pkg-path action stanza srcfiles))
 
-      ((with-stderr-to) stanza)
-      ((with-stdin-from) stanza)
-      ((with-outputs-to) stanza)
+    ;;   ((with-stderr-to) stanza)
+    ;;   ((with-stdin-from) stanza)
+    ;;   ((with-outputs-to) stanza)
 
-      ((write-file) (normalize-write-file action stanza))
+    ;;   ((write-file) (normalize-write-file action stanza))
 
-      (else
-       (format #t "UNHANDLED ACTION\n")
-       stanza))))
+    ;;   (else
+    ;;    (format #t "UNHANDLED ACTION\n")
+    ;;    stanza))
+))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; (display "loaded dune/dune_actions.scm") (newline)

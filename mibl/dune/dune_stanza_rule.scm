@@ -131,16 +131,17 @@
       ;; 'map' over the fields. Instead we extract the fields into local
       ;; vars.
 
-      (let ((pkg-path (assoc-val :pkg-path pkg))
-            (rule-alist (cdr stanza)))
-        (format #t "rule-alist: ~A\n" rule-alist)
-        (format #t "target: ~A\n" (assoc 'target rule-alist))
-        (format #t "Targets: ~A\n" (assoc-val 'targets rule-alist))
+      (let* ((pkg-path (assoc-val :pkg-path pkg))
+            (rule-alist (cdr stanza))
+            (_ (format #t "rule-alist: ~A\n" rule-alist))
+            (_ (format #t "target: ~A\n" (assoc 'target rule-alist)))
+            (_ (format #t "Targets: ~A\n" (assoc-val 'targets rule-alist))))
 
-        (if-let ((tgt (assoc-val 'target rule-alist)))
-                (update-pkg-with-targets! pkg tgt)
-                (if-let ((tgts (assoc-val 'targets rule-alist)))
-                        (update-pkg-with-targets! pkg tgts)))
+        (set! pkg (if-let ((tgt (assoc-val 'target rule-alist)))
+                          (update-pkg-with-targets! pkg tgt)
+                          (if-let ((tgts (assoc-val 'targets rule-alist)))
+                                  (update-pkg-with-targets! pkg tgts))))
+        (format #t "rule: updated pkg: ~A\n" pkg)
 
         ;; if we have a target, then we must have an action that
         ;; generates it. the action will have ${targets}?
@@ -154,10 +155,10 @@
         ;; 'action' rules contain an action subfield, e.g write-file,
         ;; with-stdout-to, etc.
         (cond
-         ;; ((assoc 'action rule-alist)
-         ;;  (begin
-         ;;    (normalize-action
-         ;;     pkg-path (assoc 'action rule-alist) stanza srcfiles)))
+         ((assoc 'action rule-alist)
+          (begin
+            (normalize-action pkg rule-alist)))
+             ;; pkg-path (assoc 'action rule-alist) stanza srcfiles)))
 
          ;; ((assoc 'copy rule-alist)
          ;;  (begin
@@ -170,7 +171,8 @@
          ;;     pkg-path (assoc 'copy_files# rule-alist) stanza srcfiles)))
 
          (else
-          (format #t "UNHANDLED RULE: ~A\n" rule-alist)))))))
+          (format #t "UNHANDLED RULE: ~A\n" rule-alist))))
+      pkg)))
 
     ;; (let ((result (map (lambda (fld-assoc)
     ;;                      ;; (display (format #f "fld: ~A" fld-assoc)) (newline)
