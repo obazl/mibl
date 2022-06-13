@@ -1,5 +1,14 @@
 #!/bin/sh
 
+## For local development. Symlinks the scheme files for mibl and libs7
+## to XDG_HOME_DATA so that they can be edited within their repos.
+## Copies the executable (repl -> mibl) and libc_s7.so instead of
+## symlinking, since they are located after build in a Bazel-controled
+## directory. Assumes that `https://github.com/obazl/libs7` is cloned
+## to the local system.
+
+## Usage: $ bazel build //repl && .tools/symlink.sh
+
 mkdir -vp $HOME/.local/share/mibl
 mkdir -vp $HOME/.local/share/mibl/dune
 mkdir -vp $HOME/.local/share/mibl/meta
@@ -18,7 +27,7 @@ ln -sfv $HOME/obazl/libs7/libs7/s7/*scm $HOME/.local/share/mibl/s7
 ln -sfv $HOME/obazl/mibl/mibl/*scm $HOME/.local/share/mibl
 ln -sfv $HOME/obazl/mibl/mibl/s7/*scm $HOME/.local/share/mibl/s7
 
-## don't forget the executble and lib
+## copy the executble and lib (do not symlink from Bazel directories)
 cp -fv `realpath bazel-bin/repl/repl` $HOME/.local/bin/mibl
 chmod u+rwx $HOME/.local/bin/mibl
 
