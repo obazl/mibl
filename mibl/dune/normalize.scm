@@ -58,7 +58,7 @@
 
               (else
                (format #t "normalize-dune-stanza unhandled: ~A\n" stanza)))))
-    (format #t "nds pkg: ~A\n" pkg)
+    (format #t "normalized pkg: ~A\n" pkg)
     pkg))
 
   ;;   ;; update global public -> private name table

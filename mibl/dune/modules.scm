@@ -3,16 +3,20 @@
 ;; mibl/dune/modules.scm
 
 (define (filename->module-assoc filename)
+  (format #t "filename->module-assoc ~A\n" filename)
   (let* ((ext (filename-extension filename))
          (pname (principal-name filename))
          (mname (normalize-module-name pname)))
-    (cond
-     ((string=? ext ".mli") (cons mname
-                                  (list (list :mli filename :gen))))
-     ((string=? ext ".ml") (cons mname
-                                 (list (list :ml filename :gen))))
-     (else #t))
-    ))
+    (format #t "mname: ~A\n" mname)
+    (let ((a
+           (cond
+            ((string=? ext ".mli") (cons mname
+                                         (list (list :mli filename))))
+            ((string=? ext ".ml") (cons mname
+                                        (list (list :ml filename))))
+            (else #t))))
+      ;; (format #t "f->m result: ~A" a)
+      a)))
 
 ;; (define indirect-module-dep?
 (define module-is-generated?

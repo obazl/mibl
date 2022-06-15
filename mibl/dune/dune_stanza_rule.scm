@@ -132,15 +132,16 @@
       ;; vars.
 
       (let* ((pkg-path (assoc-val :pkg-path pkg))
-            (rule-alist (cdr stanza))
-            (_ (format #t "rule-alist: ~A\n" rule-alist))
-            (_ (format #t "target: ~A\n" (assoc 'target rule-alist)))
-            (_ (format #t "Targets: ~A\n" (assoc-val 'targets rule-alist))))
+             (rule-alist (cdr stanza))
+             (_ (format #t "rule-alist: ~A\n" rule-alist))
+             (_ (format #t "target: ~A\n" (assoc 'target rule-alist)))
+             (_ (format #t "Targets: ~A\n" (assoc-val 'targets rule-alist))))
 
         (set! pkg (if-let ((tgt (assoc-val 'target rule-alist)))
                           (update-pkg-with-targets! pkg tgt)
                           (if-let ((tgts (assoc-val 'targets rule-alist)))
-                                  (update-pkg-with-targets! pkg tgts))))
+                                  (update-pkg-with-targets! pkg tgts)
+                                  pkg)))
         (format #t "rule: updated pkg: ~A\n" pkg)
 
         ;; if we have a target, then we must have an action that

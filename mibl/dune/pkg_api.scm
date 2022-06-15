@@ -58,33 +58,56 @@
            (let ((kind (filename->kind tgt)))
              (case kind
                ((:module)
-                (format #t ":module: ~A\n" tgt)
-                (if modules-assoc
-                    (begin
-                      (format #t "modules-assoc (before): ~A\n"
-                              modules-assoc)
-                      (set-cdr! modules-assoc
-                                (append (list (filename->module-assoc tgt))
-                                        (cdr modules-assoc)))
-                      (format #t "modules-assoc (after): ~A\n"
-                              modules-assoc))
-                    ;; else
-                    (begin
-                      (format #t "initializing modules-assoc\n")
-                      (set! modules-assoc (cons :modules (list tgt)))
-                      (format #t "modules-assoc (after): ~A\n"
-                              modules-assoc))))
+                (format #t ":module tgt: ~A\n" tgt)
+                (let* ((massoc (filename->module-assoc tgt))
+                       ;; massoc == (A (:ml "a.ml"))
+                       (mod (car massoc))
+                       (pr (cadr massoc))
+                       (_ (format #t "pr: ~A\n" pr)))
+                  (alist-update-in! pkg `(:modules :dynamic ,mod)
+                                    (lambda (old)
+                                      (format #t "module OLD: ~A\n" old)
+                                      (if (null? old)
+                                          (list pr)
+                                          ;;(filename->module-assoc tgt)
+                                          (append
+                                           old
+                                           (list pr)
+                                           ;;(filename->module-assoc tgt)
+                                           )))))
+                pkg)
+               ;; (if modules-assoc
+               ;;     (begin
+               ;;       (format #t
+               ;;               "modules-assoc (before): ~A\n" modules-assoc)
+               ;;       (set-cdr! modules-assoc
+               ;;                 (append (list (filename->module-assoc tgt))
+               ;;                         (cdr modules-assoc)))
+               ;;       (format #t
+               ;;               "modules-assoc (after): ~A\n" modules-assoc))
+               ;;     ;; else
+               ;;     (begin
+               ;;       (format #t "initializing modules-assoc\n")
+               ;;       (set! modules-assoc (cons :modules (list tgt)))
+               ;;       (format #t "modules-assoc (after): ~A\n"
+               ;;               modules-assoc)))
+               ;; )
                (else
                 (format #t ":other: ~A\n" tgt)
                 (format #t "files-assoc: ~A\n" files-assoc)
                 (alist-update-in! pkg '(:files :dynamic)
                                   (lambda (old)
-                                    (format #t "OLD: ~A\n" old)
-                                    (if (null? old)
-                                        (filename->file-assoc tgt)
-                                        (cons
-                                         (filename->file-assoc tgt)
-                                         old))))
+                                    (format #t "other OLD: ~A\n" old)
+                                    (let ((fa (filename->file-assoc tgt)))
+                                      (format #t "fa: ~A\n" (type-of fa))
+                                      (format #t "fa2: ~A\n" (type-of old))
+                                      (format #t "FUCK!!!: ~A\n"
+                                              (cons fa old))
+                                      (if (null? old)
+                                          fa
+                                          (if (pair? fa)
+                                              (cons fa old)
+                                              (append fa old))))))
                 ;; (if-let (files-assoc (assoc-in '(:files :dynamic) pkg))
                 ;;     (begin
                 ;;       (format #t "files-assoc (before): ~A\n"
