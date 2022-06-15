@@ -36,9 +36,9 @@
 
 int rc;
 
-char *exec_dir; /* BUILD_WORKING_DIRECTORY else NULL */
-char *launch_dir; /* Bazel: BUILD_WORKING_DIRECTORY; otherwise getcwd() */
-/* path args passed to mibl relative to launch_dir */
+char *build_wd; /* BUILD_WORKING_DIRECTORY else NULL */
+char *launch_dir; /* real launch dir */
+/* path args passed to mibl relative to build_wd */
 
 /* UT_string *ws_root; */
 char *bws_root;                 /* base ws root */
@@ -139,22 +139,19 @@ void _set_base_ws_root(void)
 EXPORT void bazel_configure(void) // char *_exec_root)
 {
     /* log_debug("bazel_configure"); */
+    launch_dir = getcwd(NULL, 0);
 
-    exec_dir = getenv("BUILD_WORKING_DIRECTORY");
-    if (debug)
-        log_debug("BUILD_WORKING_DIRECTORY: %s", exec_dir);
+    build_wd = getenv("BUILD_WORKING_DIRECTORY");
+    if (debug) log_debug("BUILD_WORKING_DIRECTORY: %s", build_wd);
 
-    if (exec_dir == NULL) {
+    if (build_wd == NULL) {
         /* running outside of bazel */
-        if (debug)
-            log_debug("BUILD_WORKING_DIRECTORY: null");
-        launch_dir = getcwd(NULL, 0);
-    } else {
-        launch_dir = exec_dir;
+        if (debug) log_debug("BUILD_WORKING_DIRECTORY: null");
+        build_wd = launch_dir;
     }
 
     if (debug) {
-        log_debug("exec_dir: %s (=BUILD_WORKING_DIRECTORY)", exec_dir);
+        log_debug("build_wd: %s (=BUILD_WORKING_DIRECTORY)", build_wd);
         log_debug("launch_dir: %s", launch_dir);
     }
 
@@ -204,10 +201,6 @@ EXPORT void bazel_configure(void) // char *_exec_root)
         }
     }
     /* utarray_new(src_files,&ut_str_icd); */
-
-    chdir(launch_dir);
-    if (debug)
-        log_debug("Set CWD to launch dir: %s", launch_dir);
 }
 
 EXPORT int config_handler(void* config, const char* section, const char* name, const char* value)

@@ -158,6 +158,10 @@ int main(int argc, char **argv)
     bazel_configure(); // getcwd(NULL, 0));
     s7_configure();
 
+    /* chdir(launch_dir); */
+    /* if (debug) */
+    /*     log_debug("Set CWD to launch dir: %s", launch_dir); */
+
     /* s7_repl(s7); */
     xen_repl(argc, argv);
 

@@ -49,7 +49,7 @@ int rc;
 
 #define MIBL    "mibl"
 #define MIBL_S7 MIBL "/s7"
-#define OIBL   "mibl"
+/* #define OIBL   "mibl" */
 
 /* XDG
    https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
@@ -133,7 +133,7 @@ UT_string *xdg_data_home;
 /*     return opam_dirs; */
 /* } */
 
-LOCAL void _config_s7_load_path_bazel_runfiles(UT_string *manifest)
+LOCAL void _config_s7_load_path_bazel_runfiles(char *manifest)
 {
     FILE * fp;
     char * line = NULL;
@@ -157,9 +157,9 @@ LOCAL void _config_s7_load_path_bazel_runfiles(UT_string *manifest)
      */
 
     /* bazel (sys) script dir */
-    fp = fopen(utstring_body(manifest), "r");
+    fp = fopen(manifest, "r");
     if (fp == NULL) {
-        log_error("fopen failure %s", utstring_body(manifest));
+        log_error("fopen failure %s", manifest);
         /* exit(EXIT_FAILURE); */
     }
 
@@ -334,7 +334,7 @@ LOCAL void _config_s7_load_path_xdg_home(void)
     }
     log_trace("xdg_data_home: %s", utstring_body(xdg_data_home));
 
-    /* start with lib/libc_s7.o, mibl dlopens it */
+    /* start with lib/libc_s7.so, mibl dlopens it */
 
     // instead of adding another dir with only one file to the load-path,
     // we store libc_s7.o in .local/share/mibl, which is already on the path
@@ -480,13 +480,14 @@ bazel run is similar, but not identical, to directly invoking the binary built b
   */
 
     /* so if we find MANIFEST, we're running a test? */
-    UT_string *manifest;
-    utstring_new(manifest);
-    utstring_printf(manifest, "%s%s", exec_dir, "/MANIFEST");
-    if (debug)
-        log_debug("MANIFEST: %s", utstring_body(manifest));
+    /* UT_string *manifest; */
+    /* utstring_new(manifest); */
+    /* utstring_printf(manifest, "../MANIFEST"); */
+    /* if (debug) */
+    /*     log_debug("MANIFEST: %s", utstring_body(manifest)); */
 
-    rc = access(utstring_body(manifest), R_OK);
+    char *manifest = "../MANIFEST";
+    rc = access(manifest, R_OK);
 
     if (rc) {
         if (verbose) log_info("Configuring for non-bazel env.");
@@ -522,7 +523,7 @@ bazel run is similar, but not identical, to directly invoking the binary built b
     /* } */
 }
 
-/* void libc_s7_init(s7_scheme *sc); */
+void libc_s7_init(s7_scheme *sc);
 
 LOCAL void s7_config_repl(s7_scheme *sc)
 {
@@ -533,6 +534,7 @@ LOCAL void s7_config_repl(s7_scheme *sc)
 #if WITH_NOTCURSES
   s7_load(sc, "nrepl.scm");
 #else
+  log_debug("XXXXXXXXXXXXXXXX");
   s7_pointer old_e, e, val;
   s7_int gc_loc;
   bool repl_loaded = false;
@@ -609,7 +611,16 @@ EXPORT void s7_configure(void)
 
     set_load_path(); //callback_script_file);
 
+    /* init_glob(s7); */
+
+
+    /* s7_config_repl(s7); */
+    /* s7_repl(s7); */
+
     s7_load(s7, "dune.scm");
+
+    /* libc_s7_init(s7); */
+    chdir(build_wd);
 }
 
 EXPORT void s7_shutdown(s7_scheme *s7)

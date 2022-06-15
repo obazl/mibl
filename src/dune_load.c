@@ -52,8 +52,7 @@ void _indent(int i)
         printf("    ");
 }
 
-s7_pointer assoc;
-s7_pointer assoc_in;
+s7_pointer assoc, assoc_in, sort_bang, string_lt;
 
 s7_pointer _load_assoc()
 {
@@ -77,6 +76,30 @@ s7_pointer _load_assoc_in()
                  s7_list(s7, 1, s7_make_string(s7, "assoc-in")));
     }
     return assoc_in;
+}
+
+s7_pointer _load_sort()
+{
+    sort_bang = s7_name_to_value(s7, "sort!");
+    if (assoc == s7_undefined(s7)) {
+        log_error("unbound symbol: sort!");
+        log_info("*load-path*: %s", TO_STR(s7_load_path(s7)));
+        s7_error(s7, s7_make_symbol(s7, "unbound-symbol"),
+                 s7_list(s7, 1, s7_make_string(s7, "sort!")));
+    }
+    return sort_bang;
+}
+
+s7_pointer _load_string_lt()
+{
+    string_lt = s7_name_to_value(s7, "string<?");
+    if (assoc == s7_undefined(s7)) {
+        log_error("unbound symbol: string<?");
+        log_info("*load-path*: %s", TO_STR(s7_load_path(s7)));
+        s7_error(s7, s7_make_symbol(s7, "unbound-symbol"),
+                 s7_list(s7, 1, s7_make_string(s7, "string<?")));
+    }
+    return string_lt;
 }
 
 UT_string *dunefile_name;
@@ -331,8 +354,8 @@ LOCAL void _update_pkg_files(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 
     char *pkg_name = dirname(ftsentry->fts_path);
 
-    s7_pointer pkg_kw = s7_make_string(s7, pkg_name);
-    s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_kw);
+    s7_pointer pkg_key = s7_make_string(s7, pkg_name);
+    s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
     if (debug)
         log_debug("pkg_alist: %s", TO_STR(pkg_alist));
 
@@ -344,14 +367,15 @@ LOCAL void _update_pkg_files(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
         if (debug)
             log_debug("no entry for this pkg");
     } else {
+        s7_pointer assoc_in = _load_assoc_in();
+        s7_pointer keypath = s7_list(s7, 2, files_kw, static_kw);
+        s7_pointer files_assoc = s7_call(s7, assoc_in,
+                                         s7_list(s7, 2,
+                                                 keypath,
+                                                 pkg_alist));
+        if (debug) log_debug("files_assoc %s", TO_STR(files_assoc));
 
-        s7_pointer assoc = _load_assoc();
-        s7_pointer files_list
-            = s7_call(s7, assoc, s7_list(s7, 2, files_kw, pkg_alist));
-        if (debug) log_debug("files_list %s",
-                             TO_STR(files_list));
-
-        if (files_list == s7_f(s7)) {
+        if (files_assoc == s7_f(s7)) {
             if (debug)
                 log_debug("initializing (:files (:static (:type . fname))) list");
 
@@ -363,8 +387,6 @@ LOCAL void _update_pkg_files(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 
             s7_pointer file_list =
                 s7_list(s7, 1, s7_list(s7, 2, files_kw, static_assoc));
-            /* file_pair)); */
-            /* s7_make_string(s7, ftsentry->fts_name))); */
             if (debug)
                 log_debug("file_list: %s", TO_STR(file_list));
 
@@ -374,52 +396,47 @@ LOCAL void _update_pkg_files(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
             if (debug)
                 log_debug("new pkg: %s", TO_STR(new_pkg));
 
-            s7_hash_table_set(s7, pkg_tbl, pkg_kw, new_pkg);
+            s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg);
 
         } else {
+            /* assoc-in '(:files :static) returns assoc (:static ...),
+               but we need the alist */
+            s7_pointer files_alist = s7_cdr(files_assoc);
+
             if (debug) {
                 log_debug("updating :files");
-                /* log_debug("srcs_alist: %s", */
-                /*        TO_STR(srcs_alist)); */
-                log_debug("files_list: %s",
-                       TO_STR(files_list));
-            }
-            s7_pointer new_files_list =
-                s7_cons(s7,
-                        s7_make_string(s7, ftsentry->fts_name),
-                        s7_cdr(files_list));
-            log_debug("new files_list: %s",
-                       TO_STR(new_files_list));
-
-            s7_pointer sort = s7_name_to_value(s7, "sort!");
-            if (assoc == s7_undefined(s7)) {
-                log_error("unbound symbol: sort!");
-                log_info("*load-path*: %s", TO_STR(s7_load_path(s7)));
-                s7_error(s7, s7_make_symbol(s7, "unbound-symbol"),
-                         s7_list(s7, 1, s7_make_string(s7, "sort!")));
+                log_debug("files_alist: %s", TO_STR(files_alist));
             }
 
-            s7_pointer lt = s7_name_to_value(s7, "string<?");
-            if (assoc == s7_undefined(s7)) {
-                log_error("unbound symbol: string<?");
-                log_info("*load-path*: %s", TO_STR(s7_load_path(s7)));
-                s7_error(s7, s7_make_symbol(s7, "unbound-symbol"),
-                         s7_list(s7, 1, s7_make_string(s7, "string<?")));
-            }
+            s7_pointer file_pair =
+                s7_list(s7, 2,
+                        s7_make_keyword(s7, file_ext),
+                        s7_make_string(s7, ftsentry->fts_name));
+            log_debug("new file_pair: %s", TO_STR(file_pair));
 
-            s7_pointer sorted
-                = s7_call(s7, sort, s7_list(s7, 2,
-                                            new_files_list,
-                                            lt));
+            s7_pointer new_files_alist =
+                s7_list(s7, 2,
+                        /* s7_make_string(s7, ftsentry->fts_name), */
+                        file_pair,
+                        files_alist);
+            log_debug("new files_alist: %s",
+                       TO_STR(new_files_alist));
 
-            /* log_debug("new files_list sorted: %s", */
+            /* s7_pointer sort      = _load_sort(); */
+            /* s7_pointer string_lt = _load_string_lt(); */
+            /* s7_pointer sorted */
+            /*     = s7_call(s7, sort, s7_list(s7, 2, */
+            /*                                 new_files_alist, */
+            /*                                 string_lt)); */
+
+            /* log_debug("new files_alist sorted: %s", */
             /*           TO_STR(sorted)); */
 
-            s7_set_cdr(files_list, sorted);
-            log_debug("files_list: %s",
-                      TO_STR(files_list));
+            s7_set_cdr(files_assoc, new_files_alist);
+            log_debug("files_assoc: %s",
+                      TO_STR(files_assoc));
 
-            /* s7_hash_table_set(s7, pkg_tbl, pkg_kw, new_pkg); */
+            /* s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg); */
 
         }
     }
@@ -444,8 +461,8 @@ LOCAL void _update_pkg_script_files(s7_pointer pkg_tbl,
 
     char *pkg_name = dirname(ftsentry->fts_path);
 
-    s7_pointer pkg_kw = s7_make_string(s7, pkg_name);
-    s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_kw);
+    s7_pointer pkg_key = s7_make_string(s7, pkg_name);
+    s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
     if (debug)
         log_debug("pkg_alist: %s", TO_STR(pkg_alist));
 
@@ -480,7 +497,7 @@ LOCAL void _update_pkg_script_files(s7_pointer pkg_tbl,
             if (debug)
                 log_debug("new pkg: %s", TO_STR(new_pkg));
 
-            s7_hash_table_set(s7, pkg_tbl, pkg_kw, new_pkg);
+            s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg);
 
         } else {
             if (debug) {
@@ -511,7 +528,7 @@ LOCAL void _update_pkg_script_files(s7_pointer pkg_tbl,
             log_debug("scripts_list: %s",
                       TO_STR(scripts_list));
 
-            /* s7_hash_table_set(s7, pkg_tbl, pkg_kw, new_pkg); */
+            /* s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg); */
         }
     }
 }
@@ -527,10 +544,10 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
         log_debug("pkg_name: %s", pkg_name);
         log_debug("pkg_tbl: %s", TO_STR(pkg_tbl));
     }
-    s7_pointer pkg_kw = s7_make_string(s7, pkg_name);
+    s7_pointer pkg_key = s7_make_string(s7, pkg_name);
     if (debug)
-        log_debug("pkg_kw: %s", TO_STR(pkg_kw));
-    s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_kw);
+        log_debug("pkg_key: %s", TO_STR(pkg_key));
+    s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
     if (debug)
         log_debug("pkg_alist: %s", TO_STR(pkg_alist));
 
@@ -605,7 +622,7 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
                 log_debug("pkg_alist: %s",
                        TO_STR(new_pkg_alist));
 
-            s7_hash_table_set(s7, pkg_tbl, pkg_kw, new_pkg_alist);
+            s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg_alist);
         } else {
             if (debug) {
                 log_debug("UPDATING :modules");
@@ -613,7 +630,7 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
                 log_debug("mname_sym: %s", TO_STR(mname_sym));
             }
 
-            s7_pointer assoc_in = _load_assoc_in();
+            /* s7_pointer assoc_in = _load_assoc_in(); */
 
             s7_pointer keypath = s7_list(s7, 3,
                                          /* srcs_kw, */
@@ -680,7 +697,7 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
 
                 s7_pointer msrcs = s7_cons(s7, ml_assoc, modules_alist_cdr);
                 if (debug)
-                    log_debug("msrcs: %s", TO_STR(msrcs));
+                    log_debug("setting cdr to: %s", TO_STR(msrcs));
 
                 s7_pointer new_modules_alist = s7_set_cdr(module_alist, msrcs);
                 if (debug) {
@@ -1069,7 +1086,7 @@ EXPORT s7_pointer g_dune_load(s7_scheme *s7,  s7_pointer args)
 {
     if (debug) {
         log_debug("g_dune_load, args: %s", TO_STR(args));
-        log_debug("exec_dir: %s (=BUILD_WORKING_DIRECTORY)", exec_dir);
+        log_debug("build_wd: %s (=BUILD_WORKING_DIRECTORY)", build_wd);
         log_debug("launch_dir: %s", launch_dir);
         log_debug("base ws root: %s", bws_root);
         log_debug("effective ws root: %s", ews_root);
@@ -1174,7 +1191,7 @@ EXPORT s7_pointer dune_load(char *home_sfx, char *traversal_root)
         log_debug("%-16s%s", "traversal_root:", traversal_root);
     }
     if (verbose) {
-        printf(YEL "%-16s%s\n" CRESET, "current dir:", launch_dir);
+        printf(YEL "%-16s%s\n" CRESET, "current dir:", getcwd(NULL, 0));
         printf(YEL "%-16s%s\n" CRESET, "traversal_root:", traversal_root);
     }
 
@@ -1195,7 +1212,7 @@ EXPORT s7_pointer dune_load(char *home_sfx, char *traversal_root)
 
     UT_string *abs_troot;
     utstring_new(abs_troot);
-    utstring_printf(abs_troot, "%s/%s", launch_dir, traversal_root);
+    utstring_printf(abs_troot, "%s/%s", build_wd, traversal_root);
     char *_ews = find_ws_root(utstring_body(abs_troot));
     log_debug("ews: %s", _ews);
     ews_root = _ews;
