@@ -17,6 +17,11 @@ version of the Dune API was sufficient for generating Bazel build
 files, but it is undergoing major revisions. What's there is
 sufficient for exploration.
 
+`mibl` is derived from
+link:https://ccrma.stanford.edu/software/snd/snd/s7.html[s7]. See
+link:https://iainctduncan.github.io/scheme-for-max-docs/s7.html[Why S7
+Scheme?] for reasons why.
+
 == Getting Started
 
 [source,starlark, title="WORKSPACE.bazel"]
