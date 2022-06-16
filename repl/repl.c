@@ -155,28 +155,28 @@ int main(int argc, char **argv)
     }
 
     /* test */
-    char *normalize_path(char *path);
-    printf("np: %s\n", normalize_path("dune/stanzas/rule/deps/glob/../foo.ml"));
-    /* printf("np: a/b/../c       %s\n", normalize_path("a/b/../c")); */
-    /* printf("np: a/b/../../c:   %s\n", normalize_path("a/b/../../c")); */
-    /* printf("np: a/b/c/../../d: %s\n", normalize_path("a/b/c/../../d")); */
+    char *canonical_path(char *path);
+    printf("np: %s\n", canonical_path("dune/stanzas/rule/deps/glob/../foo.ml"));
+    /* printf("np: a/b/../c       %s\n", canonical_path("a/b/../c")); */
+    /* printf("np: a/b/../../c:   %s\n", canonical_path("a/b/../../c")); */
+    /* printf("np: a/b/c/../../d: %s\n", canonical_path("a/b/c/../../d")); */
 
-    /* printf("np: a/b/c:         %s\n", normalize_path("a/b/c")); */
-    /* printf("np: .a/b/c:        %s\n", normalize_path("./a/b/c")); */
-    /* printf("np: ./././a/b/c:   %s\n", normalize_path("./././a/b/c")); */
-    /* printf("np: .///a/b/c:     %s\n", normalize_path(".///a/b/c")); */
-    /* printf("np: ././/a/./b/././//c: %s\n", normalize_path("././/a/./b/././//c")); */
-    /* printf("np: %s\n", normalize_path(".//a/b/c")); /\* busted *\/ */
-    /* printf("np: a/b.c/e.f:     %s\n", normalize_path("a/b.c/e.f")); */
-    /* printf("np: a/.b/e.f:      %s\n", normalize_path("a/.b/e.f")); */
-    /* printf("np: ./a/b/c:       %s\n", normalize_path("./a/b/c")); */
-    /* printf("np: ../a/b/c:      %s\n", normalize_path("../a/b/c")); */
+    /* printf("np: a/b/c:         %s\n", canonical_path("a/b/c")); */
+    /* printf("np: .a/b/c:        %s\n", canonical_path("./a/b/c")); */
+    /* printf("np: ./././a/b/c:   %s\n", canonical_path("./././a/b/c")); */
+    /* printf("np: .///a/b/c:     %s\n", canonical_path(".///a/b/c")); */
+    /* printf("np: ././/a/./b/././//c: %s\n", canonical_path("././/a/./b/././//c")); */
+    /* printf("np: %s\n", canonical_path(".//a/b/c")); /\* busted *\/ */
+    /* printf("np: a/b.c/e.f:     %s\n", canonical_path("a/b.c/e.f")); */
+    /* printf("np: a/.b/e.f:      %s\n", canonical_path("a/.b/e.f")); */
+    /* printf("np: ./a/b/c:       %s\n", canonical_path("./a/b/c")); */
+    /* printf("np: ../a/b/c:      %s\n", canonical_path("../a/b/c")); */
     /* printf("np: a////b/./c//d: %s\n", */
-    /*        normalize_path("a////b/./c//d")); */
-    /* printf("np: a/./c:         %s\n", normalize_path("a/./c")); */
-    /* printf("np: a//c:          %s\n", normalize_path("a//c")); */
-    /* printf("np: a/////b:       %s\n", normalize_path("a/////b")); */
-    /* printf("np: a/././././b:   %s\n", normalize_path("a/././././b")); */
+    /*        canonical_path("a////b/./c//d")); */
+    /* printf("np: a/./c:         %s\n", canonical_path("a/./c")); */
+    /* printf("np: a//c:          %s\n", canonical_path("a//c")); */
+    /* printf("np: a/////b:       %s\n", canonical_path("a/////b")); */
+    /* printf("np: a/././././b:   %s\n", canonical_path("a/././././b")); */
 
    /* initialize in this order: bazel then s7 */
     bazel_configure(); // getcwd(NULL, 0));
