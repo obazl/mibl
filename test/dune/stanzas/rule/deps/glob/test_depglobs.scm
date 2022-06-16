@@ -15,15 +15,15 @@
                        ;;       (glob_files ../relative/*.ml{,i}))
                        ;; (deps (glob_files ../*.ml{,i})
                        ;;       (glob_files ../relative/*.ml{,i}))
-                       ;; (deps (glob_files *.ml{,i})
-                       ;;       (glob_files ../*.ml{,i})
-                       ;;       (glob_files ../relative/*.ml{,i}))
+                       (deps (glob_files *.ml{,i})
+                             (glob_files ../*.ml{,i})
+                             (glob_files ../relative/*.ml{,i}))
 
                        ;; (deps a.ml a.mli)
                        ;; (deps a.ml a.mli (glob_files ../*.ml{,i}))
 
-                       (deps ../foo.ml ../globtest.ml ../relative/p.ml)
+                       ;; (deps ../foo.ml ../globtest.ml ../relative/p.ml)
 
                        (action (run %{<} %{targets}))))))
-         (stanza (car (assoc-val :dune-stanzas pkg))))
+         (stanza (cdar (assoc-val :dune-stanzas pkg))))
     (expand-action-deps pkg stanza)))

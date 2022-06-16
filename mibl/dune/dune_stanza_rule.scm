@@ -151,7 +151,7 @@
 
              ;; Step 2: expand the 'deps' field, which may be referenced by
              ;; the 'action' field
-             (deps (expand-action-deps pkg stanza)))
+             (deps (expand-action-deps pkg rule-alist)))
 
         ;; if we have a target, then we must have an action that
         ;; generates it. the action will have ${targets}?

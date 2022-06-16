@@ -89,6 +89,7 @@
                   (if (equal? (string-append ":" toolname)
                               (symbol->string (caar deps-list)))
                       (let ((exe (symbol->string (cadr (car deps-list)))))
+                        (format #t "pkg ~A;  exe: ~A\n" pkg-path exe)
                         (normalize-toolname pkg-path exe)
                         ;; (if (string-prefix? "./" exe)
                         ;;     (string-append ":" (substring exe 2))
@@ -331,7 +332,10 @@
 
          ;; (dsl run-list)
 
-         (deps (run-action->deps pkg-path tool rule-alist))
+         (deps
+          (expand-action-deps pkg stanza-alist)
+          ;;(run-action->deps pkg-path tool rule-alist)
+          )
          (_ (format #t "CMD DEPS: ~A\n" deps))
 
          ;; ;;        (dsl (cadr (cdadr action)))

@@ -172,8 +172,9 @@
 ;; preserve_file_kind: the action needs the files it reads to look like normal files (so dune won’t use symlinks for sandboxing
 
 ;; OBSOLETE: uses hack to deal with '../'
+;; replaced by handlers in dune_action_deps.scm
 ;; returns (:_srcfile <path> <fname>) or (:_genfile <path> <fname>)
-(define (make-filedep-arg pkg-path dep tag vars)
+(define (Xmake-filedep-arg pkg-path dep tag vars)
  ;; (if (equal? dep "%{ocamlc}")
   ;;     (begin
   (format #t "make-filedep-arg dep: ~A, tag: ~A\n" dep tag)
@@ -275,109 +276,6 @@
                             (string-append path "/" (car segs)))
                         file)))))
              )))
-
-;; ACTION DEPS
-;; https://dune.readthedocs.io/en/stable/concepts.html#dependency-specification
-;; examples:
-;; (deps (glob_files *.ml{,i}))
-;; (deps (universe) (:script get-git-info.mlt))
-;; (deps filea fileb ...)
-;; file literals may contain '..'
-;; dependency on dune-produced artifact:
-;; (deps .tezos_protocol_004_Pt24m4xi.objs/native/tezos_protocol_004_Pt24m4xi.cmx)
-;; (deps (glob_files contracts/*))
-;; (deps (alias foo) (alias bar)
-
-;; labelled deps - the labels can be used in 'action' fld,
-;; e.g. (run ${gen} ${targets})
-;; ':<' often used like this:
-;; (rule
-;;   (targets foo bar)
-;;   (deps (:< gen.sh) (universe))
-;;   (action (run %{<} %{targets})))
-
-;; mix labelled and literals
-;; (deps (:exe gen/bip39_generator.exe) gen/bip39_english.txt)
-
-;; globbing
-;; (deps
-;;   index.html
-;;   (:css (glob_files *.css))
-;;   (:js foo.js bar.js)
-;;   (:img (glob_files *.png) (glob_files *.jpg)))
-
-;; car of deps list is either one of these, or a filename, or a kw
-;; label (e.g. :exe, :<, etc.)
-;; called recursively
-(define (expand-deplist deplist pkg stanza expanded-deps)
-  (format #t "expand-DEPLIST: ~A\n" deplist)
-  (format #t "pkg: ~A\n" pkg)
-  (let ((pkg-path (car (assoc-val :pkg-path pkg)))
-        (ws-root (car (assoc-val :ws-path pkg))))
-    (if (null? deplist)
-        (begin
-          (format #t "finished deplist: ~A\n" expanded-deps)
-          expanded-deps)
-        (if (pair? (car deplist))
-            (expand-deplist (car deplist)
-                            pkg stanza
-                            (expand-deplist
-                             (cdr deplist) pkg stanza expanded-deps))
-            ;; car is atom
-            (let* ((kw (car deplist)))
-              (if-let ((depfn (assoc-val kw dune-dep-handlers)))
-                      (let ((res (apply (car depfn) (list pkg
-                                                          deplist))))
-                        (format #t "res: ~A\n" res)
-                        (format #t "expanded-deps: ~A\n" expanded-deps)
-                        ;; we're done, depfn consumed cdr
-                        (append expanded-deps res))
-
-                      ;; else car of deplist not a keyword
-                      ;; must be either a ':' named dep or a filename literal
-                      (let ((dep (if (symbol? (car deplist))
-                                     (symbol->string (car deplist))
-                                     (car deplist))))
-                        (if (char=? #\: (string-ref dep 0))
-                            (begin
-                              (format #t "NAMED DEP : ~A\n" deplist)
-                              deplist)
-
-                            ;; else must be a filename literal
-                            ;; return (:static <path> <fname>)
-                            ;; or (:dynamic <path> <fname>)
-                            (let* ((_ (format #t "dep: ~A\n" dep))
-                                   (path (string-append pkg-path
-                                                        "/" dep))
-                                   (_ (format #t "path: ~A\n" path))
-                                   (kind (if (file-exists? path)
-                                             :static :dynamic))
-                                   (rp (if (eq? kind :static)
-                                           (resolve-pkg-path path ws-root)
-                                           (normalize-path path))))
-                              (format #t "FILENAME LITERAL : ~A\n" dep)
-                              (format #t "rp : ~A\n" rp)
-                              (format #t "kind : ~A\n" kind)
-                              ;; find it and resolve pkg path
-                              ;; if not found mark it as :dynamic
-                              (expand-deplist (cdr deplist)
-                                              pkg stanza
-                                              (cons (list kind rp)
-                                                    expanded-deps)))
-                            ;; (let ((dep (make-filedep-arg pkg-path
-                            ;;                            (cadar deps)
-                            ;;                            (caar deps) '())))
-                            ;;   )
-                            )))
-              )))))
-
-;; expand-deps: deps -> file-deps, vars, env-vars
-(define (expand-action-deps pkg stanza)
-  (format #t "expand-action-DEPS: ~A\n" stanza)
-  (let ((stanza-alist (cdr stanza)))
-    (let ((deplist (assoc-val 'deps stanza-alist)))
-      (format #t "main deplist: ~A\n" deplist)
-      (expand-deplist deplist pkg stanza '()))))
 
 (define (Xexpand-action-deps pkg-path tool-tag tool deps-assoc srcfiles)
   ;; NB: tool not used; tool-tag used only for var defs
