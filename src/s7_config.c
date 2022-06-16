@@ -620,7 +620,7 @@ EXPORT void s7_configure(void)
     s7_load(s7, "dune.scm");
 
     /* libc_s7_init(s7); */
-    chdir(build_wd);
+    chdir(bws_root);            /* always run from base ws root */
 }
 
 EXPORT void s7_shutdown(s7_scheme *s7)

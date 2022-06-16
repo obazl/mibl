@@ -14,6 +14,7 @@ cc_binary(
         "//bzl/host:debug": ["DEBUG_TRACE"],
         "//conditions:default":   []
     }) + [
+        "WITH_C_LOADER"
         # "LD_LIBRARY_PATH=external/libs7/src"
     ],
     copts = select({
@@ -47,12 +48,14 @@ cc_binary(
         "//conditions:default": {}
     }) + [
         "-lm",
+        # "-lc_s7"
     ],
     deps = [
         "//src:mibl",
         # "//external/libinih:inih",
         "@logc//:logc",
-        # "@libs7//src:s7",
+        "@libs7//src:s7",
+        "@libs7//src:c_s7",
         # "@libs7//vendored/linenoise",
     ],
     visibility = ["//visibility:public"]

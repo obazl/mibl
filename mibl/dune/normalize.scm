@@ -1,7 +1,10 @@
 (display "normalize.scm") (newline)
 
+(define modules-ht (make-hash-table)) ;; FIXME
+
+;; original: dune_stanzas.scm Xnormalize-stanza
 (define (normalize-dune-stanza pkg stanza)
-  (format #t "NORMALIZE-DUNE-STANZA: ~A\n" (car stanza))
+  (format #t "NORMALIZE-dune-stanza: ~A\n" (car stanza))
   (let* ((stanza-alist (cdr stanza))
          (_ (format #t "stanza-alist ~A\n" stanza-alist))
          (_ (if-let ((nm (assoc 'name stanza-alist)))
@@ -44,7 +47,7 @@
                            ;; add submodules-assoc to stanza
                            )
                        (format #t "submodules-assoc: ~A\n" submodules-assoc)
-                       (normalize-library-stanza with-submodules)))))
+                       (normalize-library-stanza submodules-assoc)))))
                       ;; pkg-path ocaml-srcs stanza))))
 
               ;; ((ocamllex) (normalize-stanza-ocamllex stanza))
@@ -58,7 +61,7 @@
 
               (else
                (format #t "normalize-dune-stanza unhandled: ~A\n" stanza)))))
-    (format #t "normalized pkg: ~A\n" pkg)
+    ;; (format #t "normalized pkg: ~A\n" pkg)
     pkg))
 
   ;;   ;; update global public -> private name table

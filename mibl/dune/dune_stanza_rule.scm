@@ -135,14 +135,23 @@
              (rule-alist (cdr stanza))
              (_ (format #t "rule-alist: ~A\n" rule-alist))
              (_ (format #t "target: ~A\n" (assoc 'target rule-alist)))
-             (_ (format #t "Targets: ~A\n" (assoc-val 'targets rule-alist))))
+             (_ (format #t "Targets: ~A\n" (assoc-val 'targets rule-alist)))
 
-        (set! pkg (if-let ((tgt (assoc-val 'target rule-alist)))
-                          (update-pkg-with-targets! pkg tgt)
-                          (if-let ((tgts (assoc-val 'targets rule-alist)))
-                                  (update-pkg-with-targets! pkg tgts)
-                                  pkg)))
-        (format #t "rule: updated pkg: ~A\n" pkg)
+             ;; Step 1: 'target' and 'targets' fields list files generated
+             ;; by the action. Add them to the pkg :modules and :files
+             ;; assocs.
+             (pkg (set! pkg
+                        (if-let ((tgt (assoc-val 'target rule-alist)))
+                                (update-pkg-with-targets! pkg tgt)
+                                (if-let ((tgts
+                                          (assoc-val 'targets rule-alist)))
+                                        (update-pkg-with-targets! pkg tgts)
+                                        pkg))))
+             (_ (format #t "rule: updated pkg: ~A\n" pkg))
+
+             ;; Step 2: expand the 'deps' field, which may be referenced by
+             ;; the 'action' field
+             (deps (expand-action-deps pkg stanza)))
 
         ;; if we have a target, then we must have an action that
         ;; generates it. the action will have ${targets}?
@@ -152,9 +161,9 @@
         ;; example: (rule (alias buildtest) (deps test_clic.exe) (action (progn)))
 
         ;; rule type is determined by 'action' field, which can be:
-        ;; action, copy, etc.
-        ;; 'action' rules contain an action subfield, e.g write-file,
-        ;; with-stdout-to, etc.
+        ;; bash, copy, run, etc.
+        ;; every rule stanza has an action field
+        ;; https://dune.readthedocs.io/en/stable/concepts.html#user-actions
         (cond
          ((assoc 'action rule-alist)
           (begin

@@ -1,0 +1,10 @@
+;; (library
+;;  (name depstest_a)
+;;  (public_name depstest-a))
+
+(rule
+ (targets newstructfile.ml)
+ (deps
+  (:< gen.exe))
+ (action
+  (run %{<} %{targets})))

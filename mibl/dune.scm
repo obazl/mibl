@@ -6,6 +6,7 @@
 (load "utils.scm")
 
 (load "dune/dune_utils.scm")
+(load "dune/dune_action_deps.scm")
 (load "dune/dune_actions.scm")
 (load "dune/dune_ingest.scm")
 (load "dune/dune_normalize.scm")

@@ -1,5 +1,16 @@
 (display "pkg_api.scm") (newline)
 
+(define (resolve-pkg-path path ws-root)
+  ;; path is not in pkg-path dir
+  (let ((rp (realpath path (string))))
+    (format #t "f rel path: ~A\n" path)
+    (format #t "f realpath: ~A\n" rp)
+    (format #t "ws root: ~A\n" ws-root)
+    (format #t "pfx?: ~A\n" (string-prefix? ws-root rp))
+    (if (string-prefix? ws-root rp)
+        (string-drop rp (+ 1 (string-length ws-root)))
+        "problem")))
+
 ;;FIXME: put this in file_utils.scm?
 (define filename->file-assoc
   (let ((+documentation+ "For now just stringify and pair with ext."))
@@ -33,7 +44,6 @@
       ((string=? ext ".json") :data)
       (else :file))))
 
-;; we need any file that can serve as a dep target
 (define update-pkg-with-targets!
   (let ((+documentation+ "INTERNAL. Add tgts to :modules (or :files etc) fld of pkg."))
     (lambda (pkg tgts)
