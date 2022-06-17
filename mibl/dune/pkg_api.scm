@@ -108,16 +108,20 @@
                 (alist-update-in! pkg '(:files :dynamic)
                                   (lambda (old)
                                     (format #t "other OLD: ~A\n" old)
-                                    (let ((fa (filename->file-assoc tgt)))
-                                      (format #t "fa: ~A\n" (type-of fa))
-                                      (format #t "fa2: ~A\n" (type-of old))
-                                      (format #t "FUCK!!!: ~A\n"
-                                              (cons fa old))
+                                    (let ((fa (filename->file-assoc tgt))
+                                          (tgtstr (if (symbol? tgt)
+                                                      (symbol->string tgt)
+                                                      tgt)))
+                                      (format #t "fa: ~A\n" fa)
+                                      (format #t "fa2: ~A\n"old)
                                       (if (null? old)
-                                          fa
-                                          (if (pair? fa)
-                                              (cons fa old)
-                                              (append fa old))))))
+                                          tgtstr
+                                          (append old (list tgtstr))
+                                          ;; (if (pair? fa)
+                                          ;;     (cons fa old)
+                                          ;;     (append fa old))
+                                          )
+                                      )))
                 ;; (if-let (files-assoc (assoc-in '(:files :dynamic) pkg))
                 ;;     (begin
                 ;;       (format #t "files-assoc (before): ~A\n"

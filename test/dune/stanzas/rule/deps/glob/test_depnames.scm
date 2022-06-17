@@ -17,8 +17,9 @@
                         (:css (glob_files *.css))
                         foo.html
                         (:js foo.js bar.js)
-                        ;; (:img (glob_files *.png) (glob_files *.jpg)))
+                        (:img (glob_files *.png) (glob_files *.jpg))
                         )
-                       (action (run %{<} %{targets}))))))
+                        )
+                       (action (run %{<} %{targets})))))
          (stanza-alist (cdar (assoc-val :dune-stanzas pkg))))
     (expand-action-deps pkg stanza-alist)))

@@ -76,7 +76,14 @@
 (define (handle-named-dep deplist pkg stanza-alist expanded-deps)
   (format #t "handle-named-dep: ~A\n" deplist)
   (format #t "expanded-deps: ~A\n" expanded-deps)
-  (let ((lbl (car deplist))
+  ;; kw :_ is reserved for non-named symlist
+  ;; to avoid name clash, convert user keywords to double-colon, e.g.
+  ;; :foo => ::foo
+  (let ((lbl (symbol->keyword
+              (string->symbol
+               (string-append
+                ":" (symbol->string
+                     (keyword->symbol (car deplist)))))))
         (named (expand-deplist (cdr deplist)
                                pkg stanza-alist '()))) ;;expanded-deps)))
     (format #t "named dep lbl: ~A\n" lbl)
@@ -124,24 +131,32 @@
          ;; working dir is always ws root, so we prepend the pkg-path
          (pattern-str (string-append pkg-path "/" pattern-str))
          (g (glob.make)))
+    (format #t "pkg-path: ~A\n" pkg-path)
     (format #t "pattern: ~A\n" pattern-str)
-    (glob pattern-str GLOB_BRACE g)
-    ;; list basename for files in this pkg (dir), since relative to pkg-dir
-    ;; for others list the pkg prefix
-    (let* ((globbed (glob.gl_pathv g))
-           (depfiles (map (lambda (f)
-                            (let ((dir (dirname f)))
-                              (if (string=? dir pkg-path)
-                                  ;; rel path == pkg-path
-                                  (basename f)
-                                  (resolve-pkg-path f ws-root)
-                                  )))
-                          globbed)))
-      (format #t "globbed: ~A\n" globbed)
-      (format #t "depfiles: ~A\n" depfiles)
-      (globfree g)
-      depfiles))
-  )
+    (format #t "cwd: ~A\n" (pwd))
+    (format #t "ews: ~A\n" effective-ws-root)
+
+    (let ((old-wd (pwd)))
+      ;; change to effective ws root before globbing
+      (chdir effective-ws-root)
+      (format #t "cwd after chdir: ~A\n" (pwd))
+      (glob pattern-str GLOB_BRACE g)
+      ;; list basename for files in this pkg (dir), since relative to pkg-dir
+      ;; for others list the pkg prefix
+      (let* ((globbed (glob.gl_pathv g))
+             (depfiles (map (lambda (f)
+                              (let ((dir (dirname f)))
+                                (if (string=? dir pkg-path)
+                                    ;; rel path == pkg-path
+                                    (basename f)
+                                    (resolve-pkg-path f ws-root)
+                                    )))
+                            globbed)))
+        (format #t "globbed: ~A\n" globbed)
+        (format #t "depfiles: ~A\n" depfiles)
+        (globfree g)
+        (chdir old-wd) ;; restore prev wd
+        (list (cons :_ depfiles))))))
 
 (define (handle-glob-files-rec-dep deplist)
   (format #t "handle-glob-files-rec-dep: ~A\n" deplist))
@@ -200,6 +215,11 @@
                       ;; (format #t "res: ~A\n" res)
                       ;; (format #t "expanded-deps: ~A\n" expanded-deps)
                       ;; we're done, depfn consumed cdr
+
+                      ;; FIXME: merge all lists with :_ key
+                      ;; we get one such list for each glob_files
+                      (if (equal? :_ (caar res))
+                          (format #t "TO MERGE ~A\n" res))
                       (append expanded-deps res))
 
                     ;; else car of deplist not a keyword

@@ -11,13 +11,15 @@
                        ;; (deps (glob_files *.ml{,i}))
                        ;; (deps (glob_files ../*.ml{,i}))
                        ;; (deps (glob_files ../relative/*.ml{,i}))
-                       ;; (deps (glob_files *.ml)
-                       ;;       (glob_files ../relative/*.ml{,i}))
+                       (deps (glob_files *.ml)
+                             (glob_files ../relative/*.ml{,i}))
                        ;; (deps (glob_files ../*.ml{,i})
                        ;;       (glob_files ../relative/*.ml{,i}))
-                       (deps (glob_files *.ml{,i})
-                             (glob_files ../*.ml{,i})
-                             (glob_files ../relative/*.ml{,i}))
+
+                       ;; (deps (glob_files *.ml{,i})
+                       ;;       (glob_files ../*.ml{,i})
+                       ;;       ;; foo.ml
+                       ;;       (glob_files ../relative/*.ml{,i}))
 
                        ;; (deps a.ml a.mli)
                        ;; (deps a.ml a.mli (glob_files ../*.ml{,i}))

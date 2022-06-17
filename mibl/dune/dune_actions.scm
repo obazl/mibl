@@ -1182,8 +1182,11 @@
           (:vars ,vars)
           (:raw ,stanza))))))
 
-(define (normalize-progn-action pkg-path action stanza srcfiles)
+(define (normalize-progn-action pkg stanza-alist)
+  (format #t "NORMALIZE-PROGN-ACTION: ~A\n" stanza-alist)
+  #t)
 
+(define (Xnormalize-progn-action pkg-path action stanza srcfiles)
   (format #t "NORMALIZE-PROGN-ACTION: ~A\n" action)
   ;; tezos: (action progn), (action (progn)), (action (progn (...) ...))
   ;; missing but maybe possible: (action progn ...)
@@ -1400,7 +1403,8 @@
       ((run) (normalize-run-action pkg action stanza-alist))
       ;; pkg-path action stanza srcfiles))
 
-    ;;   ((progn) (normalize-progn-action pkg-path action stanza srcfiles))
+      ((progn) (normalize-progn-action pkg stanza-alist))
+       ;; (normalize-progn-action pkg-path action stanza srcfiles))
 
     ;;   ((with-stdout-to)
     ;;    (normalize-with-stdout-to pkg-path action stanza srcfiles))

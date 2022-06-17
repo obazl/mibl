@@ -46,13 +46,16 @@ tpkg
         ;; "dune/stanzas/rule/action/run/var/a"
         ;; "dune/stanzas/rule/action/run/var/b"
 
+        "dune/stanzas/rule/deps/glob"
+
         ;; "dune/filetypes"
         ;; "a"
         ;; "dune/genfiles/files"
         ;;"dune/genfiles/modules/a" ;; no files, dunefile only, 4 genfiles
         ;;"dune/genfiles/modules/b"
-         ;; "dune/genfiles/modules/c"
-         "dune/genfiles/modules/d"
+        ;; "dune/genfiles/modules/c"
+        ;;"dune/genfiles/modules/d"
+
         )
        (pkgs (dune-load arg))
        (pkg (hash-table-ref pkgs arg))

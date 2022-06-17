@@ -45,13 +45,39 @@ int main(int argc, char *argv[])
     bazel_configure(); // getcwd(NULL, 0));
     s7_configure();
 
+    /* test */
+    /* char *canonical_path(char *path); */
+    /* printf("np: %s\n", canonical_path("dune/stanzas/rule/deps/glob/../foo.ml")); */
+    /* printf("np: a/b/../c       %s\n", canonical_path("a/b/../c")); */
+    /* printf("np: a/b/../../c:   %s\n", canonical_path("a/b/../../c")); */
+    /* printf("np: a/b/c/../../d: %s\n", canonical_path("a/b/c/../../d")); */
+
+    /* printf("np: a/b/c:         %s\n", canonical_path("a/b/c")); */
+    /* printf("np: .a/b/c:        %s\n", canonical_path("./a/b/c")); */
+    /* printf("np: ./././a/b/c:   %s\n", canonical_path("./././a/b/c")); */
+    /* printf("np: .///a/b/c:     %s\n", canonical_path(".///a/b/c")); */
+    /* printf("np: ././/a/./b/././//c: %s\n", canonical_path("././/a/./b/././//c")); */
+    /* printf("np: %s\n", canonical_path(".//a/b/c")); /\* busted *\/ */
+    /* printf("np: a/b.c/e.f:     %s\n", canonical_path("a/b.c/e.f")); */
+    /* printf("np: a/.b/e.f:      %s\n", canonical_path("a/.b/e.f")); */
+    /* printf("np: ./a/b/c:       %s\n", canonical_path("./a/b/c")); */
+    /* printf("np: ../a/b/c:      %s\n", canonical_path("../a/b/c")); */
+    /* printf("np: a////b/./c//d: %s\n", */
+    /*        canonical_path("a////b/./c//d")); */
+    /* printf("np: a/./c:         %s\n", canonical_path("a/./c")); */
+    /* printf("np: a//c:          %s\n", canonical_path("a//c")); */
+    /* printf("np: a/////b:       %s\n", canonical_path("a/////b")); */
+    /* printf("np: a/././././b:   %s\n", canonical_path("a/././././b")); */
+
     //TODO: cli args for root and path
     char *rootdir;
     char *pathdir;
 
-    rootdir = "obazl/mibl";
+    /* rootdir = "obazl/mibl/test"; */
+    /* /\* pathdir = "test/files"; *\/ */
+    /* pathdir = "test/dune/stanzas/rule/deps/glob"; */
 
-    pathdir = "ws/a/b";
+    /* pathdir = "ws/a/b"; */
 
     /* launching from test/ws */
     /* pathdir = "a/b"; // ws/a/WORKSPACE.bazel */
@@ -85,9 +111,45 @@ int main(int argc, char *argv[])
     /* pathdir = "src"; */
     /* pathdir = "src/lib/snarky/src"; */
 
+    rootdir = "obazl/mibl/test";
+    pathdir = "test/dune/stanzas/rule/deps/glob";
+
     s7_pointer pkg_tbl = dune_load(rootdir, pathdir);
+    printf("cwd: %s\n", getcwd(NULL, 0));
 
     printf(BGRN "pkg_tbl:" CRESET "\n%s\n", s7_object_to_c_string(s7, pkg_tbl));
+
+    /* (pkg (hash-table-ref pkgs arg)) */
+    s7_pointer ht_ref = s7_name_to_value(s7, "hash-table-ref");
+    if (ht_ref == s7_undefined(s7)) {
+        printf("unbound symbol: hash-table-ref");
+        exit(EXIT_FAILURE);
+    }
+    s7_pointer pkg_key = s7_make_string(s7, "dune/stanzas/rule/deps/glob");
+    s7_pointer pkg = s7_call(s7, ht_ref, s7_list(s7, 2, pkg_tbl, pkg_key));
+    printf(BGRN "pkg:" CRESET " %s\n", TO_STR(pkg));
+
+    /* (stanzas (assoc :dune-stanzas pkg)) */
+    s7_pointer assoc = s7_name_to_value(s7, "assoc");
+    if (assoc == s7_undefined(s7)) {
+        printf("unbound symbol: assoc");
+        exit(EXIT_FAILURE);
+    }
+    s7_pointer dune_stanzas_kw = s7_make_keyword(s7, "dune-stanzas");
+    s7_pointer stanzas = s7_call(s7, assoc,
+                                 s7_list(s7, 2,
+                                         dune_stanzas_kw, pkg));
+    printf(BGRN "stanzas:" CRESET " %s\n", TO_STR(stanzas));
+
+    /* (nzs (normalize-dune-stanzas pkg)) */
+    s7_pointer nds = s7_name_to_value(s7, "normalize-dune-stanzas");
+    if (nds == s7_undefined(s7)) {
+        printf("unbound symbol: normalize-dune-stanzas");
+        exit(EXIT_FAILURE);
+    }
+    s7_pointer normalized = s7_call(s7, nds,
+                                    s7_list(s7, 1, pkg));
+    printf(BGRN "normalized stanza:" CRESET " %s\n", TO_STR(normalized));
 
     /* printf("*load-path*: %s\n", */
     /*        s7_object_to_c_string(s7, */
@@ -95,6 +157,7 @@ int main(int argc, char *argv[])
     /*                              )); */
 
     if (verbose) {
+        printf("ews: %s\n", ews_root);
         printf("dir count: %d\n", dir_ct);
         printf("file count: %d\n", file_ct);
         printf("dunefile count: %d\n", dunefile_ct);

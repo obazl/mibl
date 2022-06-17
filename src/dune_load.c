@@ -213,6 +213,7 @@ bool _is_ws_root(FTSENT *ftsentry)
     int rc = access(utstring_body(pathdir), R_OK);
     /* log_debug("RC: %d", rc); */
     if (!rc) {
+        if (trace) log_trace("true");
         return true;
     } else {
         utstring_new(pathdir);
@@ -220,9 +221,11 @@ bool _is_ws_root(FTSENT *ftsentry)
         utstring_printf(pathdir, "/WORKSPACE");
         rc = access(utstring_body(pathdir), R_OK);
         if (!rc) {
+            if (trace) log_trace("true");
             return true;
         }
     }
+    if (trace) log_trace("false");
     return false;
 }
 
@@ -380,13 +383,20 @@ LOCAL void _update_pkg_files(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
                 log_debug("initializing (:files (:static (:type . fname))) list");
 
             s7_pointer file_pair =
-                s7_cons(s7, s7_make_keyword(s7, file_ext),
+                s7_list(s7, 1,
+                        /* s7_make_keyword(s7, file_ext), */
                         s7_make_string(s7, ftsentry->fts_name));
 
-            s7_pointer static_assoc = s7_list(s7, 2, static_kw, file_pair);
+            s7_pointer static_assoc = s7_list(s7, 2,
+                                              static_kw,
+                                              s7_make_string(s7, ftsentry->fts_name));
+                                              /* file_pair); */
 
             s7_pointer file_list =
-                s7_list(s7, 1, s7_list(s7, 2, files_kw, static_assoc));
+                s7_list(s7, 1, s7_list(s7, 2,
+                                       files_kw,
+                                       static_assoc
+                                       ));
             if (debug)
                 log_debug("file_list: %s", TO_STR(file_list));
 
@@ -415,10 +425,14 @@ LOCAL void _update_pkg_files(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
             log_debug("new file_pair: %s", TO_STR(file_pair));
 
             s7_pointer new_files_alist =
-                s7_list(s7, 2,
-                        /* s7_make_string(s7, ftsentry->fts_name), */
-                        file_pair,
-                        files_alist);
+                s7_append(s7,
+                /* s7_list(s7, 2, */
+                /* s7_cons(s7, */
+                          files_alist,
+                          s7_list(s7, 1,
+                                  s7_make_string(s7, ftsentry->fts_name))
+                        /* file_pair, */
+                          );
             log_debug("new files_alist: %s",
                        TO_STR(new_files_alist));
 
@@ -508,7 +522,7 @@ LOCAL void _update_pkg_script_files(s7_pointer pkg_tbl,
                        TO_STR(scripts_list));
             }
             s7_pointer new_scripts_list =
-                s7_cons(s7,
+                s7_list(s7, 2,
                         s7_make_string(s7, ftsentry->fts_name),
                         s7_cdr(scripts_list));
             log_debug("new scripts_list: %s",
@@ -1180,6 +1194,7 @@ EXPORT s7_pointer g_dune_load(s7_scheme *s7,  s7_pointer args)
     return _pkg_tbl;
 }
 
+/* FIXME: use same logic for rootdir as */
 EXPORT s7_pointer dune_load(char *home_sfx, char *traversal_root)
 {
     if (debug) {
@@ -1216,6 +1231,10 @@ EXPORT s7_pointer dune_load(char *home_sfx, char *traversal_root)
     char *_ews = find_ws_root(utstring_body(abs_troot));
     log_debug("ews: %s", _ews);
     ews_root = _ews;
+    // put ews_root into the scheme env. so users can use it
+    s7_define_variable(s7,
+                       "effective-ws-root",
+                       s7_make_string(s7, ews_root));
 
     log_debug("haystack (troot): %s", utstring_body(abs_troot));
     log_debug("needle (ews): %s", ews_root);
@@ -1247,6 +1266,8 @@ EXPORT s7_pointer dune_load(char *home_sfx, char *traversal_root)
       restore cwd after traversal.
     */
     char *old_cwd = getcwd(NULL, 0);
+    printf(RED "OLD_CWD: %s\n", old_cwd);
+    printf("EWS_ROOT: %s\n" CRESET, ews_root);
     rc = chdir(ews_root);
     if (rc != 0) {
         fprintf(stderr, RED "ERROR chdir(%s): %s",
@@ -1400,6 +1421,7 @@ EXPORT s7_pointer dune_load(char *home_sfx, char *traversal_root)
                 }
         }
         chdir(old_cwd);
+        printf(RED "Restored cwd: %s\n" CRESET, getcwd(NULL, 0));
     }
     if (trace) {
         log_debug("cwd: %s", getcwd(NULL, 0));
