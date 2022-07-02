@@ -604,6 +604,10 @@ EXPORT void s7_configure(void)
     init_error_handling();
     error_config();
 
+    s7_define_safe_function(s7, "effective-ws-root",
+                            g_effective_ws_root,
+                            0, 1, 0, NULL);
+
     s7_define_safe_function(s7, "dune-load", g_dune_load,
                             0, 2, 0,
                                  /* DUNE_LOAD_FORMAL_PARAMS, */

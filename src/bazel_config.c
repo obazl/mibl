@@ -79,9 +79,29 @@ char *homedir;
 /*
   FIXME: also deal with dune workspace roots
  */
-char *find_ws_root(char *dir)
+EXPORT s7_pointer g_effective_ws_root(s7_scheme *s7,  s7_pointer args)
 {
-   /* log_debug("find_ws_root: %s", dir); */
+    char *dir;
+    if ( s7_is_null(s7, args) ) {
+        dir = getcwd(NULL, 0);
+    } else {
+        s7_int args_ct = s7_list_length(s7, args);
+        if (args_ct == 1) {
+            s7_pointer arg = s7_car(args);
+            if (s7_is_string(arg)) {
+                dir = s7_string(arg);
+            }
+        } else {
+            // throw exception
+        }
+    }
+    char *ews_root = effective_ws_root(dir);
+    return s7_make_string(s7, ews_root);
+}
+
+char *effective_ws_root(char *dir)
+{
+   /* log_debug("effective_ws_root: %s", dir); */
 
    if (strncmp(homedir, dir, strlen(dir)) == 0) {
        log_debug("xxxx");
@@ -104,7 +124,7 @@ char *find_ws_root(char *dir)
             log_debug("found %s", utstring_body(_ws_path));
             return dir;
         } else {
-            return find_ws_root(dirname(dir));
+            return effective_ws_root(dirname(dir));
         }
     }
 }
@@ -120,7 +140,7 @@ void _set_base_ws_root(void)
         /* we're not in Bazel rte, but we may be in a Bazel WS. So
            look for nearest WORKSPACE.bazel (or WORKSPACE) file
            ancestor. */
-        bws_root = find_ws_root(getcwd(NULL,0));
+        bws_root = effective_ws_root(getcwd(NULL,0));
         if (debug)
             log_debug("Found WS file at %s", bws_root);
     }

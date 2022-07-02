@@ -1228,13 +1228,13 @@ EXPORT s7_pointer dune_load(char *home_sfx, char *traversal_root)
     UT_string *abs_troot;
     utstring_new(abs_troot);
     utstring_printf(abs_troot, "%s/%s", build_wd, traversal_root);
-    char *_ews = find_ws_root(utstring_body(abs_troot));
+    char *_ews = effective_ws_root(utstring_body(abs_troot));
     log_debug("ews: %s", _ews);
     ews_root = _ews;
     // put ews_root into the scheme env. so users can use it
-    s7_define_variable(s7,
-                       "effective-ws-root",
-                       s7_make_string(s7, ews_root));
+    /* s7_define_variable(s7, */
+    /*                    "effective-ws-root", */
+    /*                    s7_make_string(s7, ews_root)); */
 
     log_debug("haystack (troot): %s", utstring_body(abs_troot));
     log_debug("needle (ews): %s", ews_root);
