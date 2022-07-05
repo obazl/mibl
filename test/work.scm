@@ -1,5 +1,5 @@
 (load "dune.scm")
-(define pkgs (dune-load ;; "obazl/mibl/test",
+(define pkgs (load-dune ;; "obazl/mibl/test",
              ;; "dune/stanzas/library"
              ;; "dune/tezos/lib_test"
               "d"
@@ -20,7 +20,7 @@ mnames
 tpkg
 
 (let* ((_   (load "dune.scm"))
-       ;; WARNING: arg to dune-load is relative to cwd,
+       ;; WARNING: arg to load-dune is relative to cwd,
        ;; but arg to hash-table-ref below is relative to ws root,
        ;; which may not be the same.
        (arg
@@ -32,21 +32,7 @@ tpkg
         ;; "dune/unit_tests/fields/flags/a"
         ;; "dune/predicates/standard/flags"
         ;; "dune/stanzas/library"
-
-        ;; "dune/stanzas/rule/action/copy"
-        ;; "dune/stanzas/rule/action/diff"
-        ;; "dune/stanzas/rule/action/with-stdout-to"
-
-        ;; "dune/stanzas/rule/action/run/bash"
-        ;; "dune/stanzas/rule/action/run/cp"
-        ;; "dune/stanzas/rule/action/run/env"
-        ;; "dune/stanzas/rule/action/run/literal"
-        ;; "dune/stanzas/rule/action/run/nostatic"
-        ;; "dune/stanzas/rule/action/run/targets"
-        ;; "dune/stanzas/rule/action/run/var/a"
-        ;; "dune/stanzas/rule/action/run/var/b"
-
-        "dune/stanzas/rule/deps/glob"
+        ;; "dune/stanzas/rule/deps/glob"
 
         ;; "dune/filetypes"
         ;; "a"
@@ -56,14 +42,31 @@ tpkg
         ;; "dune/genfiles/modules/c"
         ;;"dune/genfiles/modules/d"
 
+
+        "dune/stanzas/rule/action/copy"
+        ;; "dune/stanzas/rule/action/diff"
+        ;; "dune/stanzas/rule/action/with-stdout-to"
+        ;; "dune/stanzas/rule/action/run/bash"
+        ;; "dune/stanzas/rule/action/run/cp"
+        ;; "dune/stanzas/rule/action/run/env"
+        ;; "dune/stanzas/rule/action/run/literal"
+        ;; "dune/stanzas/rule/action/run/nostatic"
+        ;; "dune/stanzas/rule/action/run/targets"
+        ;; "dune/stanzas/rule/action/run/var/a"
+        ;; "dune/stanzas/rule/action/run/var/b"
+        ;; "dune/stanzas/rule/action/run/var/tag"
+
+        ;; "dune/stanzas/multi"
         )
-       (pkgs (dune-load arg))
+       (pkgs (load-dune arg))
        (pkg (hash-table-ref pkgs arg))
-       (stanzas (assoc :dune-stanzas pkg))
+       ;; ;; (stanzas (assoc :dune-stanzas pkg))
        (nzs (normalize-dune-stanzas pkg))
        )
   (display "done\n")
   nzs)
+
+  pkg)
 
   ;; (format #t "nzs: ~A\n" nzs))
 
@@ -126,8 +129,8 @@ xpkg
 (cdr e)
 norm
 
-;; (dune-load "proto_000_Ps9mPmXa")
-;; (dune-load "lib_clic")
+;; (load-dune "proto_000_Ps9mPmXa")
+;; (load-dune "lib_clic")
 
 (begin
 (define opam-srcs ".opam/4.14.0/.opam-switch/sources")

@@ -273,14 +273,13 @@ void xen_repl(int argc, char **argv)
   char *buffer;
   char *repl_prompt = xen_strdup("mibl> ");
   s7_pointer evalres;
-
   buffer = (char *)calloc(size, sizeof(char));
 
   while (true)
     {
       if (expr_ok)
 	{
-	  fprintf(stdout, "\n%s", repl_prompt);
+	  fprintf(stderr, "\n%s", repl_prompt);
 	  expr_ok = false; /* don't get into an infinite loop if running in the background! */
 	}
       if (fgets(buffer, size, stdin))
@@ -313,12 +312,14 @@ void xen_repl(int argc, char **argv)
 	      snprintf(temp, len, "(write %s)", str);
 	      /* Xen_eval_C_string(temp); */
 
+              // this writes result to stdout, somehow
 	      evalres = s7_eval_c_string(s7, temp);
 /* /\* The s7-built-in catch tags are 'wrong-type-arg, 'syntax-error, 'read-error, 'unbound-variable, 'out-of-memory, 'wrong-number-of-args, 'format-error, 'out-of-range, 'division-by-zero, 'io-error, and 'bignum-error. *\/ */
-/*               log_debug("evalres: %s", TO_STR(evalres)); */
-/*               log_debug("evalres t: %s", TO_STR(s7_type_of(s7, evalres))); */
+              /* log_debug("evalres: %s", TO_STR(evalres)); */
+              /* log_debug("evalres t: %s", TO_STR(s7_type_of(s7, evalres))); */
               /* if (s7_ */
-
+              fflush(stdout);
+              fflush(stderr);
 	      free(temp);
 	      stdin_free_str();
 /* #else */

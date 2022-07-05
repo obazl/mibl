@@ -1,5 +1,6 @@
 (display "pkg_api.scm") (newline)
 
+;; return normalized path relative to ws-root
 (define (resolve-pkg-path path ws-root)
   ;; path is not in pkg-path dir
   (let ((rp (realpath path (string))))
@@ -19,8 +20,8 @@
                         filename))
              (ext (filename-extension fname))
              (pname (principal-name fname)))
-        (cons (string->keyword
-               (string-drop ext 1)) fname)))))
+        (cons (string->keyword (if ext (string-drop ext 1) ":file"))
+              fname)))))
 
 (define (filename->kind filename)
   (let* ((fname (if (symbol? filename) (symbol->string filename)
@@ -59,7 +60,6 @@
              (data    (if modules-assoc (assoc-val :data pkg) #f))
              (files-assoc (if (assoc :files pkg)
                               (assoc-val :files pkg) #f)))
-
         ;; for each tgt, decide its kind: ml/mli, or other
         ;; then update the pkg fld: :modules, :scripts, :files, :data
         ;; since we're updating pkg use for-each
@@ -108,6 +108,7 @@
                 (alist-update-in! pkg '(:files :dynamic)
                                   (lambda (old)
                                     (format #t "other OLD: ~A\n" old)
+                                    (format #t "other tgt: ~A\n" tgt)
                                     (let ((fa (filename->file-assoc tgt))
                                           (tgtstr (if (symbol? tgt)
                                                       (symbol->string tgt)

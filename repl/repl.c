@@ -12,7 +12,7 @@
 /* #include "utarray.h" */
 /* #include "utstring.h" */
 
-#include "dune_load.h"
+#include "load_dune.h"
 /* #include "opam_config.h" */
 #include "bazel_config.h"
 #include "s7_config.h"
@@ -157,7 +157,6 @@ int main(int argc, char **argv)
    /* initialize in this order: bazel then s7 */
     bazel_configure(); // getcwd(NULL, 0));
     s7_configure();
-
     /* chdir(launch_dir); */
     /* if (debug) */
     /*     log_debug("Set CWD to launch dir: %s", launch_dir); */

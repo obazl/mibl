@@ -3,8 +3,9 @@
 (define modules-ht (make-hash-table)) ;; FIXME
 
 ;; original: dune_stanzas.scm Xnormalize-stanza
-(define (normalize-dune-stanza pkg stanza)
-  (format #t "NORMALIZE-dune-stanza: ~A\n" (car stanza))
+(define (normalize-dune-stanza pkg stanza nstanzas)
+  (format #t "NORMALIZE-dune-stanza: ~A\n" stanza)
+  (format #t "  nstanzas: ~A\n" nstanzas)
   (let* ((stanza-alist (cdr stanza))
          (_ (format #t "stanza-alist ~A\n" stanza-alist))
          (_ (if-let ((nm (assoc 'name stanza-alist)))
@@ -13,7 +14,11 @@
          (xstanza
           (case (car stanza)
             ((rule)
-             (set! pkg (normalize-rule-stanza! pkg stanza)))
+             (set-cdr! nstanzas
+                       (normalize-rule-stanza! pkg stanza)))
+             ;; (set! pkg (normalize-rule-stanza!
+             ;;            pkg stanza (list :rule))))
+
                        ;; pkg-path ocaml-srcs stanza))
 
               ;; ((alias) (normalize-stanza-alias stanza))
@@ -85,23 +90,24 @@
   ;;   s))
 
 (define (normalize-dune-stanzas pkg)
-  (format #t "NORMALIZE-dune-stanzas, pkg: ~A"
-          ;;(assoc-val :pkg-path pkg)
-          (assoc-val :dune-stanzas pkg)
-          ) (newline)
-  (map
-   (lambda (stanza)
-     ;; (format #t "STANZA: ~A" (cdr stanza)) (newline)
-     (format #t "STANZA nm: ~A" (car stanza)) (newline)
-     (let ((normed (normalize-dune-stanza pkg stanza)))
-                    ;; pkg-path
-                    ;; ;; dune-project-stanzas
-                    ;; srcfiles ;; s/b '() ??
-                    ;; stanza)))
-       (format #t "normalized: ~A\n" normed)
-       normed))
-   (assoc-val :dune-stanzas pkg))
-  )
+  (format #t "NORMALIZE-dune-stanzas, pkg: ~A\n" pkg)
+  (let* ((nstanzas (list :dune))
+         (pkg+ (append pkg (list nstanzas))))
+    ;; (format #t "STANZAS COPY: ~A\n" dune-stanzas)
+    ;; (set-car! dune-stanzas :dune-stanzas)
+    (map
+     (lambda (stanza)
+       (format #t "STANZA COPY: ~A\n" stanza)
+       (let ((normed (normalize-dune-stanza pkg+ stanza nstanzas)))
+         ;; pkg-path
+         ;; ;; dune-project-stanzas
+         ;; srcfiles ;; s/b '() ??
+         ;; stanza)))
+         (format #t "NORMALIZED: ~A\n" normed)
+         normed))
+     ;; (cdr dune-stanzas))))
+     (assoc-val 'dune pkg+))))
+  ;; )
 
     ;; normed
     ;; (format #t "normalized stanzas: ~A\n" normed)

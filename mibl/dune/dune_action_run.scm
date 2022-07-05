@@ -100,7 +100,7 @@
                   (string-append "FIXME2-" toolname)))))))
      ))
 
-(define (run-action->toolname pkg-path run-alist stanza)
+(define (run-action->toolname pkg-path run-alist) ;; stanza)
   (format #t "run-action->toolname: ~A: ~A\n" pkg-path run-alist)
   ;; run-alist taken from (run ...) : e.g.
   ;; (bash %{libexec:tezos-stdlib:test-ocp-indent.sh} %{deps}))
@@ -134,6 +134,7 @@
     (format #t "  prog-str: ~A\n" prog-str)
 
     (if (char=? #\% (string-ref prog-str 0))
+        ;; extract from %{ }
         (let ((prog-vname (substring prog-str
                                      2 (- (length prog-str) 1))))
           ;; (format #t "  prog-vname: ~A\n" prog-vname)
@@ -157,9 +158,13 @@
             ;; (format #t "LIB prog: ~A\n" prog-vname)
             prog-atom)
            (else
+            ;; user-tagged executable dep, e.g. %{<}
             (format #t "CUSTOM progvar2: ~A\n" prog-vname)
+            (let ((kw (string->keyword (string-append ":" prog-vname))))
+              (format #t "CUSTOM kw: ~A\n" kw)
+              kw))
             ;; (resolve-local-toolname pkg-path prog-vname action-alist stanza))
-           )))
+           ))
         ;; else not a ${} var
         (cond
          ((equal? 'bash prog-atom) prog-atom)
@@ -290,11 +295,11 @@
             '()))
 
 ;; (define (normalize-run-action pkg-path action stanza srcfiles)
-(define (normalize-run-action pkg action stanza-alist)
-  (format #t "NORMALIZE-run-action: ~A\n" action)
+(define (normalize-run-action pkg action-alist targets deps)
+  (format #t "NORMALIZE-run-action: ~A\n" action-alist)
   (let* ((stanza-type :run-cmd)
-         (rule-alist stanza-alist) ;; (cdr stanza))
-         (action-alist (assoc-val 'action rule-alist))
+         ;; (rule-alist stanza-alist) ;; (cdr stanza))
+         ;; (action-alist (assoc-val 'action rule-alist))
          (_ (format #t "action-alist: ~A\n" action-alist))
          (run-alist (assoc-val 'run action-alist))
          (_ (format #t "run-alist: ~A\n" run-alist))
@@ -302,7 +307,7 @@
          (pkg-path (assoc-val :pkg-path pkg))
          ;; (_ (format #t "pkg-path: ~A\n" pkg-path))
 
-         (tool (run-action->toolname pkg-path run-alist stanza-alist))
+         (tool (run-action->toolname pkg-path run-alist))
          (_ (format #t "TOOL: ~A\n" tool))
 
          ;; (tool-tag (normalize-tool-tag (cadadr action)))
@@ -332,27 +337,30 @@
 
          ;; (dsl run-list)
 
-         (deps
-          (expand-action-deps pkg stanza-alist)
-          ;;(run-action->deps pkg-path tool rule-alist)
-          )
+         ;; (deps
+         ;;  (expand-rule-deps pkg stanza-alist)
+         ;;  ;;(run-action->deps pkg-path tool rule-alist)
+         ;;  )
          (_ (format #t "CMD DEPS: ~A\n" deps))
 
          ;; ;;        (dsl (cadr (cdadr action)))
          ;; ;;        ;; dsl may contain embedded actions, e.g. 'chdir', 'setenv', etc.
-         ;; ;; (cmd `((:tool ,tool)
-         ;; ;;        (:args ,args)
-         ;; ;;        (:raw ,action)))
-         ;; ;;        (target (assoc 'target rule-alist))
-         ;; ;;        (targets (assoc 'targets rule-alist))
-         ;; ;;        (outfile (if (equal? file '%{targets})
-         ;; ;;                     (cadr targets)
-         ;; ;;                     (if (equal? file '%{target})
-         ;; ;;                         (cadr target)
-         ;; ;;                         (begin
-         ;; ;;                           (format #t "WARNING: write-file out: ~A\n" file)
-         ;; ;;                           file))))
-         )
+         (cmd `((:tool ,tool)
+                ;; (:targets ,targets)
+                ;; (:deps ,deps)
+                (:args ,args)
+                (:raw ,action-alist))))
+                ;; (target (assoc 'target rule-alist))
+                ;; (targets (assoc 'targets rule-alist))
+                ;; (outfile (if (equal? file '%{targets})
+                ;;              (cadr targets)
+                ;;              (if (equal? file '%{target})
+                ;;                  (cadr target)
+                ;;                  (begin
+                ;;                    (format #t "WARNING: write-file out: ~A\n" file)
+                ;;                    file))))
+         cmd))
+
     ;; (format #t "DSL: ~A\n" dsl)
 
     ;; (let-values (((filedeps vars env-vars universe aliases unresolved)
@@ -392,6 +400,6 @@
     ;;                          result)))
     ;;     `(,stanza-type ,result)
     ;;     ))
-    #t))
+    ;; #t))
 
 (display "loaded mibl/dune_action_run.scm") (newline)

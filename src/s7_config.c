@@ -107,10 +107,10 @@ UT_string *xdg_data_home;
  */
 
 #if INTERFACE
-#define DUNE_LOAD_HELP "(dune-load rootdir pathdir) rootdir is relative to $HOME; pathdir is relative to rootdir.  Change dir to rootdir and load pathdir, creating pkg-tbl"
+#define LOAD_DUNE_HELP "(load-dune rootdir pathdir) rootdir is relative to $HOME; pathdir is relative to rootdir.  Change dir to rootdir and load pathdir, creating pkg-tbl"
 
 /* NB: we need to escape #\" in C... */
-#define DUNE_LOAD_FORMAL_PARAMS "s"
+#define LOAD_DUNE_FORMAL_PARAMS "s"
 #endif
 
 /* s7_pointer pkg_tbl; */
@@ -186,8 +186,8 @@ LOCAL void _config_s7_load_path_bazel_runfiles(char *manifest)
     s7_pointer tmp_load_path = s7_list(s7, 0);
 
     while ((read = getline(&line, &len, fp)) != -1) {
-        /* log_debug("Retrieved line of length %zu:", read); */
-        /* log_debug("%s", line); */
+        log_debug("Retrieved line of length %zu:", read);
+        log_debug("%s", line);
 
         line[strcspn(line, "\n")] = '\0';    /* trim trailing newline */
 
@@ -284,9 +284,9 @@ LOCAL void _config_s7_load_path_bws_root(void)
             log_warn("project script dir %s not found",
                      utstring_body(proj_script_dir));
     } else {
-        if (verbose)
-            log_debug("adding to *load-path*: %s",
-                     utstring_body(proj_script_dir));
+        /* if (verbose) */
+        /*     log_debug("adding to *load-path*: %s", */
+        /*              utstring_body(proj_script_dir)); */
         s7_add_to_load_path(s7, utstring_body(proj_script_dir));
     }
 }
@@ -608,10 +608,10 @@ EXPORT void s7_configure(void)
                             g_effective_ws_root,
                             0, 1, 0, NULL);
 
-    s7_define_safe_function(s7, "dune-load", g_dune_load,
+    s7_define_safe_function(s7, "load-dune", g_load_dune,
                             0, 2, 0,
-                                 /* DUNE_LOAD_FORMAL_PARAMS, */
-                            DUNE_LOAD_HELP);
+                                 /* LOAD_DUNE_FORMAL_PARAMS, */
+                            LOAD_DUNE_HELP);
 
     set_load_path(); //callback_script_file);
 
@@ -620,7 +620,6 @@ EXPORT void s7_configure(void)
 
     /* s7_config_repl(s7); */
     /* s7_repl(s7); */
-
     s7_load(s7, "dune.scm");
 
     /* libc_s7_init(s7); */

@@ -21,7 +21,7 @@
 #endif
 
 #include "log.h"
-#include "dune_load.h"
+#include "load_dune.h"
 
 UT_array  *segs;
 UT_string *group_tag;
@@ -34,6 +34,7 @@ int dir_ct  = 0;
 
 s7_pointer dune_project_kw;
 s7_pointer dune_stanzas_kw;
+s7_pointer dune_stanzas_sym;
 s7_pointer ws_path_kw;
 s7_pointer pkg_path_kw;
 s7_pointer realpath_kw;
@@ -899,13 +900,12 @@ LOCAL void _handle_dune_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
         s7_error(s7, s7_make_symbol(s7, "unbound-symbol"),
                  s7_list(s7, 1, s7_make_string(s7, "assoc")));
     }
-    //FIXME: make such kws global consts
     s7_pointer stanzas_alist =
         s7_call(s7, assoc, s7_list(s7, 2,
-                                   dune_stanzas_kw,
+                                   dune_stanzas_sym,
                                    pkg_alist));
     if (stanzas_alist == s7_f(s7)) {
-        s7_pointer stanzas_assoc = s7_cons(s7, dune_stanzas_kw, stanzas);
+        s7_pointer stanzas_assoc = s7_cons(s7, dune_stanzas_sym, stanzas);
         log_debug("appending new stanzas_assoc: %s", TO_STR(stanzas_assoc));
         s7_pointer result =
             s7_hash_table_set(s7, pkg_tbl, pkg_key,
@@ -1096,10 +1096,10 @@ s7_pointer _merge_pkg_tbls(s7_scheme *s7, s7_pointer ht1, s7_pointer ht2)
     return ht1;
 }
 
-EXPORT s7_pointer g_dune_load(s7_scheme *s7,  s7_pointer args)
+EXPORT s7_pointer g_load_dune(s7_scheme *s7,  s7_pointer args)
 {
     if (debug) {
-        log_debug("g_dune_load, args: %s", TO_STR(args));
+        log_debug("g_load_dune, args: %s", TO_STR(args));
         log_debug("build_wd: %s (=BUILD_WORKING_DIRECTORY)", build_wd);
         log_debug("launch_dir: %s", launch_dir);
         log_debug("base ws root: %s", bws_root);
@@ -1142,12 +1142,12 @@ EXPORT s7_pointer g_dune_load(s7_scheme *s7,  s7_pointer args)
                         log_info("item: %s", TO_STR(item));
                     pathdir = _get_path_dir(item);
                     if (pathdir) {
-                        s7_pointer _pkgs = dune_load(rootdir, pathdir);
+                        s7_pointer _pkgs = load_dune(rootdir, pathdir);
                         if (s7_is_hash_table(_pkgs)) {
                             _pkg_tbl = _merge_pkg_tbls(s7, _pkg_tbl, _pkgs);
                             log_debug("merged result: %s", TO_STR(_pkg_tbl));
                         } else {
-                            log_error("dune_load returned %s", TO_STR(_pkgs));
+                            log_error("load_dune returned %s", TO_STR(_pkgs));
                             return s7_nil(s7);
                         }
                     } else {
@@ -1162,7 +1162,7 @@ EXPORT s7_pointer g_dune_load(s7_scheme *s7,  s7_pointer args)
                 rootdir = getcwd(NULL,0);
                 pathdir = _get_path_dir(arg);
                 if (pathdir)
-                    return dune_load(rootdir, pathdir);
+                    return load_dune(rootdir, pathdir);
                 else {
                     log_error("cwd: %s", getcwd(NULL,0));
                     return s7_nil(s7);
@@ -1179,7 +1179,7 @@ EXPORT s7_pointer g_dune_load(s7_scheme *s7,  s7_pointer args)
         else {
             log_error("Too many args");
             fprintf(stderr,
-                    RED "ERROR: unexpected arg count %d for dune-load\n",
+                    RED "ERROR: unexpected arg count %d for load-dune\n",
                     args_ct);
             exit(EXIT_FAILURE);
         }
@@ -1190,15 +1190,15 @@ EXPORT s7_pointer g_dune_load(s7_scheme *s7,  s7_pointer args)
         /* rootdir = "test"; */
     }
     /* should not happen? */
-    _pkg_tbl = dune_load(rootdir, pathdir);
+    _pkg_tbl = load_dune(rootdir, pathdir);
     return _pkg_tbl;
 }
 
 /* FIXME: use same logic for rootdir as */
-EXPORT s7_pointer dune_load(char *home_sfx, char *traversal_root)
+EXPORT s7_pointer load_dune(char *home_sfx, char *traversal_root)
 {
     if (debug) {
-        log_debug("dune_load");
+        log_debug("load_dune");
         log_debug("%-16s%s", "launch_dir:", launch_dir);
         log_debug("%-16s%s", "base ws:", bws_root);
         log_debug("%-16s%s", "effective ws:", ews_root);
@@ -1213,6 +1213,7 @@ EXPORT s7_pointer dune_load(char *home_sfx, char *traversal_root)
     /* initialize s7 stuff */
     dune_project_kw = s7_make_keyword(s7, "dune-project"),
     dune_stanzas_kw = s7_make_keyword(s7, "dune-stanzas");
+    dune_stanzas_sym = s7_make_symbol(s7, "dune");
     ws_path_kw = s7_make_keyword(s7, "ws-path");
     pkg_path_kw = s7_make_keyword(s7, "pkg-path");
     realpath_kw = s7_make_keyword(s7, "realpath");
@@ -1428,7 +1429,7 @@ EXPORT s7_pointer dune_load(char *home_sfx, char *traversal_root)
         log_debug("FTS_D: %d", FTS_D);
         log_debug("FTS_DP: %d", FTS_DP);
         log_debug("FTS_F: %d", FTS_F);
-        log_debug("exiting dune_load");
+        log_debug("exiting load_dune");
     }
     return pkg_tbl;
 }

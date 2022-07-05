@@ -1,9 +1,9 @@
-;; (format #t "mibl: dune.scm loading...") (newline)
+(format #t "mibl: dune.scm loading...") (newline)
 
 (load "alist.scm")
-(load "srfi.scm")
+;; (load "srfi.scm")
 (load "string.scm")
-(load "utils.scm")
+;; (load "utils.scm")
 
 (load "dune/dune_utils.scm")
 (load "dune/dune_action_deps.scm")
@@ -22,5 +22,7 @@
 (load "dune/modules.scm")
 (load "dune/normalize.scm")
 (load "dune/pkg_api.scm")
+
+(load "dune/actions_with_output_to.scm")
 
 (format #t "loaded mibl/dune.scm") (newline)

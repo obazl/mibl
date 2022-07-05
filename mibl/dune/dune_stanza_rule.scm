@@ -118,9 +118,11 @@
 
 ;; (rule (target[s] <filenames>) (action  <action>) <optional-fields>)
 ;; q: can a rule stanza have multiple actions?
+
 ;; (define (normalize-stanza-rule pkg-path srcfiles stanza)
+
 (define normalize-rule-stanza!
-  (let ((+documentation+ "INTERNAL. Updates pkg arg, returns normalized stanza."))
+  (let ((+documentation+ "INTERNAL. Updates pkg arg, returns normalized stanza. stanza: raw dune stanza (input); nstanza: normalized (output)"))
     (lambda (pkg stanza)
       (format #t "\nNORMALIZE-rule-stanza!: ~A\n"
               (assoc-val :pkg-path pkg))
@@ -140,49 +142,34 @@
              ;; Step 1: 'target' and 'targets' fields list files generated
              ;; by the action. Add them to the pkg :modules and :files
              ;; assocs.
-             (pkg (set! pkg
-                        (if-let ((tgt (assoc-val 'target rule-alist)))
-                                (update-pkg-with-targets! pkg tgt)
-                                (if-let ((tgts
-                                          (assoc-val 'targets rule-alist)))
-                                        (update-pkg-with-targets! pkg tgts)
-                                        pkg))))
+             (targets (if-let ((tgt (assoc-val 'target rule-alist)))
+                              tgt
+                              (if-let ((tgts
+                                        (assoc-val 'targets rule-alist)))
+                                      tgts
+                                      '())))
+
+             (pkg (if (null? targets)
+                      pkg
+                      (set! pkg (update-pkg-with-targets! pkg targets))))
              (_ (format #t "rule: updated pkg: ~A\n" pkg))
 
-             ;; Step 2: expand the 'deps' field, which may be referenced by
-             ;; the 'action' field
-             (deps (expand-action-deps pkg rule-alist)))
-
-        ;; if we have a target, then we must have an action that
-        ;; generates it. the action will have ${targets}?
-
-        ;; (error 'debug "debugging")
-
-        ;; example: (rule (alias buildtest) (deps test_clic.exe) (action (progn)))
-
+             ;; Step 2: rule deps may be referenced by action
+             (deps (expand-rule-deps! pkg rule-alist)))
+        (format #t "EXPANDED rule deps: ~A\n" deps)
         ;; rule type is determined by 'action' field, which can be:
         ;; bash, copy, run, etc.
         ;; every rule stanza has an action field
         ;; https://dune.readthedocs.io/en/stable/concepts.html#user-actions
-        (cond
-         ((assoc 'action rule-alist)
-          (begin
-            (normalize-action pkg rule-alist)))
-             ;; pkg-path (assoc 'action rule-alist) stanza srcfiles)))
-
-         ;; ((assoc 'copy rule-alist)
-         ;;  (begin
-         ;;    (normalize-copy-rule
-         ;;     pkg-path (assoc 'copy rule-alist) stanza srcfiles)))
-
-         ;; ((assoc 'copy_files# rule-alist)
-         ;;  (begin
-         ;;    (normalize-copy-rule
-         ;;     pkg-path (assoc 'copy_files# rule-alist) stanza srcfiles)))
-
-         (else
-          (format #t "UNHANDLED RULE: ~A\n" rule-alist))))
-      pkg)))
+        (if (assoc 'action rule-alist)
+            (let ((nzaction (normalize-action pkg rule-alist targets deps)))
+              (format #t "nzaction: ~A\n" nzaction)
+              `((:rule
+                (:targets ,targets)
+                (:deps ,deps)
+                (:action ,nzaction))))
+            (format #t "UNHANDLED RULE: ~A\n" rule-alist))
+        ))))
 
     ;; (let ((result (map (lambda (fld-assoc)
     ;;                      ;; (display (format #f "fld: ~A" fld-assoc)) (newline)
@@ -305,4 +292,4 @@
 ;;                      (cdr stanza))))
 ;;     (cons 'rule (list result))))
 
-(format #t "loaded dune/dune_stanza_rule.scm") (newline)
+(format #t "loaded dune/dune_stanza_rule.scm\n")

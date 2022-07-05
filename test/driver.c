@@ -4,7 +4,7 @@
 #include "mibl_config.h"
 #include "s7_config.h"
 #include "ansi_colors.h"
-#include "dune_load.h"
+#include "load_dune.h"
 
 extern bool debug;
 extern bool trace;
@@ -112,9 +112,10 @@ int main(int argc, char *argv[])
     /* pathdir = "src/lib/snarky/src"; */
 
     rootdir = "obazl/mibl/test";
-    pathdir = "test/dune/stanzas/rule/deps/glob";
+    /* pathdir = "test/dune/stanzas/rule/deps/glob"; */
+    pathdir = "test/dune/stanzas/rule/action/run/cp";
 
-    s7_pointer pkg_tbl = dune_load(rootdir, pathdir);
+    s7_pointer pkg_tbl = load_dune(rootdir, pathdir);
     printf("cwd: %s\n", getcwd(NULL, 0));
 
     printf(BGRN "pkg_tbl:" CRESET "\n%s\n", s7_object_to_c_string(s7, pkg_tbl));
@@ -125,7 +126,7 @@ int main(int argc, char *argv[])
         printf("unbound symbol: hash-table-ref");
         exit(EXIT_FAILURE);
     }
-    s7_pointer pkg_key = s7_make_string(s7, "dune/stanzas/rule/deps/glob");
+    s7_pointer pkg_key = s7_make_string(s7, "dune/stanzas/rule/action/run/cp");
     s7_pointer pkg = s7_call(s7, ht_ref, s7_list(s7, 2, pkg_tbl, pkg_key));
     printf(BGRN "pkg:" CRESET " %s\n", TO_STR(pkg));
 

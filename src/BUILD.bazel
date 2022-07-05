@@ -6,7 +6,7 @@ cc_library(
     # alwayslink = True,
     # linkstatic = 1,
     srcs  = [
-        "dune_load.c",
+        "load_dune.c",
         "opam_config.c", "opam_config.h",
         "bazel_config.c",
         "s7_config.c", "s7_config.h",
@@ -17,7 +17,7 @@ cc_library(
         "@uthash//:include",
     ],
     hdrs = [
-        "dune_load.h",
+        "load_dune.h",
         "bazel_config.h",
         "mibl_config.h",
         "ansi_colors.h",
@@ -65,7 +65,7 @@ cc_library(
 genrule(
     name = "mkhdrs",
     srcs = [
-        "dune_load.c",
+        "load_dune.c",
         "opam_config.c",
         "bazel_config.c",
         "mibl_config.c",
@@ -78,7 +78,7 @@ genrule(
         # "@uthash//:include",
    ],
     outs = [
-        "dune_load.h",
+        "load_dune.h",
         "opam_config.h",
         "bazel_config.h",
         "mibl_config.h",
@@ -88,10 +88,10 @@ genrule(
         "utils.h",
     ],
     cmd = "\n".join([
-        "SRC1=$(location dune_load.c)",
+        "SRC1=$(location load_dune.c)",
         "SRCDIR1=`dirname $$SRC1`",
         "$(location @makeheaders//:makeheaders) \\",
-        "    $(location dune_load.c) \\",
+        "    $(location load_dune.c) \\",
         "    $(location opam_config.c) \\",
         "    $(location mibl_config.c) \\",
         "    $(location s7_config.c) \\",
