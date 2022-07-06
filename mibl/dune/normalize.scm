@@ -15,7 +15,9 @@
           (case (car stanza)
             ((rule)
              (set-cdr! nstanzas
-                       (normalize-rule-stanza! pkg stanza)))
+                       (append
+                        (cdr nstanzas)
+                       (normalize-rule-stanza! pkg stanza))))
              ;; (set! pkg (normalize-rule-stanza!
              ;;            pkg stanza (list :rule))))
 
@@ -95,19 +97,21 @@
          (pkg+ (append pkg (list nstanzas))))
     ;; (format #t "STANZAS COPY: ~A\n" dune-stanzas)
     ;; (set-car! dune-stanzas :dune-stanzas)
-    (map
-     (lambda (stanza)
-       (format #t "STANZA COPY: ~A\n" stanza)
-       (let ((normed (normalize-dune-stanza pkg+ stanza nstanzas)))
-         ;; pkg-path
-         ;; ;; dune-project-stanzas
-         ;; srcfiles ;; s/b '() ??
-         ;; stanza)))
-         (format #t "NORMALIZED: ~A\n" normed)
-         normed))
-     ;; (cdr dune-stanzas))))
-     (assoc-val 'dune pkg+))))
-  ;; )
+    (let ((new-pkg
+           (map
+            (lambda (stanza)
+              (format #t "STANZA COPY: ~A\n" stanza)
+              (let ((normed (normalize-dune-stanza pkg+ stanza nstanzas)))
+                ;; pkg-path
+                ;; ;; dune-project-stanzas
+                ;; srcfiles ;; s/b '() ??
+                ;; stanza)))
+                (format #t "NORMALIZED: ~A\n" normed)
+                normed))
+            ;; (cdr dune-stanzas))))
+            (assoc-val 'dune pkg+))))
+      (format #t "NEW PKG: ~A\n" pkg+)
+      pkg+)))
 
     ;; normed
     ;; (format #t "normalized stanzas: ~A\n" normed)

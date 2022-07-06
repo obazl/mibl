@@ -3,168 +3,49 @@
 (load "dune/dune_action_run.scm")
 (load "dune/actions_with_output_to.scm")
 
-(define (normalize-action-bash action stanza)
-  (format #t "NORMALIZE-ACTION-BASH ~A\n" action)
-  '()
-  )
+;; (system <cmd>), (bash <cmd>), (echo <string>)
+(define (normalize-action-shell-cmd pkg action action-alist targets deps)
+  ;; FIXME: shell cmd args may include filename literals; find way to expand?
+  ;; FIXME: may include ${target}
+  ;; FIXME: in general: expand all '${}' in args
+  (format #t "NORMALIZE-ACTION-SHELL-CMD ~A\n" action)
+  (let* ((tool (if (eq? action 'system) 'sh action))
+         (action-args (assoc-val action action-alist)))
+    `((:cmd-list
+       ((:tool ,tool)
+        ,(cons :args action-args))))))
 
-(define (normalize-action-cat action stanza)
-  (format #t "NORMALIZE-ACTION-CAT ~A\n" action)
-  '()
-  )
+(define (normalize-action-chdir-dsl pkg action-alist targets deps)
+  (format #t "NORMALIZE-ACTION-CHDIR-DSL ~A\n" action-alist)
+  (let* ((chdir-alist (assoc-val 'chdir action-alist))
+         (_ (format #t "chdir-alist: ~A\n" chdir-alist))
+         (ctx (car chdir-alist))
+         (action (caadr chdir-alist))
+         (action-alist (cdadr chdir-alist))
+         (cmd (if-let ((cmd-fn (assoc-val action dune-action-cmds-dsl)))
+                      (let ((cmd-list (apply (car cmd-fn)
+                                             (list pkg action-alist targets deps))))
+                        cmd-list)
+                      (begin
+                        (format #t "UNHANDLED ACTION: ~A\n" action)
+                        stanza))))
+    (list (cons :cmd-list cmd)
+          `(:ctx ,ctx))))
 
-(define (normalize-action-chdir-dsl action stanza)
-  (format #t "NORMALIZE-ACTION-CHDIR-DSL ~A\n" action)
-  '()
-  )
-
-(define (normalize-action-cmp action stanza)
-  (format #t "NORMALIZE-ACTION-CMP ~A\n" action)
-  '()
-  )
-
-;; (copy <src> <dst>), (diff file1 file2) etc
-(define (normalize-action-file-binop pkg action action-alist targets deps)
-  (format #t "NORMALIZE-ACTION-FILE-BINOP, pkg: ~A\n" pkg)
+;; cmp, copy, copy#, diff, diff?
+(define (normalize-action-file-op pkg action action-alist targets deps)
+  (format #t "NORMALIZE-ACTION-FILE-OP, pkg: ~A\n" pkg)
   (format #t "  action-alist: ~A\n" action-alist)
   (let* ((tool action) ;; (run-action->toolname pkg-path action stanza))
          (action-args (assoc-val action action-alist))
-         (args (expand-deplist action-args
+         (args (expand-filelist action-args
                                pkg ;; paths
-                               action-alist
+                               ;; action-alist
                                '()))
          (_ (format #t "expanded copy args: ~A\n" args)))
     `((:cmd-list
        ((:tool ,tool)
         ,(cons :args args))))))
-
-;; (define (normalize-action-copy pkg action action-alist targets deps)
-;;   (format #t "NORMALIZE-ACTION-COPY, pkg: ~A\n" pkg)
-;;   (format #t "  action-alist: ~A\n" action-alist)
-;;   (let* ((tool action) ;; (run-action->toolname pkg-path action stanza))
-;;          (action-args (assoc-val 'copy action-alist))
-;;          (args (expand-deplist action-args
-;;                                pkg ;; paths
-;;                                action-alist
-;;                                '()))
-;;          ;; (cpy-src (car action-args))
-;;          ;; (cpy-dst (cadr action-args))
-;;          ;; (args (list cpy-src cpy-dst))
-;;          (_ (format #t "expanded copy args: ~A\n" args)))
-;;     `((:cmd-list
-;;        ((:tool ,tool)
-;;         ,(cons :args args))))))
-
-(define (normalize-action-copy# action stanza)
-  (format #t "NORMALIZE-ACTION-COPY# ~A\n" action)
-;; (define (normalize-copy-action pkg-path action stanza srcfiles)
-;;   (format #t "NORMALIZE-COPY-ACTION: ~A: ~A\n" pkg-path action)
-  ;; (format #t "  STANZA: ~A\n" stanza)
-
-  (let* ((rule-alist (cdr stanza))
-         (stanza-type (if (assoc 'alias rule-alist) :alias-cmd :run-cmd))
-
-         (tool (run-action->toolname pkg-path action stanza))
-         (_ (format #t "TOOL: ~A\n" tool))
-
-         (tool-tag (normalize-tool-tag (cadadr action)))
-         (_ (format #t "TOOL-TAG: ~A\n" tool-tag))
-
-         (run-list (cadr action)) ;; (run <tool> <arg1> ...)
-         ;; (_ (format #t "run-list: ~A\n" run-list))
-
-         (target (if-let ((target (assoc 'target rule-alist)))
-                         (cadr target) #f))
-         ;; (_ (format #t "target: ~A\n" target))
-         (targets (if-let ((targets (assoc 'targets rule-alist)))
-                          (cadr targets)
-                          #f))
-         ;; (_ (format #t "targets: ~A\n" targets))
-
-         ;;FIXME: run actions for "alias runtest" etc. have no target(s) fld
-         (outfile (if target target
-                      (if targets targets
-                          #f)))
-
-         ;; (_ (format #t "outfile: ~A\n" outfile))
-
-         (args (run-action->args pkg-path action run-list))
-         ;; (_ (format #t "CMD ARGS: ~A\n" args))
-
-         (dsl run-list)
-
-         ;; (deps (run-action->deps pkg-path tool stanza))
-         ;; (_ (format #t "CMD DEPS: ~A\n" deps))
-
-         ;;        (dsl (cadr (cdadr action)))
-         ;;        ;; dsl may contain embedded actions, e.g. 'chdir', 'setenv', etc.
-         ;; (cmd `((:tool ,tool)
-         ;;        (:args ,args)
-         ;;        (:raw ,action)))
-         ;;        (target (assoc 'target rule-alist))
-         ;;        (targets (assoc 'targets rule-alist))
-         ;;        (outfile (if (equal? file '%{targets})
-         ;;                     (cadr targets)
-         ;;                     (if (equal? file '%{target})
-         ;;                         (cadr target)
-         ;;                         (begin
-         ;;                           (format #t "WARNING: write-file out: ~A\n" file)
-         ;;                           file))))
-         )
-    ;; (format #t "DSL: ~A\n" dsl)
-
-    (let-values (((filedeps vars env-vars universe aliases unresolved)
-                  (expand-deps pkg-path
-                               #f ;; tool-tag ;; FIXME: tool-tag
-                               #f ;; tool
-                               (assoc 'deps rule-alist)
-                               srcfiles)))
-      ;; (format #t "r filedeps: ~A\n" filedeps)
-      ;; (format #t "r vars: ~A\n" vars)
-      ;; (format #t "r env-vars: ~A\n" env-vars)
-      ;; (format #t "r universe: ~A\n" universe)
-      ;; (format #t "r aliases: ~A\n" aliases)
-      ;; (format #t "r unresolved: ~A\n" unresolved)
-
-      (let ((cmd (if universe
-                     (normalize-cmd-dsl-universe pkg-path dsl filedeps vars)
-                     (normalize-cmd-dsl pkg-path
-                                        target
-                                        targets
-                                        (list dsl)
-                                        (if filedeps
-                                            (reverse filedeps)
-                                            '())
-                                        (if vars vars '())))))
-        (format #t "r CMD: '~A'\n" cmd)
-
-        ;;   (if (not (null? vars))
-        ;;       (format #t "DEPS VARS: ~A\n" vars))
-
-        ;;   (format #t "DSL: ~A\n" dsl)
-
-        `(,stanza-type ;;:run-cmd
-          (:out ,outfile)
-          (:cmd ,cmd) ;; contains deps?
-          (:vars ,vars)
-          (:raw ,stanza)))))
-  )
-
-;; (define (normalize-action-diff pkg action-alist targets deps); action stanza)
-;;   (format #t "NORMALIZE-ACTION-DIFF ~A\n" action)
-;;   '()
-;;   )
-
-(define (normalize-action-diff? action stanza)
-  (format #t "NORMALIZE-ACTION-DIFF ~A\n" action)
-  (format #t "ERROR! 'diff?' not supported (semantics unclear).\n")
-  '()
-  )
-
-(define (normalize-action-echo action stanza)
-  (format #t "NORMALIZE-ACTION-ECHO ~A\n" action)
-  '()
-  )
 
 (define (normalize-action-ignore-outputs-dsl action stanza)
   (format #t "NORMALIZE-ACTION-OUTPUTS-DSL ~A\n" action)
@@ -211,6 +92,12 @@
   '()
   )
 
+(define (normalize-action-run-dsl pkg action-alist targets deps)
+  (format #t "NORMALIZE-ACTION-RUN-DSL ~A\n" action-alist)
+  (let ((cmd (expand-cmd-list action-alist targets deps)))
+    (format #t "RUN CMD: ~A\n" cmd)
+    cmd))
+
 (define (normalize-action-setenv-dsl action stanza)
   (format #t "NORMALIZE-ACTION-SETENV-DSL ~A\n" action)
   '()
@@ -236,43 +123,29 @@
   '()
   )
 
-(define (normalize-action-system action stanza)
-  (format #t "NORMALIZE-ACTION-SYSTEM ~A\n" action)
-  '()
-  )
-
-(define (normalize-action-write-file action stanza)
+(define (normalize-action-write-file pkg action action-alist targets deps)
+  ;; action stanza)
   ;; action target targets deps)
   (format #t "NORMALIZE-WRITE-FILE ~A\n" action)
+  (format #t "    action-alist ~A\n" action-alist)
 
-  ;; CAVEAT: a write-file action may have 'deps or other fields, which
-  ;; are not necessarily included in the out string.
+  (let* ((args (assoc-val 'write-file action-alist))
+         (file (car args))
+         (_ (format #t "file: ~A\n" file))
+         (content `(:content ,(cadr args)))
+         (args (expand-filelist (list file)
+                                pkg ;; paths
+                                ;; action-alist
+                                '())))
+    `((:cmd-list
+       ((:tool ,action)
+        ,(cons :args (list args content)))))))
 
-  (let* ((file (cadadr action))
-         (str (cdr (cdadr action)))
-         (rule-alist (cdr stanza))
-         (deps (assoc 'deps rule-alist))
-         (target (assoc 'target rule-alist))
-         (targets (assoc 'targets rule-alist))
-         ;; outfile will usually be '%{targets}' or '%{target}', but
-         ;; could be a literal, or ?
-         (outfile (if (equal? file '%{targets})
-                      ;; for write-file, must be singleton?
-                      (cadr targets)
-                      (if (equal? file '%{target})
-                          (cadr target)
-                          (begin
-                            (format #t "WARNING: write-file out: ~A\n" file)
-                            file)))))
-
-    ;;     (format #t "  File: ~A ~A\n" target targets))
-    ;; (format #t "  String: ~A\n" str)
-
-    `(:write-file
-      (:out ,outfile)
-      (:content ,(car str))
-      ,(if deps `(:deps ,@(cdr deps)) '(:deps ()))
-      (:raw ,stanza))))
+    ;; `(:write-file
+    ;;   (:out ,outfile)
+    ;;   (:content ,(car str))
+    ;;   ,(if deps `(:deps ,@(cdr deps)) '(:deps ()))
+    ;;   (:raw ,stanza))))
 
 ;; expand-deps
 ;; (:name <dependencies>) available as %{name} in actions.
@@ -385,227 +258,6 @@
                       arg
                       (list :_genfile
                             (dirname arg) (basename arg)))))))))
-
-(define (normalize-cmd-dsl pkg-path target targets dsl filedeps vars)
-  ;; assumption: dsl is a list of one list of commands
-  ;; maybe: cmd list always contains at least one (run ...)
-  ;; common: cmd list contains ((chdir <dir> (run ...))); we ignore chdir
-  (format #t "NORMALIZE-CMD-DSL: ~A\n" dsl)
-  (format #t " filedeps: ~A\n" filedeps)
-  (format #t " vars: ~A\n" vars)
-
-  ;; WARNING!!! Cmd args must not be reordered, and args that are
-  ;; targets must be identifiable, so the emitter can wrap them in
-  ;; "$(location ...)"
-
-  (let recur ((cmd-dsl dsl) ;; (if (null? dsl) '() (car dsl)))
-              (tool #f)
-              (deps filedeps)
-              (args '()))
-    (format #t "recur on cmd-dsl: ~A\n" cmd-dsl)
-    (cond
-     ((null? cmd-dsl)
-    ;; (if (null? cmd-dsl)
-        ;; this should not happen since we expect a (run...) to be handled
-        `((:tool ,tool)
-          (:deps ,deps)
-          (:args ,(reverse
-                   (expand-cmd-args pkg-path target targets
-                                     args filedeps vars)))
-          (:raw ,dsl)))
-     ((pair? (car cmd-dsl))
-      ;; (format #t "PAIR (car cmd-dsl): ~A\n" (car cmd-dsl))
-      (cond
-       ((equal? 'bash (caar cmd-dsl))
-        (format #t "BASH: ~A\n" cmd-dsl)
-        (recur (cdar cmd-dsl) 'bash deps args))
-
-       ((equal? 'copy# (caar cmd-dsl))
-        (format #t "COPY#: ~A\n" cmd-dsl)
-        (recur (cdar cmd-dsl) 'copy# deps args))
-
-       ((equal? 'copy (caar cmd-dsl))
-        (format #t "COPY: ~A\n" cmd-dsl)
-        (recur (cdar cmd-dsl) 'copy deps args))
-
-       ((equal? 'chdir (caar cmd-dsl))
-        (format #t "SKIPPING CHDIR\n")
-        (begin ;; skip chdir
-          (if (not (pair? (caddr (car cmd-dsl))))
-              (error 'bad-arg
-                     (format #f "WARN: chdir <dir> not followed by list: ~A\n"
-                             (caddr (car cmd-dsl)))))
-          (recur (cddr (car cmd-dsl)) tool deps args)))
-
-       ((equal? 'run (caar cmd-dsl))
-        (format #t "RUN ~A\n" cmd-dsl)
-        (let run-recur ((cmd-args (cddr (car cmd-dsl)))
-                        ;; (run-deps deps) ;;FIXME: deps is already fixed?
-                        (run-args args))
-          (format #t "RUN-RECUR cmd-args: ~A\n" cmd-args)
-          (format #t "          run-args: ~A\n" run-args)
-          ;; (format #t "(car cmd-args): ~A\n"
-          ;;         (if (null? cmd-args) '() (car cmd-args)))
-          (if (null? cmd-args)
-              (begin
-                (format #t "FINISHED, tool: ~A\n" (cadr (car cmd-dsl)))
-                (let* ((sexp
-                       `((:tool ,(resolve-tool (cadr (car cmd-dsl))
-                                        pkg-path
-                                        target targets
-                                        (list (cadr (car cmd-dsl)))
-                                        filedeps
-                                        vars))
-                         ;; (action->toolname pkg-path action stanza)
-                         (:raw ,dsl)))
-                      (sexp (if (null? args)
-                                sexp
-                                (:args ,(expand-cmd-args pkg-path
-                                                          target targets
-                                                          (reverse run-args)
-                                                          filedeps
-                                                          vars))))
-                      (sexp (if (null? deps)
-                                sexp
-                                (acons :deps deps sexp))))
-                      sexp))
-
-              ;; from here on we expect only args
-              ;; problem: we can't decide of a string arg is a filedep??
-              ;; caveat: dune vars of form %{foo} may be passed as
-              ;; either string or symbol
-              ;; assume: a dune var passed as cmd arg is also a dep
-              (cond
-               ((number? (car cmd-args))
-                (run-recur (cdr cmd-args)
-                           ;; run-deps
-                           (cons
-                            ;;(number->string (car cmd-args))
-                            `(:_nbr ,(car cmd-args))
-                            run-args)))
-               ((string? (car cmd-args))
-                (format #t "STRING cmd arg: ~A\n" cmd-args)
-                (if (string-prefix? "%{" (car cmd-args))
-                    (begin
-                      (format #t "ARG VAR: ~A\n" cmd-args)
-                      (run-recur (cdr cmd-args)
-                                 ;; run-deps ;;(cons (car cmd-args) run-deps)
-                                 (cons (car cmd-args) run-args)))
-                    (begin
-                      (format #t "ARG STRING: ~A\n" cmd-args)
-                      (run-recur (cdr cmd-args)
-                                 ;; run-deps
-                                 (cons
-                                  `(:_string ,(car cmd-args))
-                                  run-args)))))
-               ((symbol? (car cmd-args))
-                (format #t "SYMBOL cmd arg: ~A\n" cmd-args)
-                (let ((arg-str (symbol->string (car cmd-args))))
-                  (cond
-
-                   ((string-prefix? "%{bin:" arg-str)
-                    (format #t "BIN arg: ~A\n" arg-str)
-                    (run-recur (cdr cmd-args)
-                               ;;run-deps
-                               (cons arg-str run-args)))
-
-                   ((string-prefix? "%{lib:" arg-str)
-                    (format #t "LIB arg: ~A\n" arg-str)
-                    (run-recur (cdr cmd-args)
-                               ;;run-deps
-                               (cons arg-str run-args)))
-
-                   ((string=? "%{deps}" arg-str)
-                    (format #t "DEPS arg\n")
-                    (run-recur (cdr cmd-args)
-                               ;;run-deps
-                               (cons arg-str run-args)))
-
-                   ((string-prefix? "%{" arg-str)
-                    (format #t "VARx\n")
-                    (cond
-                     ((string-prefix? "%{dep:" arg-str)
-                      (format #t "DEP: var\n")
-                      (format #t "pkg-path: ~A\n" pkg-path)
-                      (let* ((dep-path (string-drop-right ;; drop '}'
-                                        (string-drop arg-str 6) 1))
-                             (segs (string-split dep-path #\/))
-                             (seg-ct (length segs))
-                             (resolved (let recur ((segs segs)
-                                                   (path pkg-path))
-                                         (if (null? segs)
-                                             path
-                                             ;; FIXME: what if embedded, a/../b
-                                             (if (string=? ".." (car segs))
-                                                 (let ((last-slash
-                                                        (string-index-right
-                                                         path (lambda (ch) (char=? ch #\/)))))
-                                                   (if last-slash
-                                                       (recur (cdr segs)
-                                                              (string-drop-right
-                                                               path (- (length path) last-slash)))
-                                                       ;; no slash in pkg-path
-                                                       (recur (cdr segs) ".")))
-                                                 (recur (cdr segs) path)
-                                                 )))))
-                        (format #t "DEP PATH: ~A\n" dep-path)
-                        (run-recur (cdr cmd-args)
-                                   ;; run-deps ;; (cons arg-str run-deps)
-                                   (cons arg-str run-args))))
-                     (else ;; e.g. ${prim}
-                      (format #t "OTHER VAR: ~A\n" cmd-args)
-                      (let* ((dep-path (string-drop-right ;; drop '}'
-                                        (string-drop arg-str 6) 1))
-                             (segs (string-split dep-path #\/))
-                             (seg-ct (length segs))
-                             (resolved (let recur ((segs segs)
-                                                   (path pkg-path))
-                                         (if (null? segs)
-                                             path
-                                             ;; FIXME: what if embedded, a/../b
-                                             (if (string=? ".." (car segs))
-                                                 (let ((last-slash
-                                                        (string-index-right
-                                                         path (lambda (ch) (char=? ch #\/)))))
-                                                   (if last-slash
-                                                       (recur (cdr segs)
-                                                              (string-drop-right
-                                                               path (- (length path) last-slash)))
-                                                       ;; no slash in pkg-path
-                                                       (recur (cdr segs) ".")))
-                                                 (recur (cdr segs) path)
-                                                 )))))
-                        (format #t "DEP PATH: ~A\n" dep-path)
-                        (run-recur (cdr cmd-args)
-                                   ;; run-deps ;; (cons arg-str run-deps)
-                                   (cons arg-str run-args)))
-                      )))
-                   (else
-                    (format #t "OTHER SYM\n")
-                    (run-recur (cdr cmd-args)
-                                     ;; run-deps
-                                     (cons (car cmd-args) run-args))))))
-               (else ;; not string, sym, or number
-                (error 'wtf "WTF? ~A\n" (car cmd-dsl))
-                )))))
-       (else ;; car not chdir, not run
-        (error 'wtf2 "WTF2? ~A" (car cmd-dsl)))
-       ))
-
-     ((symbol? (car cmd-dsl))
-      (let* ((arg-str (symbol->string (car cmd-dsl)))
-             (arg (resolve-string-arg pkg-path arg-str vars)))
-        (format #t "resolved: ~A\n" arg)
-        (recur (cdr cmd-dsl) tool deps (cons arg args))))
-
-     ((string? (car cmd-dsl))
-      (let ((arg (resolve-string-arg pkg-path (car cmd-dsl) vars)))
-        (recur (cdr cmd-dsl) tool deps (cons arg args))))
-
-     (else ;; not (pair? (car cmd-dsl))
-      (format #t "ATOM (car cmd-dsl): ~A\n" cmd-dsl)
-      (recur (cdr cmd-dsl) tool deps (cons (car cmd-dsl) args))))
-    ))
 
 (define (normalize-tool-tag tag)
   (let ((tag-str (if (symbol? tag) (symbol->string tag) tag)))
@@ -737,15 +389,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define dune-action-cmds-no-dsl
   ;; primary cmds that do NOT take a DSL argument
-  `((bash       ,normalize-action-bash) ;; (bash <cmd>)
-    (cat        ,normalize-action-cat)  ;; (cat <file>)
-    (cmp        ,normalize-action-file-binop) ;; (cmp <file1> <file2>)
-    (copy       ,normalize-action-file-binop) ;; (copy <src> <dst>)
-    (copy#      ,normalize-action-file-binop) ;; copy & add header line
-    (diff       ,normalize-action-file-binop) ;; (diff <file1> <file2>)
-    (diff?      ,normalize-action-diff?) ;; (diff? <file1> <file2>)
-    (echo       ,normalize-action-echo) ;; (echo <string>)
-    (system     ,normalize-action-system) ;; (system <cmd>)
+  `((bash       ,normalize-action-shell-cmd) ;; (bash <cmd>)
+    (cat        ,normalize-action-file-op)  ;; (cat <file>)
+    (cmp        ,normalize-action-file-op) ;; (cmp <file1> <file2>)
+    (copy       ,normalize-action-file-op) ;; (copy <src> <dst>)
+    (copy#      ,normalize-action-file-op) ;; copy & add header line
+    (diff       ,normalize-action-file-op) ;; (diff <file1> <file2>)
+    (diff?      ,normalize-action-file-op) ;; (diff? <file1> <file2>)
+    (echo       ,normalize-action-shell-cmd) ;; (echo <string>)
+    (system     ,normalize-action-shell-cmd) ;; (system <cmd>) uses sh
     (write-file ,normalize-action-write-file) ;; (write-file <file> <string>)
     ))
 
@@ -761,8 +413,9 @@
     (pipe-outputs ,normalize-action-pipe-outputs-dsl)
     (pipe-stderr ,normalize-action-pipe-stderr-dsl)
     (pipe-stdout ,normalize-action-pipe-stdout-dsl)
-    (progn, normalize-action-progn-dsl)       ;; (progn <DSL>...)
-    (setenv, normalize-action-setenv-dsl)     ;; (setenv <var> <value> <DSL>)
+    (progn ,normalize-action-progn-dsl)       ;; (progn <DSL>...)
+    (run ,normalize-action-run-dsl)       ;; (progn <DSL>...)
+    (setenv ,normalize-action-setenv-dsl)     ;; (setenv <var> <value> <DSL>)
                                        ;; NB: (run env FOO=bar ...)
     ;; (with-accepted-exit-codes <pred> <DSL>)
     (with-accepted-exit-codes ,normalize-action-with-accepted-exit-codes-dsl)

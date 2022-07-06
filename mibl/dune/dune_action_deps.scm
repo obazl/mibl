@@ -36,17 +36,17 @@
 ;; label (e.g. :exe, :<, etc.)
 ;; called recursively
 
-(define (add-literal-to-expanded-deps path expanded-deps)
+(define (add-literal-to-expanded-deps expanded-path expanded-deps)
   ;; expanded deps is an alist like ((:_ "a.ml" "a.mli") (:css "a.css")...)
   ;; merge path into :_ list
     (alist-update-in! expanded-deps '(:_)
                       (lambda (old)
-                        (let ((expanded (append old (list path))))
+                        (let ((expanded (append old (list expanded-path))))
                           (format #t "old: ~A\n" old)
                           (format #t "expanded: ~A\n" expanded)
                           expanded))))
 
-(define (handle-filename-literal-dep dep deplist paths stanza expanded-deps)
+(define (handle-filename-literal-dep dep deplist paths expanded-deps)
   (format #t "handle-filename-literal-dep: ~A\n" dep)
   (format #t "expanded-deps: ~A\n" expanded-deps)
   (let* ((_ (format #t "dep: ~A\n" dep))
@@ -92,16 +92,21 @@
     ;; find it and resolve pkg path
     ;; if not found mark it as :dynamic
     (expand-filelist (cdr deplist)
-                    paths stanza
+                    paths ;; stanza
                     ;; new-expanded-deps
                     (if (null? expanded-deps)
                         ;; needs to be an alisg
-                        (list (list :_ expanded-path))
-                        (add-literal-to-expanded-deps expanded-path
-                                                      expanded-deps))
+                        ;; (list (list :_ expanded-path))
+                        (list (list :_
+                                    `((:pkg ,(dirname expanded-path))
+                                      (:file ,(basename expanded-path)))))
+                        (add-literal-to-expanded-deps
+                         `((:pkg ,(dirname expanded-path))
+                           (:file ,(basename expanded-path)))
+                         expanded-deps))
                     )))
 
-(define (handle-tagged-dep deplist paths stanza-alist expanded-deps)
+(define (handle-tagged-dep deplist paths expanded-deps)
   (format #t "HANDLE-TAGGED-dep: ~A\n" deplist)
   (format #t "expanded-deps: ~A\n" expanded-deps)
   ;; kw :_ is reserved for non-tagged symlist
@@ -113,12 +118,14 @@
                 ":" (symbol->string
                      (keyword->symbol (car deplist)))))))
         (tagged (expand-filelist (cdr deplist)
-                               paths stanza-alist '()))) ;;expanded-deps)))
+                                 paths ;;stanza-alist
+                                 '()))) ;;expanded-deps)))
     (format #t "tagged dep lbl: ~A\n" lbl)
     (format #t "tagged dep: ~A\n" tagged)
     (if (pair? (car tagged))
         (if (equal? :_ (caar tagged))
-            (cons (cons lbl (cdar tagged)) expanded-deps)
+            (cons (cons lbl (cdar tagged))
+                  expanded-deps)
             (append (cons lbl tagged) expanded-deps))
         (cons (cons lbl tagged) expanded-deps))))
 
@@ -195,8 +202,12 @@
 (define (handle-glob-files-rec-dep deplist)
   (format #t "handle-glob-files-rec-dep: ~A\n" deplist))
 
-(define (handle-source-tree-dep deplist)
-  (format #t "handle-source-tree-dep: ~A\n" deplist))
+(define (handle-source-tree-dep paths deplist)
+  (format #t "handle-source-tree-dep: ~A\n" deplist)
+  (error 'unsupported
+         (string-append "Found a 'source_tree' dependency in pkg '"
+                        (car (assoc-val :pkg-path paths))
+                        "'.  A 'source_tree' dependency in a rule dep usually means the rule should be replaced by a cc_library rule or something from rules_foreign_cc. I can't automate that, sorry.")))
 
 (define (handle-universe-dep deplist)
   (format #t "handle-universe-dep: ~A\n" deplist))
@@ -226,7 +237,7 @@
     (sandbox ,handle-sandbox-dep)
     (include ,handle-include-dep)))
 
-(define (expand-filelist deplist paths stanza-alist expanded-deps)
+(define (expand-filelist deplist paths expanded-deps)
   (format #t "EXPAND-FILELIST: ~A\n" deplist)
   ;; (format #t "paths: ~A\n" paths)
   (format #t "expanded-deps: ~A\n" expanded-deps)
@@ -238,9 +249,9 @@
         expanded-deps)
       (if (pair? (car deplist))
           (expand-filelist (car deplist)
-                          paths stanza-alist
+                          paths ;; stanza-alist
                           (expand-filelist
-                           (cdr deplist) paths stanza-alist expanded-deps))
+                           (cdr deplist) paths expanded-deps))
           ;; car is atom
           (let* ((kw (car deplist)))
             (if-let ((depfn (assoc-val kw dune-dep-handlers)))
@@ -265,7 +276,7 @@
                           (begin
                             (format #t "TAGGED DEP : ~A\n" deplist)
                             (handle-tagged-dep
-                             deplist paths stanza-alist expanded-deps))
+                             deplist paths expanded-deps))
 
                           ;; else must be a filename literal
                           ;; return (:static <path> <fname>)
@@ -273,7 +284,9 @@
                           (begin
                             ;; (format #t "LIT DEP : ~A\n" deplist)
                             (handle-filename-literal-dep
-                             dep deplist paths stanza-alist expanded-deps)
+                             dep deplist paths
+                             ;; stanza-alist
+                             expanded-deps)
 
                             ;; (let ((dep (make-filedep-arg pkg-path
                             ;;                            (cadar deps)
@@ -290,7 +303,7 @@
   (if-let ((deps-assoc (assoc 'deps stanza-alist)))
           (let* ((deplist (assoc-val 'deps stanza-alist))
                  (_ (format #t "main deplist: ~A\n" deplist))
-                 (result (expand-filelist deplist paths stanza-alist '())))
+                 (result (expand-filelist deplist paths '())))
             (format #t "DEPLIST EXPANDED: ~A\n" result)
             result)
           '()))

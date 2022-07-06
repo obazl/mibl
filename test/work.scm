@@ -32,7 +32,9 @@ tpkg
         ;; "dune/unit_tests/fields/flags/a"
         ;; "dune/predicates/standard/flags"
         ;; "dune/stanzas/library"
+
         ;; "dune/stanzas/rule/deps/glob"
+        ;; "dune/stanzas/rule/deps/source_tree"
 
         ;; "dune/filetypes"
         ;; "a"
@@ -43,9 +45,18 @@ tpkg
         ;;"dune/genfiles/modules/d"
 
 
-        "dune/stanzas/rule/action/copy"
+        ;; "dune/stanzas/rule/action/bash"
+        ;; "dune/stanzas/rule/action/cat"
+        ;; "dune/stanzas/rule/action/cmp"
+        ;; "dune/stanzas/rule/action/copy"
         ;; "dune/stanzas/rule/action/diff"
-        ;; "dune/stanzas/rule/action/with-stdout-to"
+        ;; "dune/stanzas/rule/action/echo"
+        ;; "dune/stanzas/rule/action/system"
+        ;; "dune/stanzas/rule/action/write-file"
+        ;; "dune/stanzas/rule/action/mixed"
+
+        "dune/stanzas/rule/action/chdir"
+
         ;; "dune/stanzas/rule/action/run/bash"
         ;; "dune/stanzas/rule/action/run/cp"
         ;; "dune/stanzas/rule/action/run/env"
@@ -55,6 +66,7 @@ tpkg
         ;; "dune/stanzas/rule/action/run/var/a"
         ;; "dune/stanzas/rule/action/run/var/b"
         ;; "dune/stanzas/rule/action/run/var/tag"
+        ;; "dune/stanzas/rule/action/with-stdout-to"
 
         ;; "dune/stanzas/multi"
         )

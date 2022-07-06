@@ -139,7 +139,11 @@
              (_ (format #t "target: ~A\n" (assoc 'target rule-alist)))
              (_ (format #t "Targets: ~A\n" (assoc-val 'targets rule-alist)))
 
-             ;; Step 1: 'target' and 'targets' fields list files generated
+             ;; Step 1: rule deps don't depend on targets, so do first
+             (deps (expand-rule-deps! pkg rule-alist))
+             (_ (format #t "EXPANDED rule deps: ~A\n" deps))
+
+             ;; Step 2: 'target' and 'targets' fields list files generated
              ;; by the action. Add them to the pkg :modules and :files
              ;; assocs.
              (targets (if-let ((tgt (assoc-val 'target rule-alist)))
@@ -148,15 +152,16 @@
                                         (assoc-val 'targets rule-alist)))
                                       tgts
                                       '())))
-
+             ;; add to pkg fields
              (pkg (if (null? targets)
                       pkg
                       (set! pkg (update-pkg-with-targets! pkg targets))))
              (_ (format #t "rule: updated pkg: ~A\n" pkg))
 
-             ;; Step 2: rule deps may be referenced by action
-             (deps (expand-rule-deps! pkg rule-alist)))
-        (format #t "EXPANDED rule deps: ~A\n" deps)
+             ;; normalize
+             (targets (expand-targets pkg targets deps))
+             (_ (format #t "EXPANDED rule targets: ~A\n" targets))
+             )
         ;; rule type is determined by 'action' field, which can be:
         ;; bash, copy, run, etc.
         ;; every rule stanza has an action field
@@ -165,9 +170,9 @@
             (let ((nzaction (normalize-action pkg rule-alist targets deps)))
               (format #t "nzaction: ~A\n" nzaction)
               `((:rule
-                (:targets ,targets)
+                ,(cons ':targets targets)
                 (:deps ,deps)
-                (:action ,nzaction))))
+                ,(cons ':action nzaction))))
             (format #t "UNHANDLED RULE: ~A\n" rule-alist))
         ))))
 

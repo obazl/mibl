@@ -89,9 +89,9 @@
          (_ (format #t "with-stdout-to cmd-list: ~A\n" raw-cmds))
          (cmd-alist (cmd-list->cmd-alist raw-cmds)) ;; '() '()))
          (_ (format #t "cmd-alist: ~A\n" cmd-alist))
-         (cmd-list (expand-cmd-list cmd-alist targets deps)))
+         (cmd-list (expand-cmd-list cmd-alist targets deps))
+         (cmd-list (append cmd-list `(:stdout ,stdout))))
     `((:cmd-list ,cmd-list)
-      (:stdout ,stdout)
       ;; (:raw ,raw-cmds)
       )))
 
