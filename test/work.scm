@@ -19,7 +19,8 @@ mnames
                              ))
 tpkg
 
-(let* ((_   (load "dune.scm"))
+(define pkg
+  (let* ((_   (load "dune.scm"))
        ;; WARNING: arg to load-dune is relative to cwd,
        ;; but arg to hash-table-ref below is relative to ws root,
        ;; which may not be the same.
@@ -55,10 +56,10 @@ tpkg
         ;; "dune/stanzas/rule/action/write-file"
         ;; "dune/stanzas/rule/action/mixed"
 
-        "dune/stanzas/rule/action/chdir"
+        ;; dune/stanzas/rule/action/chdir"
 
         ;; "dune/stanzas/rule/action/run/bash"
-        ;; "dune/stanzas/rule/action/run/cp"
+        "dune/stanzas/rule/action/run/cp"
         ;; "dune/stanzas/rule/action/run/env"
         ;; "dune/stanzas/rule/action/run/literal"
         ;; "dune/stanzas/rule/action/run/nostatic"
@@ -73,12 +74,19 @@ tpkg
        (pkgs (load-dune arg))
        (pkg (hash-table-ref pkgs arg))
        ;; ;; (stanzas (assoc :dune-stanzas pkg))
-       (nzs (normalize-dune-stanzas pkg))
+       (nzs (dune-pkg->mibl pkg))
        )
-  (display "done\n")
-  nzs)
+    nzs))
 
-  pkg)
+(define pkg
+  (let* ((_   (load "dune.scm"))
+       (arg "dune/stanzas/rule/action/chdir")
+       (pkgs (load-dune arg))
+       (pkg (hash-table-ref pkgs arg))
+       (normed-pkg (dune-pkg->mibl pkg))
+       )
+    normed-pkg))
+
 
   ;; (format #t "nzs: ~A\n" nzs))
 
@@ -113,7 +121,7 @@ tpkg
     ))
 xpkg
 (load "normalize.scm")
-(normalize-dune-stanzas xpkg)
+(dune-pkg->mibl xpkg)
 
 (let* ((lib '(library (name mylib_a)
                (public_name mylib)

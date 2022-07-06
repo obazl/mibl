@@ -112,6 +112,10 @@ The `*load-path* of `mibl` will be configured to include:
 
 Then run `$ mibl` to launch the repl.
 
+== The mibl API
+
+See link:docs/api.adoc[docs/api]
+
 == Configuring mibl
 
 At launch, `mibl` will try to read the first config file if finds by searching:

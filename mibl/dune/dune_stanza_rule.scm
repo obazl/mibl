@@ -171,7 +171,7 @@
               (format #t "nzaction: ~A\n" nzaction)
               `((:rule
                 ,(cons ':targets targets)
-                (:deps ,deps)
+                ,(cons ':deps deps)
                 ,(cons ':action nzaction))))
             (format #t "UNHANDLED RULE: ~A\n" rule-alist))
         ))))

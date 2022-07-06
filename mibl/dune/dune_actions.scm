@@ -11,7 +11,7 @@
   (format #t "NORMALIZE-ACTION-SHELL-CMD ~A\n" action)
   (let* ((tool (if (eq? action 'system) 'sh action))
          (action-args (assoc-val action action-alist)))
-    `((:cmd-list
+    `((:cmd
        ((:tool ,tool)
         ,(cons :args action-args))))))
 
@@ -29,7 +29,7 @@
                       (begin
                         (format #t "UNHANDLED ACTION: ~A\n" action)
                         stanza))))
-    (list (cons :cmd-list cmd)
+    (list (cons :cmd cmd)
           `(:ctx ,ctx))))
 
 ;; cmp, copy, copy#, diff, diff?
@@ -43,9 +43,9 @@
                                ;; action-alist
                                '()))
          (_ (format #t "expanded copy args: ~A\n" args)))
-    `((:cmd-list
-       ((:tool ,tool)
-        ,(cons :args args))))))
+    `((:cmd
+       (:tool ,tool)
+       ,(cons :args args)))))
 
 (define (normalize-action-ignore-outputs-dsl action stanza)
   (format #t "NORMALIZE-ACTION-OUTPUTS-DSL ~A\n" action)
@@ -94,7 +94,7 @@
 
 (define (normalize-action-run-dsl pkg action-alist targets deps)
   (format #t "NORMALIZE-ACTION-RUN-DSL ~A\n" action-alist)
-  (let ((cmd (expand-cmd-list action-alist targets deps)))
+  (let ((cmd (car (expand-cmd-list action-alist targets deps))))
     (format #t "RUN CMD: ~A\n" cmd)
     cmd))
 

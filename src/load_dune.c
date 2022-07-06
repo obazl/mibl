@@ -1056,10 +1056,15 @@ LOCAL char *_get_path_dir(s7_pointer arg)
         log_error("Path arg must be relative");
         return NULL;
     }
+    errno = 0;
     int rc = access(pathdir, R_OK);
     if (rc) {
-        log_error("NOT FOUND: %s", pathdir);
-        return NULL;
+        /* log_error("%s: %s", strerror(errno), pathdir); */
+        s7_pointer s7s = s7_list(s7, 3,
+                                 s7_make_string(s7, "~A: ~A\n"),
+                                 s7_make_string(s7, strerror(errno)),
+                                 s7_make_string(s7, pathdir));
+        return s7_error(s7, s7_make_symbol(s7, "access-error"), s7s);
     }
     struct stat path_stat;
     stat(pathdir, &path_stat);
@@ -1298,9 +1303,10 @@ EXPORT s7_pointer load_dune(char *home_sfx, char *traversal_root)
                     &_compare
                     );
     if (errno != 0) {
-        log_error("fts_open(%s), RC %d: %s",
-                  _traversal_root, errno, strerror(errno));
-        exit(EXIT_FAILURE);
+        return s7_error(s7, s7_make_symbol(s7, "fts_open"),
+                        s7_list(s7, 2,
+                                s7_make_string(s7, strerror(errno)),
+                                s7_make_string(s7, _traversal_root)));
     }
 
     s7_pointer pkg_tbl = s7_make_hash_table(s7, PKG_CT);

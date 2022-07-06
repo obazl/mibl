@@ -345,11 +345,12 @@ write-file))
                                    (expand-cmd-args args targets deps))
 
                           ;; e.g. (run %{bin:foo} ...)
-                          (list (cons :tool
-                                      (expand-run-tool kw targets deps))
+                          (list
+                           (list (cons :tool
+                                       (car (expand-run-tool kw targets deps)))
                                 (cons :args
                                        (expand-cmd-args (cdr raw-cmds)
-                                                        targets deps)))))))))))
+                                                        targets deps))))))))))))
                   ;; ;; else must be an arg
                   ;; (expand-cmd-args (cdr raw-cmds) targets deps)))
 

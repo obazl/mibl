@@ -1,0 +1,77 @@
+= mibl API
+
+NOTE: docstrings are available for many functions: `(help assoc-in)`
+or `(documentation assoc-in)` will print it, and `(signature
+assoc-in)` will print the signature.
+
+
+Sample session:
+
+.mibl/test/mytest.scm
+[source,scheme]
+----
+(define pkg
+  (let* ((_   (load "dune.scm"))
+       (arg "dune/stanzas/rule/action/chdir")  <1>
+       (pkgs (load-dune arg))
+       (pkg (hash-table-ref pkgs arg))
+       (normed-pkg (dune-pkg->mibl pkg)))
+    normed-pkg))
+----
+<1> Argument to `load-dune` is relative to current working directory
+
+Start a repl from `mibl/test`, so that `load-dune` args are relative to `./`.  
+
+.repl
+[source,scheme]
+----
+mibl> (load "mytest.scm")
+mibl> pkg
+((:ws-path "/Users/gar/obazl/mibl/test") (:pkg-path "dune/stanzas/rule/action/chdir") (:realpath "/Users/gar/obazl/mibl/test/dune/stanzas/rule/action/chdir") (dune (rule (target registerer.ml) (deps a.ml b.ml (:src_dir TEZOS_PROTOCOL)) (action (chdir %{workspace_root} (run %{bin:tezos-embedded-protocol-packer} "%{src_dir}" "demo_counter" > %{target}))))) (:dune (:rule (:targets (:_ ((:pkg "dune/stanzas/rule/action/chdir") (:file "registerer.ml")))) (:deps (::src_dir ((:pkg "dune/stanzas/rule/action/chdir") (:file "TEZOS_PROTOCOL"))) (:_ ((:pkg "dune/stanzas/rule/action/chdir") (:file "a.ml")) ((:pkg "dune/stanzas/rule/action/chdir") (:file "b.ml")))) (:action (:cmd-list (:tool (:pkg :bin) (:tgt :tezos-embedded-protocol-packer)) (:args (::src_dir ((:pkg "dune/stanzas/rule/action/chdir") (:file "TEZOS_PROTOCOL"))) "demo_counter" ">" (:target ((:pkg "dune/stanzas/rule/action/chdir") (:file "registerer.ml"))))) (:ctx %{workspace_root})))) (:modules (:dynamic (Registerer (:ml registerer.ml)))))
+mibl> (assoc-in '(dune) pkg)
+(dune (rule (target registerer.ml) (deps a.ml b.ml (:src_dir TEZOS_PROTOCOL)) (action (chdir %{workspace_root} (run %{bin:tezos-embedded-protocol-packer} "%{src_dir}" "demo_counter" > %{target})))))
+mibl> (assoc-in '(:dune) pkg)
+(:dune (:rule (:targets (:_ ((:pkg "dune/stanzas/rule/action/chdir") (:file "registerer.ml")))) (:deps (::src_dir ((:pkg "dune/stanzas/rule/action/chdir") (:file "TEZOS_PROTOCOL"))) (:_ ((:pkg "dune/stanzas/rule/action/chdir") (:file "a.ml")) ((:pkg "dune/stanzas/rule/action/chdir") (:file "b.ml")))) (:action (:cmd-list (:tool (:pkg :bin) (:tgt :tezos-embedded-protocol-packer)) (:args (::src_dir ((:pkg "dune/stanzas/rule/action/chdir") (:file "TEZOS_PROTOCOL"))) "demo_counter" ">" (:target ((:pkg "dune/stanzas/rule/action/chdir") (:file "registerer.ml"))))) (:ctx %{workspace_root}))))
+mibl> (assoc-in '(:dune :rule :targets) pkg)
+(:targets (:_ ((:pkg "dune/stanzas/rule/action/chdir") (:file "registerer.ml"))))
+mibl> (assoc-in '(:dune :rule :action) pkg)
+(:action (:cmd-list (:tool (:pkg :bin) (:tgt :tezos-embedded-protocol-packer)) (:args (::src_dir ((:pkg "dune/stanzas/rule/action/chdir") (:file "TEZOS_PROTOCOL"))) "demo_counter" ">" (:target ((:pkg "dune/stanzas/rule/action/chdir") (:file "registerer.ml"))))) (:ctx %{workspace_root}))
+mibl> (assoc-in '(:dune :rule :action :ctx) pkg)
+(:ctx %{workspace_root})
+mibl> (assoc-in '(:dune :rule :action :cmd-list) pkg)
+(:cmd-list (:tool (:pkg :bin) (:tgt :tezos-embedded-protocol-packer)) (:args (::src_dir ((:pkg "dune/stanzas/rule/action/chdir") (:file "TEZOS_PROTOCOL"))) "demo_counter" ">" (:target ((:pkg "dune/stanzas/rule/action/chdir") (:file "registerer.ml")))))
+mibl> (assoc-in '(:dune :rule :action :cmd-list :tool) pkg)
+(:tool (:pkg :bin) (:tgt :tezos-embedded-protocol-packer))
+mibl> (assoc-in '(:dune :rule :action :cmd-list :args) pkg)
+(:args (::src_dir ((:pkg "dune/stanzas/rule/action/chdir") (:file "TEZOS_PROTOCOL"))) "demo_counter" ">" (:target ((:pkg "dune/stanzas/rule/action/chdir") (:file "registerer.ml"))))
+mibl>
+----
+
+`mytest.scm` load a dune file with only one stanza.  Try five:
+
+----
+mibl> (load "mytest5.scm")
+mibl> (assoc-in* '(:dune :rule) pkg)
+((:rule (:targets) (:deps (:_ ((:pkg "dune/stanzas/rule/action/mixed/five") (:file "a.ml")))) (:action (:cmd-list ((:tool cat) (:args (:_ ((:pkg "dune/stanzas/rule/action/mixed/five") (:file "a.ml")))))))) (:rule (:targets) (:deps (:_ ((:pkg "dune/stanzas/rule/action/mixed/five") (:file "a.ml")) ((:pkg "dune/stanzas/rule/action/mixed/five") (:file "b.ml")))) (:action (:cmd-list ((:tool cmp) (:args (:_ ((:pkg "dune/stanzas/rule/action/mixed/five") (:file "a.ml")) ((:pkg "dune/stanzas/rule/action/mixed/five") (:file "b.ml")))))))) (:rule (:targets (:_ ((:pkg "dune/stanzas/rule/action/mixed/five") (:file "config.mlh")))) (:deps (:_ ((:pkg "dune/stanzas/rule/action/mixed/five/config") (:file "config.mlh")))) (:action (:cmd-list ((:tool copy) (:args (:_ ((:pkg "dune/stanzas/rule/action/mixed/five/config") (:file "config.mlh")) ((:pkg "dune/stanzas/rule/action/mixed/five") (:file "config.mlh")))))))) (:rule (:targets (:_ ((:pkg "dune/stanzas/rule/action/mixed/five") (:file "registerer.ml")))) (:deps (::src_dir ((:pkg "dune/stanzas/rule/action/mixed/five") (:file "TEZOS_PROTOCOL"))) (:_ ((:pkg "dune/stanzas/rule/action/mixed/five") (:file "a.ml")) ((:pkg "dune/stanzas/rule/action/mixed/five") (:file "b.ml")))) (:action (:cmd-list (((:tool chdir) (:args :WS-ROOT)) ((:tool (:pkg :bin) (:tgt :tezos-embedded-protocol-packer)) (:args (::src_dir ((:pkg "dune/stanzas/rule/action/mixed/five") (:file "TEZOS_PROTOCOL"))) "demo_counter")) :stdout %{targets})))) (:rule (:targets (:_ ((:pkg "dune/stanzas/rule/action/mixed/five") (:file "config2.mlh")))) (:deps) (:action (:cmd-list ((:tool write-file) (:args ((:_ ((:pkg "dune/stanzas/rule/action/mixed/five") (:file "config2.mlh")))) (:content "file content string...")))))))
+mibl> (nth 0 (assoc-in* '(:dune :rule) pkg))
+(:rule (:targets) (:deps (:_ ((:pkg "dune/stanzas/rule/action/mixed/five") (:file "a.ml")))) (:action (:cmd-list ((:tool cat) (:args (:_ ((:pkg "dune/stanzas/rule/action/mixed/five") (:file "a.ml"))))))))
+mibl> (assoc-in '(:action :cmd :tool) (cdr (nth 0 (assoc-in* '(:dune :rule) pkg))))
+(:tool cat)
+mibl>
+----
+
+The `load-dune` function returns a table of "raw" packages, with just
+the dune stanzas unconverted to mibl format. The `dune->mibl` function
+converts the dune code to the mibl format.
+
+----
+mibl> (define pkg-tbl (load-dune "dune/stanzas/rule/action/with-stdout-to"))
+mibl> pkg-tbl
+(hash-table "dune/stanzas/rule/action/with-stdout-to" ((:ws-path "/Users/gar/obazl/mibl/test") (:pkg-path "dune/stanzas/rule/action/with-stdout-to") (:realpath "/Users/gar/obazl/mibl/test/dune/stanzas/rule/action/with-stdout-to") (dune (rule (targets registerer.ml) (deps a.ml b.ml (:src_dir TEZOS_PROTOCOL)) (action (with-stdout-to %{targets} (chdir %{workspace_root} (run %{bin:tezos-embedded-protocol-packer} "%{src_dir}" "demo_counter"))))))))
+mibl> (define pkg (hash-table-ref pkg-tbl "dune/stanzas/rule/action/with-stdout-to"))
+mibl> pkg
+((:ws-path "/Users/gar/obazl/mibl/test") (:pkg-path "dune/stanzas/rule/action/with-stdout-to") (:realpath "/Users/gar/obazl/mibl/test/dune/stanzas/rule/action/with-stdout-to") (dune (rule (targets registerer.ml) (deps a.ml b.ml (:src_dir TEZOS_PROTOCOL)) (action (with-stdout-to %{targets} (chdir %{workspace_root} (run %{bin:tezos-embedded-protocol-packer} "%{src_dir}" "demo_counter")))))))
+mibl> (define mpkg (dune-pkg->mibl pkg))
+
+----
+
