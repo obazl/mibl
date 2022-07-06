@@ -142,10 +142,10 @@ int main(int argc, char *argv[])
                                          dune_stanzas_kw, pkg));
     printf(BGRN "stanzas:" CRESET " %s\n", TO_STR(stanzas));
 
-    /* (nzs (normalize-dune-stanzas pkg)) */
-    s7_pointer nds = s7_name_to_value(s7, "normalize-dune-stanzas");
+    /* (nzs (dune-pkg->mibl pkg)) */
+    s7_pointer nds = s7_name_to_value(s7, "dune-pkg->mibl");
     if (nds == s7_undefined(s7)) {
-        printf("unbound symbol: normalize-dune-stanzas");
+        printf("unbound symbol: dune-pkg->mibl");
         exit(EXIT_FAILURE);
     }
     s7_pointer normalized = s7_call(s7, nds,

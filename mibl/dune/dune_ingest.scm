@@ -208,7 +208,7 @@
   (let ((stanzas dune-stanzas))
   ;;       (map
   ;;                 (lambda (stanza)
-  ;;                   ;;(normalize-dune-stanza stanza))
+  ;;                   ;;(dune-stanza->mibl stanza))
   ;;                   stanza)
   ;;                 dune-stanzas)))
     (list

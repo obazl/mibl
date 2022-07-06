@@ -3,7 +3,7 @@
 (define modules-ht (make-hash-table)) ;; FIXME
 
 ;; original: dune_stanzas.scm Xnormalize-stanza
-(define (normalize-dune-stanza pkg stanza nstanzas)
+(define (dune-stanza->mibl pkg stanza nstanzas)
   (format #t "NORMALIZE-dune-stanza: ~A\n" stanza)
   (format #t "  nstanzas: ~A\n" nstanzas)
   (let* ((stanza-alist (cdr stanza))
@@ -67,7 +67,7 @@
               ;; ((:dune-project) stanza)
 
               (else
-               (format #t "normalize-dune-stanza unhandled: ~A\n" stanza)))))
+               (format #t "dune-stanza->mibl unhandled: ~A\n" stanza)))))
     ;; (format #t "normalized pkg: ~A\n" pkg)
     pkg))
 
@@ -91,7 +91,7 @@
   ;;   ;; return normalized stanza
   ;;   s))
 
-(define (normalize-dune-stanzas pkg)
+(define (dune-pkg->mibl pkg)
   (format #t "NORMALIZE-dune-stanzas, pkg: ~A\n" pkg)
   (let* ((nstanzas (list :dune))
          (pkg+ (append pkg (list nstanzas))))
@@ -101,7 +101,7 @@
            (map
             (lambda (stanza)
               (format #t "STANZA COPY: ~A\n" stanza)
-              (let ((normed (normalize-dune-stanza pkg+ stanza nstanzas)))
+              (let ((normed (dune-stanza->mibl pkg+ stanza nstanzas)))
                 ;; pkg-path
                 ;; ;; dune-project-stanzas
                 ;; srcfiles ;; s/b '() ??

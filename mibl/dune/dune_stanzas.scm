@@ -425,7 +425,7 @@
   (normalize-stanza-executables :tests
                                 pkg-path ocaml-srcs stanza))
 
-;; moved to normalize.scm (normalize-dune-stanza pkg stanza)
+;; moved to normalize.scm (dune-stanza->mibl pkg stanza)
 (define (Xnormalize-stanza pkg-path
                                ;;dune-project-stanzas
                                srcfiles
@@ -438,9 +438,9 @@
   ;; (newline)
   ;; (format #t "raw: ~A\n" stanza)
   ;; (if (equal? "src/lib_client_base" (cadr (assoc :pkg-path (cdr stanza))))
-  ;;     (format #t "normalize-dune-stanza: ~A" srcfiles))
-  ;; (format #t "normalize-dune-stanza stanza: ~A\n" stanza)
-  ;; (format #t "normalize-dune-stanza srcs: ~A\n" srcfiles)
+  ;;     (format #t "dune-stanza->mibl: ~A" srcfiles))
+  ;; (format #t "dune-stanza->mibl stanza: ~A\n" stanza)
+  ;; (format #t "dune-stanza->mibl srcs: ~A\n" srcfiles)
   ;; (if (null? srcfiles)
   ;;     (format #t "pkg: ~A\n" pkg-path))
 
@@ -493,7 +493,7 @@
               ((:dune-project) stanza)
 
               (else
-               (format #t "normalize-dune-stanza unhandled: ~A\n" stanza)))))
+               (format #t "dune-stanza->mibl unhandled: ~A\n" stanza)))))
 
     ;; update global public -> private name table
     ;; (case (car stanza)

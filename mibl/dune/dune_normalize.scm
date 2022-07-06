@@ -13,7 +13,7 @@
                             ;;             "src/lib_protocol_environment/structs")
                             ;; (format #t "NORMALIZING stanza ~A. ~A\n" i stanza)
                             ;; )
-                            (let ((normed (normalize-dune-stanza
+                            (let ((normed (dune-stanza->mibl
                                            pkg-path
                                            ;; dune-project-stanzas
                                            srcfiles ;; s/b '() ??
