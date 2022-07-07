@@ -15,7 +15,10 @@ cc_library(
         "fs.c", "fs.h",
         "utils.c", "utils.h",
         "@uthash//:include",
-    ],
+    ] + select({
+        "//bzl/host:linux": ["strlcat.c", "strlcpy.c", "strnstr.c"],
+        "//conditions:default":   []
+    }),
     hdrs = [
         "load_dune.h",
         "bazel_config.h",

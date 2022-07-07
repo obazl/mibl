@@ -1259,7 +1259,7 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
         log_debug("needle (ews): %s", ews_root);
     }
     char *resolved_troot = strnstr(utstring_body(abs_troot),
-                        ews_root, strlen(ews_root));
+                                   ews_root, strlen(ews_root));
     /* log_debug("truncated: '%s'", resolved_troot); */
     if (resolved_troot) {
         if (strlen(utstring_body(abs_troot)) == strlen(ews_root)) {
