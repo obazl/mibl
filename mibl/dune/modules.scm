@@ -3,11 +3,11 @@
 ;; mibl/dune/modules.scm
 
 (define (filename->module-assoc filename)
-  (format #t "filename->module-assoc ~A\n" filename)
+  ;; (format #t "filename->module-assoc ~A\n" filename)
   (let* ((ext (filename-extension filename))
          (pname (principal-name filename))
          (mname (normalize-module-name pname)))
-    (format #t "mname: ~A\n" mname)
+    ;; (format #t "mname: ~A\n" mname)
     (let ((a
            (cond
             ((string=? ext ".mli") (cons mname

@@ -332,7 +332,8 @@ LOCAL void _config_s7_load_path_xdg_home(void)
     } else {
         utstring_printf(xdg_data_home, "%s", _xdg_data_home);
     }
-    log_trace("xdg_data_home: %s", utstring_body(xdg_data_home));
+    if (verbose)
+        log_trace("xdg_data_home: %s", utstring_body(xdg_data_home));
 
     /* start with lib/libc_s7.so, mibl dlopens it */
 

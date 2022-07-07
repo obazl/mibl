@@ -93,9 +93,9 @@
   )
 
 (define (normalize-action-progn-dsl pkg action-alist targets deps)
-  (format #t "NORMALIZE-ACTION-PROGN-DSL ~A\n" action-alist)
+  ;; (format #t "NORMALIZE-ACTION-PROGN-DSL ~A\n" action-alist)
   (let* ((progn-alist (cdar action-alist))
-         (_ (format #t "progn-alist: ~A\n" progn-alist))
+         ;;(_ (format #t "progn-alist: ~A\n" progn-alist))
          (progns
           (let recur ((progn-list progn-alist)
                       (cmd-list '()))
@@ -104,9 +104,9 @@
                 cmd-list
                 (let* ((progn (car progn-list))
                        (action (car progn))
-                       (_ (format #t "progn action: ~A\n" action))
+                       ;; (_ (format #t "progn action: ~A\n" action))
                        (args (cdr progn))
-                       (_ (format #t "args: ~A\n" args))
+                       ;; (_ (format #t "args: ~A\n" args))
                        (cmd (if-let ((cmd-fn (assoc-val action dune-action-cmds-no-dsl)))
                                     (let ((cmd-list (apply (car cmd-fn)
                                                            (list pkg action
@@ -128,10 +128,10 @@
     (list (cons :progn progns))))
 
 (define (normalize-action-run-dsl pkg action-alist targets deps)
-  (format #t "NORMALIZE-ACTION-RUN-DSL ~A\n" action-alist)
+  ;; (format #t "NORMALIZE-ACTION-RUN-DSL ~A\n" action-alist)
   (let* ((run-alist (cdar action-alist))
          (cmd (car (expand-cmd-list run-alist targets deps))))
-    (format #t "RUN CMD: ~A\n" cmd)
+    ;; (format #t "RUN CMD: ~A\n" cmd)
     cmd))
 
 (define (normalize-action-setenv-dsl action stanza)
@@ -145,15 +145,15 @@
   )
 
 (define (normalize-action-with-outputs-to-dsl pkg action-alist targets deps)
-  (format #t "NORMALIZE-ACTION-WITH-OUTPUTS-TO-DSL ~A\n" action-alist)
+  ;; (format #t "NORMALIZE-ACTION-WITH-OUTPUTS-TO-DSL ~A\n" action-alist)
   (let* ((action-assoc (car action-alist))
-         (_ (format #t "action-assoc: ~A\n" action-assoc))
+         ;; (_ (format #t "action-assoc: ~A\n" action-assoc))
          (arg1 (cadr action-assoc))
-         (_ (format #t "arg1: ~A\n" arg1))
+         ;; (_ (format #t "arg1: ~A\n" arg1))
          (subaction-alist (caddr action-assoc))
-         (_ (format #t "subaction-alist: ~A\n" subaction-alist))
+         ;; (_ (format #t "subaction-alist: ~A\n" subaction-alist))
          (subaction (car subaction-alist))
-         (_ (format #t "subaction: ~A\n" subaction))
+         ;; (_ (format #t "subaction: ~A\n" subaction))
          (cmd (if-let ((cmd-fn (assoc-val subaction
                                           dune-action-cmds-no-dsl)))
                       (let ((cmd-list (apply (car cmd-fn)
@@ -188,12 +188,12 @@
 (define (normalize-action-write-file pkg action action-alist targets deps)
   ;; action stanza)
   ;; action target targets deps)
-  (format #t "NORMALIZE-WRITE-FILE ~A\n" action)
-  (format #t "    action-alist ~A\n" action-alist)
+  ;; (format #t "NORMALIZE-WRITE-FILE ~A\n" action)
+  ;; (format #t "    action-alist ~A\n" action-alist)
 
   (let* ((args (assoc-val 'write-file action-alist))
          (file (car args))
-         (_ (format #t "file: ~A\n" file))
+         ;; (_ (format #t "file: ~A\n" file))
          (content `(:content ,(cadr args)))
          (args (car (expand-deps (list file)
                                 pkg ;; paths
@@ -328,9 +328,9 @@
          (string-append ":" (substring tag-str 2 (- (length tag-str) 1))))
         tag)))
 
-(define (normalize-progn-action pkg stanza-alist)
-  (format #t "NORMALIZE-PROGN-ACTION: ~A\n" stanza-alist)
-  #t)
+;; (define (normalize-progn-action pkg stanza-alist)
+;;   (format #t "NORMALIZE-PROGN-ACTION: ~A\n" stanza-alist)
+;;   #t)
 
 ;; (define (Xnormalize-progn-action pkg-path action stanza srcfiles)
 ;;   (format #t "NORMALIZE-PROGN-ACTION: ~A\n" action)
@@ -492,15 +492,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (normalize-action pkg stanza-alist targets deps) ;; rule stanza
-  (format #t "NORMALIZE-action: ~A\n" stanza-alist)
+  ;; (format #t "NORMALIZE-action: ~A\n" stanza-alist)
   (let* ((action-assoc (assoc 'action stanza-alist))
          (action-alist (assoc-val 'action stanza-alist))
          (action (if (pair? (car action-alist)) ;; e.g. (action (tool ...))
                      (caar action-alist)
                      ;; else (action tool ...)
                      (cadr action-alist))))
-    (format #t "  action action: ~A\n" action)
-    (format #t "  action alist: ~A\n" action-alist)
+    ;; (format #t "  action action: ~A\n" action)
+    ;; (format #t "  action alist: ~A\n" action-alist)
 
     (if-let ((cmd-fn (assoc-val action dune-action-cmds-no-dsl)))
             (let ((cmd-list (apply (car cmd-fn)

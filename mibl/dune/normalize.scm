@@ -4,13 +4,13 @@
 
 ;; original: dune_stanzas.scm Xnormalize-stanza
 (define (dune-stanza->mibl pkg stanza nstanzas)
-  (format #t "DUNE-STANZA->MIBL: ~A\n" stanza)
-  (format #t "  nstanzas: ~A\n" nstanzas)
+  ;; (format #t "DUNE-STANZA->MIBL: ~A\n" stanza)
+  ;; (format #t "  nstanzas: ~A\n" nstanzas)
   (let* ((stanza-alist (cdr stanza))
-         (_ (format #t "stanza-alist ~A\n" stanza-alist))
-         (_ (if-let ((nm (assoc 'name stanza-alist)))
-                    (format #t "name: ~A\n" nm)
-                    (format #t "unnamed\n")))
+         ;; (_ (format #t "stanza-alist ~A\n" stanza-alist))
+         ;; (_ (if-let ((nm (assoc 'name stanza-alist)))
+         ;;            (format #t "name: ~A\n" nm)
+         ;;            (format #t "unnamed\n")))
          (xstanza
           (case (car stanza)
             ((rule)
@@ -53,7 +53,7 @@
                                               modules-ht))
                            ;; add submodules-assoc to stanza
                            )
-                       (format #t "submodules-assoc: ~A\n" submodules-assoc)
+                       ;; (format #t "submodules-assoc: ~A\n" submodules-assoc)
                        (normalize-library-stanza submodules-assoc)))))
                       ;; pkg-path ocaml-srcs stanza))))
 
@@ -92,7 +92,7 @@
   ;;   s))
 
 (define (dune-pkg->mibl pkg)
-  (format #t "NORMALIZE-dune-stanzas, pkg: ~A\n" pkg)
+  ;; (format #t "dune-pkg->mibl: ~A\n" pkg)
   (let* ((nstanzas (list :dune))
          (pkg+ (append pkg (list nstanzas))))
     ;; (format #t "STANZAS COPY: ~A\n" dune-stanzas)
@@ -100,17 +100,17 @@
     (let ((new-pkg
            (map
             (lambda (stanza)
-              (format #t "STANZA COPY: ~A\n" stanza)
+              ;; (format #t "STANZA COPY: ~A\n" stanza)
               (let ((normed (dune-stanza->mibl pkg+ stanza nstanzas)))
                 ;; pkg-path
                 ;; ;; dune-project-stanzas
                 ;; srcfiles ;; s/b '() ??
                 ;; stanza)))
-                (format #t "NORMALIZED: ~A\n" normed)
+                ;; (format #t "NORMALIZED: ~A\n" normed)
                 normed))
             ;; (cdr dune-stanzas))))
             (assoc-val 'dune pkg+))))
-      (format #t "NEW PKG: ~A\n" pkg+)
+      ;; (format #t "NEW PKG: ~A\n" pkg+)
       pkg+)))
 
     ;; normed

@@ -49,8 +49,8 @@ s7_pointer dynamic_kw;
 void _indent(int i)
 {
     /* printf("_indent: %d\n", i); */
-    for (; i > 0; i--)
-        printf("    ");
+    /* for (; i > 0; i--) */
+    /*     printf("    "); */
 }
 
 s7_pointer assoc, assoc_in, sort_bang, string_lt;
@@ -258,11 +258,11 @@ LOCAL void _handle_dir(s7_pointer pkg_tbl, FTS* tree, FTSENT *ftsentry)
 
     /* stdout */
     _indent(ftsentry->fts_level);
-    printf("%d. %s",
-           ftsentry->fts_level,
-           /* ftsentry->fts_name, */
-           ftsentry->fts_path);
-    printf("\n");
+    /* printf("%d. %s", */
+    /*        ftsentry->fts_level, */
+    /*        /\* ftsentry->fts_name, *\/ */
+    /*        ftsentry->fts_path); */
+    /* printf("\n"); */
 
     /* create pkg table entry for this dir */
 
@@ -731,8 +731,10 @@ LOCAL void _update_mli(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
     /* printf("_update_mli: "); */
     char *pkg_name = dirname(ftsentry->fts_path);
     char *mname = _module_name(ftsentry, ext);
-    printf(BLU ":module" CRESET " %s; ", mname);
-    printf("pkg name: %s; fname: %s\n", pkg_name, ftsentry->fts_name);
+    if (verbose) {
+        printf(BLU ":module" CRESET " %s; ", mname);
+        printf("pkg name: %s; fname: %s\n", pkg_name, ftsentry->fts_name);
+    }
     _update_pkg_modules(pkg_tbl, pkg_name, mname,
                         ftsentry->fts_name, TAG_MLI);
 }
@@ -742,8 +744,10 @@ LOCAL void _update_ml(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
     /* printf("_update_ml: "); */
     char *pkg_name = dirname(ftsentry->fts_path);
     char *mname = _module_name(ftsentry, ext);
-    printf(BLU ":module" CRESET " %s; ", mname);
-    printf("pkg name: %s; fname: %s\n", pkg_name, ftsentry->fts_name);
+    if (verbose) {
+        printf(BLU ":module" CRESET " %s; ", mname);
+        printf("pkg name: %s; fname: %s\n", pkg_name, ftsentry->fts_name);
+    }
     _update_pkg_modules(pkg_tbl, pkg_name, mname,
                         ftsentry->fts_name, TAG_ML);
 }
@@ -758,8 +762,8 @@ LOCAL void _handle_ml_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
     /* printf("    pkg: %s\n", dirname(ftsentry->fts_path)); */
 
     /* char *ext = strrchr(ftsentry->fts_name, '.'); */
-    _indent(ftsentry->fts_level);
-    printf("%d. " CRESET, ftsentry->fts_level);
+    /* _indent(ftsentry->fts_level); */
+    /* printf("%d. " CRESET, ftsentry->fts_level); */
 
     if ((strncmp(ext, ".ml", 3) == 0)
         && (strlen(ext) == 3)) {
@@ -821,8 +825,8 @@ LOCAL void _handle_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
     /*     log_debug("_handle_file %s, %s\n", ftsentry->fts_name, ext); */
     /* printf("    pkg: %s\n", dirname(ftsentry->fts_path)); */
 
-    _indent(ftsentry->fts_level);
-    printf("%d. %s\n", ftsentry->fts_level, ftsentry->fts_name);
+    /* _indent(ftsentry->fts_level); */
+    /* printf("%d. %s\n", ftsentry->fts_level, ftsentry->fts_name); */
 
     _update_pkg_files(pkg_tbl, ftsentry, ext);
 }
@@ -834,10 +838,10 @@ LOCAL void _handle_dune_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
 
     /* && (ftsentry->fts_namelen = 4) == 0)) { */
     _indent(ftsentry->fts_level);
-    printf("%d. " RED "%s ",
-           ftsentry->fts_level,
-           ftsentry->fts_name);
-    printf(CRESET "\n");
+    /* printf("%d. " RED "%s ", */
+    /*        ftsentry->fts_level, */
+    /*        ftsentry->fts_name); */
+    /* printf(CRESET "\n"); */
 
     static char buf[256];
     strlcpy(buf, ftsentry->fts_path, 256);
@@ -882,7 +886,7 @@ LOCAL void _handle_dune_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
     dunefile_ct++;
 
     s7_pointer stanzas = _read_dunefile(ftsentry->fts_path); //, "dune");
-    log_debug("stanzas: %s", TO_STR(stanzas));
+    /* log_debug("stanzas: %s", TO_STR(stanzas)); */
 
     s7_pointer pkg_key = s7_make_string(s7, dirname(ftsentry->fts_path));
 
@@ -906,7 +910,7 @@ LOCAL void _handle_dune_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
                                    pkg_alist));
     if (stanzas_alist == s7_f(s7)) {
         s7_pointer stanzas_assoc = s7_cons(s7, dune_stanzas_sym, stanzas);
-        log_debug("appending new stanzas_assoc: %s", TO_STR(stanzas_assoc));
+        /* log_debug("appending new stanzas_assoc: %s", TO_STR(stanzas_assoc)); */
         s7_pointer result =
             s7_hash_table_set(s7, pkg_tbl, pkg_key,
                               s7_append(s7, pkg_alist,
@@ -927,10 +931,10 @@ LOCAL void _handle_dune_project_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
         log_debug("_handle_dune_project_file: %s", ftsentry->fts_path);
 
     _indent(ftsentry->fts_level);
-    printf("%d. " RED "%s ",
-           ftsentry->fts_level,
-           ftsentry->fts_name);
-    printf(CRESET "\n");
+    /* printf("%d. " RED "%s ", */
+    /*        ftsentry->fts_level, */
+    /*        ftsentry->fts_name); */
+    /* printf(CRESET "\n"); */
 
     static char buf[256];
     strlcpy(buf, ftsentry->fts_path, 256);
@@ -971,10 +975,10 @@ LOCAL void _handle_opam_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
     char *ext = strrchr(ftsentry->fts_name, '.');
     _indent(ftsentry->fts_level);
 
-    printf("%d. " MAG  ":%-6s" CRESET " %s\n",
-           ftsentry->fts_level,
-           "opam",
-           ftsentry->fts_name);
+    /* printf("%d. " MAG  ":%-6s" CRESET " %s\n", */
+    /*        ftsentry->fts_level, */
+    /*        "opam", */
+    /*        ftsentry->fts_name); */
 
     /* _update_ml(ftsentry, ext); */
 }
@@ -983,10 +987,10 @@ LOCAL void _handle_ocamlformat_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
 {
     _indent(ftsentry->fts_level);
 
-    printf("%d. " BHMAG ":%-6s" CRESET " %s\n",
-           ftsentry->fts_level,
-           "ocamlformat",
-           ftsentry->fts_name);
+    /* printf("%d. " BHMAG ":%-6s" CRESET " %s\n", */
+    /*        ftsentry->fts_level, */
+    /*        "ocamlformat", */
+    /*        ftsentry->fts_name); */
 
     /* _update_ml(ftsentry, ext); */
 }
@@ -999,7 +1003,7 @@ LOCAL void _handle_script_file(s7_pointer pkg_tbl,
     /* printf("    pkg: %s\n", dirname(ftsentry->fts_path)); */
 
     _indent(ftsentry->fts_level);
-    printf("%d. %s\n", ftsentry->fts_level, ftsentry->fts_name);
+    /* printf("%d. %s\n", ftsentry->fts_level, ftsentry->fts_name); */
 
     _update_pkg_script_files(pkg_tbl, ftsentry, ext);
 }
@@ -1024,22 +1028,23 @@ LOCAL void _handle_symlink(s7_pointer pkg_tbl, FTS *tree, FTSENT *ftsentry)
 
     _indent(ftsentry->fts_level);
 
-    printf("%d. ", ftsentry->fts_level);
+    /* printf("%d. ", ftsentry->fts_level); */
 
     if (strncmp(ftsentry->fts_name, "dune", 4) == 0) {
         printf(RED);
     }
 
-    printf("%s ", ftsentry->fts_name);
-    printf(YEL);
+    /* printf("%s ", ftsentry->fts_name); */
+    /* printf(YEL); */
     linklen = 0;
     linklen = readlink(ftsentry->fts_path,
                        linkbuf, BUFSZ);
     if (linklen < 0) {
         printf(RED "ERROR on readlink: %s \n",
                strerror(errno));
-    } else
-        printf("%.*s" CRESET "\n", linklen, linkbuf);
+    /* } else { */
+    /*     printf("%.*s" CRESET "\n", linklen, linkbuf); */
+    }
 }
 
 /* control traversal order */
@@ -1235,32 +1240,34 @@ EXPORT s7_pointer load_dune(char *home_sfx, char *traversal_root)
     utstring_new(abs_troot);
     utstring_printf(abs_troot, "%s/%s", build_wd, traversal_root);
     char *_ews = effective_ws_root(utstring_body(abs_troot));
-    log_debug("ews: %s", _ews);
+    if (debug) log_debug("ews: %s", _ews);
     ews_root = _ews;
     // put ews_root into the scheme env. so users can use it
     /* s7_define_variable(s7, */
     /*                    "effective-ws-root", */
     /*                    s7_make_string(s7, ews_root)); */
 
-    log_debug("haystack (troot): %s", utstring_body(abs_troot));
-    log_debug("needle (ews): %s", ews_root);
+    if (debug) {
+        log_debug("haystack (troot): %s", utstring_body(abs_troot));
+        log_debug("needle (ews): %s", ews_root);
+    }
     char *resolved_troot = strnstr(utstring_body(abs_troot),
                         ews_root, strlen(ews_root));
-    log_debug("truncated: '%s'", resolved_troot);
+    /* log_debug("truncated: '%s'", resolved_troot); */
     if (resolved_troot) {
         if (strlen(utstring_body(abs_troot)) == strlen(ews_root)) {
             /* resolved_troot = realpath(".",NULL); */
-            log_debug("match: %s", resolved_troot);
+            /* log_debug("match: %s", resolved_troot); */
         } else {
             resolved_troot = utstring_body(abs_troot) + strlen(ews_root) + 1; // + for '/'
-            log_debug("resolved_troot: %s", resolved_troot);
+            /* log_debug("resolved_troot: %s", resolved_troot); */
         }
     } else {
-        log_error("no resolved_troot");
+        /* log_error("no resolved_troot"); */
         resolved_troot = realpath(".", NULL);
     }
-    log_debug("resolved resolved_troot: %s", resolved_troot);
-    log_debug("cwd: %s", getcwd(NULL, 0));
+    /* log_debug("resolved resolved_troot: %s", resolved_troot); */
+    /* log_debug("cwd: %s", getcwd(NULL, 0)); */
 
     errno = 0;
 
@@ -1272,8 +1279,8 @@ EXPORT s7_pointer load_dune(char *home_sfx, char *traversal_root)
       restore cwd after traversal.
     */
     char *old_cwd = getcwd(NULL, 0);
-    printf(RED "OLD_CWD: %s\n", old_cwd);
-    printf("EWS_ROOT: %s\n" CRESET, ews_root);
+    /* printf(RED "OLD_CWD: %s\n", old_cwd); */
+    /* printf("EWS_ROOT: %s\n" CRESET, ews_root); */
     rc = chdir(ews_root);
     if (rc != 0) {
         fprintf(stderr, RED "ERROR chdir(%s): %s",
@@ -1329,7 +1336,7 @@ EXPORT s7_pointer load_dune(char *home_sfx, char *traversal_root)
                 case FTS_D : // dir visited in pre-order
                     dir_ct++;
                     _handle_dir(pkg_tbl, tree, ftsentry);
-                    printf("pkg tbl: %s\n", TO_STR(pkg_tbl));
+                    /* printf("pkg tbl: %s\n", TO_STR(pkg_tbl)); */
                     break;
                 case FTS_DP:
                     /* postorder directory */
@@ -1430,7 +1437,7 @@ EXPORT s7_pointer load_dune(char *home_sfx, char *traversal_root)
                 }
         }
         chdir(old_cwd);
-        printf(RED "Restored cwd: %s\n" CRESET, getcwd(NULL, 0));
+        /* printf(RED "Restored cwd: %s\n" CRESET, getcwd(NULL, 0)); */
     }
     if (trace) {
         log_debug("cwd: %s", getcwd(NULL, 0));

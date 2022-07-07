@@ -18,7 +18,7 @@
 (define expand-run-tool
   ;; (lambda (tool pkg-path target targets args filedeps vars)
   (lambda (tool targets deps)
-    (format #t "expand-run-tool ~A\n" tool)
+    ;; (format #t "expand-run-tool ~A\n" tool)
     ;; for now, leave it to clients to decide what to do with it
     (let ((x (expand-cmd-args (list tool) targets deps)))
       x)))
@@ -54,13 +54,13 @@
 
 (define expand-string-arg
   (lambda (arg targets deps)
-    (format #t "EXPAND-STRING-arg: ~A\n" arg)
+    ;; (format #t "EXPAND-STRING-arg: ~A\n" arg)
     (cond
      ((string=? "%{deps}" arg)
       (let* ((kw (substring arg 6 (- (length arg) 1)))
              (keysym (string->keyword kw)))
-        (format #t "kw ~A\n" kw)
-        (format #t "keysym ~A\n" keysym)
+        ;; (format #t "kw ~A\n" kw)
+        ;; (format #t "keysym ~A\n" keysym)
         deps))
 
       ;; (concatenate
@@ -73,15 +73,15 @@
       ;;                   (cdr args) filedeps vars)))
 
      ((string=? "%{targets}" arg)
-      (format #t "ARG TARGETS\n")
-      (format #t " targets val: ~A\n" targets)
+      ;; (format #t "ARG TARGETS\n")
+      ;; (format #t " targets val: ~A\n" targets)
       `(:targets ,targets))
             ;; (expand-cmd-args pkg-path
             ;;                  target targets
             ;;                  (cdr args) filedeps vars)))
 
      ((string=? "%{target}" arg)
-      (format #t "ARG TARGET\n")
+      ;; (format #t "ARG TARGET\n")
       :TARGET)
       ;; (cons arg
       ;;       (expand-cmd-args pkg-path
@@ -89,11 +89,11 @@
       ;;                        (cdr args) filedeps vars)))
 
      ((string-prefix? "%{bin:" arg)
-      (format #t "BIN: ~A\n" arg)
+      ;; (format #t "BIN: ~A\n" arg)
       (let* ((kw (substring arg 6 (- (length arg) 1)))
              (keysym (string->keyword kw)))
-        (format #t "kw ~A\n" kw)
-        (format #t "keysym ~A\n" keysym)
+        ;; (format #t "kw ~A\n" kw)
+        ;; (format #t "keysym ~A\n" keysym)
         `((:pkg :bin)
                 (:tgt ,keysym))))
       ;; (cons
@@ -115,11 +115,11 @@
       ;;                     (cdr args) filedeps vars))))
 
      ((string-prefix? "%{libexec:" arg)
-      (format #t "LIBEXEC: ~A\n" arg)
+      ;; (format #t "LIBEXEC: ~A\n" arg)
       (let* ((kw (substring arg 9 (- (length arg) 1)))
              (keysym (string->keyword kw)))
-        (format #t "kw ~A\n" kw)
-        (format #t "keysym ~A\n" keysym)
+        ;; (format #t "kw ~A\n" kw)
+        ;; (format #t "keysym ~A\n" keysym)
         `((:pkg :libexec)
                 (:tgt ,keysym))))
       ;; (cons
@@ -129,8 +129,8 @@
       ;;                   (cdr args) filedeps vars)))
 
      ((string-prefix? "%{lib:" arg)
-      (format #t "LIB: ~A\n" arg)
-      (format #t "pkg-path: ~A\n" pkg-path)
+      ;; (format #t "LIB: ~A\n" arg)
+      ;; (format #t "pkg-path: ~A\n" pkg-path)
       :LIB)
       ;; (cons
       ;;  (list :_lib arg)
@@ -141,8 +141,8 @@
      ((string-prefix? "%{dep:" arg)
       ;; "dep:<path> expands to <path>"
       ;; (cons `(:fixme ,arg)
-      (format #t "DEP: var\n")
-      (format #t "pkg-path: ~A\n" pkg-path)
+      ;; (format #t "DEP: var\n")
+      ;; (format #t "pkg-path: ~A\n" pkg-path)
       :DEP)
       ;; (let* ((dep-path (string-drop-right ;; drop '}'
       ;;                   (string-drop arg 6) 1))
@@ -203,16 +203,16 @@
      ;;            (cons arg run-args))))
 
      ((string-prefix? "%{" arg)
-      (format #t "VAR: ~A\n" arg)
-      (format #t "deps: ~A\n" deps)
+      ;; (format #t "VAR: ~A\n" arg)
+      ;; (format #t "deps: ~A\n" deps)
       (let* ((kw (substring arg 2 (- (length arg) 1)))
              (keysym (string->keyword
                       (string-append ":" kw))))
-        (format #t "kw ~A\n" kw)
-        (format #t "keysym ~A\n" keysym)
+        ;; (format #t "kw ~A\n" kw)
+        ;; (format #t "keysym ~A\n" keysym)
         (if-let ((val (assoc keysym deps)))
                 (begin
-                  (format #t "VAR VAL: ~A\n" val)
+                  ;; (format #t "VAR VAL: ~A\n" val)
                   ;; (cons val
                   ;;       (expand-cmd-args (cdr args)
                   ;;                        targets deps)))
@@ -226,7 +226,7 @@
      ;;                  filedeps vars)))))
 
      (else ;; give arg is string
-      (format #t "OTHER STRING: ~A\n" arg)
+      ;; (format #t "OTHER STRING: ~A\n" arg)
       arg)
       ;; (cons
       ;;  arg
@@ -238,7 +238,7 @@
   (lambda (args targets deps)
   ;; (lambda (pkg-path target targets args filedeps vars)
   ;; (lambda (pkg-path target targets args filedeps vars)
-    (format #t "EXPAND-CMD-ARGS: ~A\n" args)
+    ;; (format #t "EXPAND-CMD-ARGS: ~A\n" args)
 
     (let ((result
            (if (null? args)
@@ -265,7 +265,7 @@
 
                   ((symbol? arg)
                    (begin
-                     (format #t "ARGSYM: ~A\n" arg)
+                     ;; (format #t "ARGSYM: ~A\n" arg)
                      (cond
                       ((eq? '%{deps} arg)
                        (cons deps
@@ -302,9 +302,9 @@
 
 (define expand-targets
   (lambda (paths targets deps)
-    (format #t "expand-targets ~A\n" targets)
+    ;; (format #t "expand-targets ~A\n" targets)
     (let ((xtargets (expand-deps targets paths '())))
-      (format #t "expanded targets ~A\n" xtargets)
+      ;; (format #t "expanded targets ~A\n" xtargets)
       xtargets)))
 
 ;; https://dune.readthedocs.io/en/stable/concepts.html#user-actions
@@ -317,15 +317,15 @@ with-outputs-to with-stderr-to with-stdin-from with-stdout-to
 write-file))
 
 (define (expand-cmd-list -raw-cmds targets deps)
-  (format #t "EXPAND-CMD-LIST: ~A\n" -raw-cmds)
+  ;; (format #t "EXPAND-CMD-LIST: ~A\n" -raw-cmds)
 
   (let recur ((raw-cmds -raw-cmds)
               (tool #f)
               (expanded-cmds '())
               (args '()))
-    (format #t " cmd-list RECUR: ~A\n" raw-cmds)
-    (format #t "    expanded: ~A\n" expanded-cmds)
-    (format #t "    tool: ~A\n" tool)
+    ;; (format #t " cmd-list RECUR: ~A\n" raw-cmds)
+    ;; (format #t "    expanded: ~A\n" expanded-cmds)
+    ;; (format #t "    tool: ~A\n" tool)
     (if (null? raw-cmds)
         expanded-cmds
 

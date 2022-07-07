@@ -121,7 +121,7 @@ char *effective_ws_root(char *dir)
         utstring_printf(_ws_path, "%s/%s", dir, "WORKSPACE");
         int rc = access(utstring_body(_ws_path), R_OK);
         if (rc == 0) {
-            log_debug("found %s", utstring_body(_ws_path));
+            /* log_debug("found %s", utstring_body(_ws_path)); */
             return dir;
         } else {
             return effective_ws_root(dirname(dir));

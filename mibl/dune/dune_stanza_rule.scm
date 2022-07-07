@@ -124,9 +124,9 @@
 (define normalize-rule-stanza!
   (let ((+documentation+ "INTERNAL. Updates pkg arg, returns normalized stanza. stanza: raw dune stanza (input); nstanza: normalized (output)"))
     (lambda (pkg stanza)
-      (format #t "\nNORMALIZE-rule-stanza!: ~A\n"
-              (assoc-val :pkg-path pkg))
-      (format #t "rule stanza: ~A\n" stanza)
+      ;; (format #t "\nNORMALIZE-rule-stanza!: ~A\n"
+      ;;         (assoc-val :pkg-path pkg))
+      ;; (format #t "rule stanza: ~A\n" stanza)
 
       ;; for other stanza types we can normalize fields in isolation. For
       ;; 'rule' stanzas, we need a higher level of analysis, so we cannot
@@ -135,13 +135,13 @@
 
       (let* ((pkg-path (assoc-val :pkg-path pkg))
              (rule-alist (cdr stanza))
-             (_ (format #t "rule-alist: ~A\n" rule-alist))
-             (_ (format #t "target: ~A\n" (assoc 'target rule-alist)))
-             (_ (format #t "Targets: ~A\n" (assoc-val 'targets rule-alist)))
+             ;; (_ (format #t "rule-alist: ~A\n" rule-alist))
+             ;; (_ (format #t "target: ~A\n" (assoc 'target rule-alist)))
+             ;; (_ (format #t "Targets: ~A\n" (assoc-val 'targets rule-alist)))
 
              ;; Step 1: rule deps don't depend on targets, so do first
              (deps (expand-rule-deps pkg rule-alist))
-             (_ (format #t "EXPANDED rule deps: ~A\n" deps))
+             ;; (_ (format #t "EXPANDED rule deps: ~A\n" deps))
 
              ;; Step 2: 'target' and 'targets' fields list files generated
              ;; by the action. Add them to the pkg :modules and :files
@@ -156,11 +156,11 @@
              (pkg (if (null? targets)
                       pkg
                       (set! pkg (update-pkg-with-targets! pkg targets))))
-             (_ (format #t "rule: updated pkg: ~A\n" pkg))
+             ;; (_ (format #t "rule: updated pkg: ~A\n" pkg))
 
              ;; normalize
              (targets (expand-targets pkg targets deps))
-             (_ (format #t "EXPANDED rule targets: ~A\n" targets))
+             ;; (_ (format #t "EXPANDED rule targets: ~A\n" targets))
 
              (mode (if-let ((m (assoc-val 'mode rule-alist))) (car m)))
              (fallback (if-let ((fb (assoc-val 'fallback rule-alist)))

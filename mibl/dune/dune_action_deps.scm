@@ -47,16 +47,16 @@
                           expanded))))
 
 (define (handle-filename-literal-dep dep deplist paths expanded-deps)
-  (format #t "handle-filename-literal-dep: ~A\n" dep)
-  (format #t "expanded-deps: ~A\n" expanded-deps)
-  (let* ((_ (format #t "dep: ~A\n" dep))
+  ;; (format #t "handle-filename-literal-dep: ~A\n" dep)
+  ;; (format #t "expanded-deps: ~A\n" expanded-deps)
+  (let* (;; (_ (format #t "dep: ~A\n" dep))
          (pkg-path (car (assoc-val :pkg-path paths)))
          (ws-root (car (assoc-val :ws-path paths)))
          ;; dep always relative: prepend pkg dir, may give path with .. segs
          ;; etc. then normalize
          (path (string-append pkg-path
                               "/" dep))
-         (_ (format #t "path: ~A\n" path))
+         ;; (_ (format #t "path: ~A\n" path))
          (kind (if (file-exists? path)
                    :static :dynamic))
 
@@ -74,9 +74,9 @@
          ;;      (basename expanded-path)
          ;;      expanded-path))
          )
-    (format #t "FILENAME LITERAL : ~A\n" dep)
-    (format #t "expanded: ~A\n" expanded-path)
-    (format #t "kind : ~A\n" kind)
+    ;; (format #t "FILENAME LITERAL : ~A\n" dep)
+    ;; (format #t "expanded: ~A\n" expanded-path)
+    ;; (format #t "kind : ~A\n" kind)
 
                  ;; (depfiles (map (lambda (f)
                  ;;              (let ((dir (dirname f)))
@@ -107,8 +107,8 @@
                     )))
 
 (define (handle-tagged-dep deplist paths expanded-deps)
-  (format #t "HANDLE-TAGGED-dep: ~A\n" deplist)
-  (format #t "expanded-deps: ~A\n" expanded-deps)
+  ;; (format #t "HANDLE-TAGGED-dep: ~A\n" deplist)
+  ;; (format #t "expanded-deps: ~A\n" expanded-deps)
   ;; kw :_ is reserved for non-tagged symlist
   ;; to avoid name clash, convert user keywords to double-colon, e.g.
   ;; :foo => ::foo
@@ -120,8 +120,8 @@
         (tagged (expand-deps (cdr deplist)
                                  paths ;;stanza-alist
                                  '()))) ;;expanded-deps)))
-    (format #t "tagged dep lbl: ~A\n" lbl)
-    (format #t "tagged dep: ~A\n" tagged)
+    ;; (format #t "tagged dep lbl: ~A\n" lbl)
+    ;; (format #t "tagged dep: ~A\n" tagged)
     (if (pair? (car tagged))
         (if (equal? :_ (caar tagged))
             (cons (cons lbl (cdar tagged))
@@ -158,7 +158,7 @@
 ;; about that later, most patterns will be like "*.ml", "*.ml{,i}",
 ;; "foo/*", etc.
 (define (handle-glob-files-dep paths deplist)
-  (format #t "HANDLE-glob-files-dep: ~A\n" deplist)
+  ;; (format #t "HANDLE-glob-files-dep: ~A\n" deplist)
   ;; (format #t "HANDLE-glob-files-dep paths: ~A\n" paths)
   ;; (car deplist) == glob_files
   (let* ((pkg-path (car (assoc-val :pkg-path paths)))
@@ -170,15 +170,15 @@
          (pattern-str (string-append pkg-path "/" pattern-str))
          (g (glob.make))
          (_effective-ws-root (effective-ws-root)))
-    (format #t "pkg-path: ~A\n" pkg-path)
-    (format #t "pattern: ~A\n" pattern-str)
-    (format #t "cwd: ~A\n" (pwd))
-    (format #t "ews: ~A\n" _effective-ws-root)
+    ;; (format #t "pkg-path: ~A\n" pkg-path)
+    ;; (format #t "pattern: ~A\n" pattern-str)
+    ;; (format #t "cwd: ~A\n" (pwd))
+    ;; (format #t "ews: ~A\n" _effective-ws-root)
 
     (let ((old-wd (pwd)))
       ;; change to effective ws root before globbing
       (chdir _effective-ws-root)
-      (format #t "cwd after chdir: ~A\n" (pwd))
+      ;; (format #t "cwd after chdir: ~A\n" (pwd))
       (glob pattern-str GLOB_BRACE g)
       ;; list basename for files in this pkg (dir), since relative to
       ;; pkg-dir for others list the pkg prefix.
@@ -195,8 +195,8 @@
                                     (resolve-pkg-path f ws-root)
                                     )))
                             globbed)))
-        (format #t "globbed: ~A\n" globbed)
-        (format #t "depfiles: ~A\n" depfiles)
+        ;; (format #t "globbed: ~A\n" globbed)
+        ;; (format #t "depfiles: ~A\n" depfiles)
         (globfree g)
         (chdir old-wd) ;; restore prev wd
         (list (cons :_ depfiles))))))
@@ -205,7 +205,7 @@
   (format #t "handle-glob-files-rec-dep: ~A\n" deplist))
 
 (define (handle-source-tree-dep paths deplist)
-  (format #t "handle-source-tree-dep: ~A\n" deplist)
+  ;; (format #t "handle-source-tree-dep: ~A\n" deplist)
   (error 'unsupported
          (string-append "Found a 'source_tree' dependency in pkg '"
                         (car (assoc-val :pkg-path paths))
@@ -240,14 +240,14 @@
     (include ,handle-include-dep)))
 
 (define (expand-deps deplist paths expanded-deps)
-  (format #t "EXPAND-DEPS: ~A\n" deplist)
+  ;; (format #t "EXPAND-DEPS: ~A\n" deplist)
   ;; (format #t "paths: ~A\n" paths)
-  (format #t "expanded-deps: ~A\n" expanded-deps)
+  ;; (format #t "expanded-deps: ~A\n" expanded-deps)
   ;; (let ((pkg-path (car (assoc-val :pkg-path paths)))
   ;;       (ws-root (car (assoc-val :ws-path paths))))
   (if (null? deplist)
       (begin
-        (format #t "finished deplist: ~A\n" expanded-deps)
+        ;; (format #t "finished deplist: ~A\n" expanded-deps)
         expanded-deps)
       (if (pair? (car deplist))
           (expand-deps (car deplist)
@@ -259,7 +259,7 @@
             (if-let ((depfn (assoc-val kw dune-dep-handlers)))
                     (let ((res (apply (car depfn) (list paths
                                                         deplist))))
-                      (format #t "depfn res: ~A\n" res)
+                      ;; (format #t "depfn res: ~A\n" res)
                       ;; (format #t "expanded-deps: ~A\n" expanded-deps)
                       ;; we're done, depfn consumed cdr
 
@@ -278,7 +278,7 @@
                                    (car deplist))))
                       (if (char=? #\: (string-ref dep 0))
                           (begin
-                            (format #t "TAGGED DEP : ~A\n" deplist)
+                            ;; (format #t "TAGGED DEP : ~A\n" deplist)
                             (handle-tagged-dep
                              deplist paths expanded-deps))
 
@@ -302,13 +302,13 @@
 ;; expand-deps: deps -> file-deps, vars, env-vars
 (define (expand-rule-deps paths stanza-alist)
   ;; updates stanza-alist
-  (format #t "EXPAND-rule-deps: ~A\n" stanza-alist)
+  ;; (format #t "EXPAND-rule-deps: ~A\n" stanza-alist)
   ;; (let ((stanza-alist (cdr stanza)))
   (if-let ((deps-assoc (assoc 'deps stanza-alist)))
           (let* ((deplist (assoc-val 'deps stanza-alist))
-                 (_ (format #t "main deplist: ~A\n" deplist))
+                 ;; (_ (format #t "main deplist: ~A\n" deplist))
                  (result (expand-deps deplist paths '())))
-            (format #t "DEPLIST EXPANDED: ~A\n" result)
+            ;; (format #t "DEPLIST EXPANDED: ~A\n" result)
             result)
           #f))
 

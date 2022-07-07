@@ -4,10 +4,10 @@
 (define (resolve-pkg-path path ws-root)
   ;; path is not in pkg-path dir
   (let ((rp (realpath path (string))))
-    (format #t "f rel path: ~A\n" path)
-    (format #t "f realpath: ~A\n" rp)
-    (format #t "ws root: ~A\n" ws-root)
-    (format #t "pfx?: ~A\n" (string-prefix? ws-root rp))
+    ;; (format #t "f rel path: ~A\n" path)
+    ;; (format #t "f realpath: ~A\n" rp)
+    ;; (format #t "ws root: ~A\n" ws-root)
+    ;; (format #t "pfx?: ~A\n" (string-prefix? ws-root rp))
     (if (string-prefix? ws-root rp)
         (string-drop rp (+ 1 (string-length ws-root)))
         "problem")))
@@ -48,9 +48,9 @@
 (define update-pkg-with-targets!
   (let ((+documentation+ "INTERNAL. Add tgts to :modules (or :files etc) fld of pkg."))
     (lambda (pkg tgts)
-      (format #t "update-pkg-with-targets!\n")
-      (format #t "  package: ~A\n" pkg)
-      (format #t "  targets: ~A\n" tgts)
+      ;; (format #t "update-pkg-with-targets!\n")
+      ;; (format #t "  package: ~A\n" pkg)
+      ;; (format #t "  targets: ~A\n" tgts)
 
       ;; get the alists we might update
       (let* (;;(pkg (car pkg*))
@@ -68,15 +68,16 @@
            (let ((kind (filename->kind tgt)))
              (case kind
                ((:module)
-                (format #t ":module tgt: ~A\n" tgt)
+                ;; (format #t ":module tgt: ~A\n" tgt)
                 (let* ((massoc (filename->module-assoc tgt))
                        ;; massoc == (A (:ml "a.ml"))
                        (mod (car massoc))
                        (pr (cadr massoc))
-                       (_ (format #t "pr: ~A\n" pr)))
+                       ;; (_ (format #t "pr: ~A\n" pr))
+                       )
                   (alist-update-in! pkg `(:modules :dynamic ,mod)
                                     (lambda (old)
-                                      (format #t "module OLD: ~A\n" old)
+                                      ;; (format #t "module OLD: ~A\n" old)
                                       (if (null? old)
                                           (list pr)
                                           ;;(filename->module-assoc tgt)
@@ -103,18 +104,18 @@
                ;;               modules-assoc)))
                ;; )
                (else
-                (format #t ":other: ~A\n" tgt)
-                (format #t "files-assoc: ~A\n" files-assoc)
+                ;; (format #t ":other: ~A\n" tgt)
+                ;; (format #t "files-assoc: ~A\n" files-assoc)
                 (alist-update-in! pkg '(:files :dynamic)
                                   (lambda (old)
-                                    (format #t "other OLD: ~A\n" old)
-                                    (format #t "other tgt: ~A\n" tgt)
+                                    ;; (format #t "other OLD: ~A\n" old)
+                                    ;; (format #t "other tgt: ~A\n" tgt)
                                     (let ((fa (filename->file-assoc tgt))
                                           (tgtstr (if (symbol? tgt)
                                                       (symbol->string tgt)
                                                       tgt)))
-                                      (format #t "fa: ~A\n" fa)
-                                      (format #t "fa2: ~A\n"old)
+                                      ;; (format #t "fa: ~A\n" fa)
+                                      ;; (format #t "fa2: ~A\n"old)
                                       (if (null? old)
                                           tgtstr
                                           (append old (list tgtstr))
@@ -149,7 +150,7 @@
                 )) ;; case
              )) ;; lambda
          tgts) ;; for-each
-        (format #t "pkg (after): ~A\n" pkg)
+        ;; (format #t "pkg (after): ~A\n" pkg)
         pkg))))
 
 ;; e.g. (cdr (:standard (symbol "\\") legacy_store_builder))
