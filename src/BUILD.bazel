@@ -37,7 +37,10 @@ cc_library(
         "//bzl/host:debug": ["DEBUG_TRACE"],
         "//conditions:default":   []
     }) + select({
-        "//bzl/host:linux": ["_XOPEN_SOURCE=500"], # strdup
+        "//bzl/host:linux": [
+            "_XOPEN_SOURCE=500", # strdup
+            "_DEFAULT_SOURCE"    # dirent DT_* macros
+        ],
         "//conditions:default":   []
     }),
     copts = [
