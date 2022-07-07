@@ -1342,7 +1342,9 @@ EXPORT s7_pointer load_dune(char *home_sfx, char *traversal_root)
                         _handle_dune_project_file(pkg_tbl, ftsentry);
                         break;
                     }
-                    if (strncmp(ftsentry->fts_name, "dune", 4) == 0) {
+                    if ((strncmp(ftsentry->fts_name, "dune", 4) == 0)
+                        /* don't read dune.foo */
+                        && (strlen(ftsentry->fts_name) == 4)) {
                         _handle_dune_file(pkg_tbl, ftsentry);
                         break;
                     }

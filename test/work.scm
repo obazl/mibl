@@ -52,14 +52,16 @@ tpkg
         ;; "dune/stanzas/rule/action/copy"
         ;; "dune/stanzas/rule/action/diff"
         ;; "dune/stanzas/rule/action/echo"
+        ;; "dune/stanzas/rule/action/progn/empties"
+        ;; "dune/stanzas/rule/action/progn/null"
         ;; "dune/stanzas/rule/action/system"
-        ;; "dune/stanzas/rule/action/write-file"
+        "dune/stanzas/rule/action/write-file"
         ;; "dune/stanzas/rule/action/mixed"
 
         ;; dune/stanzas/rule/action/chdir"
 
         ;; "dune/stanzas/rule/action/run/bash"
-        "dune/stanzas/rule/action/run/cp"
+        ;; "dune/stanzas/rule/action/run/cp"
         ;; "dune/stanzas/rule/action/run/env"
         ;; "dune/stanzas/rule/action/run/literal"
         ;; "dune/stanzas/rule/action/run/nostatic"
@@ -67,9 +69,14 @@ tpkg
         ;; "dune/stanzas/rule/action/run/var/a"
         ;; "dune/stanzas/rule/action/run/var/b"
         ;; "dune/stanzas/rule/action/run/var/tag"
-        ;; "dune/stanzas/rule/action/with-stdout-to"
+
+        ;; "dune/stanzas/rule/action/with-stdout-to/bash"
+        ;; "dune/stanzas/rule/action/with-stdout-to/chdir"
+        ;; "dune/stanzas/rule/action/with-stdout-to/run"
 
         ;; "dune/stanzas/multi"
+
+        ;; "dune/stanzas/rule/alias"
         )
        (pkgs (load-dune arg))
        (pkg (hash-table-ref pkgs arg))
@@ -77,6 +84,9 @@ tpkg
        (nzs (dune-pkg->mibl pkg))
        )
     nzs))
+
+(let ((rules (cdr (assoc-in '(:dune :rule) pkg))))
+  (map car rules))
 
 (define pkg
   (let* ((_   (load "dune.scm"))

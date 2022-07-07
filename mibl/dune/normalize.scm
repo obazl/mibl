@@ -4,7 +4,7 @@
 
 ;; original: dune_stanzas.scm Xnormalize-stanza
 (define (dune-stanza->mibl pkg stanza nstanzas)
-  (format #t "NORMALIZE-dune-stanza: ~A\n" stanza)
+  (format #t "DUNE-STANZA->MIBL: ~A\n" stanza)
   (format #t "  nstanzas: ~A\n" nstanzas)
   (let* ((stanza-alist (cdr stanza))
          (_ (format #t "stanza-alist ~A\n" stanza-alist))

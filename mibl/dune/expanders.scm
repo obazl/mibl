@@ -57,7 +57,12 @@
     (format #t "EXPAND-STRING-arg: ~A\n" arg)
     (cond
      ((string=? "%{deps}" arg)
-      :DEPS)
+      (let* ((kw (substring arg 6 (- (length arg) 1)))
+             (keysym (string->keyword kw)))
+        (format #t "kw ~A\n" kw)
+        (format #t "keysym ~A\n" keysym)
+        deps))
+
       ;; (concatenate
       ;;  filedeps
       ;;  ;;  ;; FIXME: create (:target . arg) pairs so
@@ -111,8 +116,12 @@
 
      ((string-prefix? "%{libexec:" arg)
       (format #t "LIBEXEC: ~A\n" arg)
-      (format #t "pkg-path: ~A\n" pkg-path)
-      :LIBEXEC)
+      (let* ((kw (substring arg 9 (- (length arg) 1)))
+             (keysym (string->keyword kw)))
+        (format #t "kw ~A\n" kw)
+        (format #t "keysym ~A\n" keysym)
+        `((:pkg :libexec)
+                (:tgt ,keysym))))
       ;; (cons
       ;;  (list :_libexec arg)
       ;;  (expand-cmd-args pkg-path
@@ -259,7 +268,7 @@
                      (format #t "ARGSYM: ~A\n" arg)
                      (cond
                       ((eq? '%{deps} arg)
-                       (cons :DEPS
+                       (cons deps
                              (expand-cmd-args (cdr args) targets deps)))
                       ((eq? '%{workspace_root} arg)
                        (cons :WS-ROOT
@@ -294,7 +303,7 @@
 (define expand-targets
   (lambda (paths targets deps)
     (format #t "expand-targets ~A\n" targets)
-    (let ((xtargets (expand-filelist targets paths '())))
+    (let ((xtargets (expand-deps targets paths '())))
       (format #t "expanded targets ~A\n" xtargets)
       xtargets)))
 

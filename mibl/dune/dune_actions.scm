@@ -17,14 +17,19 @@
 
 (define (normalize-action-chdir-dsl pkg action-alist targets deps)
   (format #t "NORMALIZE-ACTION-CHDIR-DSL ~A\n" action-alist)
-  (let* ((chdir-alist (assoc-val 'chdir action-alist))
-         (_ (format #t "chdir-alist: ~A\n" chdir-alist))
-         (ctx (car chdir-alist))
-         (action (caadr chdir-alist))
-         (action-alist (cdadr chdir-alist))
-         (cmd (if-let ((cmd-fn (assoc-val action dune-action-cmds-dsl)))
+  (let* ((action-assoc (car action-alist))
+         (_ (format #t "action-assoc: ~A\n" action-assoc))
+         (ctx (cadr action-assoc))
+         (_ (format #t "ctx: ~A\n" ctx))
+         (subaction-alist (caddr action-assoc))
+         (_ (format #t "subaction-alist: ~A\n" subaction-alist))
+         (subaction (car subaction-alist))
+         (_ (format #t "subaction: ~A\n" subaction))
+         (cmd (if-let ((cmd-fn (assoc-val subaction dune-action-cmds-dsl)))
                       (let ((cmd-list (apply (car cmd-fn)
-                                             (list pkg action-alist targets deps))))
+                                             (list pkg
+                                                   (list subaction-alist)
+                                                   targets deps))))
                         cmd-list)
                       (begin
                         (format #t "UNHANDLED ACTION: ~A\n" action)
@@ -38,7 +43,7 @@
   (format #t "  action-alist: ~A\n" action-alist)
   (let* ((tool action) ;; (run-action->toolname pkg-path action stanza))
          (action-args (assoc-val action action-alist))
-         (args (expand-filelist action-args
+         (args (expand-deps action-args
                                pkg ;; paths
                                ;; action-alist
                                '()))
@@ -87,14 +92,45 @@
   '()
   )
 
-(define (normalize-action-progn-dsl action stanza)
-  (format #t "NORMALIZE-ACTION-PROGN-DSL ~A\n" action)
-  '()
-  )
+(define (normalize-action-progn-dsl pkg action-alist targets deps)
+  (format #t "NORMALIZE-ACTION-PROGN-DSL ~A\n" action-alist)
+  (let* ((progn-alist (cdar action-alist))
+         (_ (format #t "progn-alist: ~A\n" progn-alist))
+         (progns
+          (let recur ((progn-list progn-alist)
+                      (cmd-list '()))
+            ;; (format #t "progn cmdlist ~A\n" cmd-list)
+            (if (null? progn-list)
+                cmd-list
+                (let* ((progn (car progn-list))
+                       (action (car progn))
+                       (_ (format #t "progn action: ~A\n" action))
+                       (args (cdr progn))
+                       (_ (format #t "args: ~A\n" args))
+                       (cmd (if-let ((cmd-fn (assoc-val action dune-action-cmds-no-dsl)))
+                                    (let ((cmd-list (apply (car cmd-fn)
+                                                           (list pkg action
+                                                                 (list progn)
+                                                                 targets deps))))
+                                      cmd-list)
+                                    (if-let ((cmd-fn (assoc-val subaction
+                                                                dune-action-cmds-dsl)))
+                                            (let ((cmd-list (apply (car cmd-fn)
+                                                                   (list pkg
+                                                                         (list subaction-alist)
+                                                                         targets deps))))
+                                              cmd-list)
+                                            (begin
+                                              (format #t "UNHANDLED PROGN ACTION: ~A\n"
+                                                      action)
+                                              stanza)))))
+                  (recur (cdr progn-list) (append cmd-list cmd)))))))
+    (list (cons :progn progns))))
 
 (define (normalize-action-run-dsl pkg action-alist targets deps)
   (format #t "NORMALIZE-ACTION-RUN-DSL ~A\n" action-alist)
-  (let ((cmd (car (expand-cmd-list action-alist targets deps))))
+  (let* ((run-alist (cdar action-alist))
+         (cmd (car (expand-cmd-list run-alist targets deps))))
     (format #t "RUN CMD: ~A\n" cmd)
     cmd))
 
@@ -108,10 +144,36 @@
   '()
   )
 
-(define (normalize-action-with-outputs-to-dsl action stanza)
-  (format #t "NORMALIZE-ACTION-WITH-OUTPUTS-TO-DSL ~A\n" action)
-  '()
-  )
+(define (normalize-action-with-outputs-to-dsl pkg action-alist targets deps)
+  (format #t "NORMALIZE-ACTION-WITH-OUTPUTS-TO-DSL ~A\n" action-alist)
+  (let* ((action-assoc (car action-alist))
+         (_ (format #t "action-assoc: ~A\n" action-assoc))
+         (arg1 (cadr action-assoc))
+         (_ (format #t "arg1: ~A\n" arg1))
+         (subaction-alist (caddr action-assoc))
+         (_ (format #t "subaction-alist: ~A\n" subaction-alist))
+         (subaction (car subaction-alist))
+         (_ (format #t "subaction: ~A\n" subaction))
+         (cmd (if-let ((cmd-fn (assoc-val subaction
+                                          dune-action-cmds-no-dsl)))
+                      (let ((cmd-list (apply (car cmd-fn)
+                                             (list pkg
+                                                   action action-alist
+                                                   targets deps))))
+                        cmd-list)
+                      (if-let ((cmd-fn (assoc-val subaction
+                                                  dune-action-cmds-dsl)))
+                              (let ((cmd-list (apply (car cmd-fn)
+                                                     (list pkg
+                                                           (list subaction-alist)
+                                                           targets deps))))
+                                cmd-list)
+                              (begin
+                                (format #t "UNHANDLED WST ACTION: ~A\n"
+                                        action)
+                                stanza)))))
+    (append cmd
+          `((:stdout ,arg1)))))
 
 (define (normalize-action-with-stderr-to-dsl action stanza)
   (format #t "NORMALIZE-ACTION-WITH-STDERR-TO-DSL ~A\n" action)
@@ -133,11 +195,11 @@
          (file (car args))
          (_ (format #t "file: ~A\n" file))
          (content `(:content ,(cadr args)))
-         (args (expand-filelist (list file)
+         (args (car (expand-deps (list file)
                                 pkg ;; paths
                                 ;; action-alist
-                                '())))
-    `((:cmd-list
+                                '()))))
+    `((:cmd
        ((:tool ,action)
         ,(cons :args (list args content)))))))
 
@@ -270,79 +332,79 @@
   (format #t "NORMALIZE-PROGN-ACTION: ~A\n" stanza-alist)
   #t)
 
-(define (Xnormalize-progn-action pkg-path action stanza srcfiles)
-  (format #t "NORMALIZE-PROGN-ACTION: ~A\n" action)
-  ;; tezos: (action progn), (action (progn)), (action (progn (...) ...))
-  ;; missing but maybe possible: (action progn ...)
+;; (define (Xnormalize-progn-action pkg-path action stanza srcfiles)
+;;   (format #t "NORMALIZE-PROGN-ACTION: ~A\n" action)
+;;   ;; tezos: (action progn), (action (progn)), (action (progn (...) ...))
+;;   ;; missing but maybe possible: (action progn ...)
 
-  ;; empty progn: (action (progn)) - forces eval of rule for side-effects?
+;;   ;; empty progn: (action (progn)) - forces eval of rule for side-effects?
 
-  ;; examples:
-  ;; (rule (alias runtest)
-  ;;       (package tezos-protocol-004-Pt24m4xi)
-  ;;       (deps (alias runtest_sandbox))
-  ;;       (action (progn)))  <<== null action?
-  ;; "Building this alias means building the targets of
-  ;; this rule." Presumably that means deps too.
-  ;; "The typical use of the alias stanza is to define tests:
-  ;; (rule (alias   runtest)
-  ;;       (action (run %{exe:my-test-program.exe} blah)))
-  ;; "[T]o define a test a pair of alias and
-  ;; executable stanzas are required."
+;;   ;; examples:
+;;   ;; (rule (alias runtest)
+;;   ;;       (package tezos-protocol-004-Pt24m4xi)
+;;   ;;       (deps (alias runtest_sandbox))
+;;   ;;       (action (progn)))  <<== null action?
+;;   ;; "Building this alias means building the targets of
+;;   ;; this rule." Presumably that means deps too.
+;;   ;; "The typical use of the alias stanza is to define tests:
+;;   ;; (rule (alias   runtest)
+;;   ;;       (action (run %{exe:my-test-program.exe} blah)))
+;;   ;; "[T]o define a test a pair of alias and
+;;   ;; executable stanzas are required."
 
-  ;; more common:
-  ;; (progn
-  ;;  (bash "touch .depend")
-  ;;  (run make %{targets} COMPUTE_DEPS=false)
-  ;;  (bash "rm .depend")))))))
+;;   ;; more common:
+;;   ;; (progn
+;;   ;;  (bash "touch .depend")
+;;   ;;  (run make %{targets} COMPUTE_DEPS=false)
+;;   ;;  (bash "rm .depend")))))))
 
-  ;; (let* ((rule-alist (cdr stanza))
-  ;;        (stanza-type (if (assoc 'alias rule-alist) :alias-cmd :run-cmd))
+;;   ;; (let* ((rule-alist (cdr stanza))
+;;   ;;        (stanza-type (if (assoc 'alias rule-alist) :alias-cmd :run-cmd))
 
-  (let* ((rule-alist (cdr stanza))
-         (alias (assoc 'alias rule-alist))
+;;   (let* ((rule-alist (cdr stanza))
+;;          (alias (assoc 'alias rule-alist))
 
-         (progn (cdadr action))
-         (stanza-type (if (null? progn) :null-cmd :run-cmd))
+;;          (progn (cdadr action))
+;;          (stanza-type (if (null? progn) :null-cmd :run-cmd))
 
-         (_ (format #t "progn: ~A\n" progn))
-         (deps (assoc 'deps rule-alist))
-         (_ (format #t "deps: ~A\n" deps)))
+;;          (_ (format #t "progn: ~A\n" progn))
+;;          (deps (assoc 'deps rule-alist))
+;;          (_ (format #t "deps: ~A\n" deps)))
 
-    (let-values (((filedeps vars env-vars universe aliases unresolved)
-                  (expand-deps pkg-path
-                               #f
-                               #f
-                               deps
-                               srcfiles)))
-      (format #t "r filedeps: ~A\n" filedeps)
-      (format #t "r vars: ~A\n" vars)
-      (format #t "r env-vars: ~A\n" env-vars)
-      (format #t "r universe: ~A\n" universe)
-      (format #t "r aliases: ~A\n" aliases)
-      (format #t "r unresolved: ~A\n" unresolved)
+;;     (let-values (((filedeps vars env-vars universe aliases unresolved)
+;;                   (expand-deps pkg-path
+;;                                #f
+;;                                #f
+;;                                deps
+;;                                srcfiles)))
+;;       (format #t "r filedeps: ~A\n" filedeps)
+;;       (format #t "r vars: ~A\n" vars)
+;;       (format #t "r env-vars: ~A\n" env-vars)
+;;       (format #t "r universe: ~A\n" universe)
+;;       (format #t "r aliases: ~A\n" aliases)
+;;       (format #t "r unresolved: ~A\n" unresolved)
 
-      ;; (for-each (lambda (filedep)
-      ;;             (format #t "~A\n" filedep))
-      ;;           (reverse filedeps))
-      ;; '())))
+;;       ;; (for-each (lambda (filedep)
+;;       ;;             (format #t "~A\n" filedep))
+;;       ;;           (reverse filedeps))
+;;       ;; '())))
 
-      (let* (
-             (result `((:pkg ,pkg-path)
-                       (:raw ,stanza)))
-             (result (if (null? vars)
-                         result
-                         (acons :vars vars result)))
-             (result (if (null? filedeps)
-                         result
-                         (acons :deps filedeps result)))
-             ;; (result (if (null? outfile)
-             ;;             result
-             ;;             (acons (:out outfile) result)))
-             (result (if-let ((alias (assoc 'alias rule-alist)))
-                             (acons :alias (last alias) result)
-                             result)))
-        `(,stanza-type ,result)))))
+;;       (let* (
+;;              (result `((:pkg ,pkg-path)
+;;                        (:raw ,stanza)))
+;;              (result (if (null? vars)
+;;                          result
+;;                          (acons :vars vars result)))
+;;              (result (if (null? filedeps)
+;;                          result
+;;                          (acons :deps filedeps result)))
+;;              ;; (result (if (null? outfile)
+;;              ;;             result
+;;              ;;             (acons (:out outfile) result)))
+;;              (result (if-let ((alias (assoc 'alias rule-alist)))
+;;                              (acons :alias (last alias) result)
+;;                              result)))
+;;         `(,stanza-type ,result)))))
 
     ;; (if (> (length dsl) 1)
     ;;     (format #t "normalize-cmd-dsl ct: ~A\n" (length dsl)))
@@ -422,7 +484,8 @@
     ;; (with-<outputs>-to <file> <DSL>)
     (with-outputs-to ,normalize-action-with-outputs-to-dsl)
     (with-stderr-to ,normalize-action-with-stderr-to-dsl)
-    (with-stdout-to ,normalize-action-with-stdout-to-dsl)
+    (with-stdout-to ,normalize-action-with-outputs-to-dsl)
+    ;; ,normalize-action-with-stdout-to-dsl)
     ;; (with-stdin-from <file> <DSL>)
     (with-stdin-from ,normalize-action-with-stdin-from-dsl)
   ))

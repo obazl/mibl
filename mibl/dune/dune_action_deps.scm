@@ -91,7 +91,7 @@
     ;; (format #t "new-expanded-deps : ~A\n" expanded-deps)
     ;; find it and resolve pkg path
     ;; if not found mark it as :dynamic
-    (expand-filelist (cdr deplist)
+    (expand-deps (cdr deplist)
                     paths ;; stanza
                     ;; new-expanded-deps
                     (if (null? expanded-deps)
@@ -117,7 +117,7 @@
                (string-append
                 ":" (symbol->string
                      (keyword->symbol (car deplist)))))))
-        (tagged (expand-filelist (cdr deplist)
+        (tagged (expand-deps (cdr deplist)
                                  paths ;;stanza-alist
                                  '()))) ;;expanded-deps)))
     (format #t "tagged dep lbl: ~A\n" lbl)
@@ -133,8 +133,10 @@
   (format #t "handle-file-dep: ~A\n" deplist)
   deplist)
 
-(define (handle-alias-dep deplist)
-  (format #t "handle-alias-dep: ~A\n" deplist))
+(define (handle-alias-dep paths deplist)
+  (format #t "handle-alias-dep: ~A\n" deplist)
+  (set-car! deplist :alias)
+  deplist)
 
 (define (handle-alias-rec-dep deplist)
   (format #t "handle-alias-rec-dep: ~A\n" deplist))
@@ -237,8 +239,8 @@
     (sandbox ,handle-sandbox-dep)
     (include ,handle-include-dep)))
 
-(define (expand-filelist deplist paths expanded-deps)
-  (format #t "EXPAND-FILELIST: ~A\n" deplist)
+(define (expand-deps deplist paths expanded-deps)
+  (format #t "EXPAND-DEPS: ~A\n" deplist)
   ;; (format #t "paths: ~A\n" paths)
   (format #t "expanded-deps: ~A\n" expanded-deps)
   ;; (let ((pkg-path (car (assoc-val :pkg-path paths)))
@@ -248,24 +250,26 @@
         (format #t "finished deplist: ~A\n" expanded-deps)
         expanded-deps)
       (if (pair? (car deplist))
-          (expand-filelist (car deplist)
+          (expand-deps (car deplist)
                           paths ;; stanza-alist
-                          (expand-filelist
+                          (expand-deps
                            (cdr deplist) paths expanded-deps))
           ;; car is atom
           (let* ((kw (car deplist)))
             (if-let ((depfn (assoc-val kw dune-dep-handlers)))
                     (let ((res (apply (car depfn) (list paths
                                                         deplist))))
-                      ;; (format #t "res: ~A\n" res)
+                      (format #t "depfn res: ~A\n" res)
                       ;; (format #t "expanded-deps: ~A\n" expanded-deps)
                       ;; we're done, depfn consumed cdr
 
                       ;; FIXME: merge all lists with :_ key
                       ;; we get one such list for each glob_files
-                      (if (equal? :_ (caar res))
-                          (format #t "TO MERGE ~A\n" res))
-                      (append expanded-deps res))
+                      ;; (if (pair? (car res)) ;; e.g. ((:_ "foo/bar/..."))
+                          ;; (if (equal? :_ (caar res))
+                          ;;     (format #t "TO MERGE ~A\n" res))
+                      (append (if (pair? (car res)) res (list res))
+                              expanded-deps))
 
                     ;; else car of deplist not a keyword
                     ;; must be either a ':' tagged dep or a filename literal
@@ -296,16 +300,16 @@
             ))))
 
 ;; expand-deps: deps -> file-deps, vars, env-vars
-(define (expand-rule-deps! paths stanza-alist)
+(define (expand-rule-deps paths stanza-alist)
   ;; updates stanza-alist
-  (format #t "EXPAND-rule-deps, stanza-alist: ~A\n" stanza-alist)
+  (format #t "EXPAND-rule-deps: ~A\n" stanza-alist)
   ;; (let ((stanza-alist (cdr stanza)))
   (if-let ((deps-assoc (assoc 'deps stanza-alist)))
           (let* ((deplist (assoc-val 'deps stanza-alist))
                  (_ (format #t "main deplist: ~A\n" deplist))
-                 (result (expand-filelist deplist paths '())))
+                 (result (expand-deps deplist paths '())))
             (format #t "DEPLIST EXPANDED: ~A\n" result)
             result)
-          '()))
+          #f))
 
 (format #t "loaded dune/dune-action-deps.scm\n")

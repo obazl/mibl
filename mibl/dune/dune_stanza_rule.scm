@@ -140,7 +140,7 @@
              (_ (format #t "Targets: ~A\n" (assoc-val 'targets rule-alist)))
 
              ;; Step 1: rule deps don't depend on targets, so do first
-             (deps (expand-rule-deps! pkg rule-alist))
+             (deps (expand-rule-deps pkg rule-alist))
              (_ (format #t "EXPANDED rule deps: ~A\n" deps))
 
              ;; Step 2: 'target' and 'targets' fields list files generated
@@ -161,18 +161,45 @@
              ;; normalize
              (targets (expand-targets pkg targets deps))
              (_ (format #t "EXPANDED rule targets: ~A\n" targets))
+
+             (mode (if-let ((m (assoc-val 'mode rule-alist))) (car m)))
+             (fallback (if-let ((fb (assoc-val 'fallback rule-alist)))
+                                 (car fb)))
+             (locks (assoc-val 'locks rule-alist))
+             (alias (if-let ((a (assoc-val 'alias rule-alist))) (car a)))
+             (package (if-let ((p (assoc-val 'package rule-alist))) (car p)))
+
+             (enabled-if (if-let ((p (assoc-val 'enabled_if rule-alist)))
+                                 (car p)))
              )
         ;; rule type is determined by 'action' field, which can be:
         ;; bash, copy, run, etc.
         ;; every rule stanza has an action field
         ;; https://dune.readthedocs.io/en/stable/concepts.html#user-actions
         (if (assoc 'action rule-alist)
-            (let ((nzaction (normalize-action pkg rule-alist targets deps)))
-              (format #t "nzaction: ~A\n" nzaction)
-              `((:rule
-                ,(cons ':targets targets)
-                ,(cons ':deps deps)
-                ,(cons ':action nzaction))))
+            (let* ((nzaction (normalize-action pkg rule-alist targets deps))
+                   (r-alist (list (cons ':targets targets)
+                                  ;; (cons ':deps deps)
+                                  (cons ':action nzaction)))
+                   (r-alist (if deps (cons (list ':deps deps) r-alist)
+                                r-alist))
+                   (r-alist (if package (cons (list ':package package)
+                                                 r-alist)
+                                r-alist))
+                   (r-alist (if mode (cons (list ':mode mode) r-alist)
+                                r-alist))
+                   (r-alist (if locks (cons (list ':locks locks) r-alist)
+                                r-alist))
+                   (r-alist (if fallback (cons (list ':fallback fallback)
+                                                 r-alist)
+                                r-alist))
+                   (r-alist (if enabled-if (cons (list ':enabled-if
+                                                         enabled-if)
+                                                 r-alist)
+                                r-alist))
+                   (r-alist (if alias (cons (list ':alias alias) r-alist)
+                                r-alist)))
+              (list (cons ':rule r-alist)))
             (format #t "UNHANDLED RULE: ~A\n" rule-alist))
         ))))
 
