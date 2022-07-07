@@ -129,7 +129,7 @@ LOCAL void _deploy_scm_files(UT_string *manifest)
     if (debug)
         log_debug("Reading MANIFEST");
 
-    char *mibl_mibl = NULL;
+    /* char *mibl_mibl = NULL; */
 
     while ((read_ct = getline(&line, &len, fp)) != -1) {
         /* log_debug("Retrieved line of length %zu:", read_ct); */

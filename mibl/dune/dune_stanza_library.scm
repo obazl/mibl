@@ -42,27 +42,31 @@
                   #f)
           #f))
 
-(define (normalize-lib-fields stanza-alist)
-  (format #f "normalize-lib-fields: ~A\n" stanza-alist)
+(define (normalize-lib-fields pkg stanza-alist wrapped?)
+  (format #f "NORMALIZE-LIB-FIELDS: ~A\n" stanza-alist)
   (map
    (lambda (fld-assoc)
      (format #t "lib fld-assoc: ~A\n" fld-assoc)
      (case (car fld-assoc)
-       ((name) fld-assoc)
-       ((public_name) fld-assoc)
+       ((name) `(:privname ,(cadr fld-assoc)))
+       ((public_name) `(:pubname ,(cadr fld-assoc)))
 
        ((flags) (normalize-stanza-fld-flags fld-assoc :mod))
        ((library_flags) (normalize-stanza-fld-flags fld-assoc :lib))
+       ((libraries) (normalize-stanza-fld-libraries fld-assoc))
 
-  ;;    ;;   ((libraries) (normalize-stanza-fld-libraries fld-assoc))
-
-       ;; legacy:
-       ;; ((modules)
+       ;;TODO: direct/indirect distinction. indirect are generated src files
+       ((modules)
         ;; FIXME: deal with private_modules too
-        ;; (let ((submods-ht (modules->modstbl (cdr fld-assoc)
-        ;;                                     srcfiles)))
-        ;;   ;; (format #t "submods-ht: ~A\n" submods-ht)
-        ;;   `(:submodules ,submods-ht)))
+        (let ((submodules-list (modules-fld->submodules-fld
+                                (assoc 'modules stanza-alist)
+                                (assoc :modules pkg)
+                                ;; modules-ht
+                                )))
+          (format #t "submodules-list: ~A\n" submodules-list)
+          (if wrapped?
+              (cons ':submodules submodules-list)
+              (cons ':manifest submodules-list))))
 
        ;; (format #t "direct: ~A, indirect ~A\n"
        ;;         direct indirect)
@@ -124,7 +128,7 @@
 
   ;;    ;;   ((synopsis) fld-assoc)
 
-  ;;    ;;   ((wrapped) '()) ;; src/lib_protocol_environment
+       ((wrapped) `(:namespaced ,(if wrapped? #t #f)))
 
   ;;    ;;   ;; c stuff
 
@@ -158,9 +162,17 @@
          ;; ;; (ppx (lib-stanza->ppx stanza-alist))
          ;; )
 
-(define (lib-stanza-submodules! stanza)
-  (format #t "lib-stanza-submodules! ~A\n" stanza)
-  (list :submodules '(A B)))
+(define (lib-stanza-submodules stanza)
+  (format #t "LIB-STANZA-SUBMODULES ~A\n" stanza)
+
+  (let ((submodules-list (modules-fld->submodules-fld
+                          (assoc 'modules (cdr stanza))
+                          (assoc :modules pkg)
+                          modules-ht))
+                           ;; add submodules-assoc to stanza
+                           )
+    (format #t "submodules-list: ~A\n" submodules-list)
+    submodules-list))
 
 ;; (define foobar
 ;;   (let (
@@ -498,30 +510,31 @@
 (define (normalize-inline_tests fld-assoc stanza-alist)
   (format #t "normalize-inline_tests: ~A\n" fld-assoc))
 
-(define (normalize-library-stanza stanza) ;; pkg-path srcfiles stanza)
-  (begin
-    (format #t "NORMALIZE-library-stanza ~A\n"
-            (assoc-val 'name (cdr stanza)))
-    (newline))
+(define (normalize-library-stanza pkg stanza)
+  (format #t "NORMALIZE-library-stanza ~A\n" (assoc-val 'name (cdr stanza)))
+  (format #t "stanza: ~A\n" stanza)
 
   ;; FIXME: if not wrapped => :ns-archive
   ;; else => :library
 
   (let* ((stanza-alist (cdr stanza))
-         ;; (_ (format #t "stanza alist: ~A\n" stanza-alist))
+         (stanza-alist (if-let ((mods (assoc 'modules stanza-alist)))
+                               stanza-alist
+                               (append stanza-alist
+                                       (list '(modules :standard)))))
+         (_ (format #t "STANZA ALIST: ~A\n" stanza-alist))
 
-         (privname (assoc-val 'name stanza-alist))
-         (namespaced? (if-let ((wrapped (assoc-val 'wrapped stanza-alist)))
-                              (if (equal? 'false (car wrapped))
+         ;; (privname (assoc-val 'name stanza-alist))
+         (wrapped? (if-let ((wrapped (assoc-val 'wrapped stanza-alist)))
+                           (if (equal? 'false (car wrapped))
                                   #f
                                   #t)
-                              #t))
-         (_ (format #t "stanza-alist ~A\n" stanza-alist))
+                           #t))
+         ;; (submods (lib-stanza-submodules stanza-alist))
+         ;; (stanza-alist (cons submods stanza-alist))
+         ;; (_ (format #t "STANZA ALIST + SUBMODS: ~A\n" stanza-alist))
 
-         (stanza-alist (cons (lib-stanza-submodules! stanza-alist)
-                             stanza-alist))
-
-         (normalized-stanza (normalize-lib-fields stanza-alist))
+         (normalized-stanza (normalize-lib-fields pkg stanza-alist wrapped?))
          )
     ;; namespaced?
     normalized-stanza

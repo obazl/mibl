@@ -390,7 +390,8 @@
 ;; vals are :direct | :indirect | :resolver
 ;; uses srcfiles to determine if a module is src or generated
 ;; handles :standard etc.
-;; replaced by expand-modules-fld in modules.scm
+;; OBSOLETE
+;; replaced by modules-fld->submodules-fld in modules.scm
 (define (modules->modstbl modules srcfiles)
   ;; (format #t "modules->modstbl: ~A\n" modules)
   ;; modules-assoc:: (modules <list of lists>)

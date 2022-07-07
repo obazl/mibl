@@ -19,6 +19,40 @@ mnames
                              ))
 tpkg
 
+
+;; library stanzas
+(define pkg
+  (let* ((_   (load "dune.scm"))
+       ;; WARNING: arg to load-dune is relative to cwd,
+       ;; but arg to hash-table-ref below is relative to ws root,
+       ;; which may not be the same.
+       (arg
+
+        ;; 'modules' field tests:
+        ;; "dune/libmodules/default"
+        ;; "dune/libmodules/standard"
+        "dune/libmodules/exclusions"
+        ;; "dune/libmodules/inclusions"
+
+        ;; unwrapped:
+        ;; "dune/stanzas/library/unwrapped/default"
+        ;; "dune/stanzas/library/unwrapped/standard"
+        ;; "dune/stanzas/library/unwrapped/exclusions"
+        ;; "dune/stanzas/library/unwrapped/inclusions"
+
+        ;; "dune/tezos/lib_clic"
+        ;; "dune/tezos/lib_requester"
+        ;; "dune/tezos/lib_stblib_unix"
+
+        )
+       (pkgs (load-dune arg))
+       (pkg (hash-table-ref pkgs arg))
+       ;; ;; (stanzas (assoc :dune-stanzas pkg))
+       (nzs (dune-pkg->mibl pkg))
+       )
+    nzs))
+
+;; rule stanzas
 (define pkg
   (let* ((_   (load "dune.scm"))
        ;; WARNING: arg to load-dune is relative to cwd,
@@ -55,7 +89,7 @@ tpkg
         ;; "dune/stanzas/rule/action/progn/empties"
         ;; "dune/stanzas/rule/action/progn/null"
         ;; "dune/stanzas/rule/action/system"
-        "dune/stanzas/rule/action/write-file"
+        ;; "dune/stanzas/rule/action/write-file"
         ;; "dune/stanzas/rule/action/mixed"
 
         ;; dune/stanzas/rule/action/chdir"
@@ -70,7 +104,7 @@ tpkg
         ;; "dune/stanzas/rule/action/run/var/b"
         ;; "dune/stanzas/rule/action/run/var/tag"
 
-        ;; "dune/stanzas/rule/action/with-stdout-to/bash"
+        "dune/stanzas/rule/action/with-stdout-to/bash"
         ;; "dune/stanzas/rule/action/with-stdout-to/chdir"
         ;; "dune/stanzas/rule/action/with-stdout-to/run"
 
@@ -84,6 +118,7 @@ tpkg
        (nzs (dune-pkg->mibl pkg))
        )
     nzs))
+
 
 (let ((rules (cdr (assoc-in '(:dune :rule) pkg))))
   (map car rules))

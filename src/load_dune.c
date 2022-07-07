@@ -423,7 +423,7 @@ LOCAL void _update_pkg_files(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
                 s7_list(s7, 2,
                         s7_make_keyword(s7, file_ext),
                         s7_make_string(s7, ftsentry->fts_name));
-            log_debug("new file_pair: %s", TO_STR(file_pair));
+            /* log_debug("new file_pair: %s", TO_STR(file_pair)); */
 
             s7_pointer new_files_alist =
                 s7_append(s7,
@@ -434,8 +434,8 @@ LOCAL void _update_pkg_files(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
                                   s7_make_string(s7, ftsentry->fts_name))
                         /* file_pair, */
                           );
-            log_debug("new files_alist: %s",
-                       TO_STR(new_files_alist));
+            /* log_debug("new files_alist: %s", */
+            /*            TO_STR(new_files_alist)); */
 
             /* s7_pointer sort      = _load_sort(); */
             /* s7_pointer string_lt = _load_string_lt(); */
@@ -448,8 +448,8 @@ LOCAL void _update_pkg_files(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
             /*           TO_STR(sorted)); */
 
             s7_set_cdr(files_assoc, new_files_alist);
-            log_debug("files_assoc: %s",
-                      TO_STR(files_assoc));
+            /* log_debug("files_assoc: %s", */
+            /*           TO_STR(files_assoc)); */
 
             /* s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg); */
 
@@ -683,13 +683,14 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
                     log_debug("modules_alist_cdr: %s",
                        TO_STR(modules_alist_cdr));
 
-                s7_pointer module_assoc = s7_list(s7, 2,
-                                                  mname_sym, ml_assoc);
+                s7_pointer module_assoc =
+                    s7_list(s7, 1, s7_list(s7, 2, mname_sym, ml_assoc));
                 if (debug) log_debug("new module_assoc: %s",
                                      TO_STR(module_assoc));
 
                 s7_pointer new_modules_alist_cdr =
-                    s7_cons(s7, module_assoc, modules_alist_cdr);
+                    s7_append(s7, modules_alist_cdr, module_assoc);
+                    /* s7_cons(s7, module_assoc, modules_alist_cdr); */
                 if (debug)
                     log_debug("new_modules_alist_cdr: %s",
                        TO_STR(new_modules_alist_cdr));
@@ -710,7 +711,11 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
                     log_debug("modules_alist_cdr: %s",
                        TO_STR(modules_alist_cdr));
 
-                s7_pointer msrcs = s7_cons(s7, ml_assoc, modules_alist_cdr);
+                /* s7_pointer msrcs = s7_cons(s7, ml_assoc, modules_alist_cdr); */
+                s7_pointer msrcs = s7_append(s7,
+                                             modules_alist_cdr,
+                                             s7_list(s7, 1, ml_assoc));
+
                 if (debug)
                     log_debug("setting cdr to: %s", TO_STR(msrcs));
 

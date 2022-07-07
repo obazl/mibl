@@ -103,7 +103,7 @@
     ;;             (update-opam-table module))
     ;;           directs)
     (list :deps
-          (list (list :raw fld)
+          (list ;; (list :raw fld)
                 (list :contingent (reverse selects))
                 ;;(list :modules (reverse modules))
                 (list :constant (reverse directs))))))

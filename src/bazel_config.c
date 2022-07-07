@@ -114,7 +114,7 @@ char *effective_ws_root(char *dir)
    /* log_debug("Testing %s", utstring_body(_ws_path)); */
    int rc = access(utstring_body(_ws_path), R_OK);
     if (rc == 0) {
-        log_debug("found %s", utstring_body(_ws_path));
+        /* log_debug("found %s", utstring_body(_ws_path)); */
         return dir;
     } else {
         utstring_new(_ws_path);

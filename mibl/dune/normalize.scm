@@ -1,10 +1,11 @@
 ;; (display "normalize.scm") (newline)
 
-(define modules-ht (make-hash-table)) ;; FIXME
+;; (define modules-ht (make-hash-table)) ;; FIXME
 
 ;; original: dune_stanzas.scm Xnormalize-stanza
 (define (dune-stanza->mibl pkg stanza nstanzas)
-  ;; (format #t "DUNE-STANZA->MIBL: ~A\n" stanza)
+  (format #t "DUNE-STANZA->MIBL: ~A\n" stanza)
+  (format #t "  PKG: ~A\n" pkg)
   ;; (format #t "  nstanzas: ~A\n" nstanzas)
   (let* ((stanza-alist (cdr stanza))
          ;; (_ (format #t "stanza-alist ~A\n" stanza-alist))
@@ -17,7 +18,7 @@
              (set-cdr! nstanzas
                        (append
                         (cdr nstanzas)
-                       (normalize-rule-stanza! pkg stanza))))
+                        (normalize-rule-stanza! pkg stanza))))
              ;; (set! pkg (normalize-rule-stanza!
              ;;            pkg stanza (list :rule))))
 
@@ -42,20 +43,25 @@
               ;;             stanza))
 
               ((library)
-               (begin
-                 ;; (format #t "Normalizing lib stanza ~A\n"
-                 ;;         (assoc-val 'name stanza-alist))
-                 (if (null-library? stanza)
-                     '()
-                     (let ((submodules-assoc (modules-fld->submodules-fld
-                                              (assoc 'modules (cdr stanza))
-                                              (assoc :modules pkg)
-                                              modules-ht))
-                           ;; add submodules-assoc to stanza
-                           )
-                       ;; (format #t "submodules-assoc: ~A\n" submodules-assoc)
-                       (normalize-library-stanza submodules-assoc)))))
-                      ;; pkg-path ocaml-srcs stanza))))
+               (set-cdr! nstanzas
+                         (append
+                          (cdr nstanzas)
+                          (normalize-library-stanza pkg stanza))))
+               ;; (begin
+               ;;   ;; (format #t "Normalizing lib stanza ~A\n"
+               ;;   ;;         (assoc-val 'name stanza-alist))
+               ;;   (if (null-library? stanza)
+               ;;       '()
+               ;;       ;; (let ((submodules-list (modules-fld->submodules-fld
+               ;;       ;;                          (assoc 'modules (cdr stanza))
+               ;;       ;;                          (assoc :modules pkg)
+               ;;       ;;                          modules-ht))
+               ;;       ;;       ;; add submodules-assoc to stanza
+               ;;       ;;       )
+               ;;       ;;   (format #t "submodules-list: ~A\n" submodules-list)
+               ;;       (normalize-library-stanza stanza))))
+               ;;         ;; (normalize-library-stanza submodules-assoc)))))
+               ;;        ;; pkg-path ocaml-srcs stanza))))
 
               ;; ((ocamllex) (normalize-stanza-ocamllex stanza))
 
@@ -92,7 +98,7 @@
   ;;   s))
 
 (define (dune-pkg->mibl pkg)
-  ;; (format #t "dune-pkg->mibl: ~A\n" pkg)
+  (format #t "dune-pkg->mibl: ~A\n" pkg)
   (let* ((nstanzas (list :dune))
          (pkg+ (append pkg (list nstanzas))))
     ;; (format #t "STANZAS COPY: ~A\n" dune-stanzas)

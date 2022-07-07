@@ -112,10 +112,12 @@
 
 ;;  expand-modules-fld!
 (define modules-fld->submodules-fld
+  ;;TODO: direct/indirect distinction. indirect are generated src files
   (let ((+documentation+ "Expand  'modules' field (of library or executable stanzas) and convert to :submodules assoc. modules-spec is a '(modules ...)' field from a library stanza; fs-modules is the list of modules in the package: an alist whose assocs have the form (A (:ml a.ml)(:mli a.mli)), i.e. keys are module names. Updates global modules-tbl.")
-        (+signature+ '(modules-fld->submodules-fld modules-spec pkg-modules modules-ht)))
-    (lambda (modules-spec pkg-modules modules-ht)
-      (format #t "modules-fld->submodules-fld\n")
+        (+signature+ '(modules-fld->submodules-fld modules-spec pkg-modules)))
+        ;; modules-ht)))
+    (lambda (modules-spec pkg-modules) ;; modules-ht)
+      (format #t "MODULES-FLD->SUBMODULES-FLD\n")
       (format #t "modules-spec: ~A\n" modules-spec)
       (format #t "pkg-modules: ~A\n" pkg-modules)
       (if modules-spec
@@ -153,9 +155,12 @@
                                 (modules-fld->submodules-fld
                                  (append
                                   (list 'modules :standard) (cdr modules))
-                                 pkg-modules modules-ht)
-                                (modules-fld->submodules-fld (cons 'modules (car modules))
-                                                             pkg-modules modules-ht))))
+                                 pkg-modules) ;; modules-ht)
+                                (modules-fld->submodules-fld (cons
+                                                              'modules
+                                                              (car modules))
+                                                             pkg-modules
+                                                             ))))
 
                          ;; inclusions, e.g. (modules a b c)
                          (else
@@ -164,7 +169,9 @@
                             (format #t "pkg-modules: ~A\n" pkg-module-names)
                             (if (member (normalize-module-name (car modules))
                                         pkg-module-names)
-                                (recur (cdr modules) (cons (car modules) direct)
+                                (recur (cdr modules) (cons
+                                                      (normalize-module-name
+                                                      (car modules)) direct)
                                        indirect)
                                 (error 'bad-arg "included module not in list"))))
                          ) ;; cond
