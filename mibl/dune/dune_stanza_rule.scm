@@ -324,4 +324,4 @@
 ;;                      (cdr stanza))))
 ;;     (cons 'rule (list result))))
 
-(format #t "loaded dune/dune_stanza_rule.scm\n")
+;; (format #t "loaded dune/dune_stanza_rule.scm\n")

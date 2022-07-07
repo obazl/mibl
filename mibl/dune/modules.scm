@@ -1,4 +1,4 @@
-(format #t "loading modules.scm\n")
+;; (format #t "loading modules.scm\n")
 
 ;; mibl/dune/modules.scm
 
@@ -224,4 +224,4 @@
 ;;   )
 
 
-(format #t "loaded modules.scm\n")
+;; (format #t "loaded modules.scm\n")

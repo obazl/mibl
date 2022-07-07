@@ -1,4 +1,4 @@
-(display "normalize.scm") (newline)
+;; (display "normalize.scm") (newline)
 
 (define modules-ht (make-hash-table)) ;; FIXME
 

@@ -1,4 +1,4 @@
-(display "pkg_api.scm") (newline)
+;; (display "pkg_api.scm") (newline)
 
 ;; return normalized path relative to ws-root
 (define (resolve-pkg-path path ws-root)

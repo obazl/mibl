@@ -1,4 +1,4 @@
-(display "loading dune/expanders.scm\n")
+;; (display "loading dune/expanders.scm\n")
 
 ;; several expansions: targets, cmd tools, cmd args
 ;; deps (see dune_action_deps.scm)
@@ -372,4 +372,4 @@ write-file))
              ;;  (error 'wtf2 "WTF2? ~A" (car raw-cmds)))
              ;; ))))
 
-(display "loaded dune/expanders.scm\n")
+;; (display "loaded dune/expanders.scm\n")
