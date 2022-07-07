@@ -70,6 +70,25 @@ cc_library(
     visibility = ["//visibility:public"]
 )
 
+################################################################
+CMD_HDR = "\n".join([
+    "SRC1=$(location load_dune.c)",
+    "SRCDIR1=`dirname $$SRC1`;",
+])
+
+MAC_FILES = " ".join([
+    "$(location @makeheaders//:makeheaders)",
+        "$(location load_dune.c)",
+        "$(location opam_config.c)",
+        "$(location mibl_config.c)",
+        "$(location s7_config.c)",
+        "$(location bazel_config.c)",
+        "$(location error_handler.c)",
+        "$(location fs.c)",
+        "$(location utils.c)",
+        "$(location ansi_colors.h)",
+])
+
 ########
 genrule(
     name = "mkhdrs",
@@ -82,10 +101,12 @@ genrule(
         "error_handler.c",
         "fs.c",
         "utils.c",
-
         "ansi_colors.h",
         # "@uthash//:include",
-   ],
+   ] + select({
+        "//bzl/host:linux": ["strlcat.c", "strlcpy.c", "strnstr.c"],
+        "//conditions:default":   []
+   }),
     outs = [
         "load_dune.h",
         "opam_config.h",
@@ -96,22 +117,14 @@ genrule(
         "fs.h",
         "utils.h",
     ],
-    cmd = "\n".join([
-        "SRC1=$(location load_dune.c)",
-        "SRCDIR1=`dirname $$SRC1`",
-        "$(location @makeheaders//:makeheaders) \\",
-        "    $(location load_dune.c) \\",
-        "    $(location opam_config.c) \\",
-        "    $(location mibl_config.c) \\",
-        "    $(location s7_config.c) \\",
-        "    $(location bazel_config.c) \\",
-        "    $(location error_handler.c) \\",
-        "    $(location fs.c) \\",
-        "    $(location utils.c) \\",
-        "    $(location ansi_colors.h)",
-        # "    $(locations @uthash//:include)",
-        "cp $${SRCDIR1}/*.h $(@D)",
-    ]),
+    cmd = CMD_HDR + MAC_FILES + select({
+        "//bzl/host:linux": " ".join([
+            "$(location strlcat.c)",
+            "$(location strlcpy.c)",
+            "$(location strnstr.c);"
+        ]),
+        "//conditions:default": ";"
+    }) + "cp $${SRCDIR1}/*.h $(@D)",
     tools = ["@makeheaders//:makeheaders"],
     visibility = ["//visibility:public"]
 )
