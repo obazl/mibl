@@ -3,9 +3,9 @@
 #include <fcntl.h>
 #include <glob.h>
 #include <libgen.h>
-#ifdef LINUX                    /* FIXME */
+#ifdef __linux__
 #include <linux/limits.h>
-#else // FIXME: macos test
+#else
 #include <limits.h>             /* PATH_MAX */
 #endif
 #include <pwd.h>
@@ -272,7 +272,7 @@ LOCAL void _config_s7_load_path_bazel_runfiles(char *manifest)
 
 LOCAL void _config_s7_load_path_bws_root(void)
 {
-    char *project_script_dir = PROJ_MIBL;
+    /* char *project_script_dir = PROJ_MIBL; */
 
     UT_string *proj_script_dir;
     utstring_new(proj_script_dir);
@@ -558,8 +558,8 @@ LOCAL void s7_config_repl(s7_scheme *sc)
   val = s7_load_with_environment(sc, "libc_s7.so", e);
   if (val)
     {
-      s7_pointer libs;
-      uint64_t hash;
+      /* s7_pointer libs; */
+      /* uint64_t hash; */
       /* hash = raw_string_hash((const uint8_t *)"*libc*", 6);  /\* hack around an idiotic gcc 10.2.1 warning *\/ */
       /* s7_define(sc, sc->nil, new_symbol(sc, "*libc*", 6, hash, hash % SYMBOL_TABLE_SIZE), e); */
       /* libs = global_slot(sc->libraries_symbol); */

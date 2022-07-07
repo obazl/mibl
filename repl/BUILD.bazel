@@ -13,12 +13,15 @@ cc_binary(
     defines = select({
         "//bzl/host:debug": ["DEBUG_TRACE"],
         "//conditions:default":   []
+    }) + select({
+        "//bzl/host:linux": ["_XOPEN_SOURCE=500"], # strdup
+        "//conditions:default":   []
     }) + [
         "WITH_C_LOADER"
         # "LD_LIBRARY_PATH=external/libs7/src"
     ],
     copts = select({
-        # strdup is non-standard, not supported on linux in strict c11 mode
+        # strdup is non-standard, not supported on linux in strict c11 mode?
         "//bzl/host:macos": ["-std=c11"],
         "//bzl/host:linux": ["-std=gnu11"],
         "//conditions:default": ["-std=c11"],

@@ -3,9 +3,9 @@
 #include <fcntl.h>
 #include <glob.h>
 #include <libgen.h>
-#ifdef LINUX                    /* FIXME */
+#ifdef __linux__
 #include <linux/limits.h>
-#else // FIXME: macos test
+#else
 #include <limits.h>             /* PATH_MAX */
 #endif
 #include <pwd.h>
@@ -43,7 +43,7 @@ EXPORT char * run_cmd(char *executable, char **argv)
     extern char **environ;
 
     /* FIXME: write stderr to log instead of dev/null? */
-    int DEVNULL_FILENO = open("/dev/null", O_WRONLY);
+    /* int DEVNULL_FILENO = open("/dev/null", O_WRONLY); */
 
     int cout_pipe[2];
     int cerr_pipe[2];

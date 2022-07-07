@@ -36,6 +36,9 @@ cc_library(
     defines = select({
         "//bzl/host:debug": ["DEBUG_TRACE"],
         "//conditions:default":   []
+    }) + select({
+        "//bzl/host:linux": ["_XOPEN_SOURCE=500"], # strdup
+        "//conditions:default":   []
     }),
     copts = [
         "-std=c11",

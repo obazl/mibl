@@ -3,9 +3,9 @@
 #include <fcntl.h>
 #include <glob.h>
 #include <libgen.h>
-#ifdef LINUX                    /* FIXME */
+#ifdef __linux__
 #include <linux/limits.h>
-#else // FIXME: macos test
+#else
 #include <limits.h>             /* PATH_MAX */
 #endif
 #include <pwd.h>
@@ -81,7 +81,7 @@ char *homedir;
  */
 EXPORT s7_pointer g_effective_ws_root(s7_scheme *s7,  s7_pointer args)
 {
-    char *dir;
+    char *dir = NULL;
     if ( s7_is_null(s7, args) ) {
         dir = getcwd(NULL, 0);
     } else {
@@ -89,7 +89,7 @@ EXPORT s7_pointer g_effective_ws_root(s7_scheme *s7,  s7_pointer args)
         if (args_ct == 1) {
             s7_pointer arg = s7_car(args);
             if (s7_is_string(arg)) {
-                dir = s7_string(arg);
+                dir = (char*)s7_string(arg);
             }
         } else {
             // throw exception

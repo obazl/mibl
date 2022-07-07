@@ -12,6 +12,9 @@ cc_binary(
     defines = select({
         "//bzl/host:debug": ["DEBUG_TRACE"],
         "//conditions:default":   []
+    }) + select({
+        "//bzl/host:linux": ["_XOPEN_SOURCE=500"], # strdup
+        "//conditions:default":   []
     }) + [
         # "LD_LIBRARY_PATH=external/libs7/src"
     ],

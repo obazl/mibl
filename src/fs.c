@@ -2,9 +2,9 @@
 #include <dirent.h>
 #include <errno.h>
 #include <libgen.h>
-#ifdef LINUX                    /* FIXME */
+#ifdef __linux__
 #include <linux/limits.h>
-#else // FIXME: macos test
+#else
 #include <limits.h>
 #endif
 #if EXPORT_INTERFACE
@@ -305,7 +305,7 @@ EXPORT char *mkdir_r(char *base, char *path)
                 perror(work);
                 fprintf(stderr, "Value of errno: %d\n", errnum);
                 fprintf(stderr, "mkdir error %s\n", strerror( errnum ));
-                free(work);
+                /* free(work); */
                 exit(EXIT_FAILURE);
             }
         }
@@ -338,7 +338,7 @@ EXPORT char *mkdir_r(char *base, char *path)
                     fprintf(stderr, "mkdir failure");
                     perror(work);
                     free(so_far);
-                    free(work);
+                    /* free(work); */
                     exit(EXIT_FAILURE);
                 }
             }

@@ -53,37 +53,57 @@ char *dunefile_to_string(UT_string *dunefile_name)
     /* FIXME: use malloc, this will rarely be called */
     /* 16K should be enough for any dunefile */
 #define BUFSZ 16384
-    static unsigned char buffer[BUFSZ];
+    static char buffer[BUFSZ];
     memset(buffer, '\0', BUFSZ);
-    unsigned char fixbuf[BUFSZ];
-    memset(fixbuf, '\0', BUFSZ);
     /* FIXME: what about e.g. unicode in string literals? */
-
-    int read_ct;
 
     FILE *inFp = fopen(utstring_body(dunefile_name), "r");
     fseek(inFp, 0, SEEK_END);
     uint64_t fileSize = ftell(inFp);
     /* log_debug("filesize: %d", fileSize); */
     if (fileSize > BUFSZ) {
-        // ??
+        log_error("dune file size (%d) > BUFSZ (%d)\n", fileSize, BUFSZ);
+        exit(EXIT_FAILURE);     /* FIXME: exit gracefully */
     }
     rewind(inFp);
+
+    char *fixbuf = malloc(fileSize + 1);
+    memset(fixbuf, '\0', fileSize);
 
     uint64_t outFileSizeCounter = fileSize;
 
     /* we fread() bytes from inFp in COPY_BUFFER_MAXSIZE increments,
        until there is nothing left to fread() */
-
+    int read_ct = 0;
     do {
         if (outFileSizeCounter > BUFSZ) {
             /* probably won't see a 16K dune file */
             read_ct = fread(buffer, 1, (size_t) BUFSZ, inFp);
+            if (read_ct != BUFSZ) {
+                if (ferror(inFp) != 0) {
+                    log_error("fread error 1 for %s\n",
+                              utstring_body(dunefile_name));
+                    exit(EXIT_FAILURE); //FIXME: exit gracefully
+                }
+            }
             /* log_debug("writing"); */
             outFileSizeCounter -= BUFSZ;
         }
         else {
             read_ct = fread(buffer, 1, (size_t) outFileSizeCounter, inFp);
+            if (read_ct != outFileSizeCounter) {
+                if (ferror(inFp) != 0) {
+                    log_error("fread error 2 for %s\n",
+                              utstring_body(dunefile_name));
+                    exit(EXIT_FAILURE); //FIXME: exit gracefully
+                } else {
+                    if (feof(inFp) == 0) {
+                        log_error("fread error 3 for %s\n",
+                                  utstring_body(dunefile_name));
+                        exit(EXIT_FAILURE); //FIXME: exit gracefully
+                    }
+                }
+            }
             outFileSizeCounter = 0ULL;
         }
     } while (outFileSizeCounter > 0);
@@ -92,20 +112,29 @@ char *dunefile_to_string(UT_string *dunefile_name)
 
     // FIXME: loop over the entire buffer
 
-    unsigned char *cursor = strstr((const char*) buffer, ".)");
+    char *cursor = strstr((const char*) buffer, ".)");
     if (cursor == NULL) {
         // FIXME: should not happen, we only get here if s7_read choke
         // on ".)"
     } else {
         /* log_debug("FOUND \".)\" at pos: %d", cursor - buffer); */
-        char *dest = strncpy(fixbuf, buffer, cursor - buffer);
+        size_t ct = strlcpy(fixbuf, (const char*)buffer, cursor - buffer);
+        if (ct >= BUFSZ) {
+            // output string has been truncated
+        }
         fixbuf[cursor - buffer] = '\0';
-        size_t ct = strlcat(fixbuf, "./", BUFSZ);
+        ct = strlcat(fixbuf, "./", BUFSZ);
+        if (ct >= BUFSZ) {
+            // output string has been truncated
+        }
         /* log_debug("first seg: %s", fixbuf); */
         /* log_debug("first seg len: %d", strlen((char*)fixbuf)); */
         /* log_debug("cursor - buffer = %d", cursor - buffer); */
         /* log_debug("second seg %s", buffer + 225); */
         ct = strlcat((char*)fixbuf, buffer + (cursor - buffer) + 1, BUFSZ);
+        if (ct >= BUFSZ) {
+            // output string has been truncated
+        }
         /* log_debug("fixed: %s", (char*)fixbuf); */
 
     }
@@ -116,8 +145,7 @@ s7_pointer fix_baddot(UT_string *dunefile_name)
 {
     log_debug("fix_baddot");
 
-    /* FIXME: free dunestring (after switch to malloc) */
-    char * dunestring = dunefile_to_string(dunefile_name);
+    char *dunestring = dunefile_to_string(dunefile_name);
 
     /* now s7_read using string port */
 
@@ -163,5 +191,6 @@ s7_pointer fix_baddot(UT_string *dunefile_name)
     }
     s7_close_input_port(s7, sport);
     /* leave error config as-is */
+    free(dunestring);
     return stanzas;
 }

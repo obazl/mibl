@@ -150,7 +150,7 @@ LOCAL s7_pointer _read_dunefile(char *path) //, char *fname)
                 log_debug("FIXED: %s", TO_STR(fixed));
                 if (s7_is_null(s7,stanzas)) {
                     /* stanzas = s7_list(s7, 1, fixed); */
-                    fixed;
+                    /* fixed; */
                 } else{
                     stanzas = s7_append(s7, stanzas, fixed);
                                         /* s7_list(s7, 1, fixed)); */
@@ -208,8 +208,8 @@ bool _is_ws_root(FTSENT *ftsentry)
 
     UT_string *pathdir;
     utstring_new(pathdir);
-    utstring_printf(pathdir, ftsentry->fts_path);
-    utstring_printf(pathdir, "/WORKSPACE.bazel");
+    utstring_printf(pathdir, "%s", ftsentry->fts_path);
+    utstring_printf(pathdir, "%s", "/WORKSPACE.bazel");
     /* log_trace("accessing %s", utstring_body(pathdir)); */
     int rc = access(utstring_body(pathdir), R_OK);
     /* log_debug("RC: %d", rc); */
@@ -218,8 +218,8 @@ bool _is_ws_root(FTSENT *ftsentry)
         return true;
     } else {
         utstring_new(pathdir);
-        utstring_printf(pathdir, ftsentry->fts_path);
-        utstring_printf(pathdir, "/WORKSPACE");
+        utstring_printf(pathdir, "%s", ftsentry->fts_path);
+        utstring_printf(pathdir, "%s", "/WORKSPACE");
         rc = access(utstring_body(pathdir), R_OK);
         if (!rc) {
             if (trace) log_trace("true");
@@ -292,17 +292,18 @@ LOCAL void _handle_dir(s7_pointer pkg_tbl, FTS* tree, FTSENT *ftsentry)
 
     /* MB: result of realpath must be freed */
     char *rpath = realpath(ftsentry->fts_path, NULL);
-    s7_pointer result =
-        s7_hash_table_set(s7, pkg_tbl, key,
-                          s7_list(s7, 3,
-                                  //FIXME: use a ws-alist instead of
-                                  //annotating each pkg with :ws-path
-                                  s7_list(s7, 2, ws_path_kw,
-                                          s7_make_string(s7, ews_root)),
-                                  s7_list(s7, 2, pkg_path_kw,
-                                          key),
-                                  s7_list(s7, 2, realpath_kw,
-                                          s7_make_string(s7, rpath))));
+    /* FIXME: check result */
+    /* s7_pointer result = */
+    s7_hash_table_set(s7, pkg_tbl, key,
+                      s7_list(s7, 3,
+                              //FIXME: use a ws-alist instead of
+                              //annotating each pkg with :ws-path
+                              s7_list(s7, 2, ws_path_kw,
+                                      s7_make_string(s7, ews_root)),
+                              s7_list(s7, 2, pkg_path_kw,
+                                      key),
+                              s7_list(s7, 2, realpath_kw,
+                                      s7_make_string(s7, rpath))));
 }
 
 static char principal[256];
@@ -318,7 +319,7 @@ LOCAL char *_module_name(FTSENT *ftsentry, char *ext)
 static s7_pointer alist_updt_in_fn(s7_scheme *s, s7_pointer args)
 {
     log_debug("running updater");
-    return(s7_string("HELLO"));
+    return(s7_make_string(s7, "HELLO"));
 }
 
 LOCAL bool _exclusions(FTSENT *ftsentry, char *ext)
@@ -383,10 +384,10 @@ LOCAL void _update_pkg_files(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
             if (debug)
                 log_debug("initializing (:files (:static (:type . fname))) list");
 
-            s7_pointer file_pair =
-                s7_list(s7, 1,
-                        /* s7_make_keyword(s7, file_ext), */
-                        s7_make_string(s7, ftsentry->fts_name));
+            /* s7_pointer file_pair = */
+            /*     s7_list(s7, 1, */
+            /*             /\* s7_make_keyword(s7, file_ext), *\/ */
+            /*             s7_make_string(s7, ftsentry->fts_name)); */
 
             s7_pointer static_assoc = s7_list(s7, 2,
                                               static_kw,
@@ -419,10 +420,10 @@ LOCAL void _update_pkg_files(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
                 log_debug("files_alist: %s", TO_STR(files_alist));
             }
 
-            s7_pointer file_pair =
-                s7_list(s7, 2,
-                        s7_make_keyword(s7, file_ext),
-                        s7_make_string(s7, ftsentry->fts_name));
+            /* s7_pointer file_pair = */
+            /*     s7_list(s7, 2, */
+            /*             s7_make_keyword(s7, file_ext), */
+            /*             s7_make_string(s7, ftsentry->fts_name)); */
             /* log_debug("new file_pair: %s", TO_STR(file_pair)); */
 
             s7_pointer new_files_alist =
@@ -695,12 +696,12 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
                     log_debug("new_modules_alist_cdr: %s",
                        TO_STR(new_modules_alist_cdr));
 
-                s7_pointer new_modules_alist
-                    = s7_set_cdr(modules_alist,
-                                                   new_modules_alist_cdr);
-                if (debug)
+                if (debug) {
+                    s7_pointer new_modules_alist
+                        = s7_set_cdr(modules_alist, new_modules_alist_cdr);
                     log_debug("new_modules_alist: %s",
-                       TO_STR(modules_alist));
+                              TO_STR(new_modules_alist));
+                }
             } else {
                 /* update */
                 if (debug) log_debug(RED "UPDATING" CRESET " module_alist: %s",
@@ -716,15 +717,13 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
                                              modules_alist_cdr,
                                              s7_list(s7, 1, ml_assoc));
 
-                if (debug)
-                    log_debug("setting cdr to: %s", TO_STR(msrcs));
-
-                s7_pointer new_modules_alist = s7_set_cdr(module_alist, msrcs);
                 if (debug) {
-                    log_debug("new_modules_alist: %s", TO_STR(module_alist));
-
-                    log_debug("new pkgs: %s",
-                       TO_STR(pkg_alist));
+                    log_debug("setting cdr to: %s", TO_STR(msrcs));
+                    s7_pointer new_modules_alist
+                        = s7_set_cdr(module_alist, msrcs);
+                    log_debug("new_modules_alist: %s",
+                              TO_STR(new_modules_alist));
+                    log_debug("new pkgs: %s", TO_STR(pkg_alist));
                 }
             }
         }
@@ -853,7 +852,7 @@ LOCAL void _handle_dune_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
     /* strlcat(buf, "/dune", 256); */
     /* printf("checking %s\n", buf); */
 
-    char *s1;
+    /* char *s1; */
     /* avoid tuareg dunefiles! */
     FILE *fileStream;
     char fileText [100];
@@ -876,8 +875,9 @@ LOCAL void _handle_dune_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
         /*                                 s7_make_keyword(s7, "test"), */
         /*                                 s7_make_symbol(s7, "dummy")); */
         char *rpath = realpath(ftsentry->fts_path, NULL);
-        s7_pointer result =
-            s7_hash_table_set(s7, pkg_tbl, key,
+        /* FIXME: check result */
+        /* s7_pointer result = */
+        s7_hash_table_set(s7, pkg_tbl, key,
                           s7_list(s7, 2,
                                   s7_list(s7, 2, pkg_path_kw,
                                           key),
@@ -916,10 +916,11 @@ LOCAL void _handle_dune_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
     if (stanzas_alist == s7_f(s7)) {
         s7_pointer stanzas_assoc = s7_cons(s7, dune_stanzas_sym, stanzas);
         /* log_debug("appending new stanzas_assoc: %s", TO_STR(stanzas_assoc)); */
-        s7_pointer result =
-            s7_hash_table_set(s7, pkg_tbl, pkg_key,
-                              s7_append(s7, pkg_alist,
-                                        s7_list(s7, 1, stanzas_assoc)));
+        /* FIXME: check result */
+        /* s7_pointer result = */
+        s7_hash_table_set(s7, pkg_tbl, pkg_key,
+                          s7_append(s7, pkg_alist,
+                                    s7_list(s7, 1, stanzas_assoc)));
     } else {
         if (debug) log_debug("setting cdr of ");
         s7_set_cdr(stanzas_alist, stanzas);
@@ -944,7 +945,7 @@ LOCAL void _handle_dune_project_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
     static char buf[256];
     strlcpy(buf, ftsentry->fts_path, 256);
 
-    char *s1;
+    /* char *s1; */
 
     s7_pointer stanzas = _read_dunefile(ftsentry->fts_path);
 
@@ -959,13 +960,13 @@ LOCAL void _handle_dune_project_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
     s7_pointer dune_project_assoc = s7_cons(s7, dune_project_kw,
                                     stanzas);
 
-    s7_pointer result =
-        s7_hash_table_set(s7, pkg_tbl, key,
-                          /* s7_list(s7, 2, */
-                          s7_append(s7, pkg_alist,
-                                    s7_list(s7, 1,
-                                            dune_project_assoc)));
-
+    /* FIXME: check result */
+    /* s7_pointer result = */
+    s7_hash_table_set(s7, pkg_tbl, key,
+                      /* s7_list(s7, 2, */
+                      s7_append(s7, pkg_alist,
+                                s7_list(s7, 1,
+                                        dune_project_assoc)));
     if (debug)
         log_debug("updated pkg-tbl: %s", TO_STR(pkg_tbl));
 
@@ -977,8 +978,8 @@ LOCAL void _handle_opam_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
     /* printf("_handle_opam_file %s\n", ftsentry->fts_name); */
     /* printf("    pkg: %s\n", dirname(ftsentry->fts_path)); */
 
-    char *ext = strrchr(ftsentry->fts_name, '.');
-    _indent(ftsentry->fts_level);
+    /* char *ext = strrchr(ftsentry->fts_name, '.'); */
+    /* _indent(ftsentry->fts_level); */
 
     /* printf("%d. " MAG  ":%-6s" CRESET " %s\n", */
     /*        ftsentry->fts_level, */
@@ -1058,9 +1059,9 @@ int _compare(const FTSENT** one, const FTSENT** two)
     return (strcmp((*one)->fts_name, (*two)->fts_name));
 }
 
-LOCAL char *_get_path_dir(s7_pointer arg)
+LOCAL const char *_get_path_dir(s7_pointer arg)
 {
-    char *pathdir = s7_string(arg);
+    const char *pathdir = s7_string(arg);
 
     if (pathdir[0] == '/') {
         log_error("Path arg must be relative");
@@ -1074,7 +1075,8 @@ LOCAL char *_get_path_dir(s7_pointer arg)
                                  s7_make_string(s7, "~A: ~A\n"),
                                  s7_make_string(s7, strerror(errno)),
                                  s7_make_string(s7, pathdir));
-        return s7_error(s7, s7_make_symbol(s7, "access-error"), s7s);
+        s7_error(s7, s7_make_symbol(s7, "access-error"), s7s);
+        return NULL;
     }
     struct stat path_stat;
     stat(pathdir, &path_stat);
@@ -1122,7 +1124,7 @@ EXPORT s7_pointer g_load_dune(s7_scheme *s7,  s7_pointer args)
         log_debug("cwd: %s", getcwd(NULL, 0));
     }
 
-    char *rootdir, *pathdir;
+    const char *rootdir, *pathdir;
     s7_pointer _pkg_tbl = s7_make_hash_table(s7, PKG_CT);
 
     if ( s7_is_null(s7, args) ) {
@@ -1133,7 +1135,7 @@ EXPORT s7_pointer g_load_dune(s7_scheme *s7,  s7_pointer args)
         if (debug)
             log_debug("args ct: %d\n", args_ct);
 
-        s7_pointer rootarg;
+        /* s7_pointer rootarg; */
 
         /* if (args_ct == 2) { */
         /*     rootdir = s7_string(s7_car(args)); */
@@ -1147,8 +1149,8 @@ EXPORT s7_pointer g_load_dune(s7_scheme *s7,  s7_pointer args)
 
                 rootdir = getcwd(NULL,0);
 
-                s7_int gc1;
-                s7_pointer _pkgs, _iter;
+                /* s7_int gc1; */
+                /* s7_pointer _pkgs, _iter; */
 
                 s7_pointer arglist = arg;
                 while ( !s7_is_null(s7, arglist)) {
@@ -1195,7 +1197,7 @@ EXPORT s7_pointer g_load_dune(s7_scheme *s7,  s7_pointer args)
             log_error("Too many args");
             fprintf(stderr,
                     RED "ERROR: unexpected arg count %d for load-dune\n",
-                    args_ct);
+                    (int)args_ct);
             exit(EXIT_FAILURE);
         }
         /* rootdir = (char *)TO_STR(rootarg); */
@@ -1210,7 +1212,7 @@ EXPORT s7_pointer g_load_dune(s7_scheme *s7,  s7_pointer args)
 }
 
 /* FIXME: use same logic for rootdir as */
-EXPORT s7_pointer load_dune(char *home_sfx, char *traversal_root)
+EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
 {
     if (debug) {
         log_debug("load_dune");
