@@ -42,49 +42,111 @@
   ;; (format #t "normalize-stanza-fld-public_name ~A\n" fld)
   (list :public_name fld))
 
-;;fld: (libraries ctypes ctypes.foreign ctypes.stubs hex data-encoding tezos-crypto tezos-stdlib tezos-error-monad tezos-lwt-result-stdlib)
-;; tezos/src/lib_signer_backends/unix:
+;; SELECT in 'libraries' field of lib stanzas:
+;; alternative deps:
+;; https://dune.readthedocs.io/en/stable/concepts.html#alternative-dependencies
+;; e.g. tezos/src/lib_signer_backends/unix:
 ;; (libraries ocplib-endian.bigstring
 ;;            ... etc. ...
 ;;            (select ledger.ml from
 ;;              (ledgerwallet-tezos -> ledger.available.ml)
 ;;              (-> ledger.none.ml)))
-;;  [why is a .ml file in a 'libraries' field?
-(define (analyze-select deps directs selects)
-;; see normalize-lib-select in dune_stanzas.scm
+
+;;  Why is a .ml file in a 'libraries' field? Why not in the 'modules'
+;;  field? In this example, srcs include ledger.mli but not ledger.ml,
+;;  and (modules :standard). Evidently the modules list would not
+;;  include Ledger, since it lacks ledger.ml. But the 'libraries'
+;;  field indicates a dependency on _some_ ledger.ml file. So
+;;  implicitly, before the 'modules' field is resolved, the
+;;  dependencies are resolved, resulting in generation (by copy) of
+;;  ledger.ml, so the Ledger will be included in the 'modules' roster.
+
+;;  As a side-effect, evaluating each (a -> b) clause makes a a
+;;  dependency; but a fake dependency, whose only purpose is to
+;;  trigger a file copy to induce a module src dep.
+
+;; In other words, these select clauses do NOT express a lib
+;; dependency on a lib/archive/module; rather they express a (sub)
+;; modules dependency on a source file (and as a side effect, a lib
+;; dep on the protasis of the winning clause).
+
+;; translation to mibl: such selects do not belong in :deps. In
+;; starlark they will be 'select' for a source attibute.
+
+(define (analyze-select select) ;; directs selects)
+  (format #t "~A: ~A\n" (blue "analyze-select") select)
+  ;; e.g. (select foo.ml from (bar -> baz.ml) (-> default.ml))
+  ;; see normalize-lib-select in dune_stanzas.scm
   ;; FIXME: extract module dep from select sexp and add to directs
-  directs)
+  (let* ((target (cadr select))
+         (selectors (cdddr select))
+         (default (last selectors))
+         (selectors (but-last selectors)))
+    (format #t "select target: ~A\n" target)
+    (format #t "selectors : ~A\n" selectors)
+    (format #t "default : ~A\n" default)
+    (let ((clauses (map (lambda (selector)
+                          (format #t "selector: ~A\n" selector)
+                          (let ((protasis (car selector))
+                                (apodosis (caddr selector)))
+                            (list
+                             `(:dep ,protasis)
+                             `(:clause ,(cons protasis apodosis)))))
+                        selectors)))
+      (format #t "clauses: ~A\n" clauses)
+      `((:target ,target)
+        ,(cons ':deps (map (lambda (c) (cadar c)) clauses))
+        (:selectors ,(apply
+                      append
+                      (map (lambda (c) (assoc-val :clause c)) clauses)))
+        (:default ,default)))))
 
 ;; (libraries a b c.d a.b.c ...)
 ;; uncommon: "alternative deps"
 ;; see https://dune.readthedocs.io/en/stable/concepts.html#alternative-deps
 ;; example from tezos:
- ;; (libraries a b c
- ;;            (select void_for_linking-genesis from
- ;;              (tezos-client-genesis -> void_for_linking-genesis.empty)
+;; (libraries a b c
+;;            (select void_for_linking-genesis from
+;;              (tezos-client-genesis -> void_for_linking-genesis.empty)
 ;;              (-> void_for_linking-genesis.empty))
 ;;              ...
- ;;            (select void_for_linking-demo-counter from
- ;;              (tezos-client-demo-counter -> void_for_linking-demo-counter.empty)
- ;;              (-> void_for_linking-demo-counter.empty)))
+;;            (select void_for_linking-demo-counter from
+;;              (tezos-client-demo-counter -> void_for_linking-demo-counter.empty)
+;;              (-> void_for_linking-demo-counter.empty)))
 
 ;; also:  (libraries (re_export foo))
 
 (define (analyze-libdeps libdeps)
-  ;; (format #t "analyze-libdeps: ~A\n" libdeps)
+  (format #t "~A: ~A\n" (blue "analyze-libdeps") libdeps)
   (let recur ((deps libdeps)
               (directs '()) ;; directs == public_name
               (selects '())
               (modules '()))
     (if (null? deps)
-        (values directs selects modules)
+        (let ((deps (map (lambda (s)
+                           (format #t "S: ~A\n" s)
+                           (let ((deps (assoc-val :deps s))) deps))
+                         selects))
+              (mods (map (lambda (s)
+                              (format #t "S: ~A\n" s)
+                              (let ((mods (alist-delete '(:deps) s))) mods))
+                            selects)))
+          (format #t "SELECT DEPS: ~A\n" deps)
+          (format #t "SELECT MODS: ~A\n" mods)
+          (format #t " DIRECTS: ~A\n" directs)
+          (values (list (list :contingent deps)
+                        (list :fixed directs))
+                  mods ;; selects
+                  modules))
         (if (pair? (car deps))
             ;; e.g. (select ...)
             (if (equal? (caar deps) 'select)
-                (recur (cdr deps)
-                       (analyze-select deps directs selects)
-                       (cons (car deps) selects)
-                       (libdep->module-name modules))
+                (let ((the-selects (analyze-select (car deps))))
+                  (recur (cdr deps)
+                         directs
+                         (append selects (list the-selects))
+                         ;; (cons (car deps) selects)
+                         (libdep->module-name modules)))
                 (error 'bad-lib-dep "embedded pair whose car is not 'select'"))
             (if (equal? 'libraries (car deps))
                 ;; skip the initial fld name "libraries"
@@ -96,17 +158,17 @@
                        selects
                        (libdep->module-name modules)))))))
 
-(define (normalize-stanza-fld-libraries fld)
-  ;; (format #t "normalize-stanza-fld-libraries: ~A\n" fld)
-  (let-values (((directs selects modules) (analyze-libdeps fld)))
-    ;; (for-each (lambda (module)
-    ;;             (update-opam-table module))
-    ;;           directs)
-    (list :deps
-          (list ;; (list :raw fld)
-                (list :contingent (reverse selects))
-                ;;(list :modules (reverse modules))
-                (list :constant (reverse directs))))))
+(define dune-library-deps->mibl
+  (let ((+documentation+ "convert 'libraries' field of dune library stanza to mibl format. fld-assoc is a pair (fldname val)")
+        (+signature+ '(dune-library-deps->mibl fld-assoc)))
+    (lambda (fld-assoc)
+      (format #t "~A: ~A\n" (red "DUNE-library-deps->MIBL") fld-assoc)
+      (let-values (((directs selects modules) (analyze-libdeps fld-assoc)))
+        (let* ((deps (if (null? directs) '() (list :deps directs)))
+                         ;; (cons ':direct directs)))
+               (deps (if (null? selects) deps
+                         (list deps `(:genmodules ,selects)))))
+          deps)))))
 
 ;; (modules Registerer), (modules (:standard \ legacy_store_builder))
 ;; (modules)

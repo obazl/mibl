@@ -31,7 +31,7 @@ tpkg
         ;; 'modules' field tests:
         ;; "dune/libmodules/default"
         ;; "dune/libmodules/standard"
-        "dune/libmodules/exclusions"
+        ;; "dune/libmodules/exclusions"
         ;; "dune/libmodules/inclusions"
 
         ;; unwrapped:
@@ -39,6 +39,9 @@ tpkg
         ;; "dune/stanzas/library/unwrapped/standard"
         ;; "dune/stanzas/library/unwrapped/exclusions"
         ;; "dune/stanzas/library/unwrapped/inclusions"
+
+        ;; lib deps
+        "dune/stanzas/library/deps/select"
 
         ;; "dune/tezos/lib_clic"
         ;; "dune/tezos/lib_requester"

@@ -18,35 +18,13 @@
              (set-cdr! nstanzas
                        (append
                         (cdr nstanzas)
-                        (normalize-rule-stanza! pkg stanza))))
-             ;; (set! pkg (normalize-rule-stanza!
-             ;;            pkg stanza (list :rule))))
+                        (dune-rule->mibl pkg stanza))))
 
-                       ;; pkg-path ocaml-srcs stanza))
-
-              ;; ((alias) (normalize-stanza-alias stanza))
-              ;; ((copy_files#) (normalize-stanza-copy_files pkg-path stanza))
-              ;; ((copy_files) (normalize-stanza-copy_files pkg-path stanza))
-              ;; ((copy#) (normalize-stanza-copy pkg-path stanza))
-              ;; ((copy) (normalize-stanza-copy pkg-path stanza))
-              ;; ((data_only_dirs) (normalize-stanza-data_only_dirs stanza))
-              ;; ((env) (normalize-stanza-env stanza))
-              ;; ((executable) (normalize-stanza-executable :executable
-              ;;                pkg-path ocaml-srcs stanza))
-
-              ;; ((executables) (normalize-stanza-executables :executables
-              ;;                 pkg-path ocaml-srcs stanza))
-
-              ;; ((install) (normalize-stanza-install
-              ;;             pkg-path
-              ;;             ;;dune-project-stanzas
-              ;;             stanza))
-
-              ((library)
-               (set-cdr! nstanzas
-                         (append
-                          (cdr nstanzas)
-                          (normalize-library-stanza pkg stanza))))
+            ((library)
+             (set-cdr! nstanzas
+                       (append
+                        (cdr nstanzas)
+                        (dune-library->mibl pkg stanza))))
                ;; (begin
                ;;   ;; (format #t "Normalizing lib stanza ~A\n"
                ;;   ;;         (assoc-val 'name stanza-alist))
@@ -62,15 +40,32 @@
                ;;       (normalize-library-stanza stanza))))
                ;;         ;; (normalize-library-stanza submodules-assoc)))))
                ;;        ;; pkg-path ocaml-srcs stanza))))
+            ;; ((alias) (normalize-stanza-alias stanza))
+            ;; ((copy_files#) (normalize-stanza-copy_files pkg-path stanza))
+            ;; ((copy_files) (normalize-stanza-copy_files pkg-path stanza))
+            ;; ((copy#) (normalize-stanza-copy pkg-path stanza))
+            ;; ((copy) (normalize-stanza-copy pkg-path stanza))
+            ;; ((data_only_dirs) (normalize-stanza-data_only_dirs stanza))
+            ;; ((env) (normalize-stanza-env stanza))
+            ;; ((executable) (normalize-stanza-executable :executable
+            ;;                pkg-path ocaml-srcs stanza))
 
-              ;; ((ocamllex) (normalize-stanza-ocamllex stanza))
+            ;; ((executables) (normalize-stanza-executables :executables
+            ;;                 pkg-path ocaml-srcs stanza))
 
-              ;; ((ocamlyacc) (normalize-stanza-ocamllex stanza))
+            ;; ((install) (normalize-stanza-install
+            ;;             pkg-path
+            ;;             ;;dune-project-stanzas
+            ;;             stanza))
 
-              ;; ((test) (normalize-stanza-test pkg-path ocaml-srcs stanza))
-              ;; ((tests) (normalize-stanza-tests pkg-path ocaml-srcs stanza))
+            ;; ((ocamllex) (normalize-stanza-ocamllex stanza))
 
-              ;; ((:dune-project) stanza)
+            ;; ((ocamlyacc) (normalize-stanza-ocamllex stanza))
+
+            ;; ((test) (normalize-stanza-test pkg-path ocaml-srcs stanza))
+            ;; ((tests) (normalize-stanza-tests pkg-path ocaml-srcs stanza))
+
+            ;; ((:dune-project) stanza)
 
               (else
                (format #t "dune-stanza->mibl unhandled: ~A\n" stanza)))))

@@ -42,119 +42,125 @@
                   #f)
           #f))
 
-(define (normalize-lib-fields pkg stanza-alist wrapped?)
-  (format #f "NORMALIZE-LIB-FIELDS: ~A\n" stanza-alist)
-  (map
-   (lambda (fld-assoc)
-     (format #t "lib fld-assoc: ~A\n" fld-assoc)
-     (case (car fld-assoc)
-       ((name) `(:privname ,(cadr fld-assoc)))
-       ((public_name) `(:pubname ,(cadr fld-assoc)))
+(define (dune-library-fields->mibl pkg stanza-alist wrapped?)
+  (format #t "~A: ~A\n" (blue "DUNE-LIBRARY-FIELDS->MIBL") stanza-alist)
+  (let ((deps (dune-library-deps->mibl (assoc-val 'libraries stanza-alist)))
+        (flds (map
+               (lambda (fld-assoc)
+                 (format #t "lib fld-assoc: ~A\n" fld-assoc)
+                 (case (car fld-assoc)
+                   ((name) `(:privname ,(cadr fld-assoc)))
+                   ((public_name) `(:pubname ,(cadr fld-assoc)))
 
-       ((flags) (normalize-stanza-fld-flags fld-assoc :mod))
-       ((library_flags) (normalize-stanza-fld-flags fld-assoc :lib))
-       ((libraries) (normalize-stanza-fld-libraries fld-assoc))
+                   ((flags) (normalize-stanza-fld-flags fld-assoc :mod))
+                   ((library_flags) (normalize-stanza-fld-flags fld-assoc :lib))
+                   ;; (values) returns "nothing"
+                   ((libraries) (values)) ;; handled separately
 
-       ;;TODO: direct/indirect distinction. indirect are generated src files
-       ((modules)
-        ;; FIXME: deal with private_modules too
-        (let ((submodules-list (modules-fld->submodules-fld
-                                (assoc 'modules stanza-alist)
-                                (assoc :modules pkg)
-                                ;; modules-ht
-                                )))
-          (format #t "submodules-list: ~A\n" submodules-list)
-          (if wrapped?
-              (cons ':submodules submodules-list)
-              (cons ':manifest submodules-list))))
+                   ;;TODO: direct/indirect distinction. indirect are
+                   ;;generated src files
+                   ((modules)
+                    ;; FIXME: deal with private_modules too
+                    (let ((submodules-list (modules-fld->submodules-fld
+                                            (assoc 'modules stanza-alist)
+                                            (assoc :modules pkg)
+                                            ;; modules-ht
+                                            )))
+                      (format #t "submodules-list: ~A\n" submodules-list)
+                      (if wrapped?
+                          (cons ':submodules submodules-list)
+                          (cons ':manifest submodules-list))))
 
-       ;; (format #t "direct: ~A, indirect ~A\n"
-       ;;         direct indirect)
-       ;; (let* ((raw `((:raw ,fld-assoc)))
-       ;;        (direct (if (null? direct)
-       ;;                    raw
-       ;;                    (cons `(:direct ,@direct) raw)))
-       ;;        (indirect (if (null? indirect)
-       ;;                      direct
-       ;;                      (cons `(:indirect
-       ;;                              ,@(reverse indirect))
-       ;;                            direct)))
-       ;;        ;; if not wrapped, add :resolver
-       ;;        (resolver (if-let ((wrapped (assoc :wrapped stanza-alist)))
-       ;;                          (if (equal? wrapped 'false)
-       ;;                              #f
-       ;;                              #t)
-       ;;                          ;; default: ns archive with resolver module
-       ;;                          (cons `(:resolver ,privname)
-       ;;                                indirect)))
-       ;;        (result `(:submodules ,resolver))) ;;FIXME: (:deps ((:submodules ...)(:resolver ...)))
-       ;;   ;; (format #t "XRESULT ~A: ~A\n" privname result)
-       ;;   result)
-       ;; ))
+                   ;; (format #t "direct: ~A, indirect ~A\n"
+                   ;;         direct indirect)
+                   ;; (let* ((raw `((:raw ,fld-assoc)))
+                   ;;        (direct (if (null? direct)
+                   ;;                    raw
+                   ;;                    (cons `(:direct ,@direct) raw)))
+                   ;;        (indirect (if (null? indirect)
+                   ;;                      direct
+                   ;;                      (cons `(:indirect
+                   ;;                              ,@(reverse indirect))
+                   ;;                            direct)))
+                   ;;        ;; if not wrapped, add :resolver
+                   ;;        (resolver (if-let ((wrapped (assoc :wrapped stanza-alist)))
+                   ;;                          (if (equal? wrapped 'false)
+                   ;;                              #f
+                   ;;                              #t)
+                   ;;                          ;; default: ns archive with resolver module
+                   ;;                          (cons `(:resolver ,privname)
+                   ;;                                indirect)))
+                   ;;        (result `(:submodules ,resolver))) ;;FIXME: (:deps ((:submodules ...)(:resolver ...)))
+                   ;;   ;; (format #t "XRESULT ~A: ~A\n" privname result)
+                   ;;   result)
+                   ;; ))
 
-  ;;    ;;   ;; ((inline_tests)
-  ;;    ;;   ;;  (normalize-inline_tests fld-assoc stanza-alist))
+                   ;;    ;;   ;; ((inline_tests)
+                   ;;    ;;   ;;  (normalize-inline_tests fld-assoc stanza-alist))
 
-  ;;    ;;   ((instrumentation)
-  ;;    ;;    (normalize-instrumentation fld-assoc))
+                   ;;    ;;   ((instrumentation)
+                   ;;    ;;    (normalize-instrumentation fld-assoc))
 
-  ;;    ;;   ((ocamlopt_flags) fld-assoc) ;; vendors/numeric/lib
-  ;;    ;;   ;; (format #t "unhandled lib fld: ~A:: ~A\n"
-  ;;    ;;   ;;         pkg-path (car fld-assoc))
+                   ;;    ;;   ((ocamlopt_flags) fld-assoc) ;; vendors/numeric/lib
+                   ;;    ;;   ;; (format #t "unhandled lib fld: ~A:: ~A\n"
+                   ;;    ;;   ;;         pkg-path (car fld-assoc))
 
-  ;;    ;;   ((private_modules)
-  ;;    ;;    ;; (private_modules <modules>) specifies a list of modules that will
-  ;;    ;;    ;; be marked as private. Private modules are inaccessible from outside
-  ;;    ;;    ;; the libraries they are defined in. Note that the private_modules
-  ;;    ;;    ;; field is not merged in modules, which represents the total set of
-  ;;    ;;    ;; modules in a library. If a directory has more than one stanza and
-  ;;    ;;    ;; thus a modules field must be specified, <modules> still need to be
-  ;;    ;;    ;; added in modules.
-  ;;    ;;    ;; for bazel? these are deps but not submodules?
-  ;;    ;;    ;; (format #t "unhandled lib fld: ~A:: ~A\n"
-  ;;    ;;    ;;         pkg-path (car fld-assoc))
-  ;;    ;;    fld-assoc)
+                   ;;    ;;   ((private_modules)
+                   ;;    ;;    ;; (private_modules <modules>) specifies a list of modules that will
+                   ;;    ;;    ;; be marked as private. Private modules are inaccessible from outside
+                   ;;    ;;    ;; the libraries they are defined in. Note that the private_modules
+                   ;;    ;;    ;; field is not merged in modules, which represents the total set of
+                   ;;    ;;    ;; modules in a library. If a directory has more than one stanza and
+                   ;;    ;;    ;; thus a modules field must be specified, <modules> still need to be
+                   ;;    ;;    ;; added in modules.
+                   ;;    ;;    ;; for bazel? these are deps but not submodules?
+                   ;;    ;;    ;; (format #t "unhandled lib fld: ~A:: ~A\n"
+                   ;;    ;;    ;;         pkg-path (car fld-assoc))
+                   ;;    ;;    fld-assoc)
 
-  ;;    ;;   ((modules_without_implementation) fld-assoc)
+                   ;;    ;;   ((modules_without_implementation) fld-assoc)
 
-  ;;    ;;   ((preprocess)
-  ;;    ;;    (let ((pp-attrs (normalize-preproc-attrs
-  ;;    ;;                     (cdr fld-assoc) stanza-alist)))
-  ;;    ;;      ;; e.g. (((:ppx "ppx_tezos_stdlib") (:ppx-args (-foo -bar 42))))
-  ;;    ;;      ;; (format #t "PP ATTRS: ~A\n" pp-attrs)
-  ;;    ;;      `,@pp-attrs))
+                   ;;    ;;   ((preprocess)
+                   ;;    ;;    (let ((pp-attrs (normalize-preproc-attrs
+                   ;;    ;;                     (cdr fld-assoc) stanza-alist)))
+                   ;;    ;;      ;; e.g. (((:ppx "ppx_tezos_stdlib") (:ppx-args (-foo -bar 42))))
+                   ;;    ;;      ;; (format #t "PP ATTRS: ~A\n" pp-attrs)
+                   ;;    ;;      `,@pp-attrs))
 
-  ;;    ;;   ((public_name) '())
+                   ;;    ;;   ((public_name) '())
 
-  ;;    ;;   ((synopsis) fld-assoc)
+                   ;;    ;;   ((synopsis) fld-assoc)
 
-       ((wrapped) `(:namespaced ,(if wrapped? #t #f)))
+                   ((wrapped) `(:namespaced ,(if wrapped? #t #f)))
 
-  ;;    ;;   ;; c stuff
+                   ;;    ;;   ;; c stuff
 
-  ;;    ;;   ((foreign_stubs)
-  ;;    ;;    (normalize-stanza-fld-foreign_stubs (cdr fld-assoc)))
+                   ;;    ;;   ((foreign_stubs)
+                   ;;    ;;    (normalize-stanza-fld-foreign_stubs (cdr fld-assoc)))
 
-  ;;    ;;   ((c_names) fld-assoc) ;; e.g. vendors/numerics/lib
-  ;;    ;;   ;; (format #t "unhandled lib fld: ~A:: ~A\n"
-  ;;    ;;   ;;         pkg-path (car fld-assoc))
+                   ;;    ;;   ((c_names) fld-assoc) ;; e.g. vendors/numerics/lib
+                   ;;    ;;   ;; (format #t "unhandled lib fld: ~A:: ~A\n"
+                   ;;    ;;   ;;         pkg-path (car fld-assoc))
 
-  ;;    ;;   ((c_flags) fld-assoc) ;; e.g. vendors/numerics/lib
-  ;;    ;;   ;; (format #t "unhandled lib fld: ~A:: ~A\n"
-  ;;    ;;   ;;         pkg-path (car fld-assoc))
+                   ;;    ;;   ((c_flags) fld-assoc) ;; e.g. vendors/numerics/lib
+                   ;;    ;;   ;; (format #t "unhandled lib fld: ~A:: ~A\n"
+                   ;;    ;;   ;;         pkg-path (car fld-assoc))
 
-  ;;    ;;   ((c_library_flags) fld-assoc) ;; e.g. src/lib_sapling
-  ;;    ;;   ;; (format #t "unhandled lib fld: ~A:: ~A\n"
-  ;;    ;;   ;;         pkg-path (car fld-assoc))
+                   ;;    ;;   ((c_library_flags) fld-assoc) ;; e.g. src/lib_sapling
+                   ;;    ;;   ;; (format #t "unhandled lib fld: ~A:: ~A\n"
+                   ;;    ;;   ;;         pkg-path (car fld-assoc))
 
-       (else
-        (begin
-          ;; (format #t "unhandled lib fld: ~A\n" fld-assoc)
-          fld-assoc))
-       ) ;; end case
-     ) ;; end lamda
-   stanza-alist) ;; end map
-  )
+                   (else
+                    (begin
+                      ;; (format #t "unhandled lib fld: ~A\n" fld-assoc)
+                      fld-assoc))
+                   ) ;; end case
+                 ) ;; end lamda
+               stanza-alist))) ;; end map
+    (format #t "~A: ~A\n" (red "DEPS FLDS") deps)
+    (append flds
+            (list (assoc :genmodules deps))
+            (list (assoc :deps deps)))))
 
          ;; (normalized-stanza (if namespaced
          ;;                        (cons '(:namespaced #t) normalized-stanza)
@@ -510,8 +516,9 @@
 (define (normalize-inline_tests fld-assoc stanza-alist)
   (format #t "normalize-inline_tests: ~A\n" fld-assoc))
 
-(define (normalize-library-stanza pkg stanza)
-  (format #t "NORMALIZE-library-stanza ~A\n" (assoc-val 'name (cdr stanza)))
+(define (dune-library->mibl pkg stanza)
+  (format #t "~A: ~A\n" (blue "DUNE-LIBRARY->MIBL")
+          (assoc-val 'name (cdr stanza)))
   (format #t "stanza: ~A\n" stanza)
 
   ;; FIXME: if not wrapped => :ns-archive
@@ -534,10 +541,10 @@
          ;; (stanza-alist (cons submods stanza-alist))
          ;; (_ (format #t "STANZA ALIST + SUBMODS: ~A\n" stanza-alist))
 
-         (normalized-stanza (normalize-lib-fields pkg stanza-alist wrapped?))
+         (normalized-stanza (dune-library-fields->mibl pkg stanza-alist wrapped?))
          )
     ;; namespaced?
-    normalized-stanza
+    (list (cons ':library normalized-stanza))
     )
   ) ;; end normalize-stanza-library
 

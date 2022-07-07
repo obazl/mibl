@@ -11,7 +11,7 @@ int gc_loc = -1;
 s7_pointer s7_error_handler(s7_scheme *sc, s7_pointer args)
 {
     /* log_error("error: %s\n", s7_string(s7_car(args))); */
-    fprintf(stdout, "ERROR: %s\n", s7_string(s7_car(args)));
+    fprintf(stdout, RED "ERROR:" CRESET " %s\n", s7_string(s7_car(args)));
     return(s7_f(sc));
 }
 

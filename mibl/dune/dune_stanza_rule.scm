@@ -121,10 +121,10 @@
 
 ;; (define (normalize-stanza-rule pkg-path srcfiles stanza)
 
-(define normalize-rule-stanza!
+(define dune-rule->mibl
   (let ((+documentation+ "INTERNAL. Updates pkg arg, returns normalized stanza. stanza: raw dune stanza (input); nstanza: normalized (output)"))
     (lambda (pkg stanza)
-      ;; (format #t "\nNORMALIZE-rule-stanza!: ~A\n"
+      ;; (format #t "DUNE-RULE->MIBL: ~A\n"
       ;;         (assoc-val :pkg-path pkg))
       ;; (format #t "rule stanza: ~A\n" stanza)
 

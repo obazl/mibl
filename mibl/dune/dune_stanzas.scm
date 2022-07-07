@@ -230,15 +230,14 @@
 
     ;; bug dune select also produces a file target - the clausal RHS
     ;; copied to the main selected file. to support that, we need to
-    ;; generate an ocaml_module target for the main selecte file, and
-    ;; add it to the libdeps. the ocaml_module target must select its
-    ;; 'struct' (src) attr using the select logic here.
+    ;; generate an ocaml_module target for the main select file, and
+    ;; add it to the submodules list. the ocaml_module target must
+    ;; select its 'struct' (src) attr using the select logic here.
 
     ;; so to convert a 'libraries' fld with selects, we should have
     ;; one condition per select, which means one config/constraint
     ;; setting per select. output will look like:
     ;; select({ "<LHSa-config-label>": ["<LHSa-tgt>", "<main-filea>"],
-    ;;          "<LHSa-config-label>": ["<LHSa-tgt>", "<main-filea>"],
     ;;          "//condition:default": ["<main-filea>"]
     ;; })
     ;; + select({ "<LHSb-config-label>": ["<LHSb-label>", "<main-fileb>"]})
@@ -246,8 +245,11 @@
 
     ;; normal form:
     ;; (:select
-    ;;   ((:selectors ((LHS-label (RHS-label main-select-label)) ... )
-    ;;    (:default default-file)
+    ;;   ((:target foo)
+    ;;    (:selectors ((LHS-labela RHS-labela)
+    ;;                 (LHS-labelb RHS-labelb)
+    ;;                 ...))
+    ;;    (:default default-file)))
 
     ;; BUT: do we need to normalize? we cannot yet resolve LHS lib anyway.
 
