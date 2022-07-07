@@ -47,11 +47,10 @@ static char sccsid[] = "@(#)strstr.c	8.1 (Berkeley) 6/4/93";
  * Find the first occurrence of find in s, where the search is limited to the
  * first slen characters of s.
  */
-char *
-strnstr(s, find, slen)
-	const char *s;
-	const char *find;
-	size_t slen;
+char *strnstr(const char *s, const char *find, size_t slen)
+	/* const char *s; */
+	/* const char *find; */
+	/* size_t slen; */
 {
 	char c, sc;
 	size_t len;
