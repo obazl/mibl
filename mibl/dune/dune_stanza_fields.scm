@@ -140,7 +140,7 @@
           (format #t "SELECT DEPS: ~A\n" deps)
           (format #t "SELECT SELS: ~A\n" sels)
           (format #t " DIRECTS: ~A\n" directs)
-          (values (list (cons :contingent deps)
+          (values (list (cons :select deps)
                         (cons :fixed directs))
                   sels ;; selects
                   modules))
