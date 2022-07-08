@@ -1310,12 +1310,6 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
         NULL
     };
     if (debug) log_debug("_traversal_root: %s\n", _traversal_root[0]);
-
-    /* WARNING: fts_open will segfault on macos if the access
-       specifiers are not right. first (path) arg is char *const *
-    */
-    /* FTS * fts_open(char * const *path_argv, int options, int (*compar)(const FTSENT **, const FTSENT **)); */
-
     errno = 0;
     tree = fts_open(_traversal_root,
                     FTS_COMFOLLOW
@@ -1325,6 +1319,7 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
                     &_compare
                     );
     if (errno != 0) {
+        log_error("fts_open error: %s", strerror(errno));
         return s7_error(s7, s7_make_symbol(s7, "fts_open"),
                         s7_list(s7, 2,
                                 s7_make_string(s7, strerror(errno)),
