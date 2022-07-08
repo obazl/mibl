@@ -32,7 +32,7 @@ int dir_ct  = 0;
 
 #define PKG_CT 50
 
-s7_pointer dune_project_kw;
+s7_pointer dune_project_sym;
 s7_pointer dune_stanzas_kw;
 s7_pointer dune_stanzas_sym;
 s7_pointer ws_path_kw;
@@ -1300,8 +1300,8 @@ LOCAL void _handle_dune_project_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
     if (debug)
         log_debug("pkg_alist: %s", TO_STR(pkg_alist));
 
-    s7_pointer dune_project_assoc = s7_cons(s7, dune_project_kw,
-                                    stanzas);
+    s7_pointer dune_project_assoc = s7_cons(s7, dune_project_sym,
+                                            stanzas);
 
     /* FIXME: check result */
     /* s7_pointer result = */
@@ -1571,7 +1571,7 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
     }
 
     /* initialize s7 stuff */
-    dune_project_kw = s7_make_keyword(s7, "dune-project"),
+    dune_project_sym = s7_make_symbol(s7, "dune-project"),
     dune_stanzas_kw = s7_make_keyword(s7, "dune-stanzas");
     dune_stanzas_sym = s7_make_symbol(s7, "dune");
     ws_path_kw = s7_make_keyword(s7, "ws-path");

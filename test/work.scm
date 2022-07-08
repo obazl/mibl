@@ -41,19 +41,20 @@ tpkg
         ;; "dune/stanzas/library/unwrapped/inclusions"
 
         ;; 'select' libdeps
-        "dune/stanzas/library/deps/select/mixed"
-        ;; "dune/stanzas/library/deps/select/sigs"
+        ;; "dune/stanzas/library/deps/select/mixed"
+;;        "dune/stanzas/library/deps/select/sigs"
         ;; "dune/stanzas/library/deps/select/structs"
         ;; "dune/stanzas/library/deps/select/tezos"
 
-        ;; "dune/tezos/lib_clic"
+        ;; tezos
+        "dune/tezos/lib_clic"
         ;; "dune/tezos/lib_requester"
         ;; "dune/tezos/lib_stblib_unix"
 
         )
        (pkgs (load-dune arg))
+       (_ (format #t "pkg keys: ~A\n" (hash-table-keys pkgs)))
        (pkg (hash-table-ref pkgs arg))
-       ;; ;; (stanzas (assoc :dune-stanzas pkg))
        (nzs (dune-pkg->mibl pkg))
        )
     nzs))

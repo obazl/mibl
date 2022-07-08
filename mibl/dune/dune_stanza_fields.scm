@@ -140,10 +140,13 @@
           (format #t "SELECT DEPS: ~A\n" deps)
           (format #t "SELECT SELS: ~A\n" sels)
           (format #t " DIRECTS: ~A\n" directs)
-          (values (list (cons :select deps)
-                        (cons :fixed directs))
-                  sels ;; selects
-                  modules))
+          (let* ((dirdeps (if (null? directs) '()
+                              (list (cons :fixed directs))))
+                 (dirdeps (if (null? deps) dirdeps
+                              (list (cons :select deps)))))
+            (values dirdeps
+                    sels ;; selects
+                    modules)))
         (if (pair? (car deps))
             ;; e.g. (select ...)
             (if (equal? (caar deps) 'select)
@@ -172,7 +175,7 @@
       (let-values (((directs selects modules) (analyze-libdeps fld-assoc)))
         (let* ((deps (if (null? directs) '() (cons :deps directs)))
                ;; (cons ':direct directs)))
-               (deps (if (null? selects) deps
+               (deps (if (null? selects) (list deps)
                          (list deps (cons :genmodules selects)))))
           deps)))))
 

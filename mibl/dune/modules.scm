@@ -101,6 +101,14 @@
                        gentargets)))
     resolved))
 
+;; std-list arg: everything after :standard, e.g. (:standard \ foo)
+;; WARNING: the '\' is a symbol, but it does not print as '\,
+;; rather it prints as (symbol "\\"); use same to compare, do
+;; not compare car to 'symbol, like so:
+;; (if (not (null? modules))
+;;     (if (equal? (car modules) (symbol "\\"))
+;;         (format #t "EXCEPTING ~A\n" (cdr modules))))
+
 (define expand-std-modules
   (let ((+documentation+ "expands a ':standard' part of a (modules :standard ...) clause. std-list: the ':standard' clause and any modifiers.  pkg-modules: list of source modules (paired .ml/.mli files), from mibl :modules fld; module-deps: :deps from 'libraries' field and possibly :genmodules (if 'select' is used). :genmodules contains selector clauses.")
         (+signature+ '(expand-std-modules std-list pkg-modules module-deps sigs structs)))
@@ -112,14 +120,6 @@
       (format #t " module-deps: ~A\n" module-deps)
       (format #t " sigs: ~A\n" sigs)
       (format #t " structs: ~A\n" structs)
-      ;; std-list arg: everything after :standard
-      ;; WARNING: the '\' is a symbol, but it does not print as '\,
-      ;; rather it prints as (symbol "\\"); use same to compare, do
-      ;; not compare car to 'symbol, like so:
-      ;; (if (not (null? modules))
-      ;;     (if (equal? (car modules) (symbol "\\"))
-      ;;         (format #t "EXCEPTING ~A\n" (cdr modules))))
-
       (let ((modifiers (cdr std-list)) ;; car is always :standard
             (pkg-module-names (get-pkg-module-names pkg-modules))
             (genmodules (assoc :genmodules module-deps)))
@@ -146,21 +146,23 @@
                                        ;;         (member norm exclusions))
                                        (if (member norm exclusions) #t #f)))
                                    pkg-module-names)))
+                    ;; returning
                     winnowed))
                 ;; else no exclusions
-                (let* ((gentargets (map (lambda (x)
-                                          (assoc-val :target x))
-                                        (cdr genmodules)))
-                       (_ (format #t "gentargets: ~A\n" gentargets))
-                       (gentargets (apply append gentargets))
-                       ;; (gentargets (map file-name->module-name gentargets))
-                       (_ (format #t "~A: ~A\n" (red "GENTARGETS") gentargets))
-                       (genmodules (resolve-gentargets gentargets sigs structs))
-                       )
-                  (format #t "~A: ~A\n" (red "GENMODULES") genmodules)
-                  (if genmodules
-                      (append genmodules pkg-module-names)
-                      pkg-module-names)))))))
+                (if genmodules
+                    (let* ((gentargets (map (lambda (x)
+                                              (assoc-val :target x))
+                                            (cdr genmodules)))
+                           (_ (format #t "gentargets: ~A\n" gentargets))
+                           (gentargets (apply append gentargets))
+                           ;; (gentargets (map file-name->module-name gentargets))
+                           (_ (format #t "~A: ~A\n" (red "GENTARGETS") gentargets))
+                           (genmodules (resolve-gentargets gentargets sigs structs))
+                           )
+                      (format #t "~A: ~A\n" (red "GENMODULES") genmodules)
+                      (append genmodules pkg-module-names))
+                      ;; (if genmodules
+                    pkg-module-names))))))
 
 ;; was (define (modules->modstbl modules srcfiles) ;; lookup_tables.scm
 ;; expand (modules ...) and convert to (:submodules ...)

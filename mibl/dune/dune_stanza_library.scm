@@ -143,7 +143,9 @@
                 stanza-alist))) ;; end map
     (format #t "~A: ~A\n" (red "DEPS FLDS") deps)
     (append flds
-            (list (assoc :genmodules deps))
+            (if-let ((gds (assoc :genmodules deps)))
+                    (list (assoc :deps deps))
+                    '())
             (list (assoc :deps deps)))))
 
          ;; (normalized-stanza (if namespaced

@@ -429,93 +429,93 @@
                                 pkg-path ocaml-srcs stanza))
 
 ;; moved to normalize.scm (dune-stanza->mibl pkg stanza)
-(define (Xnormalize-stanza pkg-path
-                               ;;dune-project-stanzas
-                               srcfiles
-                               stanza)
-  (format #t "NORMALIZE-STANZA: ~A\n" stanza)
-  (format #t "    srcfiles: ~A\n" srcfiles)
-  ;; dune-project-stanzas: sexp from (local) 'dune-project' file
-  ;;    FIXME: used only for install stanzas, no need to read otherwise
-  ;; stanza: (<stanza type> (flda ...) (fldb ...) ...)
-  ;; (newline)
-  ;; (format #t "raw: ~A\n" stanza)
-  ;; (if (equal? "src/lib_client_base" (cadr (assoc :pkg-path (cdr stanza))))
-  ;;     (format #t "dune-stanza->mibl: ~A" srcfiles))
-  ;; (format #t "dune-stanza->mibl stanza: ~A\n" stanza)
-  ;; (format #t "dune-stanza->mibl srcs: ~A\n" srcfiles)
-  ;; (if (null? srcfiles)
-  ;;     (format #t "pkg: ~A\n" pkg-path))
+;; (define (Xnormalize-stanza pkg-path
+;;                                ;;dune-project-stanzas
+;;                                srcfiles
+;;                                stanza)
+;;   (format #t "NORMALIZE-STANZA: ~A\n" stanza)
+;;   (format #t "    srcfiles: ~A\n" srcfiles)
+;;   ;; dune-project-stanzas: sexp from (local) 'dune-project' file
+;;   ;;    FIXME: used only for install stanzas, no need to read otherwise
+;;   ;; stanza: (<stanza type> (flda ...) (fldb ...) ...)
+;;   ;; (newline)
+;;   ;; (format #t "raw: ~A\n" stanza)
+;;   ;; (if (equal? "src/lib_client_base" (cadr (assoc :pkg-path (cdr stanza))))
+;;   ;;     (format #t "dune-stanza->mibl: ~A" srcfiles))
+;;   ;; (format #t "dune-stanza->mibl stanza: ~A\n" stanza)
+;;   ;; (format #t "dune-stanza->mibl srcs: ~A\n" srcfiles)
+;;   ;; (if (null? srcfiles)
+;;   ;;     (format #t "pkg: ~A\n" pkg-path))
 
-  (let* ((ocaml-srcs (if (null? srcfiles)
-                         '()
-                         (if-let ((srcs (assoc-in '(:ocaml :static)
-                                                  (cadr srcfiles))))
-                                 (cadr srcs) '())))
-         (ocaml-srcs (if (null? srcfiles)
-                         '()
-                         (if-let ((srcs (assoc-in '(:ocaml :generated)
-                                                  (cadr srcfiles))))
-                                 (concatenate ocaml-srcs (cadr srcs))
-                                 ocaml-srcs)))
-         (_ (format #t "OCAML SRCS: ~A\n" (reverse ocaml-srcs)))
-         ;; (normalized-stanza
-         (s (case (car stanza)
-              ((alias) (normalize-stanza-alias stanza))
-              ((copy_files#) (normalize-stanza-copy_files pkg-path stanza))
-              ((copy_files) (normalize-stanza-copy_files pkg-path stanza))
-              ((copy#) (normalize-stanza-copy pkg-path stanza))
-              ((copy) (normalize-stanza-copy pkg-path stanza))
-              ((data_only_dirs) (normalize-stanza-data_only_dirs stanza))
-              ((env) (normalize-stanza-env stanza))
-              ((executable) (normalize-stanza-executable :executable
-                             pkg-path ocaml-srcs stanza))
+;;   (let* ((ocaml-srcs (if (null? srcfiles)
+;;                          '()
+;;                          (if-let ((srcs (assoc-in '(:ocaml :static)
+;;                                                   (cadr srcfiles))))
+;;                                  (cadr srcs) '())))
+;;          (ocaml-srcs (if (null? srcfiles)
+;;                          '()
+;;                          (if-let ((srcs (assoc-in '(:ocaml :generated)
+;;                                                   (cadr srcfiles))))
+;;                                  (concatenate ocaml-srcs (cadr srcs))
+;;                                  ocaml-srcs)))
+;;          (_ (format #t "OCAML SRCS: ~A\n" (reverse ocaml-srcs)))
+;;          ;; (normalized-stanza
+;;          (s (case (car stanza)
+;;               ((alias) (normalize-stanza-alias stanza))
+;;               ((copy_files#) (normalize-stanza-copy_files pkg-path stanza))
+;;               ((copy_files) (normalize-stanza-copy_files pkg-path stanza))
+;;               ((copy#) (normalize-stanza-copy pkg-path stanza))
+;;               ((copy) (normalize-stanza-copy pkg-path stanza))
+;;               ((data_only_dirs) (normalize-stanza-data_only_dirs stanza))
+;;               ((env) (normalize-stanza-env stanza))
+;;               ((executable) (normalize-stanza-executable :executable
+;;                              pkg-path ocaml-srcs stanza))
 
-              ((executables) (normalize-stanza-executables :executables
-                              pkg-path ocaml-srcs stanza))
+;;               ((executables) (normalize-stanza-executables :executables
+;;                               pkg-path ocaml-srcs stanza))
 
-              ((install) (normalize-stanza-install
-                          pkg-path
-                          ;;dune-project-stanzas
-                          stanza))
+;;               ((install) (normalize-stanza-install
+;;                           pkg-path
+;;                           ;;dune-project-stanzas
+;;                           stanza))
 
-              ((library)
-               (if (null-library? stanza)
-                   '()
-                   (normalize-stanza-library pkg-path ocaml-srcs stanza)))
+;;               ((library)
+;;                (if (null-library? stanza)
+;;                    '()
+;;                    (normalize-stanza-library pkg-path ocaml-srcs stanza)))
 
-              ((ocamllex) (normalize-stanza-ocamllex stanza))
+;;               ((ocamllex) (normalize-stanza-ocamllex stanza))
 
-              ((ocamlyacc) (normalize-stanza-ocamllex stanza))
+;;               ((ocamlyacc) (normalize-stanza-ocamllex stanza))
 
-              ((rule) (normalize-stanza-rule
-                       pkg-path ocaml-srcs stanza))
-              ((test) (normalize-stanza-test pkg-path ocaml-srcs stanza))
-              ((tests) (normalize-stanza-tests pkg-path ocaml-srcs stanza))
+;;               ((rule) (normalize-stanza-rule
+;;                        pkg-path ocaml-srcs stanza))
+;;               ((test) (normalize-stanza-test pkg-path ocaml-srcs stanza))
+;;               ((tests) (normalize-stanza-tests pkg-path ocaml-srcs stanza))
 
-              ((:dune-project) stanza)
+;;               ((:dune-project) stanza)
 
-              (else
-               (format #t "dune-stanza->mibl unhandled: ~A\n" stanza)))))
+;;               (else
+;;                (format #t "dune-stanza->mibl unhandled: ~A\n" stanza)))))
 
-    ;; update global public -> private name table
-    ;; (case (car stanza)
-    ;;   ((executables)
-    ;;    (begin))
-    ;;   ((library)
-    ;;    (begin
-    ;;       (let* ((private-name (assoc-in '(:name :private) (cadr s)))
-    ;;              (public-name  (assoc      :public_name   (cadr s))))
-    ;;         (if (and private-name public-name)
-    ;;             (begin
-    ;;               ;; (format #t "writing ~A => ~A\n" private-name public-name)
-    ;;               (hash-table-set! private-name->public-name
-    ;;                                (cadr private-name)
-    ;;                                (cadr public-name)))))
-    ;;       ))
-    ;;   )
+;;     ;; update global public -> private name table
+;;     ;; (case (car stanza)
+;;     ;;   ((executables)
+;;     ;;    (begin))
+;;     ;;   ((library)
+;;     ;;    (begin
+;;     ;;       (let* ((private-name (assoc-in '(:name :private) (cadr s)))
+;;     ;;              (public-name  (assoc      :public_name   (cadr s))))
+;;     ;;         (if (and private-name public-name)
+;;     ;;             (begin
+;;     ;;               ;; (format #t "writing ~A => ~A\n" private-name public-name)
+;;     ;;               (hash-table-set! private-name->public-name
+;;     ;;                                (cadr private-name)
+;;     ;;                                (cadr public-name)))))
+;;     ;;       ))
+;;     ;;   )
 
-    ;; return normalized stanza
-    s))
+;;     ;; return normalized stanza
+;;     s))
 
 ;; (display "loaded dune/dune_stanzas.scm") (newline)

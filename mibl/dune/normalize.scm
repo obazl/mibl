@@ -5,38 +5,37 @@
 ;; apodoses in 'select' clauses are not pkg-level build targets
 ;; remove them from :structures, :signatures
 (define (-mark-genmodules! pkg)
-  (let* (;;(genmodules (assoc-val :genmodules pkg))
-         (genmodules (assoc-in '(:dune :library :genmodules) pkg))
-         (_ (format #t "GENmodules: ~A\n" genmodules))
+  ;;(let* (;;(genmodules (assoc-val :genmodules pkg))
+  (if-let ((genmodules (assoc-in '(:dune :library :genmodules) pkg)))
          ;; genmodules val: list of alists
-         (apodoses (apply append
-                          (map (lambda (x)
-                                 (let ((sels-alist
-                                        (car (assoc-val :selectors x)))
-                                       (defaults-alist
-                                        (car (assoc-val :default x))))
-                                   (format #t "SELS ~A\n" sels-alist)
-                                   (cons
-                                    defaults-alist
-                                    (map cdr sels-alist))))
-                               (cdr genmodules))))
-         (apodoses (map symbol->string apodoses)))
-    (format #t "MARKING ~A\n" apodoses)
+          (let ((apodoses (apply append
+                                 (map (lambda (x)
+                                        (let ((sels-alist
+                                               (car (assoc-val :selectors x)))
+                                              (defaults-alist
+                                                (car (assoc-val :default x))))
+                                          (format #t "SELS ~A\n" sels-alist)
+                                          (cons
+                                           defaults-alist
+                                           (map cdr sels-alist))))
+                                      (cdr genmodules))))
+                (apodoses (map symbol->string apodoses)))
+            (format #t "MARKING ~A\n" apodoses)
 
-    (let ((sigs-static (assoc-in '(:signatures :static) pkg))
-          (structs-static (assoc-in '(:structures :static) pkg)))
-      (format #t "structs-static: ~A\n" structs-static)
-      (for-each (lambda (s)
-                  (format #t "struct: ~A\n" s)
-                  (if (member (last (last s)) apodoses)
-                      (set-car! s :_)))
-                (cdr sigs-static))
-      (for-each (lambda (s)
-                  (format #t "struct: ~A\n" s)
-                  (if (member (last (last s)) apodoses)
-                      (set-car! s :_)))
-                (cdr structs-static))
-      )))
+            (let ((sigs-static (assoc-in '(:signatures :static) pkg))
+                  (structs-static (assoc-in '(:structures :static) pkg)))
+              (format #t "structs-static: ~A\n" structs-static)
+              (for-each (lambda (s)
+                          (format #t "struct: ~A\n" s)
+                          (if (member (last (last s)) apodoses)
+                              (set-car! s :_)))
+                        (cdr sigs-static))
+              (for-each (lambda (s)
+                          (format #t "struct: ~A\n" s)
+                          (if (member (last (last s)) apodoses)
+                              (set-car! s :_)))
+                        (cdr structs-static))
+              ))))
 
 (define (_trim-pkg-sigs-structs! pkg)
   ;;;; sigs
