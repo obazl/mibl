@@ -1246,7 +1246,8 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
     UT_string *abs_troot;
     utstring_new(abs_troot);
     utstring_printf(abs_troot, "%s/%s", build_wd, traversal_root);
-    char *_ews = effective_ws_root(utstring_body(abs_troot));
+    char *abstr = strdup(utstring_body(abs_troot)); //FIXME: free after use
+    char *_ews = effective_ws_root(abstr);
     if (debug) log_debug("ews: %s", _ews);
     ews_root = _ews;
     // put ews_root into the scheme env. so users can use it
@@ -1260,7 +1261,6 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
     }
     char *resolved_troot = strnstr(utstring_body(abs_troot),
                                    ews_root, strlen(ews_root));
-    /* log_debug("truncated: '%s'", resolved_troot); */
     if (resolved_troot) {
         if (strlen(utstring_body(abs_troot)) == strlen(ews_root)) {
             /* resolved_troot = realpath(".",NULL); */
@@ -1273,8 +1273,10 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
         /* log_error("no resolved_troot"); */
         resolved_troot = realpath(".", NULL);
     }
-    /* log_debug("resolved resolved_troot: %s", resolved_troot); */
-    /* log_debug("cwd: %s", getcwd(NULL, 0)); */
+    if (debug) {
+        log_debug("resolved resolved_troot: %s", resolved_troot);
+        log_debug("cwd: %s", getcwd(NULL, 0));
+    }
 
     errno = 0;
 
@@ -1286,8 +1288,10 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
       restore cwd after traversal.
     */
     char *old_cwd = getcwd(NULL, 0);
-    /* printf(RED "OLD_CWD: %s\n", old_cwd); */
-    /* printf("EWS_ROOT: %s\n" CRESET, ews_root); */
+    if (debug) {
+        printf(RED "OLD_CWD: %s\n", old_cwd);
+        printf("EWS_ROOT: %s\n" CRESET, ews_root);
+    }
     rc = chdir(ews_root);
     if (rc != 0) {
         fprintf(stderr, RED "ERROR chdir(%s): %s",
@@ -1301,7 +1305,11 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
 
     errno = 0;
 
-    char *const _traversal_root = resolved_troot; // traversal_root;
+    char *const _traversal_root[] = {
+        [0] = resolved_troot, // traversal_root;
+        NULL
+    };
+    if (debug) log_debug("_traversal_root: %s\n", _traversal_root[0]);
 
     /* WARNING: fts_open will segfault on macos if the access
        specifiers are not right. first (path) arg is char *const *
@@ -1309,7 +1317,7 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
     /* FTS * fts_open(char * const *path_argv, int options, int (*compar)(const FTSENT **, const FTSENT **)); */
 
     errno = 0;
-    tree = fts_open(&_traversal_root,
+    tree = fts_open(_traversal_root,
                     FTS_COMFOLLOW
                     | FTS_NOCHDIR
                     | FTS_PHYSICAL,
@@ -1320,7 +1328,7 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
         return s7_error(s7, s7_make_symbol(s7, "fts_open"),
                         s7_list(s7, 2,
                                 s7_make_string(s7, strerror(errno)),
-                                s7_make_string(s7, _traversal_root)));
+                                s7_make_string(s7, _traversal_root[0])));
     }
 
     s7_pointer pkg_tbl = s7_make_hash_table(s7, PKG_CT);

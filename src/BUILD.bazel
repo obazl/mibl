@@ -119,7 +119,7 @@ genrule(
     ],
     cmd = CMD_HDR + MAC_FILES + select({
         "//bzl/host:linux": " ".join([
-            "$(location strlcat.c)",
+            " $(location strlcat.c)", # note the leading space
             "$(location strlcpy.c)",
             "$(location strnstr.c);"
         ]),
