@@ -1,5 +1,6 @@
 #include <unistd.h>
 
+/* FIXME: use mkhdrs to elim 'unused function' warnings */
 #include "bazel_config.h"
 #include "mibl_config.h"
 #include "s7_config.h"
@@ -113,7 +114,8 @@ int main(int argc, char *argv[])
 
     rootdir = "obazl/mibl/test";
     /* pathdir = "test/dune/stanzas/rule/deps/glob"; */
-    pathdir = "test/dune/stanzas/rule/action/run/cp";
+    /* pathdir = "test/dune/stanzas/rule/action/run/cp"; */
+    pathdir = "test/dune/stanzas/library/deps/select";
 
     s7_pointer pkg_tbl = load_dune(rootdir, pathdir);
     printf("cwd: %s\n", getcwd(NULL, 0));
@@ -126,7 +128,7 @@ int main(int argc, char *argv[])
         printf("unbound symbol: hash-table-ref");
         exit(EXIT_FAILURE);
     }
-    s7_pointer pkg_key = s7_make_string(s7, "dune/stanzas/rule/action/run/cp");
+    s7_pointer pkg_key = s7_make_string(s7, "dune/stanzas/library/deps/select");
     s7_pointer pkg = s7_call(s7, ht_ref, s7_list(s7, 2, pkg_tbl, pkg_key));
     printf(BGRN "pkg:" CRESET " %s\n", TO_STR(pkg));
 

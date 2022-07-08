@@ -186,8 +186,8 @@ LOCAL void _config_s7_load_path_bazel_runfiles(char *manifest)
     s7_pointer tmp_load_path = s7_list(s7, 0);
 
     while ((read = getline(&line, &len, fp)) != -1) {
-        log_debug("Retrieved line of length %zu:", read);
-        log_debug("%s", line);
+        /* log_debug("Retrieved line of length %zu:", read); */
+        /* log_debug("%s", line); */
 
         line[strcspn(line, "\n")] = '\0';    /* trim trailing newline */
 

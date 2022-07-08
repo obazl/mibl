@@ -80,7 +80,7 @@
   ;; FIXME: extract module dep from select sexp and add to directs
   (let* ((target (cadr select))
          (selectors (cdddr select))
-         (default (last selectors))
+         (default (cadr (last selectors)))
          (selectors (but-last selectors)))
     (format #t "select target: ~A\n" target)
     (format #t "selectors : ~A\n" selectors)
