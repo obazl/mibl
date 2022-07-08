@@ -2,6 +2,84 @@
 
 ;; (define modules-ht (make-hash-table)) ;; FIXME
 
+;; apodoses in 'select' clauses are not pkg-level build targets
+;; remove them from :structures, :signatures
+(define (-mark-genmodules! pkg)
+  (let* (;;(genmodules (assoc-val :genmodules pkg))
+         (genmodules (assoc-in '(:dune :library :genmodules) pkg))
+         (_ (format #t "GENmodules: ~A\n" genmodules))
+         ;; genmodules val: list of alists
+         (apodoses (apply append
+                          (map (lambda (x)
+                                 (let ((sels-alist
+                                        (car (assoc-val :selectors x)))
+                                       (defaults-alist
+                                        (car (assoc-val :default x))))
+                                   (format #t "SELS ~A\n" sels-alist)
+                                   (cons
+                                    defaults-alist
+                                    (map cdr sels-alist))))
+                               (cdr genmodules))))
+         (apodoses (map symbol->string apodoses)))
+    (format #t "MARKING ~A\n" apodoses)
+
+    (let ((sigs-static (assoc-in '(:signatures :static) pkg))
+          (structs-static (assoc-in '(:structures :static) pkg)))
+      (format #t "structs-static: ~A\n" structs-static)
+      (for-each (lambda (s)
+                  (format #t "struct: ~A\n" s)
+                  (if (member (last (last s)) apodoses)
+                      (set-car! s :_)))
+                (cdr sigs-static))
+      (for-each (lambda (s)
+                  (format #t "struct: ~A\n" s)
+                  (if (member (last (last s)) apodoses)
+                      (set-car! s :_)))
+                (cdr structs-static))
+      )))
+
+(define (_trim-pkg-sigs-structs! pkg)
+  ;;;; sigs
+  (if-let ((sigs (assoc-in '(:signatures :static) pkg)))
+          (if (null? (cdr sigs))
+                (assoc-update! :signatures
+                               pkg
+                               (lambda (old)
+                                 (format #t "OLD: ~A\n" old)
+                                 (set-cdr! old '())))))
+  (if-let ((sigs (assoc-in '(:signatures :dynamic) pkg)))
+          (if (null? (cdr sigs))
+              (assoc-update! :signatures
+                             pkg
+                             (lambda (old)
+                               (format #t "OLD: ~A\n" old)
+                               (set-cdr! old '())))))
+
+  (if-let ((sigs (assoc :signatures pkg)))
+          (if (null? (cdr sigs))
+              (dissoc! '(:signatures) pkg)))
+
+  ;;;; structs
+  (if-let ((structs (assoc-in '(:structures :static) pkg)))
+          (if (null? (cdr structs))
+              (assoc-update! :structures
+                             pkg
+                             (lambda (old)
+                               (format #t "OLD: ~A\n" old)
+                               (set-cdr! old '())))))
+
+  (if-let ((structs (assoc-in '(:structures :dynamic) pkg)))
+          (if (null? (cdr structs))
+              (assoc-update! :structures
+                             pkg
+                             (lambda (old)
+                               (format #t "OLD: ~A\n" old)
+                               (set-cdr! old '())))))
+
+  (if-let ((structs (assoc :structures pkg)))
+          (if (null? (cdr structs))
+                (dissoc! '(:structures) pkg))))
+
 ;; original: dune_stanzas.scm Xnormalize-stanza
 (define (dune-stanza->mibl pkg stanza nstanzas)
   (format #t "DUNE-STANZA->MIBL: ~A\n" stanza)
@@ -70,27 +148,13 @@
               (else
                (format #t "dune-stanza->mibl unhandled: ~A\n" stanza)))))
     ;; (format #t "normalized pkg: ~A\n" pkg)
+
+    (-mark-genmodules! pkg)
+
+    ;; remove empty :signatures, :structures
+    (_trim-pkg-sigs-structs! pkg)
+
     pkg))
-
-  ;;   ;; update global public -> private name table
-  ;;   ;; (case (car stanza)
-  ;;   ;;   ((executables)
-  ;;   ;;    (begin))
-  ;;   ;;   ((library)
-  ;;   ;;    (begin
-  ;;   ;;       (let* ((private-name (assoc-in '(:name :private) (cadr s)))
-  ;;   ;;              (public-name  (assoc      :public_name   (cadr s))))
-  ;;   ;;         (if (and private-name public-name)
-  ;;   ;;             (begin
-  ;;   ;;               ;; (format #t "writing ~A => ~A\n" private-name public-name)
-  ;;   ;;               (hash-table-set! private-name->public-name
-  ;;   ;;                                (cadr private-name)
-  ;;   ;;                                (cadr public-name)))))
-  ;;   ;;       ))
-  ;;   ;;   )
-
-  ;;   ;; return normalized stanza
-  ;;   s))
 
 (define (dune-pkg->mibl pkg)
   (format #t "dune-pkg->mibl: ~A\n" pkg)
@@ -113,36 +177,3 @@
             (assoc-val 'dune pkg+))))
       ;; (format #t "NEW PKG: ~A\n" pkg+)
       pkg+)))
-
-    ;; normed
-    ;; (format #t "normalized stanzas: ~A\n" normed)
-
-;; (define foo
-;;     ;; 'executables' normalizes to a list of 'executable' so we flatten
-;;     (let ((result (let recur ((stanzas normed))
-;;                     (if (null? stanzas) '()
-;;                         (begin
-;;                           ;; (format #t "  Stanza: ~A\n" (car stanzas))
-;;                           (if (pair? (caar stanzas))
-;;                               (concatenate (car stanzas)
-;;                                            (recur (cdr stanzas)))
-;;                               (concatenate
-;;                                `(,(car stanzas))
-;;                                (recur (cdr stanzas)))))))))
-;;       ;; (format #t "Renormalized stanzas: ~A\n" result)
-;;       result)
-;;     )
-
-;; (define (normalize-pkg pkg)
-;;   (pretty-print pkg) (newline) (newline)
-;;   (for-each (stanza)
-;;             (normalize-stanza stanza)
-;;             (assoc-val :stanzas pkg)))
-
-;; (define (normalize-pkg-tbl pkg-tbl)
-;;   (format #t "NORMALIZE-PKG-TBL ct: ~A\n" (hash-table-entries pkg-tbl))
-;;   (let ((npt (for-each (lambda (pkg-kv)
-;;                         (normalize-pkg (cdr pkg-kv)))
-;;                       pkg-tbl)))
-;;     npt))
-

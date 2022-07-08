@@ -293,11 +293,12 @@
                           (recur (cdr libs)
                                  (cons (car libs) constants)
                                  contingents))))))
+    ;;(let ((contingent 
     ;; (format #t "constant deps: ~A\n" constant)
     ;; (format #t "contingent deps: ~A\n" contingent)
     `(:deps
       ((:constant ,(sort! constant sym<?))
-       (:contingent ,contingent)))))
+       ,(cons :contingent contingent)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; (install

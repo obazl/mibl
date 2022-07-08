@@ -40,8 +40,11 @@ tpkg
         ;; "dune/stanzas/library/unwrapped/exclusions"
         ;; "dune/stanzas/library/unwrapped/inclusions"
 
-        ;; lib deps
-        "dune/stanzas/library/deps/select"
+        ;; 'select' libdeps
+        "dune/stanzas/library/deps/select/mixed"
+        ;; "dune/stanzas/library/deps/select/sigs"
+        ;; "dune/stanzas/library/deps/select/structs"
+        ;; "dune/stanzas/library/deps/select/tezos"
 
         ;; "dune/tezos/lib_clic"
         ;; "dune/tezos/lib_requester"
