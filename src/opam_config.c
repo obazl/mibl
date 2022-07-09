@@ -29,7 +29,7 @@
 
 #include "opam_config.h"
 
-const char *errmsg = NULL;
+/* const char *errmsg = NULL; */
 
 int rc;
 

@@ -12,10 +12,12 @@
 /* #include "utarray.h" */
 /* #include "utstring.h" */
 
-#include "load_dune.h"
-/* #include "opam_config.h" */
-#include "bazel_config.h"
-#include "s7_config.h"
+/* #include "load_dune.h" */
+/* /\* #include "opam_config.h" *\/ */
+/* #include "bazel_config.h" */
+/* #include "s7_config.h" */
+
+#include "mibl.h"
 #include "repl.h"
 
 extern s7_scheme *s7;

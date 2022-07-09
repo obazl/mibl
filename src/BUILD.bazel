@@ -1,33 +1,28 @@
 load("@rules_cc//cc:defs.bzl", "cc_library")
 
+load(":BUILD.bzl", "SRCS", "mac_mkhdr_srcs")
+
+HDRS = [
+    "load_dune.h",
+    "bazel_config.h",
+    "mibl_config.h",
+    "opam_config.h",
+    "s7_config.h",
+    "error_handler.h",
+    "fs.h",
+    "utils.h",
+]
+
 ##########
 cc_library(
     name  = "mibl",
     # alwayslink = True,
     # linkstatic = 1,
-    srcs  = [
-        "load_dune.c",
-        "opam_config.c", "opam_config.h",
-        "bazel_config.c",
-        "s7_config.c", "s7_config.h",
-        "mibl_config.c", "mibl_config.h",
-        "error_handler.c", "error_handler.h",
-        "fs.c", "fs.h",
-        "utils.c", "utils.h",
-        "@uthash//:include",
-    ] + select({
+    srcs = SRCS + HDRS + select({
         "//bzl/host:linux": ["strlcat.c", "strlcpy.c", "strnstr.c"],
         "//conditions:default":   []
-    }),
-    hdrs = [
-        "load_dune.h",
-        "bazel_config.h",
-        "mibl_config.h",
-        "ansi_colors.h",
-        "fs.h",
-        "@libs7//src:s7.h",
-        "@uthash//:include",
-    ],
+    }) + ["@uthash//:include"],
+    hdrs = ["mibl.h"],
     data = [
         "//mibl:dune.scm",
         "//mibl/dune:srcs",
@@ -76,89 +71,26 @@ CMD_HDR = "\n".join([
     "SRCDIR1=`dirname $$SRC1`;",
 ])
 
-MAC_FILES = " ".join([
-    "$(location @makeheaders//:makeheaders)",
-        "$(location load_dune.c)",
-        "$(location opam_config.c)",
-        "$(location mibl_config.c)",
-        "$(location s7_config.c)",
-        "$(location bazel_config.c)",
-        "$(location error_handler.c)",
-        "$(location fs.c)",
-        "$(location utils.c)",
-        "$(location ansi_colors.h)",
-])
-
 ########
 genrule(
     name = "mkhdrs",
-    srcs = [
-        "load_dune.c",
-        "opam_config.c",
-        "bazel_config.c",
-        "mibl_config.c",
-        "s7_config.c",
-        "error_handler.c",
-        "fs.c",
-        "utils.c",
-        "ansi_colors.h",
-        # "@uthash//:include",
-   ] + select({
-        "//bzl/host:linux": ["strlcat.c", "strlcpy.c", "strnstr.c"],
-        "//conditions:default":   []
-   }),
-    outs = [
-        "load_dune.h",
-        "opam_config.h",
-        "bazel_config.h",
-        "mibl_config.h",
-        "s7_config.h",
-        "error_handler.h",
-        "fs.h",
-        "utils.h",
-    ],
-    cmd = CMD_HDR + MAC_FILES + select({
-        "//bzl/host:linux": " ".join([
-            " $(location strlcat.c)", # note the leading space
-            "$(location strlcpy.c)",
-            "$(location strnstr.c);"
-        ]),
-        "//conditions:default": ";"
-    }) + "cp $${SRCDIR1}/*.h $(@D)",
+    srcs = SRCS + ["ansi_colors.h"],
+    outs = HDRS,
+    cmd = CMD_HDR + "$(location @makeheaders//:makeheaders) "
+    + mac_mkhdr_srcs() + "; cp $${SRCDIR1}/*.h $(@D)",
     tools = ["@makeheaders//:makeheaders"],
     visibility = ["//visibility:public"]
 )
 
 ########
-# genrule(
-#     name = "mkhdrs-export",
-#     srcs = [
-#         "cmd_runner.c",
-#         # "codept.c",
-#         # "codept_emit.c",
-#         # "codept_parser.c",
-#         "opam_config.c",
-#         # "fs.c",
-#         # "utils.c",
-#         "@uthash//:include",
-#     ],
-#     outs = [
-#         "camlark.h",
-#     ],
-#     cmd = "\n".join([
-#         "SRC1=$(location opam_config.c)",
-#         "SRCDIR1=`dirname $$SRC1`",
-#         "$(location @makeheaders//:makeheaders) -H \\",
-#         "    $(locations @uthash//:include) \\",
-#         "    $(location cmd_runner.c) \\",
-#         # "    $(location codept.c) \\",
-#         # "    $(location codept_emit.c) \\",
-#         # "    $(location codept_parser.c) \\",
-#         "    $(location opam_config.c) \\",
-#         # "    $(location fs.c) \\",
-#         # "    $(location utils.c) \\",
-#         "    > $@",
-#     ]),
-#     tools = ["@makeheaders//:makeheaders"],
-#     visibility = ["//visibility:public"]
-# )
+genrule(
+    name = "mkhdrs-export",
+    srcs = SRCS + ["ansi_colors.h"],
+    outs = ["mibl.h"],
+    cmd = CMD_HDR
+    + "$(location @makeheaders//:makeheaders) -H "
+    + mac_mkhdr_srcs()
+    + " > $@",
+    tools = ["@makeheaders//:makeheaders"],
+    visibility = ["//visibility:public"]
+)

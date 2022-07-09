@@ -7,8 +7,8 @@ cc_binary(
     srcs  = [
         "repl.c", "repl.h",
         "xen_repl.c", "xen_repl.h",
-        "//src:opam_config.h",
-        "//src:bazel_config.h"
+        # "//src:opam_config.h",
+        # "//src:bazel_config.h"
     ],
     defines = select({
         "//bzl/host:debug": ["DEBUG_TRACE"],
