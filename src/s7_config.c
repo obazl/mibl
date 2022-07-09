@@ -162,7 +162,7 @@ UT_string *xdg_data_home;
 
 s7_pointer _init_scheme_fns(s7_scheme *s7)
 {
-    log_debug("_init_scheme_fns\n");
+    /* log_debug("_init_scheme_fns\n"); */
 
     if (_s7_set_cdr == NULL) {
         _s7_set_cdr = s7_name_to_value(s7, "set-cdr!");
@@ -660,10 +660,14 @@ bazel run is similar, but not identical, to directly invoking the binary built b
            directories to load-path. The only exception is the
            project-local script directory in <projroot>/.mibl . */
         s7_pointer lp = s7_load_path(s7);
-        log_debug("1 *LOAD-PATH*: %s", TO_STR(lp));
+        if (debug) {
+            log_debug("1 *LOAD-PATH*: %s", TO_STR(lp));
+        }
         _config_s7_load_path_bazel_runfiles(manifest);
         lp = s7_load_path(s7);
-        log_debug("2 *LOAD-PATH*: %s", TO_STR(lp));
+        if (debug) {
+            log_debug("2 *LOAD-PATH*: %s", TO_STR(lp));
+        }
     }
     _config_s7_load_path_bws_root();
 

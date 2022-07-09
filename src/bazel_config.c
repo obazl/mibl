@@ -141,7 +141,9 @@ char *effective_ws_root(char *_dir)
  */
 void _set_base_ws_root(void)
 {
-    printf(RED "_set_base_ws_root" CRESET "\n");
+    /* if (trace) { */
+    /*     printf(RED "_set_base_ws_root" CRESET "\n"); */
+    /* } */
     char *_bws_root = getenv("BUILD_WORKSPACE_DIRECTORY");
     if (debug) log_debug("BUILD_WORKSPACE_DIRECTORY: %s", bws_root);
 

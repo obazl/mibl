@@ -989,8 +989,10 @@ LOCAL void _update_mli(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
     UT_string *ml_test;
     utstring_new(ml_test);
     utstring_printf(ml_test, "%s/%s", dirname(dname), ml_name);
-    log_debug(RED "Checking for companion .ml:" CRESET  " %s",
-              utstring_body(ml_test));
+    if (trace) {
+        log_debug(RED "Checking for companion .ml:" CRESET  " %s",
+                  utstring_body(ml_test));
+    }
     int rc = access(utstring_body(ml_test), F_OK);
     if (rc) {
         /* companion ml file not found */
@@ -1020,8 +1022,10 @@ LOCAL void _update_ml(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
     utstring_new(mli_test);
     /* add terminal 'i' with printf */
     utstring_printf(mli_test, "%s/%si", dirname(dname), ml_name);
-    log_debug(RED "Checking for companion .mli:" CRESET  " %s",
-              utstring_body(mli_test));
+    if (trace) {
+        log_debug(RED "Checking for companion .mli:" CRESET  " %s",
+                  utstring_body(mli_test));
+    }
     int rc = access(utstring_body(mli_test), F_OK);
     if (rc) {
         /* companion mli file not found */
@@ -1550,10 +1554,11 @@ EXPORT s7_pointer g_load_dune(s7_scheme *s7,  s7_pointer args)
                 rootdir = getcwd(NULL,0);
                 printf("Rootdir: %s\n", rootdir);
                 pathdir = _get_path_dir(arg);
-                s7_pointer q = s7_name_to_value(s7, "quote");
+                /* s7_pointer q = s7_name_to_value(s7, "quote"); */
                 if (pathdir) {
                     s7_pointer _pkg_tbl = load_dune(rootdir, pathdir);
 
+                    //TODO: use s7_eval?
                     s7_eval_c_string_with_environment(s7, "(set-cdr! (assoc-in '(@ pkgs) ws-table) (list _pkg_tbl))",
                                                       s7_inlet(s7, s7_list(s7, 1,
                                                                            s7_cons(s7, s7_make_symbol(s7, "_pkg_tbl"), _pkg_tbl))));
