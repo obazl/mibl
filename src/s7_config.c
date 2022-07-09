@@ -38,6 +38,33 @@ char *callback = "camlark_handler"; /* fn in callback_script_file  */
 
 s7_scheme *s7;                  /* GLOBAL s7 */
 
+s7_pointer dune_project_sym;
+s7_pointer dune_stanzas_kw;
+s7_pointer dune_stanzas_sym;
+s7_pointer ws_path_kw;
+s7_pointer pkg_path_kw;
+s7_pointer realpath_kw;
+
+s7_pointer modules_kw;
+s7_pointer sigs_kw;
+s7_pointer structs_kw;
+s7_pointer files_kw;
+s7_pointer scripts_kw;
+s7_pointer static_kw;
+s7_pointer dynamic_kw;
+
+s7_pointer _s7_result;          /* for use with s7_call */
+s7_pointer assoc;
+s7_pointer assoc_in;
+s7_pointer sort_bang;
+s7_pointer string_lt;
+s7_pointer _s7_acons = NULL;
+s7_pointer _s7_append = NULL;
+s7_pointer _s7_list_set = NULL;
+s7_pointer _s7_quote = NULL;
+s7_pointer _s7_set_car = NULL;
+s7_pointer _s7_set_cdr = NULL;
+
 #define HOME_MIBL ".mibl"
 #if INTERFACE
 #define MIBL_INI_FILE ".config/miblrc"
@@ -132,6 +159,137 @@ UT_string *xdg_data_home;
 
 /*     return opam_dirs; */
 /* } */
+
+s7_pointer _init_scheme_fns(s7_scheme *s7)
+{
+    log_debug("_init_scheme_fns\n");
+
+    if (_s7_set_cdr == NULL) {
+        _s7_set_cdr = s7_name_to_value(s7, "set-cdr!");
+        if (_s7_set_cdr == s7_undefined(s7)) {
+            log_error("unbound symbol: set-cdr!");
+            log_info("*load-path*: %s", TO_STR(s7_load_path(s7)));
+            s7_error(s7, s7_make_symbol(s7, "unbound-symbol"),
+                     s7_list(s7, 1, s7_make_string(s7, "set-cdr!")));
+        }
+    }
+
+    if (_s7_quote == NULL) {
+        _s7_quote = s7_name_to_value(s7, "quote");
+        if (_s7_quote == s7_undefined(s7)) {
+            log_error("unbound symbol: quote");
+            log_info("*load-path*: %s", TO_STR(s7_load_path(s7)));
+            s7_error(s7, s7_make_symbol(s7, "unbound-symbol"),
+                     s7_list(s7, 1, s7_make_string(s7, "quote")));
+        }
+    }
+
+    _load_acons(s7);
+    _load_assoc();
+    assoc_in = _load_assoc_in();
+    _load_append();
+    _load_list_set(s7);
+    _load_sort();
+    _load_string_lt();
+
+    return _s7_set_cdr;
+}
+
+s7_pointer _load_acons(s7_scheme *s7)
+{
+    if (_s7_acons == NULL) {
+        _s7_acons = s7_name_to_value(s7, "acons");
+        if (_s7_acons == s7_undefined(s7)) {
+            log_error("unbound symbol: acons");
+            log_info("*load-path*: %s", TO_STR(s7_load_path(s7)));
+            s7_error(s7, s7_make_symbol(s7, "unbound-symbol"),
+                     s7_list(s7, 1, s7_make_string(s7, "acons")));
+        }
+    /* } else { */
+    /*     printf("already loaded\n"); */
+    }
+    return _s7_acons;
+}
+
+s7_pointer _load_assoc()
+{
+    if (assoc == NULL) {
+        assoc = s7_name_to_value(s7, "assoc");
+        if (assoc == s7_undefined(s7)) {
+            log_error("unbound symbol: assoc");
+            log_info("*load-path*: %s", TO_STR(s7_load_path(s7)));
+            s7_error(s7, s7_make_symbol(s7, "unbound-symbol"),
+                     s7_list(s7, 1, s7_make_string(s7, "assoc")));
+        }
+    }
+    return assoc;
+}
+
+s7_pointer _load_assoc_in()
+{
+    if (assoc_in == NULL) {
+        assoc_in = s7_name_to_value(s7, "assoc-in");
+        if (assoc == s7_undefined(s7)) {
+            log_error("unbound symbol: assoc-in");
+            log_info("*load-path*: %s", TO_STR(s7_load_path(s7)));
+            s7_error(s7, s7_make_symbol(s7, "unbound-symbol"),
+                     s7_list(s7, 1, s7_make_string(s7, "assoc-in")));
+        }
+    }
+    return assoc_in;
+}
+
+s7_pointer _load_append()
+{
+    if (_s7_append == NULL) {
+        _s7_append = s7_name_to_value(s7, "append");
+        if (assoc == s7_undefined(s7)) {
+            log_error("unbound symbol: append");
+            log_info("*load-path*: %s", TO_STR(s7_load_path(s7)));
+            s7_error(s7, s7_make_symbol(s7, "unbound-symbol"),
+                     s7_list(s7, 1, s7_make_string(s7, "append")));
+        }
+    }
+    return _s7_append;
+}
+
+s7_pointer _load_list_set(s7_scheme *s7)
+{
+    if (_s7_list_set == NULL) {
+        _s7_list_set = s7_name_to_value(s7, "list-set!");
+        if (_s7_list_set == s7_undefined(s7)) {
+            log_error("unbound symbol: list-set!");
+            log_info("*load-path*: %s", TO_STR(s7_load_path(s7)));
+            s7_error(s7, s7_make_symbol(s7, "unbound-symbol"),
+                     s7_list(s7, 1, s7_make_string(s7, "list-set!")));
+        }
+    }
+    return _s7_list_set;
+}
+
+s7_pointer _load_sort()
+{
+    sort_bang = s7_name_to_value(s7, "sort!");
+    if (assoc == s7_undefined(s7)) {
+        log_error("unbound symbol: sort!");
+        log_info("*load-path*: %s", TO_STR(s7_load_path(s7)));
+        s7_error(s7, s7_make_symbol(s7, "unbound-symbol"),
+                 s7_list(s7, 1, s7_make_string(s7, "sort!")));
+    }
+    return sort_bang;
+}
+
+s7_pointer _load_string_lt()
+{
+    string_lt = s7_name_to_value(s7, "string<?");
+    if (assoc == s7_undefined(s7)) {
+        log_error("unbound symbol: string<?");
+        log_info("*load-path*: %s", TO_STR(s7_load_path(s7)));
+        s7_error(s7, s7_make_symbol(s7, "unbound-symbol"),
+                 s7_list(s7, 1, s7_make_string(s7, "string<?")));
+    }
+    return string_lt;
+}
 
 LOCAL void _config_s7_load_path_bazel_runfiles(char *manifest)
 {
@@ -605,6 +763,14 @@ EXPORT void s7_configure(void)
     init_error_handling();
     error_config();
 
+    if (bws_root) {
+        s7_define_variable(s7, "ws-root", s7_make_string(s7, bws_root));
+    } else {
+        /* should have been set by bazel_configure */
+        log_error("bws_root not set\n");
+        exit(EXIT_FAILURE);
+    }
+
     s7_define_safe_function(s7, "effective-ws-root",
                             g_effective_ws_root,
                             0, 1, 0, NULL);
@@ -614,6 +780,25 @@ EXPORT void s7_configure(void)
                                  /* LOAD_DUNE_FORMAL_PARAMS, */
                             LOAD_DUNE_HELP);
 
+    /* initialize s7 stuff */
+    //FIXME: do this in config, no need to rerun for each load_dune
+    dune_project_sym = s7_make_symbol(s7, "dune-project"),
+    dune_stanzas_kw = s7_make_keyword(s7, "dune-stanzas");
+    dune_stanzas_sym = s7_make_symbol(s7, "dune");
+    ws_path_kw = s7_make_keyword(s7, "ws-path");
+    pkg_path_kw = s7_make_keyword(s7, "pkg-path");
+    realpath_kw = s7_make_keyword(s7, "realpath");
+
+    modules_kw = s7_make_keyword(s7, "modules");
+    sigs_kw = s7_make_keyword(s7, "signatures");
+    structs_kw = s7_make_keyword(s7, "structures");
+    files_kw   = s7_make_keyword(s7, "files");
+    static_kw  = s7_make_keyword(s7, "static");
+    dynamic_kw = s7_make_keyword(s7, "dynamic");
+
+    scripts_kw = s7_make_keyword(s7, "scripts");
+    /* srcs_kw    = s7_make_keyword(s7, "srcs"); */
+
     set_load_path(); //callback_script_file);
 
     /* init_glob(s7); */
@@ -622,6 +807,9 @@ EXPORT void s7_configure(void)
     /* s7_config_repl(s7); */
     /* s7_repl(s7); */
     s7_load(s7, "dune.scm");
+
+    _init_scheme_fns(s7);       /* call _after_ loading dune.scm */
+
 
     /* libc_s7_init(s7); */
     chdir(bws_root);            /* always run from base ws root */

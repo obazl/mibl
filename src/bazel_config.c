@@ -41,7 +41,7 @@ char *launch_dir; /* real launch dir */
 /* path args passed to mibl relative to build_wd */
 
 /* UT_string *ws_root; */
-char *bws_root;                 /* base ws root */
+const char *bws_root;     /* base ws root */
 char *ews_root;                 /* effective ws root */
 char *traversal_root;           /* maybe not same as ws root */
 
@@ -89,17 +89,18 @@ EXPORT s7_pointer g_effective_ws_root(s7_scheme *s7,  s7_pointer args)
         if (args_ct == 1) {
             s7_pointer arg = s7_car(args);
             if (s7_is_string(arg)) {
-                dir = (char*)s7_string(arg);
+                dir = strdup((char*)s7_string(arg));
             }
         } else {
             // throw exception
         }
     }
-    char *ews_root = effective_ws_root(dir);
+    ews_root = effective_ws_root(dir);
+    free(dir); // effective_ws_root allocates its own
     return s7_make_string(s7, ews_root);
 }
 
-char *effective_ws_root(char *dir)
+char *_effective_ws_root(char *dir)
 {
    /* log_debug("effective_ws_root: %s", dir); */
 
@@ -129,22 +130,34 @@ char *effective_ws_root(char *dir)
     }
 }
 
+char *effective_ws_root(char *_dir)
+{
+   /* log_debug("effective_ws_root: %s", dir); */
+   char *dir = strdup(_dir);
+   return _effective_ws_root(dir);
+}
+
 /*
  */
 void _set_base_ws_root(void)
 {
-    bws_root = getenv("BUILD_WORKSPACE_DIRECTORY");
+    printf(RED "_set_base_ws_root" CRESET "\n");
+    char *_bws_root = getenv("BUILD_WORKSPACE_DIRECTORY");
     if (debug) log_debug("BUILD_WORKSPACE_DIRECTORY: %s", bws_root);
 
-    if (bws_root == NULL) {
+    if (_bws_root == NULL) {
         /* we're not in Bazel rte, but we may be in a Bazel WS. So
            look for nearest WORKSPACE.bazel (or WORKSPACE) file
            ancestor. */
+        /* effective_ws_root makes a copy */
         bws_root = effective_ws_root(getcwd(NULL,0));
         if (debug)
             log_debug("Found WS file at %s", bws_root);
+    } else {
+        bws_root = strdup(_bws_root);
     }
-    ews_root = bws_root;  /* by default, effective ws == base ws */
+
+    ews_root = strdup(bws_root);  /* by default, effective ws == base ws */
     if (debug)
         log_debug("base ws root: %s", bws_root);
 
@@ -158,7 +171,9 @@ void _set_base_ws_root(void)
 /* should always be called first, so launch dir gets set to cwd */
 EXPORT void bazel_configure(void) // char *_exec_root)
 {
-    /* log_debug("bazel_configure"); */
+    if (trace) {
+        log_debug("bazel_configure");
+    }
     launch_dir = getcwd(NULL, 0);
 
     build_wd = getenv("BUILD_WORKING_DIRECTORY");

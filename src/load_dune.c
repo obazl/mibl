@@ -32,77 +32,11 @@ int dir_ct  = 0;
 
 #define PKG_CT 50
 
-s7_pointer dune_project_sym;
-s7_pointer dune_stanzas_kw;
-s7_pointer dune_stanzas_sym;
-s7_pointer ws_path_kw;
-s7_pointer pkg_path_kw;
-s7_pointer realpath_kw;
-
-s7_pointer modules_kw;
-s7_pointer sigs_kw;
-s7_pointer structs_kw;
-s7_pointer files_kw;
-s7_pointer scripts_kw;
-s7_pointer static_kw;
-s7_pointer dynamic_kw;
-
-
 void _indent(int i)
 {
     /* printf("_indent: %d\n", i); */
     /* for (; i > 0; i--) */
     /*     printf("    "); */
-}
-
-s7_pointer assoc, assoc_in, sort_bang, string_lt;
-
-s7_pointer _load_assoc()
-{
-    assoc = s7_name_to_value(s7, "assoc");
-    if (assoc == s7_undefined(s7)) {
-        log_error("unbound symbol: assoc");
-        log_info("*load-path*: %s", TO_STR(s7_load_path(s7)));
-        s7_error(s7, s7_make_symbol(s7, "unbound-symbol"),
-                 s7_list(s7, 1, s7_make_string(s7, "assoc")));
-    }
-    return assoc;
-}
-
-s7_pointer _load_assoc_in()
-{
-    assoc_in = s7_name_to_value(s7, "assoc-in");
-    if (assoc == s7_undefined(s7)) {
-        log_error("unbound symbol: assoc-in");
-        log_info("*load-path*: %s", TO_STR(s7_load_path(s7)));
-        s7_error(s7, s7_make_symbol(s7, "unbound-symbol"),
-                 s7_list(s7, 1, s7_make_string(s7, "assoc-in")));
-    }
-    return assoc_in;
-}
-
-s7_pointer _load_sort()
-{
-    sort_bang = s7_name_to_value(s7, "sort!");
-    if (assoc == s7_undefined(s7)) {
-        log_error("unbound symbol: sort!");
-        log_info("*load-path*: %s", TO_STR(s7_load_path(s7)));
-        s7_error(s7, s7_make_symbol(s7, "unbound-symbol"),
-                 s7_list(s7, 1, s7_make_string(s7, "sort!")));
-    }
-    return sort_bang;
-}
-
-s7_pointer _load_string_lt()
-{
-    string_lt = s7_name_to_value(s7, "string<?");
-    if (assoc == s7_undefined(s7)) {
-        log_error("unbound symbol: string<?");
-        log_info("*load-path*: %s", TO_STR(s7_load_path(s7)));
-        s7_error(s7, s7_make_symbol(s7, "unbound-symbol"),
-                 s7_list(s7, 1, s7_make_string(s7, "string<?")));
-    }
-    return string_lt;
 }
 
 UT_string *dunefile_name;
@@ -583,7 +517,7 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
     } else {
         s7_pointer mname_sym   = s7_make_symbol(s7, mname);
 
-        s7_pointer assoc_in = _load_assoc_in();
+        assoc_in = _load_assoc_in();
         s7_pointer keypath = s7_list(s7, 2, modules_kw, static_kw);
         s7_pointer modules_alist = s7_call(s7, assoc_in,
                                            s7_list(s7, 2,
@@ -1404,6 +1338,7 @@ int _compare(const FTSENT** one, const FTSENT** two)
 
 LOCAL const char *_get_path_dir(s7_pointer arg)
 {
+    printf("_get_path_dir: %s\n", TO_STR(arg));
     const char *pathdir = s7_string(arg);
 
     if (pathdir[0] == '/') {
@@ -1456,6 +1391,77 @@ s7_pointer _merge_pkg_tbls(s7_scheme *s7, s7_pointer ht1, s7_pointer ht2)
     return ht1;
 }
 
+s7_pointer _initialize_mibl_data_model(s7_scheme *s7)
+{
+    /*
+     * data model:
+     * wss: alist, keys are ws names with @, values are alists
+     * ws item alist:
+     *   ws name
+     *   ws path (realpath)
+     *   pkg_exports: hash_table keyedy by target, vals: pkg paths
+     *   pkgs: hash_table keyed by pkg path
+     */
+
+    log_debug("_initialize_mibl_data_model");
+
+    /* _s7_acons = _load_acons(s7); */
+    /* _s7_list_set = _load_list_set(s7); */
+    /* printf("_s7_list_set: %s\n", TO_STR(_s7_list_set)); */
+
+    s7_pointer key, datum;
+    s7_pointer q = s7_name_to_value(s7, "quote");
+    printf("QQQQ: %s\n", TO_STR(q));
+
+    s7_pointer root_ws = s7_call(s7, q,
+                                 s7_list(s7, 1,
+                                         s7_list(s7, 1,
+                                                 s7_make_symbol(s7, "@"))));
+
+    /* _s7_append = _load_append(s7); */
+
+    /* s7_pointer base_entry = s7_make_list(s7, 4, s7_f(s7)); */
+    key = s7_make_symbol(s7, "name");
+    datum = s7_make_symbol(s7, "@");
+    root_ws = s7_call(s7, _s7_append,
+                      s7_list(s7, 2, root_ws,
+                              s7_list(s7, 1,
+                                      s7_list(s7, 2, key, datum))));
+    printf("root_ws: %s\n", TO_STR(root_ws));
+
+    key   = s7_make_symbol(s7, "path");
+    datum = s7_make_string(s7, bws_root);
+    root_ws = s7_call(s7, _s7_append,
+                      s7_list(s7, 2, root_ws,
+                              s7_list(s7, 1,
+                                      s7_list(s7, 2, key, datum))));
+    printf("root_ws: %s\n", TO_STR(root_ws));
+
+    key   = s7_make_symbol(s7, "exports");
+    datum = s7_f(s7);
+    root_ws = s7_call(s7, _s7_append,
+                      s7_list(s7, 2, root_ws,
+                              s7_list(s7, 1,
+                                      s7_list(s7, 2, key, datum))));
+    printf("root_ws: %s\n", TO_STR(root_ws));
+
+    key   = s7_make_symbol(s7, "pkgs");
+    datum = s7_make_hash_table(s7, PKG_CT);
+    root_ws = s7_call(s7, _s7_append,
+                      s7_list(s7, 2, root_ws,
+                              s7_list(s7, 1,
+                                      s7_list(s7, 2, key, datum))));
+    printf("root_ws: %s\n", TO_STR(root_ws));
+
+    root_ws = s7_list(s7, 1, root_ws);
+
+    printf("root_ws: %s\n", TO_STR(root_ws));
+
+    s7_define_variable(s7, "ws-table", root_ws);
+
+    return root_ws;
+}
+
 EXPORT s7_pointer g_load_dune(s7_scheme *s7,  s7_pointer args)
 {
     if (debug) {
@@ -1467,8 +1473,15 @@ EXPORT s7_pointer g_load_dune(s7_scheme *s7,  s7_pointer args)
         log_debug("cwd: %s", getcwd(NULL, 0));
     }
 
+    /* s7_pointer wss =  */
+    ///s7_pointer root_ws =
+    _initialize_mibl_data_model(s7);
+
+    s7_pointer _pkg_tbl =
+        s7_eval_c_string(s7, "(cadr (assoc-in '(@ pkgs) ws-table))");
+    printf("pkg_tbl: %s\n", TO_STR(_pkg_tbl));
+
     const char *rootdir, *pathdir;
-    s7_pointer _pkg_tbl = s7_make_hash_table(s7, PKG_CT);
 
     if ( s7_is_null(s7, args) ) {
         rootdir = getcwd(NULL, 0);
@@ -1515,15 +1528,40 @@ EXPORT s7_pointer g_load_dune(s7_scheme *s7,  s7_pointer args)
                     }
                     arglist = s7_cdr(arglist);
                 }
-                return _pkg_tbl;
+                /* return _pkg_tbl; */
+                //  (set-cdr! (assoc-in '(@ pkgs) ws-table) )
+                s7_eval(s7, s7_list(s7, 3,
+                                    _s7_set_cdr,
+                                    s7_list(s7, 3,
+                                            assoc_in,
+                                            s7_list(s7, 2,
+                                                    s7_make_symbol(s7, "@"),
+                                                    s7_make_symbol(s7, "pkgs")),
+                                            s7_name_to_value(s7, "ws-table")),
+                                    _pkg_tbl),
+                        s7_rootlet(s7));
+
+                printf("root_ws 1: %s\n", TO_STR(s7_name_to_value(s7, "ws-table")));
+
+                return s7_name_to_value(s7, "ws-table");
             }
             else if (s7_is_string(arg)) {
                 /* one string arg == path relative to current wd */
                 rootdir = getcwd(NULL,0);
+                printf("Rootdir: %s\n", rootdir);
                 pathdir = _get_path_dir(arg);
-                if (pathdir)
-                    return load_dune(rootdir, pathdir);
-                else {
+                s7_pointer q = s7_name_to_value(s7, "quote");
+                if (pathdir) {
+                    s7_pointer _pkg_tbl = load_dune(rootdir, pathdir);
+
+                    s7_eval_c_string_with_environment(s7, "(set-cdr! (assoc-in '(@ pkgs) ws-table) (list _pkg_tbl))",
+                                                      s7_inlet(s7, s7_list(s7, 1,
+                                                                           s7_cons(s7, s7_make_symbol(s7, "_pkg_tbl"), _pkg_tbl))));
+                    printf("root_ws 2: %s\n", TO_STR(s7_name_to_value(s7, "ws-table")));
+
+                    return s7_name_to_value(s7, "ws-table");
+
+                } else {
                     log_error("cwd: %s", getcwd(NULL,0));
                     return s7_nil(s7);
                 }
@@ -1551,12 +1589,28 @@ EXPORT s7_pointer g_load_dune(s7_scheme *s7,  s7_pointer args)
     }
     /* should not happen? */
     _pkg_tbl = load_dune(rootdir, pathdir);
-    return _pkg_tbl;
+
+    //  (set-cdr! (assoc-in '(@ pkgs) ws-table) )
+    s7_eval(s7, s7_list(s7, 3,
+                        _s7_set_cdr,
+                        s7_list(s7, 3,
+                                assoc_in,
+                                s7_list(s7, 2,
+                                        s7_make_symbol(s7, "@"),
+                                        s7_make_symbol(s7, "pkgs")),
+                                s7_name_to_value(s7, "ws-table")),
+                        _pkg_tbl),
+            s7_rootlet(s7));
+
+    printf("root_ws 3: %s\n", TO_STR(s7_name_to_value(s7, "ws-table")));
+
+    return s7_name_to_value(s7, "ws-table");
 }
 
 /* FIXME: use same logic for rootdir as */
 EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
 {
+    printf("load_dune\n");
     if (debug) {
         log_debug("load_dune");
         log_debug("%-16s%s", "launch_dir:", launch_dir);
@@ -1570,27 +1624,14 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
         printf(YEL "%-16s%s\n" CRESET, "traversal_root:", traversal_root);
     }
 
-    /* initialize s7 stuff */
-    dune_project_sym = s7_make_symbol(s7, "dune-project"),
-    dune_stanzas_kw = s7_make_keyword(s7, "dune-stanzas");
-    dune_stanzas_sym = s7_make_symbol(s7, "dune");
-    ws_path_kw = s7_make_keyword(s7, "ws-path");
-    pkg_path_kw = s7_make_keyword(s7, "pkg-path");
-    realpath_kw = s7_make_keyword(s7, "realpath");
-
-    modules_kw = s7_make_keyword(s7, "modules");
-    sigs_kw = s7_make_keyword(s7, "signatures");
-    structs_kw = s7_make_keyword(s7, "structures");
-    files_kw   = s7_make_keyword(s7, "files");
-    static_kw  = s7_make_keyword(s7, "static");
-    dynamic_kw = s7_make_keyword(s7, "dynamic");
-
-    scripts_kw = s7_make_keyword(s7, "scripts");
-    /* srcs_kw    = s7_make_keyword(s7, "srcs"); */
-
     UT_string *abs_troot;
     utstring_new(abs_troot);
-    utstring_printf(abs_troot, "%s/%s", build_wd, traversal_root);
+    if (debug) log_debug("build_wd: %s", build_wd);
+    utstring_printf(abs_troot, "%s/%s",
+                    //getcwd(NULL,0),
+                    //build_wd,
+                    ews_root,
+                    traversal_root);
     char *abstr = strdup(utstring_body(abs_troot)); //FIXME: free after use
     char *_ews = effective_ws_root(abstr);
     if (debug) log_debug("ews: %s", _ews);
@@ -1633,17 +1674,19 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
       restore cwd after traversal.
     */
     char *old_cwd = getcwd(NULL, 0);
-    if (debug) {
-        printf(RED "OLD_CWD: %s\n", old_cwd);
-        printf("EWS_ROOT: %s\n" CRESET, ews_root);
+    if (strncmp(old_cwd, ews_root, strlen(ews_root)) != 0) {
+        if (debug) {
+            log_debug("chdir: %s => %s\n", old_cwd, ews_root);
+        }
+        rc = chdir(ews_root);
+        if (rc != 0) {
+            log_error("FAIL on chdir: %s => %s\n", old_cwd, ews_root);
+            fprintf(stderr, RED "FAIL on chdir: %s => %s: %s\n",
+                    old_cwd, ews_root, strerror(errno));
+            exit(EXIT_FAILURE);
+        }
+        if (debug) log_debug("%-16s%s", "cwd:",  getcwd(NULL, 0));
     }
-    rc = chdir(ews_root);
-    if (rc != 0) {
-        fprintf(stderr, RED "ERROR chdir(%s): %s",
-                ews_root, strerror(errno));
-        exit(EXIT_FAILURE);
-    }
-    if (debug) log_debug("%-16s%s", "cwd:",  getcwd(NULL, 0));
 
     FTS* tree = NULL;
     FTSENT *ftsentry     = NULL;

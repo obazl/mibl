@@ -42,22 +42,25 @@ tpkg
 
         ;; 'select' libdeps
         ;; "dune/stanzas/library/deps/select/mixed"
-;;        "dune/stanzas/library/deps/select/sigs"
+        ;; "dune/stanzas/library/deps/select/sigs"
         ;; "dune/stanzas/library/deps/select/structs"
         ;; "dune/stanzas/library/deps/select/tezos"
 
         ;; tezos
-        "dune/tezos/lib_clic"
+        "test/dune/tezos/lib_clic"
         ;; "dune/tezos/lib_requester"
         ;; "dune/tezos/lib_stblib_unix"
+        ;; "test/a"
 
         )
-       (pkgs (load-dune arg))
-       (_ (format #t "pkg keys: ~A\n" (hash-table-keys pkgs)))
+       (wss (load-dune arg))
+       (pkgs (cadr (assoc-in '(@ pkgs) wss)))
        (pkg (hash-table-ref pkgs arg))
        (nzs (dune-pkg->mibl pkg))
        )
     nzs))
+
+    pkgs))
 
 ;; rule stanzas
 (define pkg
