@@ -4,11 +4,11 @@
 
 ;; apodoses in 'select' clauses are not pkg-level build targets
 ;; remove them from :structures, :signatures
-(define (-mark-genmodules! pkg)
-  ;;(let* (;;(genmodules (assoc-val :genmodules pkg))
-  (if-let ((genmodules (assoc-in '(:dune :library :genmodules) pkg)))
-         ;; genmodules val: list of alists
-          (let ((apodoses (apply append
+(define (-mark-apodoses! pkg)
+  (format #t "-mark-apodoses!\n")
+  (if-let ((conditionals (assoc-in '(:dune :library :conditionals) pkg)))
+         ;; conditionals val: list of alists
+          (let* ((apodoses (apply append
                                  (map (lambda (x)
                                         (let ((sels-alist
                                                (car (assoc-val :selectors x)))
@@ -18,7 +18,7 @@
                                           (cons
                                            defaults-alist
                                            (map cdr sels-alist))))
-                                      (cdr genmodules))))
+                                      (cdr conditionals))))
                 (apodoses (map symbol->string apodoses)))
             (format #t "MARKING ~A\n" apodoses)
 
@@ -148,7 +148,7 @@
                (format #t "dune-stanza->mibl unhandled: ~A\n" stanza)))))
     ;; (format #t "normalized pkg: ~A\n" pkg)
 
-    (-mark-genmodules! pkg)
+    (-mark-apodoses! pkg)
 
     ;; remove empty :signatures, :structures
     (_trim-pkg-sigs-structs! pkg)

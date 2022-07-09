@@ -20,6 +20,72 @@ mnames
 tpkg
 
 
+;; rule stanzas
+(define pkg
+  (let* ((_   (load "dune.scm"))
+       ;; WARNING: arg to load-dune is relative to cwd,
+       ;; but arg to hash-table-ref below is relative to ws root,
+       ;; which may not be the same.
+       (arg
+
+        ;; "dune/unit_tests/fields/flags/modflags"
+        ;; "dune/unit_tests/fields/flags/libflags"
+        ;; "dune/unit_tests/fields/modules/a"
+        ;; "dune/unit_tests/fields/flags/a"
+        ;; "dune/predicates/standard/flags"
+        ;; "dune/stanzas/library"
+
+        ;; "dune/stanzas/rule/deps/glob"
+        ;; "dune/stanzas/rule/deps/source_tree"
+
+        ;; "dune/filetypes"
+        ;; "a"
+        ;; "dune/genfiles/files"
+        ;;"dune/genfiles/modules/a" ;; no files, dunefile only, 4 genfiles
+        ;;"dune/genfiles/modules/b"
+        ;; "dune/genfiles/modules/c"
+        ;;"dune/genfiles/modules/d"
+
+
+        ;; "dune/stanzas/rule/action/bash"
+        ;; "dune/stanzas/rule/action/cat"
+        ;; "dune/stanzas/rule/action/cmp"
+        ;; "dune/stanzas/rule/action/copy"
+        ;; "dune/stanzas/rule/action/diff"
+        ;; "dune/stanzas/rule/action/echo"
+        ;; "dune/stanzas/rule/action/progn/empties"
+        ;; "dune/stanzas/rule/action/progn/null"
+        ;; "dune/stanzas/rule/action/system"
+        ;; "dune/stanzas/rule/action/write-file"
+        ;; "dune/stanzas/rule/action/mixed"
+
+        ;; dune/stanzas/rule/action/chdir"
+
+        ;; "dune/stanzas/rule/action/run/bash"
+        ;; "dune/stanzas/rule/action/run/cp"
+        ;; "dune/stanzas/rule/action/run/env"
+        ;; "dune/stanzas/rule/action/run/literal"
+        ;; "dune/stanzas/rule/action/run/nostatic"
+        ;; "dune/stanzas/rule/action/run/targets"
+        ;; "dune/stanzas/rule/action/run/var/a"
+        ;; "dune/stanzas/rule/action/run/var/b"
+        ;; "dune/stanzas/rule/action/run/var/tag"
+
+        "dune/stanzas/rule/action/with-stdout-to/bash"
+        ;; "dune/stanzas/rule/action/with-stdout-to/chdir"
+        ;; "dune/stanzas/rule/action/with-stdout-to/run"
+
+        ;; "dune/stanzas/multi"
+
+        ;; "dune/stanzas/rule/alias"
+        )
+       (pkgs (load-dune arg))
+       (pkg (hash-table-ref pkgs arg))
+       ;; ;; (stanzas (assoc :dune-stanzas pkg))
+       (nzs (dune-pkg->mibl pkg))
+       )
+    nzs))
+
 
 (let ((rules (cdr (assoc-in '(:dune :rule) pkg))))
   (map car rules))

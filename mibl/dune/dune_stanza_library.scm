@@ -23,10 +23,28 @@
   (format #t "~A: ~A\n" (blue "DUNE-LIBRARY-FIELDS->MIBL") stanza-alist)
   (format #t "~A: ~A\n" (blue "pkg") pkg)
 
-  ;; 'libraries' fld may generate both :deps and :genmodules toplevels,
-  ;; so don't map it, and dissoc after mapping
+  ;; 'libraries' and 'modules' flds may return multiple flds
+  ;; so excluded them from mapping, handle separately
+  ;; 'libraries' fld may generate :directs, :seldeps and :conditionals
   (let* ((deps (dune-library-deps->mibl (assoc-val 'libraries stanza-alist)))
          (_ (format #t "mibldeps: ~A\n" deps))
+         ;; FIXME: deal with private_modules too
+         (modules (let ((submods+sigs-list
+                         (modules-fld->submodules-fld
+                          (assoc 'modules stanza-alist)
+                          (assoc :modules pkg)
+                          deps
+                          (assoc-val :signatures pkg)
+                          (assoc-val :structures pkg)
+                          )))
+                    (format #t "submods+sigs-list: ~A\n" submods+sigs-list)
+                    (format #t "submodules-list: ~A\n"
+                            (reverse (car submods+sigs-list)))
+                    (format #t "subsigs-list: ~A\n"
+                            (reverse (cdr submods+sigs-list)))
+                    (if wrapped?
+                        submods+sigs-list
+                        (cons ':manifest submods+sigs-list))))
          (flds (map
                 (lambda (fld-assoc)
                   (format #t "lib fld-assoc: ~A\n" fld-assoc)
@@ -38,22 +56,7 @@
                     ((library_flags) (normalize-stanza-fld-flags fld-assoc :lib))
                     ;; (values) returns "nothing"
                     ((libraries) (values)) ;; handled separately
-
-                    ;;TODO: direct/indirect distinction. indirect are
-                    ;;generated src files
-                    ((modules)
-                     ;; FIXME: deal with private_modules too
-                     (let ((submodules-list (modules-fld->submodules-fld
-                                             (assoc 'modules stanza-alist)
-                                             (assoc :modules pkg)
-                                             deps
-                                             (assoc-val :signatures pkg)
-                                             (assoc-val :structures pkg)
-                                             )))
-                       (format #t "submodules-list: ~A\n" submodules-list)
-                       (if wrapped?
-                           (cons ':submodules submodules-list)
-                           (cons ':manifest submodules-list))))
+                    ((modules) (values)) ;; handled separately
 
                     ;; (format #t "direct: ~A, indirect ~A\n"
                     ;;         direct indirect)
@@ -140,13 +143,29 @@
                        fld-assoc))
                     ) ;; end case
                   ) ;; end lamda
-                stanza-alist))) ;; end map
+                stanza-alist) ;; end map
+               )) ;; end let bindings
+    ;; now handle libraries and modules
     (format #t "~A: ~A\n" (red "DEPS FLDS") deps)
-    (append flds
-            (if-let ((gds (assoc :genmodules deps)))
-                    (list (assoc :deps deps))
-                    '())
-            (list (assoc :deps deps)))))
+    (let ((depslist (remove '()
+                            (list :deps
+                                  (if-let ((fixed (assoc :fixed deps)))
+                                          fixed '())
+                                  (if-let ((conds (assoc :conditionals deps)))
+                                          conds '())
+                                  (if-let ((seldeps (assoc :seldeps deps)))
+                                          seldeps '()))))
+          (submods (if-let ((submods-assoc (assoc :submodules modules)))
+                           (let ((submods-list (cdr submods-assoc)))
+                             (cons :submodules (sort! submods-list sym<?)))
+                           '()))
+          (subsigs (if-let ((ssigs (assoc :subsigs modules)))
+                           ssigs '())))
+      (format #t "SUBMODS:: ~A\n" submods)
+      (format #t "SUBSIGS:: ~A\n" subsigs)
+      (append flds (remove '() (list depslist
+                                     submods
+                                     subsigs))))))
 
          ;; (normalized-stanza (if namespaced
          ;;                        (cons '(:namespaced #t) normalized-stanza)
@@ -252,7 +271,8 @@
          )
 
     ;; namespaced?
-    (list (cons ':library mibl-stanza))
+    (let ((res (list (cons ':library mibl-stanza))))
+      res)
     )
   ) ;; end normalize-stanza-library
 

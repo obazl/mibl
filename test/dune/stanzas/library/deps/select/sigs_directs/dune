@@ -2,7 +2,8 @@
   (name lib_a)
   (public_name lib-a)
   (modules (:standard))
-  (libraries (select a.mli from
+  (libraries c d
+             (select a.mli from
                      ;; x and y are extra-pkg deps
                      (x -> a_x.mli)
                      (y -> a_y.mli)
