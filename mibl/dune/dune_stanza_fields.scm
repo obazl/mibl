@@ -172,27 +172,6 @@
                        selects
                        (libdep->module-name modules)))))))
 
-(define dune-library-deps->mibl
-  (let ((+documentation+ "convert 'libraries' field of dune library stanza to mibl format. fld-assoc is a pair (fldname val)")
-        (+signature+ '(dune-library-deps->mibl fld-assoc)))
-    (lambda (fld-assoc)
-      (format #t "~A: ~A\n" (blue "DUNE-library-deps->MIBL") fld-assoc)
-      (let-values (((directs seldeps conditionals modules)
-                    (analyze-libdeps fld-assoc)))
-        (format #t "~A: ~A\n" (red "LIBDEPS DIRECTS") directs)
-        (format #t "~A: ~A\n" (red "LIBDEPS SELDEPS") seldeps)
-        (format #t "~A: ~A\n" (red "LIBDEPS CONDITIONALS") conditionals)
-        (format #t "~A: ~A\n" (red "LIBDEPS MODULES") modules)
-        (let* ((deps (if (null? directs) '() directs))
-               (deps (if (null? seldeps)
-                         deps (cons deps
-                                      (list (cons :seldeps seldeps)))))
-               (deps (if (null? conditionals)
-                         (list deps)
-                         (append deps (list
-                                       (list :conditionals conditionals))))))
-          (filter (lambda (d) (not (null? d))) deps))))))
-
 ;; (modules Registerer), (modules (:standard \ legacy_store_builder))
 ;; (modules)
 ;; (modules (:standard (symbol "\\") delegate_commands delegate_commands_registration))

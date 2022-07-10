@@ -38,6 +38,7 @@ int rc;
 
 char *build_wd; /* BUILD_WORKING_DIRECTORY else NULL */
 char *launch_dir; /* real launch dir */
+
 /* path args passed to mibl relative to build_wd */
 
 /* UT_string *ws_root; */

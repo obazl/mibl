@@ -8,10 +8,21 @@ s7_pointer old_err_port;
 const char *errmsg = NULL;
 int gc_loc = -1;
 
+#define ERRSEXP "(with-let (owlet) " \
+    "(format #t \"file: ~A, line ~A\n\" error-file error-line))"
+
 s7_pointer s7_error_handler(s7_scheme *sc, s7_pointer args)
 {
     /* log_error("error: %s\n", s7_string(s7_car(args))); */
-    fprintf(stdout, RED "ERROR:" CRESET " %s\n", s7_string(s7_car(args)));
+    fprintf(stderr, RED "ERROR:" CRESET " %s\n", s7_string(s7_car(args)));
+    s7_eval_c_string(s7, ERRSEXP);
+
+    /* s7_pointer eline = s7_eval_c_string(s7, "(with-let (owlet) error-line"); */
+    /* fprintf(stderr, "file: %s, line: %s\n", TO_STR(efile), TO_STR(eline)); */
+
+    /* fprintf(stderr, "%s\n", TO_STR(owlet)); */
+    /* fprintf(stderr, "\n"); */
+    /* fprintf(stderr, "%s\n", TO_STR(owlet)); */
     return(s7_f(sc));
 }
 

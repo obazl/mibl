@@ -1,2 +1,8 @@
-exports_files(["dune.scm", "meta.scm", "opam.scm"])
+filegroup(
+    name = "srcs",
+    data = ["dune.scm", "meta.scm", "opam.scm"], # glob(["*.scm"]),
+    visibility = ["//visibility:public"]
+)
+
+# exports_files(["dune.scm", "meta.scm", "opam.scm"])
 

@@ -120,11 +120,11 @@
   (let ((+documentation+ "expands a ':standard' part of a (modules :standard ...) clause. std-list: the ':standard' clause and any modifiers.  pkg-modules: list of source modules (paired .ml/.mli files), from mibl :modules fld; module-deps: :deps from 'libraries' field and possibly :conditionals (if 'select' is used). :conditionals contains (LHS -> RHS) clauses.")
         (+signature+ '(expand-std-modules std-list pkg-modules module-deps sigs structs)))
     ;; modules-ht)))
-    (lambda (std-list pkg-modules module-deps sigs structs)
+    (lambda (std-list pkg-modules sigs structs) ;;  module-deps
 
       (format #t "~A: ~A\n" (blue "EXPAND-std-modules") std-list)
       (format #t " pkg-modules: ~A\n" pkg-modules)
-      (format #t " module-deps: ~A\n" module-deps)
+      ;; (format #t " module-deps: ~A\n" module-deps)
       (format #t " sigs: ~A\n" sigs)
       (format #t " structs: ~A\n" structs)
       (let* ((modifiers (cdr std-list)) ;; car is always :standard
@@ -139,11 +139,17 @@
              ;;                       (append sig-module-names
              ;;                               pkg-module-names)
              ;;                       pkg-module-names)
-             (conditionals (assoc :conditionals module-deps)))
+
+             ;; FIXME: encode conditionals in sigs & structs pkg flds
+             ;; as :dynamic
+             ;; (so we need not pass deps around to expand std modules)
+
+             ;; (conditionals (assoc :conditionals module-deps))
+             )
         (format #t "pkg-module-names: ~A\n" pkg-module-names)
         (format #t "sig-module-names: ~A\n" sig-module-names)
         (format #t "modifiers: ~A\n" modifiers)
-        (format #t "conditionals: ~A\n" conditionals)
+        ;; (format #t "conditionals: ~A\n" conditionals)
         (if-let ((slash (member (symbol "\\") modifiers)))
                 (let* ((exclusions (cdr slash))
                        (exclusions (if (list? (car exclusions))
@@ -162,20 +168,21 @@
                     ;; returning
                     (values winnowed sigs)))
                 ;; else no exclusions
-                (if conditionals
-                    (let* ((gentargets (map (lambda (x)
-                                              (assoc-val :target x))
-                                            (cadr conditionals)))
-                           (_ (format #t "gentargets: ~A\n" gentargets))
-                           (gentargets (apply append gentargets))
-                           ;; (gentargets (map file-name->module-name gentargets))
-                           (_ (format #t "~A: ~A\n" (red "GENTARGETS") gentargets))
-                           (conditionals (resolve-gentargets gentargets sigs structs))
-                           )
-                      (format #t "~A: ~A\n" (red "CONDITIONALS") conditionals)
-                      (append conditionals pkg-module-names))
-                      ;; (if conditionals
-                    (values pkg-module-names sig-module-names)))))))
+                ;; (if conditionals
+                ;;     (let* ((gentargets (map (lambda (x)
+                ;;                               (assoc-val :target x))
+                ;;                             (cadr conditionals)))
+                ;;            (_ (format #t "gentargets: ~A\n" gentargets))
+                ;;            (gentargets (apply append gentargets))
+                ;;            ;; (gentargets (map file-name->module-name gentargets))
+                ;;            (_ (format #t "~A: ~A\n" (red "GENTARGETS") gentargets))
+                ;;            (conditionals (resolve-gentargets gentargets sigs structs))
+                ;;            )
+                ;;       (format #t "~A: ~A\n" (red "CONDITIONALS") conditionals)
+                ;;       (append conditionals pkg-module-names))
+                ;;       ;; (if conditionals
+                ;;     (values pkg-module-names sig-module-names))
+)))))
 
 ;; was (define (modules->modstbl modules srcfiles) ;; lookup_tables.scm
 ;; expand (modules ...) and convert to (:submodules ...)
@@ -192,13 +199,13 @@
 (define modules-fld->submodules-fld
   ;;TODO: direct/indirect distinction. indirect are generated src files
   (let ((+documentation+ "Expand  'modules' field (of library or executable stanzas) and convert to pair of :submodules :subsigs assocs. modules-spec is a '(modules ...)' field from a library stanza; pkg-modules is the list of modules in the package: an alist whose assocs have the form (A (:ml a.ml)(:mli a.mli)), i.e. keys are module names.")
-        (+signature+ '(modules-fld->submodules-fld modules-spec pkg-modules modules-deps sigs structs)))
+        (+signature+ '(modules-fld->submodules-fld modules-spec pkg-modules sigs structs))) ;;  modules-deps
         ;; modules-ht)))
-    (lambda (modules-spec pkg-modules deps sigs structs) ;; modules-ht)
+    (lambda (modules-spec pkg-modules sigs structs)
       (format #t "~A\n" (blue "MODULES-FLD->SUBMODULES-FLD"))
       (format #t "modules-spec: ~A\n" modules-spec)
       (format #t "pkg-modules: ~A\n" pkg-modules)
-      (format #t "deps: ~A\n" deps)
+      ;; (format #t "deps: ~A\n" deps)
       (format #t "sigs: ~A\n" sigs)
       (format #t "structs: ~A\n" structs)
       (if pkg-modules
@@ -219,6 +226,7 @@
                             (format #t "RECUR modules-spec ~A\n" modules-spec)
                             (format #t "  submods: ~A\n" submods)
                             (format #t "  subsigs: ~A\n" subsigs)
+
                             (cond
                              ((null? modules-spec)
                               (if (null? submods)
@@ -231,28 +239,7 @@
                                      (cons :submodules submods)
                                      (if (null? subsigs)
                                          '() (cons :subsigs subsigs))))))
-                                    ;; (reverse submods)
-
-                             ((equal? :standard (car modules-spec))
-                              ;; e.g. (modules :standard ...)
-                              (begin
-                                (format #t "(equal? :standard (car modules-spec))\n")
-                                (let-values (((mods-expanded sigs-expanded)
-                                               (expand-std-modules
-                                                      modules-spec
-                                                      pkg-modules
-                                                      deps
-                                                      sigs structs)))
-                                  (format #t "mods-expanded: ~A\n"
-                                          mods-expanded)
-                                  (format #t "sigs-expanded: ~A\n"
-                                          sigs-expanded)
-                                  (list
-                                   (cons :submodules (reverse mods-expanded))
-                                   (if sigs-expanded
-                                       (cons :subsigs
-                                             (reverse sigs-expanded))
-                                       '())))))
+                             ;; (reverse submods)
 
                              ((pair? (car modules-spec))
                               (begin
@@ -265,14 +252,37 @@
                                     (modules-fld->submodules-fld
                                      (append
                                       (list 'modules :standard) (cdr modules-spec))
-                                     pkg-modules deps sigs structs)
-                                    (modules-fld->submodules-fld (cons
-                                                                  'modules
-                                                                  (car modules-spec))
-                                                                 pkg-modules
-                                                                 deps
-                                                                 sigs
-                                                                 structs))))
+                                     pkg-modules
+                                     ;; deps
+                                     sigs structs)
+                                    (modules-fld->submodules-fld
+                                     (cons
+                                      'modules (car modules-spec))
+                                     pkg-modules
+                                     ;; deps
+                                     sigs
+                                     structs))))
+
+                             ((equal? :standard (car modules-spec))
+                              ;; e.g. (modules :standard ...)
+                              (begin
+                                (format #t "(equal? :standard (car modules-spec))\n")
+                                (let-values (((mods-expanded sigs-expanded)
+                                              (expand-std-modules
+                                                      modules-spec
+                                                      pkg-modules
+                                                      ;; deps
+                                                      sigs structs)))
+                                  (format #t "mods-expanded: ~A\n"
+                                          mods-expanded)
+                                  (format #t "sigs-expanded: ~A\n"
+                                          sigs-expanded)
+                                  (list
+                                   (cons :submodules (reverse mods-expanded))
+                                   (if sigs-expanded
+                                       (cons :subsigs
+                                             (reverse sigs-expanded))
+                                       '())))))
 
                              ;; inclusions, e.g. (modules a b c)
                              (else

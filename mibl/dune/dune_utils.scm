@@ -1,4 +1,4 @@
-;; (display "dune/dune_utils.scm") (newline)
+(display "dune/dune_utils.scm") (newline)
 
 ;; (load "alist.scm")
 ;; (load "dune_normalize.scm")
@@ -395,15 +395,18 @@
     libdep))
 
 (define (normalize-module-name mname)
-  (let ((s (if (symbol? mname)
-               (symbol->string mname)
-               (if (string? mname)
-                   mname
-                   (error 'bad-type
-                          (format #f "module name not sym or string: ~A"
-                                  mname))))))
-    (string-set! s 0 (char-upcase (string-ref s 0)))
-    (string->symbol s)))
+  (format #t "normalize-module-name: ~A\n" mname)
+  (if (equal? '(:standard) mname)
+      :standard
+      (let ((s (if (symbol? mname)
+                   (symbol->string mname)
+                   (if (string? mname)
+                       mname
+                       (error 'bad-type
+                              (format #f "module name not sym or string: ~A"
+                                      mname))))))
+        (string-set! s 0 (char-upcase (string-ref s 0)))
+        (string->symbol s))))
 
 (define filename-cache (make-hash-table))
 
@@ -432,4 +435,4 @@
 
 
 
-;; (display "loaded dune/dune_utils.scm") (newline)
+(display "loaded dune/dune_utils.scm") (newline)

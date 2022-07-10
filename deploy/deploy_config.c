@@ -27,10 +27,18 @@
 #include "utstring.h"
 #endif
 
-#include "bazel_config.h"
+/* #include "bazel_config.h" */
+/* #include "mibl_config.h" */
+/* #include "fs.h" */
+
+#include "mibl.h"
 #include "deploy_config.h"
-#include "mibl_config.h"
-#include "fs.h"
+
+extern char *launch_dir; /* real launch dir, bazel_config.c */
+extern char *build_wd; /* BUILD_WORKING_DIRECTORY else NULL */
+extern bool dev_mode;   /* t: we launched from mibl under bazel */
+
+int rc;
 
 UT_string *xdg_home_install_root; // $HOME/.local/share/mibl
 UT_string *xdg_install_dir;

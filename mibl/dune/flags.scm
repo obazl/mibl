@@ -120,7 +120,7 @@
 ;; (:standard -linkall)
 ;; FIXME: check for car = flags or library_flags?
 (define (normalize-stanza-fld-flags flags type)
-  (format #t "normalize-stanza-fld-flags: ~A\n" flags)
+  (format #t "~A: ~A\n" (blue "normalize-stanza-fld-flags") flags)
   (if flags
       ;; (let* ((flags (if (list? (cadr flags))
       ;;                   (cadr flags)
@@ -144,20 +144,21 @@
             ;; (format #t "STD: ~A\n" std)
             (format #t "OPTIONS: ~A\n" options)
             (format #t "FLAGS: ~A\n" bools)
-            (list (if (eq? type :mod) :module-opts
+            (cons (if (eq? type :mod) :opts
                       (if (eq? type :lib) :archive-opts
                           :unknown-opts))
-                  (concatenate
-                   (if (or top-std std)
-                       '((:standard)) '()) ;; FIXME: expand :standard flags
-                   (if (null? opens) '()
-                       (list (cons :opens (reverse opens))))
-                   (if (null? options) '()
-                       (list (cons :options (reverse options))))
-                   (if (null? bools) '()
-                       (list (cons :flags (reverse bools))))
-                   ;; `((:raw ,flags))
-                   )))))
+                  (remove
+                   '() (list
+                        (if (or top-std std)
+                            '(:standard) '()) ;; FIXME: expand :standard flags
+                        (if (null? opens) '()
+                            (cons :opens (reverse opens)))
+                        (if (null? options) '()
+                            (cons :options (reverse options)))
+                        (if (null? bools) '()
+                            (cons :flags (reverse bools)))
+                        ;; `((:raw ,flags))
+                        ))))))
       #f))
 
 ;; (format #t "loaded: mibl/dune/flags.scm\n")

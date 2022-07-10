@@ -6,8 +6,8 @@ cc_binary(
     srcs  = [
         "deploy.c", "deploy.h",
         "deploy_config.c", "deploy_config.h",
-        "//src:mibl_config.h",
-        "//src:fs.h"
+        # "//src:mibl_config.h",
+        # "//src:fs.h"
     ],
     defines = select({
         "//bzl/host:debug": ["DEBUG_TRACE"],
@@ -43,8 +43,10 @@ cc_binary(
     ],
     data = [
         "//repl", # so we can find it in MANIFEST
-        "//mibl:dune.scm",
+        "//mibl:srcs",
         "//mibl/dune:srcs",
+        "//mibl/meta:srcs",
+        "//mibl/opam:srcs",
     ],
     linkopts = select({
         "//bzl/host:macos": [],

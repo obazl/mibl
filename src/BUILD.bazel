@@ -24,13 +24,19 @@ cc_library(
     }) + ["@uthash//:include"],
     hdrs = ["mibl.h"],
     data = [
-        "//mibl:dune.scm",
+        "//mibl:srcs",
         "//mibl/dune:srcs",
-        "//mibl:meta.scm",
         "//mibl/meta:srcs",
-        "//mibl:opam.scm",
-        "//mibl/opam:srcs",
+        "//mibl/opam:srcs"
     ],
+    # data = [
+    #     "//mibl:dune.scm",
+    #     "//mibl/dune:srcs",
+    #     "//mibl:meta.scm",
+    #     "//mibl/meta:srcs",
+    #     "//mibl:opam.scm",
+    #     "//mibl/opam:srcs",
+    # ],
     defines = select({
         "//bzl/host:debug": ["DEBUG_TRACE"],
         "//conditions:default":   []
@@ -45,6 +51,7 @@ cc_library(
         "-std=c11",
         "-g",
         "-Wall",
+        "-Wpedantic",
         "-Wno-unused-function",
 
         "-I$(GENDIR)/src",
