@@ -534,7 +534,8 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
         /* log_debug(":srcs null?: %d", s7_is_null(s7, srcs_alist)); */
         /* log_debug(":srcs false?: %d", s7_f(s7) ==  srcs_alist); */
 
-        s7_pointer ml_assoc = s7_list(s7, 2,
+        /* s7_pointer ml_assoc = s7_list(s7, 2, */
+        s7_pointer ml_assoc = s7_cons(s7,
                                       s7_make_keyword(s7,
                                                       ftype == TAG_ML
                                                       ?"ml"
@@ -542,7 +543,7 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
                                                       ?"mli"
                                                       :"UNKNOWN"
                                                       ),
-                                      s7_make_string(s7, fname));
+                                      s7_make_symbol(s7, fname));
         if (debug)
             log_debug("ml_assoc: %s", TO_STR(ml_assoc));
 
@@ -669,7 +670,7 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
 
                 s7_pointer new_modules_alist
                     = s7_set_cdr(module_alist, msrcs);
- 
+
                if (debug) {
                     log_debug("new_modules_alist: %s",
                               TO_STR(new_modules_alist));
@@ -713,21 +714,22 @@ LOCAL void _update_pkg_sigs(s7_pointer pkg_tbl,
         /*           s7_list(s7, 2, modules_kw, pkg_alist)); */
         if (debug) log_debug("sigs_alist %s", TO_STR(sigs_alist));
 
-        s7_pointer mli_file = s7_make_string(s7, fname);
+        s7_pointer mli_file = s7_make_symbol(s7, fname);
         /* s7_pointer mli_assoc = s7_list(s7, 2, */
         /*                               s7_make_keyword(s7, "mli"), */
         /*                               s7_make_string(s7, fname)); */
         /* if (debug) */
         /*     log_debug("mli_assoc: %s", TO_STR(mli_assoc)); */
 
+        /* s7_pointer sig_assoc = s7_list(s7, 2, mname_sym, mli_file); */
+        s7_pointer sig_assoc = s7_cons(s7, mname_sym, mli_file);
+        if (debug) log_debug("sig_assoc: %s", TO_STR(sig_assoc));
+
         if (sigs_alist == s7_f(s7)) {
             if (debug)
                 log_debug("INITIALIZING :signatures field");
             /* (:signatures ((:Foo (:mli foo.mli)) */
             /*               (:Bar (:mli bar.mli)))) */
-
-            s7_pointer sig_assoc = s7_list(s7, 2, mname_sym, mli_file); //mli_assoc);
-            if (debug) log_debug("sig_assoc: %s", TO_STR(sig_assoc));
 
             s7_pointer statics_assoc =
                 s7_list(s7, 2, static_kw, sig_assoc);
@@ -756,7 +758,7 @@ LOCAL void _update_pkg_sigs(s7_pointer pkg_tbl,
                                          static_kw,
                                          mname_sym);
             if (debug) {
-                log_debug("assoc-in: %s", TO_STR(assoc_in));
+                /* log_debug("assoc-in: %s", TO_STR(assoc_in)); */
                 log_debug("keypath: %s", TO_STR(keypath));
                 log_debug("pkg_alist: %s", TO_STR(pkg_alist));
             }
@@ -784,13 +786,15 @@ LOCAL void _update_pkg_sigs(s7_pointer pkg_tbl,
                        TO_STR(sigs_alist_cdr));
                 }
 
-                s7_pointer sig_assoc =
-                    s7_list(s7, 1, s7_list(s7, 2, mname_sym, mli_file)); //mli_assoc));
-                if (debug) log_debug("new sig_assoc: %s",
-                                     TO_STR(sig_assoc));
+                /* s7_pointer sig_assoc = */
+                /*     s7_list(s7, 1, s7_list(s7, 2, mname_sym, mli_file)); //mli_assoc)); */
+                /* if (debug) log_debug("new sig_assoc: %s", */
+                /*                      TO_STR(sig_assoc)); */
 
                 s7_pointer new_sigs_alist_cdr =
-                    s7_append(s7, sigs_alist_cdr, sig_assoc);
+                    s7_append(s7, sigs_alist_cdr,
+                              s7_list(s7, 1, sig_assoc));
+
                 if (debug)
                     log_debug("new_sigs_alist_cdr: %s",
                        TO_STR(new_sigs_alist_cdr));
@@ -866,14 +870,16 @@ LOCAL void _update_pkg_structs(s7_pointer pkg_tbl,
         /* if (debug) */
         /*     log_debug("ml_assoc: %s", TO_STR(ml_assoc)); */
 
+        s7_pointer struct_assoc =
+            s7_cons(s7, mname_sym, s7_make_symbol(s7, fname));
+        /* s7_list(s7, 2, mname_sym, s7_make_symbol(s7, fname)); */
+        if (debug) log_debug("struct_assoc: %s", TO_STR(struct_assoc));
+
         if (structs_alist == s7_f(s7)) {
             if (debug)
                 log_debug("INITIALIZING :structures field");
             /* (:structures ((:Foo (:ml foo.ml)) */
             /*               (:Bar (:ml bar.ml)))) */
-
-            s7_pointer struct_assoc = s7_list(s7, 2, mname_sym, s7_make_string(s7, fname)); // ml_assoc);
-            if (debug) log_debug("struct_assoc: %s", TO_STR(struct_assoc));
 
             s7_pointer statics_assoc =
                 s7_list(s7, 2, static_kw, struct_assoc);
@@ -930,13 +936,16 @@ LOCAL void _update_pkg_structs(s7_pointer pkg_tbl,
                        TO_STR(structs_alist_cdr));
                 }
 
-                s7_pointer struct_assoc =
-                    s7_list(s7, 1, s7_list(s7, 2, mname_sym, s7_make_string(s7, fname))); //ml_assoc));
-                if (debug) log_debug("new struct_assoc: %s",
-                                     TO_STR(struct_assoc));
+                /* s7_pointer struct_assoc = */
+                /*     s7_list(s7, 1, */
+                /*             s7_list(s7, 2, */
+                /*                     mname_sym, s7_make_symbol(s7, fname))); */
+                /* if (debug) log_debug("new struct_assoc: %s", */
+                /*                      TO_STR(struct_assoc)); */
 
                 s7_pointer new_structs_alist_cdr =
-                    s7_append(s7, structs_alist_cdr, struct_assoc);
+                    s7_append(s7, structs_alist_cdr,
+                              s7_list(s7, 1, struct_assoc));
                 if (debug)
                     log_debug("new_structs_alist_cdr: %s",
                        TO_STR(new_structs_alist_cdr));
@@ -957,9 +966,9 @@ LOCAL void _update_pkg_structs(s7_pointer pkg_tbl,
                     log_debug("structs_alist_cdr: %s",
                        TO_STR(structs_alist_cdr));
 
-                s7_pointer msrcs = s7_append(s7,
-                                             structs_alist_cdr,
-                                             s7_list(s7, 1, s7_make_string(s7, fname))); //ml_assoc));
+                s7_pointer msrcs =
+                    s7_append(s7, structs_alist_cdr,
+                              s7_list(s7, 1, s7_make_symbol(s7, fname))); //ml_assoc));
 
                 s7_pointer new_structs_alist
                     = s7_set_cdr(struct_alist, msrcs);

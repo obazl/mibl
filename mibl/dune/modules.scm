@@ -167,22 +167,10 @@
                                    pkg-module-names)))
                     ;; returning
                     (values winnowed sigs)))
-                ;; else no exclusions
-                ;; (if conditionals
-                ;;     (let* ((gentargets (map (lambda (x)
-                ;;                               (assoc-val :target x))
-                ;;                             (cadr conditionals)))
-                ;;            (_ (format #t "gentargets: ~A\n" gentargets))
-                ;;            (gentargets (apply append gentargets))
-                ;;            ;; (gentargets (map file-name->module-name gentargets))
-                ;;            (_ (format #t "~A: ~A\n" (red "GENTARGETS") gentargets))
-                ;;            (conditionals (resolve-gentargets gentargets sigs structs))
-                ;;            )
-                ;;       (format #t "~A: ~A\n" (red "CONDITIONALS") conditionals)
-                ;;       (append conditionals pkg-module-names))
-                ;;       ;; (if conditionals
-                ;;     (values pkg-module-names sig-module-names))
-)))))
+                ;; else no explicit exclusions, but, select apodoses
+                ;; always excluded:
+                (values pkg-module-names sig-module-names))
+        ))))
 
 ;; was (define (modules->modstbl modules srcfiles) ;; lookup_tables.scm
 ;; expand (modules ...) and convert to (:submodules ...)
@@ -277,6 +265,9 @@
                                           mods-expanded)
                                   (format #t "sigs-expanded: ~A\n"
                                           sigs-expanded)
+                                  (format #t "updated pkg: ~A\n" pkg)
+                                  ;; (error 'tmp "tmp")
+
                                   (list
                                    (cons :submodules (reverse mods-expanded))
                                    (if sigs-expanded

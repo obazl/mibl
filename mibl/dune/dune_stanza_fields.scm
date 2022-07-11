@@ -96,9 +96,10 @@
       (format #t "clauses: ~A\n" clauses)
       `((:target ,target)
         ,(cons ':deps (map (lambda (c) (cadar c)) clauses))
-        (:selectors ,(apply
-                      append
-                      (map (lambda (c) (assoc-val :clause c)) clauses)))
+        ,(cons ':selectors (apply
+                            append
+                            (map (lambda (c) (assoc-val :clause c))
+                                 clauses)))
         (:default ,default)))))
 
 ;; (libraries a b c.d a.b.c ...)
