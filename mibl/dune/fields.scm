@@ -1,27 +1,28 @@
 (format #t "loading dune/fields.scm\n")
 
 (define (-get-modules pkg deps wrapped? stanza-alist)
-  (format #t "-get-modules: ~A\n" deps)
+  (format #t "~A: ~A\n" (blue "-get-modules") deps)
   (if deps
-      (if-let ((submods+sigs-list
-                (modules-fld->submodules-fld
-                 (assoc 'modules stanza-alist)
-                 ;; files
-                 (assoc :modules pkg)
-                 ;; deps
-                 (assoc-val :signatures pkg)
-                 (assoc-val :structures pkg)
-                 )))
-              (begin
-                (format #t "submods+sigs-list: ~A\n" submods+sigs-list)
-                (format #t "submodules-list: ~A\n"
-                        (reverse (car submods+sigs-list)))
-                (format #t "subsigs-list: ~A\n"
-                        (reverse (cdr submods+sigs-list)))
-                (if wrapped?
-                    submods+sigs-list
-                    (cons ':manifest submods+sigs-list)))
-              '())
+      (let ((submods+sigs-list
+             (modules-fld->submodules-fld
+              (assoc 'modules stanza-alist)
+              ;; files
+              (assoc :modules pkg)
+              ;; deps
+              (assoc-val :signatures pkg)
+              (assoc-val :structures pkg)
+              )))
+        (if (null? submods+sigs-list)
+            '()
+            (begin
+              (format #t "submods+sigs-list: ~A\n" submods+sigs-list)
+              (format #t "submodules-list: ~A\n"
+                      (reverse (car submods+sigs-list)))
+              (format #t "subsigs-list: ~A\n"
+                      (reverse (cdr submods+sigs-list)))
+              (if wrapped?
+                  submods+sigs-list
+                  (cons ':manifest submods+sigs-list)))))
       '()))
 
 ;; mv select targets to pkg :modules

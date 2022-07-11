@@ -45,7 +45,7 @@
   (let ((+documentation+ "Returns module names from modules-assoc, which has the form ((:static (A (:ml a.ml) (:mli a.mli)...) (:dynamic ...))")
         (+signature+ '(get-module-names modules-alist)))
     (lambda (modules-alist)
-      (format #t "get-module-names, massoc: ~A\n" modules-alist)
+      (format #t "get-module-names: ~A\n" modules-alist)
       (if modules-alist
           (let* ((statics (assoc-val :static modules-alist))
                  ;; (_ (format #t "statics: ~A\n" statics))
@@ -189,25 +189,28 @@
   (let ((+documentation+ "Expand  'modules' field (of library or executable stanzas) and convert to pair of :submodules :subsigs assocs. modules-spec is a '(modules ...)' field from a library stanza; pkg-modules is the list of modules in the package: an alist whose assocs have the form (A (:ml a.ml)(:mli a.mli)), i.e. keys are module names.")
         (+signature+ '(modules-fld->submodules-fld modules-spec pkg-modules sigs structs))) ;;  modules-deps
         ;; modules-ht)))
-    (lambda (modules-spec pkg-modules sigs structs)
+    (lambda (modules-spec pkg-modules pkg-sigs pkg-structs)
       (format #t "~A\n" (blue "MODULES-FLD->SUBMODULES-FLD"))
       (format #t "modules-spec: ~A\n" modules-spec)
       (format #t "pkg-modules: ~A\n" pkg-modules)
       ;; (format #t "deps: ~A\n" deps)
-      (format #t "sigs: ~A\n" sigs)
-      (format #t "structs: ~A\n" structs)
-      (if pkg-modules
+      (format #t "pkg-sigs: ~A\n" pkg-sigs)
+      (format #t "pkg-structs: ~A\n" pkg-structs)
+      (if (or pkg-modules pkg-structs)
           (if modules-spec
               (let* ((modules-spec (map normalize-module-name
                                         (cdr modules-spec)))
-                     (pkg-module-names (get-module-names (cdr pkg-modules)))
-                     (struct-module-names (get-module-names structs))
+                     (pkg-module-names (if pkg-modules
+                                           (get-module-names
+                                            (cdr pkg-modules))
+                                           '()))
+                     (struct-module-names (get-module-names pkg-structs))
                      (pkg-module-names (if struct-module-names
                                            (append struct-module-names
                                                    pkg-module-names)
                                            pkg-module-names))
-                     (sig-module-names (get-module-names sigs))
-                     (_ (format #t "modules-spec: ~A\n" modules-spec))
+                     (sig-module-names (get-module-names pkg-sigs))
+                     (_ (format #t "modules-spec:: ~A\n" modules-spec))
                      (tmp (let recur ((modules-spec modules-spec)
                                       (submods '())
                                       (subsigs '()))
@@ -242,14 +245,14 @@
                                       (list 'modules :standard) (cdr modules-spec))
                                      pkg-modules
                                      ;; deps
-                                     sigs structs)
+                                     pkg-sigs pkg-structs)
                                     (modules-fld->submodules-fld
                                      (cons
                                       'modules (car modules-spec))
                                      pkg-modules
                                      ;; deps
-                                     sigs
-                                     structs))))
+                                     pkg-sigs
+                                     pkg-structs))))
 
                              ((equal? :standard (car modules-spec))
                               ;; e.g. (modules :standard ...)
@@ -260,7 +263,7 @@
                                                       modules-spec
                                                       pkg-modules
                                                       ;; deps
-                                                      sigs structs)))
+                                                      pkg-sigs pkg-structs)))
                                   (format #t "mods-expanded: ~A\n"
                                           mods-expanded)
                                   (format #t "sigs-expanded: ~A\n"
@@ -294,10 +297,14 @@
                             ))) ;; recur
                 tmp) ;; let*
               ;; no modules-spec - default is all
-              (get-module-names (cdr pkg-modules))
+              (begin
+                (format #t "no modules-spec\n")
+                (get-module-names (cdr pkg-modules)))
               ) ;; if modules-spec
           ;; else no modules in pkg
-          '())
+          (begin
+            (format #t "no pkg-modules, pkg-structs\n")
+            '()))
       ) ;; lamda
     ) ;; let
   ) ;; define
