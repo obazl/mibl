@@ -144,6 +144,29 @@
                                              (list :conditionals conditionals))))))
                 (filter (lambda (d) (not (null? d))) deps))))))))
 
+(define (-lib-flds->mibl stanza-alist)
+  (map
+   (lambda (fld-assoc)
+     (format #t "lib fld-assoc: ~A\n" fld-assoc)
+     (case (car fld-assoc)
+       ((name) `(:privname ,(cadr fld-assoc)))
+       ((public_name) `(:pubname ,(cadr fld-assoc)))
+
+       ((flags) (normalize-stanza-fld-flags fld-assoc :mod))
+       ((library_flags) (normalize-stanza-fld-flags fld-assoc :lib))
+       ;; (values) returns "nothing"
+       ((libraries) (values)) ;; handled separately
+       ((modules) (values)) ;; handled separately
+
+       ((wrapped) (values))
+       (else
+        (begin
+          (format #t "~A: ~A\n" (red "unhandled lib fld") fld-assoc)
+          fld-assoc))
+       ) ;; end case
+     ) ;; end lamda
+   stanza-alist))
+
 (define (dune-library-fields->mibl pkg stanza-alist wrapped?)
   (format #t "~A: ~A\n" (blue "DUNE-LIBRARY-FIELDS->MIBL") stanza-alist)
   (format #t "~A: ~A\n" (blue "pkg") pkg)
@@ -161,30 +184,10 @@
 
          ;; FIXME: deal with private_modules too
          (modules (-get-modules pkg deps wrapped? stanza-alist))
-         (flds (map
-                (lambda (fld-assoc)
-                  (format #t "lib fld-assoc: ~A\n" fld-assoc)
-                  (case (car fld-assoc)
-                    ((name) `(:privname ,(cadr fld-assoc)))
-                    ((public_name) `(:pubname ,(cadr fld-assoc)))
+         (lib-flds (-lib-flds->mibl stanza-alist))) ;; end let bindings
 
-                    ((flags) (normalize-stanza-fld-flags fld-assoc :mod))
-                    ((library_flags) (normalize-stanza-fld-flags fld-assoc :lib))
-                    ;; (values) returns "nothing"
-                    ((libraries) (values)) ;; handled separately
-                    ((modules) (values)) ;; handled separately
-
-                    ((wrapped) (values))
-                    (else
-                     (begin
-                       ;; (format #t "unhandled lib fld: ~A\n" fld-assoc)
-                       fld-assoc))
-                    ) ;; end case
-                  ) ;; end lamda
-                stanza-alist) ;; end map
-               )) ;; end let bindings
-    ;; now handle modules and submodules
-    (format #t "~A: ~A\n" (red "DEPS FLDS") deps)
+    ;; now handle modules (modules fld) and submodules (deps fld)
+    (format #t "~A: ~A\n" (red "DEPS") deps)
     (let* ((depslist
             (if deps (remove '()
                              (list :deps
@@ -207,9 +210,9 @@
                         (if-let ((ssigs (assoc :subsigs modules)))
                                 ssigs '())
                         '())))
-          (format #t "SUBMODS:: ~A\n" submods)
-          (format #t "SUBSIGS:: ~A\n" subsigs)
-          (append flds (remove '() (list depslist
+      (format #t "SUBMODS:: ~A\n" submods)
+      (format #t "SUBSIGS:: ~A\n" subsigs)
+      (append lib-flds (remove '() (list depslist
                                          (if wrapped? '(:namespaced #t)
                                              '(:namespaced #f))
                                          submods

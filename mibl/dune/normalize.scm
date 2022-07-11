@@ -5,7 +5,7 @@
 ;; apodoses in 'select' clauses are not pkg-level build targets
 ;; remove them from :structures, :signatures
 (define (-mark-apodoses! pkg)
-  (format #t "-mark-apodoses!\n")
+  (format #t "-mark-apodoses! ~A\n" pkg)
   (if-let ((conditionals (assoc-in '(:dune :library :conditionals) pkg)))
          ;; conditionals val: list of alists
           (let* ((apodoses (apply append
@@ -81,7 +81,7 @@
 
 ;; original: dune_stanzas.scm Xnormalize-stanza
 (define (dune-stanza->mibl pkg stanza nstanzas)
-  (format #t "DUNE-STANZA->MIBL: ~A\n" stanza)
+  (format #t "~A: ~A\n" (blue "dune-stanza->mibl") stanza)
   (format #t "  PKG: ~A\n" pkg)
   ;; (format #t "  nstanzas: ~A\n" nstanzas)
   (let* ((stanza-alist (cdr stanza))
@@ -102,21 +102,7 @@
                        (append
                         (cdr nstanzas)
                         (dune-library->mibl pkg stanza))))
-               ;; (begin
-               ;;   ;; (format #t "Normalizing lib stanza ~A\n"
-               ;;   ;;         (assoc-val 'name stanza-alist))
-               ;;   (if (null-library? stanza)
-               ;;       '()
-               ;;       ;; (let ((submodules-list (modules-fld->submodules-fld
-               ;;       ;;                          (assoc 'modules (cdr stanza))
-               ;;       ;;                          (assoc :modules pkg)
-               ;;       ;;                          modules-ht))
-               ;;       ;;       ;; add submodules-assoc to stanza
-               ;;       ;;       )
-               ;;       ;;   (format #t "submodules-list: ~A\n" submodules-list)
-               ;;       (normalize-library-stanza stanza))))
-               ;;         ;; (normalize-library-stanza submodules-assoc)))))
-               ;;        ;; pkg-path ocaml-srcs stanza))))
+
             ;; ((alias) (normalize-stanza-alias stanza))
             ;; ((copy_files#) (normalize-stanza-copy_files pkg-path stanza))
             ;; ((copy_files) (normalize-stanza-copy_files pkg-path stanza))
@@ -126,6 +112,11 @@
             ;; ((env) (normalize-stanza-env stanza))
             ;; ((executable) (normalize-stanza-executable :executable
             ;;                pkg-path ocaml-srcs stanza))
+            ((executable)
+             (set-cdr! nstanzas
+                       (append
+                        (cdr nstanzas)
+                        (dune-executable->mibl pkg stanza))))
 
             ;; ((executables) (normalize-stanza-executables :executables
             ;;                 pkg-path ocaml-srcs stanza))
@@ -156,7 +147,7 @@
     pkg))
 
 (define (dune-pkg->mibl pkg)
-  (format #t "dune-pkg->mibl: ~A\n" pkg)
+  (format #t "~A: ~A\n" (blue "dune-pkg->mibl") pkg)
   (let* ((nstanzas (list :dune))
          (pkg+ (append pkg (list nstanzas))))
     ;; (format #t "STANZAS COPY: ~A\n" dune-stanzas)

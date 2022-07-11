@@ -1,0 +1,9 @@
+(executable
+ (name main)
+ (public_name main)
+ (link_flags 
+ (libraries foo bar)
+ (flags (:standard -open A
+                   -open B
+                   -linkall))
+ (modules Main_validator))

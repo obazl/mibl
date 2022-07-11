@@ -119,7 +119,8 @@
 ;; (flags (:standard -open Tezos_base__TzPervasives -open Tezos_micheline))
 ;; (:standard -linkall)
 ;; FIXME: check for car = flags or library_flags?
-(define (normalize-stanza-fld-flags flags type)
+;; kind == :mod | :lib | :exec
+(define (normalize-stanza-fld-flags flags kind)
   (format #t "~A: ~A\n" (blue "normalize-stanza-fld-flags") flags)
   (if flags
       ;; (let* ((flags (if (list? (cadr flags))
@@ -144,9 +145,10 @@
             ;; (format #t "STD: ~A\n" std)
             (format #t "OPTIONS: ~A\n" options)
             (format #t "FLAGS: ~A\n" bools)
-            (cons (if (eq? type :mod) :opts
-                      (if (eq? type :lib) :archive-opts
-                          :unknown-opts))
+            (cons (if (eq? kind :mod) :opts
+                      (if (eq? kind :lib) :archive-opts
+                          (if (eq? kind :exec) :exec-opts
+                              :unknown-opts)))
                   (remove
                    '() (list
                         (if (or top-std std)
@@ -160,6 +162,44 @@
                         ;; `((:raw ,flags))
                         ))))))
       #f))
+
+;; returns (values <standard> <opens> <options> <flags>)
+(define (flags->mibl flags)
+  (format #t "~A: ~A\n" (blue "flags->mibl") flags)
+  (if flags
+      ;; (let* ((flags (if (list? (cadr flags))
+      ;;                   (cadr flags)
+      ;;                   (list (cdr flags))))
+      (let* ((flags-val (cdr flags))
+             ;; FIXME: expand :standard
+             ;; e.g. src/lib_store/legacy_store:
+             ;;     (modules (:standard \ legacy_store_builder))
+             (top-std (any (lambda (flag) (equal? flag :standard))
+                           flags-val))
+             (clean-flags (if top-std
+                              (remove :item :standard flags-val)
+                              flags-val)))
+        ;; (format #t "DIRTY: ~A\n" flags-val)
+        ;; (format #t "STD: ~A\n" std)
+        ;; (format #t "CLEAN: ~A\n" clean-flags)
+        (let-values (((opens opts std) (split-opens clean-flags)))
+          (let-values (((options bools) (split-opts (reverse opts))))
+            ;; (format #t "OPENS: ~A\n" (reverse opens))
+            ;; (format #t "OPTS: ~A\n" (reverse opts))
+            ;; (format #t "STD: ~A\n" std)
+            (format #t "OPTIONS: ~A\n" options)
+            (format #t "FLAGS: ~A\n" bools)
+            ;; FIXME: expand :standard flags
+            (values
+             (if (or top-std std) '(:standard) '())
+             (if (null? opens) '()
+                 (cons :opens (reverse opens)))
+             (if (null? options) '()
+                 (cons :options (reverse options)))
+             (if (null? bools) '()
+                 (cons :flags (reverse bools)))))))
+        ;; else no flags
+        (values '() '() '() '())))
 
 ;; (format #t "loaded: mibl/dune/flags.scm\n")
 

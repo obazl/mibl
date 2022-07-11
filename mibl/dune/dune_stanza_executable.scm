@@ -163,8 +163,9 @@
 (define (normalize-stanza-executable typ pkg-path srcfiles stanza)
   ;; type:: :executable || test
   ;; (let ((privname (cadr (assoc 'name (cdr stanza)))))
-  ;;   (format #t "NORMALIZE-STANZA-EXECUTABLE: ~A: ~A\n" pkg-path privname))
-  ;;stanza)
+  (format #t "~A: ~A: ~A\n" (blue "normalize-stanza-executable")
+          pkg-path privname)
+  ;; stanza)
 
   ;; "<name> is a module name that contains the main entry point of
   ;; the executable." So 'name' must correspond to a .ml file. If
