@@ -115,11 +115,19 @@
                      (format #f "ERROR: unexpected flag type ~A"
                              flags))))))))
 
-;; (flags :standard)
-;; (flags (:standard -open Tezos_base__TzPervasives -open Tezos_micheline))
-;; (:standard -linkall)
-;; FIXME: check for car = flags or library_flags?
-;; kind == :mod | :lib | :exec
+;; returns: (values std flags)
+(define (link-flags->mibl stanza)
+  (format #t "~A: ~A\n" (blue "executable-flags->mibl") stanza)
+  (let* ((stanza-alist (cdr stanza))
+         (link-flags (assoc-in '(:link :link-flags) stanza-alist))
+         (link-opts  (assoc-in '(:link :opts :flags) stanza-alist))
+         (link-std   (assoc-in '(:link :opts :standard) stanza-alist))
+         (flags (remove '()
+                        (append
+                         (if link-flags (cdr link-flags) '())
+                         (if link-opts (cdr link-opts) '())))))
+    (values link-std flags)))
+
 (define (normalize-stanza-fld-flags flags kind)
   (format #t "~A: ~A\n" (blue "normalize-stanza-fld-flags") flags)
   (if flags

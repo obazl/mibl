@@ -7,12 +7,12 @@
        (arg
 
         ;;;; submodules ('modules' field)
-        ;; "test/dune/stanzas/library/submodules/default"
+        "test/dune/stanzas/library/submodules/default"
         ;; "test/dune/stanzas/library/submodules/standard"
         ;; "test/dune/stanzas/library/submodules/exclusions"
         ;; "test/dune/stanzas/library/submodules/inclusions"
         ;; "test/dune/stanzas/library/submodules/inclusions_sigs"
-        "test/dune/stanzas/library/submodules/subsigs"
+        ;; "test/dune/stanzas/library/submodules/subsigs"
 
         ;;;; unwrapped:
         ;; "test/dune/stanzas/library/unwrapped/default"

@@ -2,6 +2,28 @@
 
 ;; mibl/dune/modules.scm
 
+(define (get-manifest pkg wrapped? stanza-alist) ;;  deps
+  (format #t "~A: ~A\n" (blue "get-manifest") stanza-alist)
+  (format #t "~A: ~A\n" "pkg" pkg)
+  ;; (if deps
+      (let ((submods+sigs-list
+             (modules-fld->submodules-fld
+              (assoc 'modules stanza-alist)
+              ;; files
+              (assoc :modules pkg)
+              ;; deps
+              (assoc-val :signatures pkg)
+              (assoc-val :structures pkg)
+              )))
+        (format #t "submods+sigs-list: ~A\n" submods+sigs-list)
+        (if (null? submods+sigs-list)
+            '()
+            (cons :manifest (remove () submods+sigs-list)))))
+            ;; (let ((submods (reverse (car submods+sigs-list)))
+            ;;       (subsigs (reverse (cdr submods+sigs-list))))
+            ;;   (cons :manifest (remove '()
+            ;;                            (list submods subsigs)))))))
+
 (define (filename->module-assoc filename)
   ;; (format #t "filename->module-assoc ~A\n" filename)
   (let* ((ext (filename-extension filename))
@@ -227,9 +249,9 @@
                                   (begin
                                     (format #t "DONE\n")
                                     (list
-                                     (cons :submodules submods)
+                                     (cons :modules submods)
                                      (if (null? subsigs)
-                                         '() (cons :subsigs subsigs))))))
+                                         '() (cons :signatures subsigs))))))
                              ;; (reverse submods)
 
                              ((pair? (car modules-spec))
@@ -268,13 +290,13 @@
                                           mods-expanded)
                                   (format #t "sigs-expanded: ~A\n"
                                           sigs-expanded)
-                                  (format #t "updated pkg: ~A\n" pkg)
+                                  ;; (format #t "updated pkg: ~A\n" pkg)
                                   ;; (error 'tmp "tmp")
 
                                   (list
-                                   (cons :submodules (reverse mods-expanded))
+                                   (cons :modules (reverse mods-expanded))
                                    (if sigs-expanded
-                                       (cons :subsigs
+                                       (cons :signatures
                                              (reverse sigs-expanded))
                                        '())))))
 

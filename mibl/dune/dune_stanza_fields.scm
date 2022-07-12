@@ -253,95 +253,95 @@
   opener)
 
 ;; split opts into boolean flags and (opt arg) pairs
-(define (split-opts opts)
-  (format #t "splitting opts: ~A\n" opts)
-  ;; assumption: :standard has been removed
-  ;; cases: arg is list or not: (flags (a b ...)) v. (flags a b ...)
-  ;; case: embedded list, e.g. (flags a (b c) ...)
+;; (define (split-opts opts)
+;;   (format #t "splitting opts: ~A\n" opts)
+;;   ;; assumption: :standard has been removed
+;;   ;; cases: arg is list or not: (flags (a b ...)) v. (flags a b ...)
+;;   ;; case: embedded list, e.g. (flags a (b c) ...)
 
-  ;; logic: if arg with leading '-' is followed by another with '-',
-  ;; then its a boolean flag
-  (let recur ((opts opts)
-              (ostack '()) ;; option stack
-              (options '())
-              (flags '())
-              (orphans '()))
-    (format #t "opts: ~A\n" opts)
-    (format #t "ostack: ~A\n" ostack)
-    (if (null? opts)
-        (if (null? ostack)
-            (values options flags)
-            (values options (cons (car ostack) flags)))
-        (let* ((rawopt (car opts))
-               (_ (format #t "rawopt: ~A\n" rawopt))
-               (opt (if (string? rawopt) rawopt
-                        (if (symbol? rawopt) (symbol->string rawopt)
-                            ;; FIXME: handle numbers
-                            :unknown))))
-          ;; (_ (format #t "OPT: ~A (type ~A)\n" opt (type-of opt)))
-          (if (string-prefix? "-" opt)
-              (if (null? ostack)
-                  (recur (cdr opts)
-                         (cons opt ostack) options flags orphans)
-                  (let* ((prev (car ostack)))
-                    ;; prev must be a flag, new goes on ostack
-                    (recur (cdr opts)
-                           (list opt) options (cons prev flags) orphans)))
-              ;; no '-', must be an opt val
-              (if (null? ostack)
-                  (begin
-                    (format #t
-                            "WARNING: val ~A without preceding -opt\n"
-                            opt)
-                    (recur (cdr opts) ostack options flags
-                           (cons opt orphans)))
-                  ;; no '-' prefix, ostack contains prev '-' arg
-                  (recur (cdr opts) '()
-                         (cons (cons (car ostack) opt) options)
-                         flags orphans)))))))
+;;   ;; logic: if arg with leading '-' is followed by another with '-',
+;;   ;; then its a boolean flag
+;;   (let recur ((opts opts)
+;;               (ostack '()) ;; option stack
+;;               (options '())
+;;               (flags '())
+;;               (orphans '()))
+;;     (format #t "opts: ~A\n" opts)
+;;     (format #t "ostack: ~A\n" ostack)
+;;     (if (null? opts)
+;;         (if (null? ostack)
+;;             (values options flags)
+;;             (values options (cons (car ostack) flags)))
+;;         (let* ((rawopt (car opts))
+;;                (_ (format #t "rawopt: ~A\n" rawopt))
+;;                (opt (if (string? rawopt) rawopt
+;;                         (if (symbol? rawopt) (symbol->string rawopt)
+;;                             ;; FIXME: handle numbers
+;;                             :unknown))))
+;;           ;; (_ (format #t "OPT: ~A (type ~A)\n" opt (type-of opt)))
+;;           (if (string-prefix? "-" opt)
+;;               (if (null? ostack)
+;;                   (recur (cdr opts)
+;;                          (cons opt ostack) options flags orphans)
+;;                   (let* ((prev (car ostack)))
+;;                     ;; prev must be a flag, new goes on ostack
+;;                     (recur (cdr opts)
+;;                            (list opt) options (cons prev flags) orphans)))
+;;               ;; no '-', must be an opt val
+;;               (if (null? ostack)
+;;                   (begin
+;;                     (format #t
+;;                             "WARNING: val ~A without preceding -opt\n"
+;;                             opt)
+;;                     (recur (cdr opts) ostack options flags
+;;                            (cons opt orphans)))
+;;                   ;; no '-' prefix, ostack contains prev '-' arg
+;;                   (recur (cdr opts) '()
+;;                          (cons (cons (car ostack) opt) options)
+;;                          flags orphans)))))))
 
-(define (split-opens flags)
-  ;; (format #t "split-opens: ~A\n" flags)
-  ;; WARNING: preserve order of '-open' args!
-  (let recur ((flags flags)
-              (opens '())
-              (opts  '())
-              (std  #f))
-    (if (null? flags)
-        (values opens opts std)
-        (cond
-         ((list? (car flags))
-          (let-values (((-opens -opts -std) (split-opens (car flags))))
-            (recur (cdr flags)
-                   (concatenate -opens opens)
-                   (concatenate -opts opts)
-                   -std)))
-         ((symbol? (car flags))
-          (cond
-           ((equal? (car flags) '-open)
-            (recur (cddr flags)
-                   (cons (normalize-open (cadr flags)) opens)
-                   opts std))
-           ((equal? (car flags) ':standard)
-            (recur (cdr flags) opens opts #t))
-           (else
-            (recur (cdr flags) opens (cons (car flags) opts) std))))
-         ((number? (car flags))
-          ;; e.g. (flags (:standard -w -9 -nolabels))
-          (recur (cdr flags) opens (cons (car flags) opts) std))
-         (else
-          ;; not symbol
-          (if (string? (car flags))
-              (if (string=? (car flags) "-open")
-                  (recur (cddr flags)
-                         (cons (normalize-open (cadr flags)) opens)
-                         std)
-                  (recur (cdr flags) opens (cons (car flags) opts)
-                         std))
-              ;; not symbol, not string
-              (error 'bad-arg
-                     (format #f "ERROR: unexpected flag type ~A"
-                             flags))))))))
+;; (define (split-opens flags)
+;;   ;; (format #t "split-opens: ~A\n" flags)
+;;   ;; WARNING: preserve order of '-open' args!
+;;   (let recur ((flags flags)
+;;               (opens '())
+;;               (opts  '())
+;;               (std  #f))
+;;     (if (null? flags)
+;;         (values opens opts std)
+;;         (cond
+;;          ((list? (car flags))
+;;           (let-values (((-opens -opts -std) (split-opens (car flags))))
+;;             (recur (cdr flags)
+;;                    (concatenate -opens opens)
+;;                    (concatenate -opts opts)
+;;                    -std)))
+;;          ((symbol? (car flags))
+;;           (cond
+;;            ((equal? (car flags) '-open)
+;;             (recur (cddr flags)
+;;                    (cons (normalize-open (cadr flags)) opens)
+;;                    opts std))
+;;            ((equal? (car flags) ':standard)
+;;             (recur (cdr flags) opens opts #t))
+;;            (else
+;;             (recur (cdr flags) opens (cons (car flags) opts) std))))
+;;          ((number? (car flags))
+;;           ;; e.g. (flags (:standard -w -9 -nolabels))
+;;           (recur (cdr flags) opens (cons (car flags) opts) std))
+;;          (else
+;;           ;; not symbol
+;;           (if (string? (car flags))
+;;               (if (string=? (car flags) "-open")
+;;                   (recur (cddr flags)
+;;                          (cons (normalize-open (cadr flags)) opens)
+;;                          std)
+;;                   (recur (cdr flags) opens (cons (car flags) opts)
+;;                          std))
+;;               ;; not symbol, not string
+;;               (error 'bad-arg
+;;                      (format #f "ERROR: unexpected flag type ~A"
+;;                              flags))))))))
 
 ;; (flags :standard)
 ;; (flags (:standard -open Tezos_base__TzPervasives -open Tezos_micheline))

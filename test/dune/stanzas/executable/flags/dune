@@ -1,7 +1,7 @@
 (executable
  (name main)
  (public_name main)
- (link_flags 
+ (link_flags -linkflag_a)
  (libraries foo bar)
  (flags (:standard -open A
                    -open B

@@ -1,38 +1,20 @@
 (format #t "loading dune/fields.scm\n")
 
-(define (-get-modules pkg deps wrapped? stanza-alist)
-  (format #t "~A: ~A\n" (blue "-get-modules") deps)
-  (if deps
-      (let ((submods+sigs-list
-             (modules-fld->submodules-fld
-              (assoc 'modules stanza-alist)
-              ;; files
-              (assoc :modules pkg)
-              ;; deps
-              (assoc-val :signatures pkg)
-              (assoc-val :structures pkg)
-              )))
-        (if (null? submods+sigs-list)
-            '()
-            (begin
-              (format #t "submods+sigs-list: ~A\n" submods+sigs-list)
-              (format #t "submodules-list: ~A\n"
-                      (reverse (car submods+sigs-list)))
-              (format #t "subsigs-list: ~A\n"
-                      (reverse (cdr submods+sigs-list)))
-              (if wrapped?
-                  submods+sigs-list
-                  (cons ':manifest submods+sigs-list)))))
-      '()))
-
 ;; mv select targets to pkg :modules
 ;; rm select apodoses from pkg :structures, :signatures
+;; xpkg: (p . pkg), so we can set! pkg by (set-cdr! x)
 (define (-update-pkg-files! pkg conditional)
-  (format #t "~A: ~A\n" (blue "-update-pkg-files") conditional)
-  (let ((target (car (assoc-val :target conditional)))
-        (modules (assoc-in '(:modules :static) pkg))
-        (sigs (assoc-in '(:signatures :static) pkg))
-        (structs (assoc-in '(:structures :static) pkg)))
+  (format #t "~A: ~A\n" (blue "-update-pkg-files!") conditional)
+  (let* ((target (car (assoc-val :target conditional)))
+         (modules (if-let ((ms (assoc-in '(:modules :static) pkg)))
+                          ms
+                          (begin
+                            (set-cdr! pkg
+                                      (append pkg '((:modules (:static)))))
+                            (assoc-in '(:modules :static) (cdr pkg)))))
+         (sigs (assoc-in '(:signatures :static) pkg))
+         (structs (assoc-in '(:structures :static) pkg)))
+    (format #t "~A: ~A\n" (red "pkg") pkg)
     (format #t "~A: ~A\n" (magenta "target") target)
     (format #t "~A: ~A\n" (magenta "pkg modules") modules)
     (format #t "~A: ~A\n" (magenta "pkg sigs") sigs)
@@ -76,7 +58,7 @@
           (let ((newmod (cons (car match)
                               (list (cons :ml_ target)
                                     (cons :mli (cdr match))))))
-            (format #t "newmod: ~A\n" newmod)
+            (format #t "newmod (sigs): ~A\n" newmod)
             (set-cdr! modules (append (cdr modules) (list newmod)))
             (set-cdr! sigs (dissoc! match (cdr sigs))))
           (format #t "~A: ~A\n" (magenta "pkg modules") modules)
@@ -95,7 +77,7 @@
               (let ((newmod (cons (car match)
                                   (list (cons :ml (cdr match))
                                         (cons :mli_ target)))))
-                (format #t "newmod: ~A\n" newmod)
+                (format #t "newmod (structs): ~A\n" newmod)
                 (set-cdr! modules (append (cdr modules) (list newmod)))
                 (set-cdr! structs (dissoc! match (cdr structs))))
               )))
@@ -124,14 +106,17 @@
 
         ;; if conditionals: update :structures or :signatures pkg flds
         (if conditionals
-            (let ((ctargets (fold (lambda (conditional accum)
+            (let (;;(ctargets (conditional-targets conditionals))
+                  (ctargets (fold (lambda (conditional accum)
                                     (format #t
                                             "conditional ~A\n" conditional)
-                                    (-update-pkg-files! pkg conditional)
+                                    (set! pkg (-update-pkg-files! pkg
+                                                        conditional))
                                     (append (assoc-val :target conditional)
                                           accum))
                                   '() conditionals)))
               (format #t "ctargets: ~A\n" ctargets)
+              (format #t "updated pkg: ~A\n" pkg)
               ;; (error 'tmp "tmp")
 
               (let* ((deps (if (null? directs) '() directs))
@@ -141,16 +126,17 @@
                      (deps (if (null? conditionals)
                                (list deps)
                                (append deps (list
-                                             (list :conditionals conditionals))))))
+                                             (cons :conditionals conditionals))))))
                 (filter (lambda (d) (not (null? d))) deps))))))))
 
 (define (-lib-flds->mibl stanza-alist)
+  (format #t "~A: ~A~%" (blue "-lib-flds->mibl") stanza-alist)
   (map
    (lambda (fld-assoc)
      (format #t "lib fld-assoc: ~A\n" fld-assoc)
      (case (car fld-assoc)
-       ((name) `(:privname ,(cadr fld-assoc)))
-       ((public_name) `(:pubname ,(cadr fld-assoc)))
+       ((name) (cons :privname (cadr fld-assoc)))
+       ((public_name) (cons :pubname (cadr fld-assoc)))
 
        ((flags) (normalize-stanza-fld-flags fld-assoc :mod))
        ((library_flags) (normalize-stanza-fld-flags fld-assoc :lib))
@@ -183,8 +169,16 @@
          ;; (_ (error 'tmp "tmp"))
 
          ;; FIXME: deal with private_modules too
-         (modules (-get-modules pkg deps wrapped? stanza-alist))
-         (lib-flds (-lib-flds->mibl stanza-alist))) ;; end let bindings
+         (modules (get-manifest pkg wrapped? stanza-alist)) ;;  deps
+         (_ (format #t "~A: ~A\n" (red "get-modules") modules))
+         (lib-flds (-lib-flds->mibl stanza-alist))
+         (_ (format #t "lib-flds (mibl): ~A~%" lib-flds))
+         (lib-flds (if wrapped?
+                       (append (list (cons :ns
+                                            (assoc-val :pubname lib-flds)))
+                               lib-flds)
+                       lib-flds))
+         ) ;; end let bindings
 
     ;; now handle modules (modules fld) and submodules (deps fld)
     (format #t "~A: ~A\n" (red "DEPS") deps)
@@ -199,24 +193,25 @@
                                            seldeps '())))
                 '()))
            (_ (format #t "modules: ~A\n" modules))
-           (submods
-            (if modules
-                (if-let ((submods-assoc (assoc :submodules modules)))
-                        (let ((submods-list (cdr submods-assoc)))
-                          (cons :submodules (sort! submods-list sym<?)))
-                        '())
-                '()))
-           (subsigs (if modules
-                        (if-let ((ssigs (assoc :subsigs modules)))
-                                ssigs '())
-                        '())))
-      (format #t "SUBMODS:: ~A\n" submods)
-      (format #t "SUBSIGS:: ~A\n" subsigs)
+           ;; (submods
+           ;;  (if modules
+           ;;      (if-let ((submods-assoc (assoc :submodules modules)))
+           ;;              (let ((submods-list (cdr submods-assoc)))
+           ;;                (cons :submodules (sort! submods-list sym<?)))
+           ;;              '())
+           ;;      '()))
+           ;; (subsigs (if modules
+           ;;              (if-let ((ssigs (assoc :subsigs modules)))
+           ;;                      ssigs '())
+           ;;              '()))
+           )
+      ;; (format #t "SUBMODS:: ~A\n" submods)
+      ;; (format #t "SUBSIGS:: ~A\n" subsigs)
       (append lib-flds (remove '() (list depslist
-                                         (if wrapped? '(:namespaced #t)
-                                             '(:namespaced #f))
-                                         submods
-                                         subsigs))))
+                                         modules
+                                         ;;submods
+                                         ;;subsigs
+                                         ))))
     ))
 
 (format #t "loaded dune/fields.scm\n")
