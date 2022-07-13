@@ -212,7 +212,7 @@
         (+signature+ '(modules-fld->submodules-fld modules-spec pkg-modules sigs structs))) ;;  modules-deps
         ;; modules-ht)))
     (lambda (modules-spec pkg-modules pkg-sigs pkg-structs)
-      (format #t "~A\n" (blue "MODULES-FLD->SUBMODULES-FLD"))
+      (format #t "~A\n" (blue "modules-fld->submodules-fld"))
       (format #t "modules-spec: ~A\n" modules-spec)
       (format #t "pkg-modules: ~A\n" pkg-modules)
       ;; (format #t "deps: ~A\n" deps)
@@ -249,7 +249,7 @@
                                   (begin
                                     (format #t "DONE\n")
                                     (list
-                                     (cons :modules submods)
+                                     (cons :modules (reverse submods))
                                      (if (null? subsigs)
                                          '() (cons :signatures subsigs))))))
                              ;; (reverse submods)
