@@ -857,9 +857,9 @@ LOCAL void _update_pkg_structs(s7_pointer pkg_tbl,
         s7_pointer assoc_in = _load_assoc_in();
         s7_pointer keypath = s7_list(s7, 2, structs_kw, static_kw);
         s7_pointer structs_alist = s7_call(s7, assoc_in,
-                                        s7_list(s7, 2,
-                                                keypath,
-                                                pkg_alist));
+                                           s7_list(s7, 2,
+                                                   keypath,
+                                                   pkg_alist));
         /* = s7_call(s7, assoc_in, */
         /*           s7_list(s7, 2, modules_kw, pkg_alist)); */
         if (debug) log_debug("structs_alist %s", TO_STR(structs_alist));

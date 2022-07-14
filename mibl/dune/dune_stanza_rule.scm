@@ -99,6 +99,25 @@
 ;; module CamlinternalFormatBasics = struct include CamlinternalFormatBasics end
 ;; ")))
 
+;; e.g.
+;; (:action (:tool cat)...) => :cat
+;; chdir:  (:action (:tool ...sth...)...) => :rule
+(define (-action->rule-tag action)
+  (if-let ((tag (assoc-in '(:cmd :tool) action)))
+          (case (cadr tag)
+            ((cat) :action-cat)
+            ((cmp) :action-cmp)
+            ((copy) :action-copy)
+            ((diff) :action-diff)
+            ((echo) :action-echo)
+            ((progn) :action-progn)
+            ((system) :action-system)
+            ((with-stdout-to) :action-with-stdout-to)
+            ((write-file) :action-write-file)
+            (else ':RULE))
+          (if-let ((tag (assoc-in '(:run :tool) action)))
+                  (begin :action-run)
+                  (error 'missing-tool "rule stanza missing tool"))))
 
 ;; Normalization: omit the rules we don't need. The remaining rules
 ;; require package- (or global-) level analysis, so leave that to the
@@ -124,10 +143,7 @@
 (define dune-rule->mibl
   (let ((+documentation+ "INTERNAL. Updates pkg arg, returns normalized stanza. stanza: raw dune stanza (input); nstanza: normalized (output)"))
     (lambda (pkg stanza)
-      ;; (format #t "DUNE-RULE->MIBL: ~A\n"
-      ;;         (assoc-val :pkg-path pkg))
-      ;; (format #t "rule stanza: ~A\n" stanza)
-
+      (format #t "~A: ~A\n" (blue "dune-rule->mibl") stanza)
       ;; for other stanza types we can normalize fields in isolation. For
       ;; 'rule' stanzas, we need a higher level of analysis, so we cannot
       ;; 'map' over the fields. Instead we extract the fields into local
@@ -177,11 +193,15 @@
         ;; every rule stanza has an action field
         ;; https://dune.readthedocs.io/en/stable/concepts.html#user-actions
         (if (assoc 'action rule-alist)
+            ;; the main dispatcher is 'normalize-action'
             (let* ((nzaction (normalize-action pkg rule-alist targets deps))
+                   (_ (format #t "~A: ~A\n"
+                              (red "normalized action") nzaction))
+                   ;; (rule-tag (-action->rule-tag nzaction))
                    (r-alist (list (cons ':targets targets)
                                   ;; (cons ':deps deps)
                                   (cons ':action nzaction)))
-                   (r-alist (if deps (cons (list ':deps deps) r-alist)
+                   (r-alist (if deps (cons `(:deps ,@deps) r-alist)
                                 r-alist))
                    (r-alist (if package (cons (list ':package package)
                                                  r-alist)
@@ -199,7 +219,8 @@
                                 r-alist))
                    (r-alist (if alias (cons (list ':alias alias) r-alist)
                                 r-alist)))
-              (list (cons ':rule r-alist)))
+              ;; (list (cons rule-tag r-alist)))
+-              (list (cons ':rule r-alist)))
             (format #t "UNHANDLED RULE: ~A\n" rule-alist))
         ))))
 

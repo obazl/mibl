@@ -82,7 +82,7 @@
 ;; original: dune_stanzas.scm Xnormalize-stanza
 (define (dune-stanza->mibl pkg stanza nstanzas)
   (format #t "~A: ~A\n" (blue "dune-stanza->mibl") stanza)
-  (format #t "  PKG: ~A\n" pkg)
+  (format #t "pkg: ~A\n" pkg)
   ;; (format #t "  nstanzas: ~A\n" nstanzas)
   (let* ((stanza-alist (cdr stanza))
          ;; (_ (format #t "stanza-alist ~A\n" stanza-alist))
@@ -150,20 +150,22 @@
   (format #t "~A: ~A\n" (blue "dune-pkg->mibl") pkg)
   (let* ((nstanzas (list :dune))
          (pkg+ (append pkg (list nstanzas))))
-    ;; (format #t "STANZAS COPY: ~A\n" dune-stanzas)
+    (format #t "pkg+: ~A\n" (assoc 'dune pkg+))
     ;; (set-car! dune-stanzas :dune-stanzas)
-    (let ((new-pkg
-           (map
-            (lambda (stanza)
-              ;; (format #t "STANZA COPY: ~A\n" stanza)
-              (let ((normed (dune-stanza->mibl pkg+ stanza nstanzas)))
-                ;; pkg-path
-                ;; ;; dune-project-stanzas
-                ;; srcfiles ;; s/b '() ??
-                ;; stanza)))
-                ;; (format #t "NORMALIZED: ~A\n" normed)
-                normed))
-            ;; (cdr dune-stanzas))))
-            (assoc-val 'dune pkg+))))
-      ;; (format #t "NEW PKG: ~A\n" pkg+)
-      pkg+)))
+    (if (assoc 'dune pkg+)
+        (let ((new-pkg
+               (map
+                (lambda (stanza)
+                  ;; (format #t "STANZA COPY: ~A\n" stanza)
+                  (let ((normed (dune-stanza->mibl pkg+ stanza nstanzas)))
+                    ;; pkg-path
+                    ;; ;; dune-project-stanzas
+                    ;; srcfiles ;; s/b '() ??
+                    ;; stanza)))
+                    ;; (format #t "NORMALIZED: ~A\n" normed)
+                    normed))
+                ;; (cdr dune-stanzas))))
+                (assoc-val 'dune pkg+))))
+          ;; (format #t "NEW PKG: ~A\n" pkg+)
+          pkg+)
+        (error 'no-pkg (format #f "no dune pkg for ~A\n" pkg)))))

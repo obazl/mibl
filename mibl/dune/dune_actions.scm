@@ -12,8 +12,8 @@
   (let* ((tool (if (eq? action 'system) 'sh action))
          (action-args (assoc-val action action-alist)))
     `((:cmd
-       ((:tool ,tool)
-        ,(cons :args action-args))))))
+       (:tool ,tool)
+       ,(cons :args action-args)))))
 
 (define (normalize-action-chdir-dsl pkg action-alist targets deps)
   (format #t "NORMALIZE-ACTION-CHDIR-DSL ~A\n" action-alist)
@@ -37,17 +37,19 @@
     (list (cons :cmd cmd)
           `(:ctx ,ctx))))
 
-;; cmp, copy, copy#, diff, diff?
+;; cat, cmp, copy, copy#, diff, diff?
 (define (normalize-action-file-op pkg action action-alist targets deps)
-  (format #t "NORMALIZE-ACTION-FILE-OP, pkg: ~A\n" pkg)
+  (format #t "~A: ~A\n" (blue "normalize-action-file-op") pkg)
+  (format #t "  action: ~A\n" action)
   (format #t "  action-alist: ~A\n" action-alist)
   (let* ((tool action) ;; (run-action->toolname pkg-path action stanza))
          (action-args (assoc-val action action-alist))
+         (_ (format #t "action-args: ~A\n" action-args))
          (args (expand-deps action-args
                                pkg ;; paths
                                ;; action-alist
                                '()))
-         (_ (format #t "expanded copy args: ~A\n" args)))
+         (_ (format #t "expanded args: ~A\n" args)))
     `((:cmd
        (:tool ,tool)
        ,(cons :args args)))))
@@ -127,12 +129,13 @@
                   (recur (cdr progn-list) (append cmd-list cmd)))))))
     (list (cons :progn progns))))
 
+;; called for (action (run ...) ...)
 (define (normalize-action-run-dsl pkg action-alist targets deps)
   ;; (format #t "NORMALIZE-ACTION-RUN-DSL ~A\n" action-alist)
   (let* ((run-alist (cdar action-alist))
          (cmd (car (expand-cmd-list run-alist targets deps))))
     ;; (format #t "RUN CMD: ~A\n" cmd)
-    cmd))
+    (list (cons :run cmd))))
 
 (define (normalize-action-setenv-dsl action stanza)
   (format #t "NORMALIZE-ACTION-SETENV-DSL ~A\n" action)
@@ -145,20 +148,24 @@
   )
 
 (define (normalize-action-with-outputs-to-dsl pkg action-alist targets deps)
-  ;; (format #t "NORMALIZE-ACTION-WITH-OUTPUTS-TO-DSL ~A\n" action-alist)
+  (format #t "~A: ~A\n" (blue "normalize-action-with-outputs-to-dsl")
+          action-alist)
   (let* ((action-assoc (car action-alist))
-         ;; (_ (format #t "action-assoc: ~A\n" action-assoc))
+         (_ (format #t "action-assoc: ~A\n" action-assoc))
+         (action (car action-assoc))
+         (_ (format #t "action: ~A\n" action))
          (arg1 (cadr action-assoc))
-         ;; (_ (format #t "arg1: ~A\n" arg1))
+         (_ (format #t "arg1: ~A\n" arg1))
          (subaction-alist (caddr action-assoc))
-         ;; (_ (format #t "subaction-alist: ~A\n" subaction-alist))
+         (_ (format #t "subaction-alist: ~A\n" subaction-alist))
          (subaction (car subaction-alist))
-         ;; (_ (format #t "subaction: ~A\n" subaction))
+         (_ (format #t "subaction: ~A\n" subaction))
          (cmd (if-let ((cmd-fn (assoc-val subaction
                                           dune-action-cmds-no-dsl)))
                       (let ((cmd-list (apply (car cmd-fn)
                                              (list pkg
-                                                   action action-alist
+                                                   subaction
+                                                   (list subaction-alist)
                                                    targets deps))))
                         cmd-list)
                       (if-let ((cmd-fn (assoc-val subaction
@@ -170,7 +177,7 @@
                                 cmd-list)
                               (begin
                                 (format #t "UNHANDLED WST ACTION: ~A\n"
-                                        action)
+                                        subaction)
                                 stanza)))))
     (append cmd
           `((:stdout ,arg1)))))
@@ -243,7 +250,7 @@
 ;;                  (:other_var ...))))
 
 (define (normalize-cmd-dsl-universe pkg-path dsl filedeps vars)
-  ;; (format #t "NORMALIZE-CMD-DSL-UNIVERSE: ~A\n" dsl)
+  (format #t "~A: ~A\n" (blue "NORMALIZE-CMD-DSL-UNIVERSE") dsl)
   ;; special case: using 'universe' dep and passing e.g. unix.cma
   ;; e.g.
   ;; (rule
@@ -492,7 +499,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (normalize-action pkg stanza-alist targets deps) ;; rule stanza
-  ;; (format #t "NORMALIZE-action: ~A\n" stanza-alist)
+  (format #t "~A: ~A\n" (blue "normalize-action") stanza-alist)
   (let* ((action-assoc (assoc 'action stanza-alist))
          (action-alist (assoc-val 'action stanza-alist))
          (action (if (pair? (car action-alist)) ;; e.g. (action (tool ...))

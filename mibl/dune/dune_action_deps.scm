@@ -240,7 +240,7 @@
     (include ,handle-include-dep)))
 
 (define (expand-deps deplist paths expanded-deps)
-  ;; (format #t "EXPAND-DEPS: ~A\n" deplist)
+  (format #t "~A: ~A\n" (blue "expand-deps") deplist)
   ;; (format #t "paths: ~A\n" paths)
   ;; (format #t "expanded-deps: ~A\n" expanded-deps)
   ;; (let ((pkg-path (car (assoc-val :pkg-path paths)))

@@ -103,9 +103,14 @@
       ;;                   (cdr args) filedeps vars)))
 
      ((string-prefix? "%{exe:" arg)
-      (format #t "EXE: ~A\n" arg)
-      (format #t "pkg-path: ~A\n" pkg-path)
-      :EXE)
+      ;; (format #t "EXE: ~A\n" arg)
+      (let* ((kw (substring arg 6 (- (length arg) 1)))
+             (keysym (string->keyword kw)))
+        ;; (format #t "kw ~A\n" kw)
+        ;; (format #t "keysym ~A\n" keysym)
+        `((:pkg :exe)
+                (:tgt ,keysym))))
+
       ;; (let* ((sfx (substring arg 6 (- (length arg) 1)))
       ;;        (tool (string-trim '(#\}) sfx)))
       ;;   (cons
