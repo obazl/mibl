@@ -13,7 +13,7 @@
          (action-args (assoc-val action action-alist)))
     `((:cmd
        (:tool ,tool)
-       ,(cons :args action-args)))))
+       (cons :args ,@action-args)))))
 
 (define (normalize-action-chdir-dsl pkg action-alist targets deps)
   (format #t "NORMALIZE-ACTION-CHDIR-DSL ~A\n" action-alist)
@@ -53,7 +53,7 @@
          (_ (format #t "expanded args: ~A\n" args)))
     `((:cmd
        (:tool ,tool)
-       ,(cons :args args)))))
+       (:args ,@args)))))
 
 (define (normalize-action-ignore-outputs-dsl action stanza)
   (format #t "NORMALIZE-ACTION-OUTPUTS-DSL ~A\n" action)
@@ -136,7 +136,7 @@
   (let* ((run-alist (cdar action-alist))
          (cmd (car (expand-cmd-list run-alist targets deps))))
     ;; (format #t "RUN CMD: ~A\n" cmd)
-    (list (cons :run cmd))))
+    (list (cons :cmd cmd)))) ;; :run ???
 
 (define (normalize-action-setenv-dsl action stanza)
   (format #t "NORMALIZE-ACTION-SETENV-DSL ~A\n" action)

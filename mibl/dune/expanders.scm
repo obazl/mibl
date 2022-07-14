@@ -246,6 +246,7 @@
 (define expand-cmd-args
   (lambda (args targets deps)
     (format #t "~A: ~A\n" (blue "expand-cmd-args") args)
+    (format #t "  deps: ~A\n" deps)
 
     (let ((result
            (if (null? args)
@@ -275,8 +276,10 @@
                      ;; (format #t "ARGSYM: ~A\n" arg)
                      (cond
                       ((eq? '%{deps} arg)
-                       (cons deps
-                             (expand-cmd-args (cdr args) targets deps)))
+                       (let ((exp (expand-cmd-args (cdr args) targets deps))
+                             (xdeps (-deps->srcs "fake" deps)))
+                         (format #t "YYYYYYYYYYYYYYYY: ~A\n" xdeps)
+                         (append xdeps exp)))
                       ((eq? '%{workspace_root} arg)
                        (cons :WS-ROOT
                              (expand-cmd-args (cdr args) targets deps)))
@@ -294,7 +297,7 @@
 
                   ((string? arg)
                    (let ((sarg (expand-string-arg arg targets deps)))
-                     (cons sarg
+                     (append sarg
                            (expand-cmd-args (cdr args) targets deps))))
                             ;; pkg-path target targets
                             ;; (cdr args) filedeps vars)))))
@@ -313,6 +316,77 @@
     (let ((xtargets (expand-deps targets paths '())))
       ;; (format #t "expanded targets ~A\n" xtargets)
       xtargets)))
+
+(define (expand-deps deplist paths expanded-deps)
+  (format #t "~A: ~A\n" (blue "expand-deps") deplist)
+  ;; (format #t "paths: ~A\n" paths)
+  ;; (format #t "expanded-deps: ~A\n" expanded-deps)
+  ;; (let ((pkg-path (car (assoc-val :pkg-path paths)))
+  ;;       (ws-root (car (assoc-val :ws-path paths))))
+  (if (null? deplist)
+      (begin
+        ;; (format #t "finished deplist: ~A\n" expanded-deps)
+        expanded-deps)
+      (if (pair? (car deplist))
+          (expand-deps (car deplist)
+                          paths ;; stanza-alist
+                          (expand-deps
+                           (cdr deplist) paths expanded-deps))
+          ;; car is atom
+          (let* ((kw (car deplist)))
+            (if-let ((depfn (assoc-val kw dune-dep-handlers)))
+                    (let ((res (apply (car depfn) (list paths
+                                                        deplist))))
+                      ;; (format #t "depfn res: ~A\n" res)
+                      ;; (format #t "expanded-deps: ~A\n" expanded-deps)
+                      ;; we're done, depfn consumed cdr
+
+                      ;; FIXME: merge all lists with :_ key
+                      ;; we get one such list for each glob_files
+                      ;; (if (pair? (car res)) ;; e.g. ((:_ "foo/bar/..."))
+                          ;; (if (equal? :_ (caar res))
+                          ;;     (format #t "TO MERGE ~A\n" res))
+                      (append (if (pair? (car res)) res (list res))
+                              expanded-deps))
+
+                    ;; else car of deplist not a keyword
+                    ;; must be either a ':' tagged dep or a filename literal
+                    ;; or, if its a cmd arg, may be %{foo}
+                    (let ((dep (format #f "~A" (car deplist))))
+                      (cond
+                       ((char=? #\: (string-ref dep 0))
+                          (begin
+                            ;; (format #t "TAGGED DEP : ~A\n" deplist)
+                            (handle-tagged-dep
+                             deplist paths expanded-deps)))
+
+                       ;; ((char=? #\% (string-ref dep 0))
+                       ;;  )
+
+                       (else
+                          ;; must be a filename literal?
+                          ;; return (:static <path> <fname>)
+                          ;; or (:dynamic <path> <fname>)
+                          (begin
+                            ;; (format #t "LIT DEP : ~A\n" deplist)
+                            (handle-filename-literal-dep
+                             dep deplist paths
+                             ;; stanza-alist
+                             expanded-deps))))))
+            ))))
+
+;; expand-deps: deps -> file-deps, vars, env-vars
+(define (expand-rule-deps paths stanza-alist)
+  ;; updates stanza-alist
+  (format #t "~A: ~A\n" (blue "expand-rule-deps") stanza-alist)
+  ;; (let ((stanza-alist (cdr stanza)))
+  (if-let ((deps-assoc (assoc 'deps stanza-alist)))
+          (let* ((deplist (assoc-val 'deps stanza-alist))
+                 ;; (_ (format #t "main deplist: ~A\n" deplist))
+                 (result (expand-deps deplist paths '())))
+            ;; (format #t "DEPLIST EXPANDED: ~A\n" result)
+            result)
+          #f))
 
 ;; https://dune.readthedocs.io/en/stable/concepts.html#user-actions
 (define dune-dsl-cmds
@@ -346,8 +420,8 @@ write-file))
             (let* ((kw (car raw-cmds)))
               (if (member kw dune-dsl-cmds)
                   `(((:tool ,kw)
-                     ,(cons :args
-                             (expand-cmd-args (cdr raw-cmds) targets deps))))
+                     (:args
+                      ,@(expand-cmd-args (cdr raw-cmds) targets deps))))
 
                   (if (equal? kw 'run)
                       ;; skip 'run'

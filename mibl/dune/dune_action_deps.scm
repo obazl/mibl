@@ -36,7 +36,61 @@
 ;; label (e.g. :exe, :<, etc.)
 ;; called recursively
 
+(define (-deps->srcs pkg-path deps)
+  (format #t "~A: ~A\n" (blue "-deps->srcs") deps)
+  ;; deps is a list of alists; key :maps to list of (:pkg :file) pairs
+  ;; key :_ (anonymous) may map to multiple pairs
+  ;; other keys are dune 'variables', each mapping to one (:pkg :file) pair
+  (let* ((srcs (map (lambda (src-assoc)
+                      (format #t "src-assoc: ~A~%" src-assoc)
+                      (if (equal? :_ (car src-assoc))
+                          ;; (:_ "foo.txt" "bar.txt" ...)
+                          (begin (format #t "HHHHHHHHHHHHHHHH\n")
+                          (map (lambda (srcfile)
+                                 (format #t "srcfile: ~A~%" srcfile)
+                                 (let ((dname (dirname srcfile))
+                                       (bname (basename srcfile)))
+                                   ;; (-pkg-path
+                                   ;;      (car (assoc-val :pkg src-alist))))
+                                   (format #f "~A"
+                                           (if (equal dname pkg-path)
+                                               bname srcfile))))
+                               ;; (car
+                               ;;  (assoc-val :file srcfile)))))
+                               (cdr src-assoc)))
+                          ;; else tagged (:foo . "foo.txt")
+                          (begin (format #t "JJJJJJJJJJJJJJJJ\n")
+                          (map (lambda (srcfile)
+                                 (format #t "srcfile: ~A~%" srcfile)
+                                 (let ((dname (dirname srcfile))
+                                       (bname (basename srcfile)))
+                                   ;; (-pkg-path
+                                   ;;      (car (assoc-val :pkg src-alist))))
+                                   (format #f "~A"
+                                           (if (equal dname pkg-path)
+                                               bname srcfile))))
+                               ;; (car
+                               ;;  (assoc-val :file srcfile)))))
+                               (cdr src-assoc)))
+                          ;; (format #f "~A"
+                          ;;         (let* ((srcfile (cdr src-assoc))
+                          ;;                (dname (dirname srcfile))
+                          ;;                (bname (basename srcfile)))
+                          ;;           (if (equal dname pkg-path)
+                          ;;               bname srcfile)))
+                          ))
+                    deps))
+         ;; srcs list may contain mix of strings and sublists
+         (srcs (fold (lambda (src accum)
+                       (if (string? src) (append accum (list src))
+                           (append accum src)))
+                     '() srcs)))
+    (format #t "SRCES: ~A\n" srcs)
+    srcs))
+
 (define (add-literal-to-expanded-deps expanded-path expanded-deps)
+  (format #t "~A: ~A, ~A~%" (blue "add-literal-to-expanded-deps")
+          expanded-path expanded-deps)
   ;; expanded deps is an alist like ((:_ "a.ml" "a.mli") (:css "a.css")...)
   ;; merge path into :_ list
     (alist-update-in! expanded-deps '(:_)
@@ -47,7 +101,7 @@
                           expanded))))
 
 (define (handle-filename-literal-dep dep deplist paths expanded-deps)
-  ;; (format #t "handle-filename-literal-dep: ~A\n" dep)
+  (format #t "~A: ~A\n" (blue "handle-filename-literal-dep") dep)
   ;; (format #t "expanded-deps: ~A\n" expanded-deps)
   (let* (;; (_ (format #t "dep: ~A\n" dep))
          (pkg-path (car (assoc-val :pkg-path paths)))
@@ -97,12 +151,13 @@
                     (if (null? expanded-deps)
                         ;; needs to be an alisg
                         ;; (list (list :_ expanded-path))
-                        (list (list :_
-                                    `((:pkg ,(dirname expanded-path))
-                                      (:file ,(basename expanded-path)))))
+                        (list (list :_ expanded-path))
+                                    ;; `((:pkg ,(dirname expanded-path))
+                                    ;;   (:file ,(basename expanded-path)))))
                         (add-literal-to-expanded-deps
-                         `((:pkg ,(dirname expanded-path))
-                           (:file ,(basename expanded-path)))
+                         expanded-path
+                         ;; `((:pkg ,(dirname expanded-path))
+                         ;;   (:file ,(basename expanded-path)))
                          expanded-deps))
                     )))
 
@@ -124,8 +179,9 @@
     (format #t "tagged dep: ~A\n" tagged)
     (if (pair? (car tagged))
         (if (equal? :_ (caar tagged))
-            (cons (cons lbl (cadar tagged))
-                  expanded-deps)
+            (append (list (cons lbl (cdar tagged))) expanded-deps)
+            ;; (cons (cons lbl (cadar tagged))
+            ;;       expanded-deps)
             (append (cons lbl tagged) expanded-deps))
         (cons (cons lbl tagged) expanded-deps))))
 
@@ -158,7 +214,7 @@
 ;; about that later, most patterns will be like "*.ml", "*.ml{,i}",
 ;; "foo/*", etc.
 (define (handle-glob-files-dep paths deplist)
-  ;; (format #t "HANDLE-glob-files-dep: ~A\n" deplist)
+  (format #t "~A: ~A\n" (blue "handle-glob-files-dep") deplist)
   ;; (format #t "HANDLE-glob-files-dep paths: ~A\n" paths)
   ;; (car deplist) == glob_files
   (let* ((pkg-path (car (assoc-val :pkg-path paths)))
@@ -194,12 +250,14 @@
                                     (resolve-pkg-path f ws-root)
                                     (resolve-pkg-path f ws-root)
                                     )))
-                            globbed)))
-        ;; (format #t "globbed: ~A\n" globbed)
-        ;; (format #t "depfiles: ~A\n" depfiles)
+                            globbed))
+             (sorted (sort! depfiles string<?)))
+        (format #t "globbed: ~A\n" globbed)
+        (format #t "depfiles: ~A\n" depfiles)
+        (format #t "sorted: ~A\n" sorted)
         (globfree g)
         (chdir old-wd) ;; restore prev wd
-        (list (cons :_ depfiles))))))
+        (list (cons :_ sorted))))))
 
 (define (handle-glob-files-rec-dep deplist)
   (format #t "handle-glob-files-rec-dep: ~A\n" deplist))
@@ -238,76 +296,5 @@
     (env_var ,handle-env-var-dep)
     (sandbox ,handle-sandbox-dep)
     (include ,handle-include-dep)))
-
-(define (expand-deps deplist paths expanded-deps)
-  (format #t "~A: ~A\n" (blue "expand-deps") deplist)
-  ;; (format #t "paths: ~A\n" paths)
-  ;; (format #t "expanded-deps: ~A\n" expanded-deps)
-  ;; (let ((pkg-path (car (assoc-val :pkg-path paths)))
-  ;;       (ws-root (car (assoc-val :ws-path paths))))
-  (if (null? deplist)
-      (begin
-        ;; (format #t "finished deplist: ~A\n" expanded-deps)
-        expanded-deps)
-      (if (pair? (car deplist))
-          (expand-deps (car deplist)
-                          paths ;; stanza-alist
-                          (expand-deps
-                           (cdr deplist) paths expanded-deps))
-          ;; car is atom
-          (let* ((kw (car deplist)))
-            (if-let ((depfn (assoc-val kw dune-dep-handlers)))
-                    (let ((res (apply (car depfn) (list paths
-                                                        deplist))))
-                      ;; (format #t "depfn res: ~A\n" res)
-                      ;; (format #t "expanded-deps: ~A\n" expanded-deps)
-                      ;; we're done, depfn consumed cdr
-
-                      ;; FIXME: merge all lists with :_ key
-                      ;; we get one such list for each glob_files
-                      ;; (if (pair? (car res)) ;; e.g. ((:_ "foo/bar/..."))
-                          ;; (if (equal? :_ (caar res))
-                          ;;     (format #t "TO MERGE ~A\n" res))
-                      (append (if (pair? (car res)) res (list res))
-                              expanded-deps))
-
-                    ;; else car of deplist not a keyword
-                    ;; must be either a ':' tagged dep or a filename literal
-                    ;; or, if its a cmd arg, may be %{foo}
-                    (let ((dep (format #f "~A" (car deplist))))
-                      (cond
-                       ((char=? #\: (string-ref dep 0))
-                          (begin
-                            ;; (format #t "TAGGED DEP : ~A\n" deplist)
-                            (handle-tagged-dep
-                             deplist paths expanded-deps)))
-
-                       ;; ((char=? #\% (string-ref dep 0))
-                       ;;  )
-
-                       (else
-                          ;; must be a filename literal?
-                          ;; return (:static <path> <fname>)
-                          ;; or (:dynamic <path> <fname>)
-                          (begin
-                            ;; (format #t "LIT DEP : ~A\n" deplist)
-                            (handle-filename-literal-dep
-                             dep deplist paths
-                             ;; stanza-alist
-                             expanded-deps))))))
-            ))))
-
-;; expand-deps: deps -> file-deps, vars, env-vars
-(define (expand-rule-deps paths stanza-alist)
-  ;; updates stanza-alist
-  ;; (format #t "EXPAND-rule-deps: ~A\n" stanza-alist)
-  ;; (let ((stanza-alist (cdr stanza)))
-  (if-let ((deps-assoc (assoc 'deps stanza-alist)))
-          (let* ((deplist (assoc-val 'deps stanza-alist))
-                 ;; (_ (format #t "main deplist: ~A\n" deplist))
-                 (result (expand-deps deplist paths '())))
-            ;; (format #t "DEPLIST EXPANDED: ~A\n" result)
-            result)
-          #f))
 
 ;; (format #t "loaded dune/dune-action-deps.scm\n")

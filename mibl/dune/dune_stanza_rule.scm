@@ -157,7 +157,7 @@
 
              ;; Step 1: rule deps don't depend on targets, so do first
              (deps (expand-rule-deps pkg rule-alist))
-             ;; (_ (format #t "EXPANDED rule deps: ~A\n" deps))
+             (_ (format #t "EXPANDED rule deps: ~A\n" deps))
 
              ;; Step 2: 'target' and 'targets' fields list files generated
              ;; by the action. Add them to the pkg :modules and :files
