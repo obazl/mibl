@@ -54,7 +54,9 @@
 
 (define expand-string-arg
   (lambda (arg targets deps)
-    ;; (format #t "EXPAND-STRING-arg: ~A\n" arg)
+    (format #t "~A: ~A\n" (blue "expand-string-arg") arg)
+    (format #t "  targets: ~A\n" targets)
+    (format #t "  deps: ~A\n" deps)
     (cond
      ((string=? "%{deps}" arg)
       (let* ((kw (substring arg 6 (- (length arg) 1)))
@@ -208,23 +210,25 @@
      ;;            (cons arg run-args))))
 
      ((string-prefix? "%{" arg)
-      ;; (format #t "VAR: ~A\n" arg)
-      ;; (format #t "deps: ~A\n" deps)
+      (format #t "VAR: ~A\n" arg)
+      (format #t "deps: ~A\n" deps)
       (let* ((kw (substring arg 2 (- (length arg) 1)))
              (keysym (string->keyword
                       (string-append ":" kw))))
-        ;; (format #t "kw ~A\n" kw)
-        ;; (format #t "keysym ~A\n" keysym)
+        (format #t "kw ~A\n" kw)
+        (format #t "keysym ~A\n" keysym)
         (if-let ((val (assoc keysym deps)))
                 (begin
-                  ;; (format #t "VAR VAL: ~A\n" val)
+                  (format #t "VAR VAL: ~A\n" val)
                   ;; (cons val
                   ;;       (expand-cmd-args (cdr args)
                   ;;                        targets deps)))
-                  val)
+                  ;; (list (cons :dep keysym))
+                  keysym
+                  )
                 ;; not a dep, try installed execs
                 (cons
-                 :VAR val))))
+                 :VAR keysym))))
      ;; (expand-cmd-args pkg-path
      ;;                  target targets
      ;;                  (cdr args)
@@ -241,9 +245,7 @@
 
 (define expand-cmd-args
   (lambda (args targets deps)
-  ;; (lambda (pkg-path target targets args filedeps vars)
-  ;; (lambda (pkg-path target targets args filedeps vars)
-    ;; (format #t "EXPAND-CMD-ARGS: ~A\n" args)
+    (format #t "~A: ~A\n" (blue "expand-cmd-args") args)
 
     (let ((result
            (if (null? args)
@@ -322,7 +324,7 @@ with-outputs-to with-stderr-to with-stdin-from with-stdout-to
 write-file))
 
 (define (expand-cmd-list -raw-cmds targets deps)
-  ;; (format #t "EXPAND-CMD-LIST: ~A\n" -raw-cmds)
+  (format #t "~A: ~A\n" (blue "expand-cmd-list") -raw-cmds)
 
   (let recur ((raw-cmds -raw-cmds)
               (tool #f)

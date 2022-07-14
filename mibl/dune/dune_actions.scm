@@ -8,7 +8,7 @@
   ;; FIXME: shell cmd args may include filename literals; find way to expand?
   ;; FIXME: may include ${target}
   ;; FIXME: in general: expand all '${}' in args
-  (format #t "NORMALIZE-ACTION-SHELL-CMD ~A\n" action)
+  (format #t "~A: ~A\n" (blue "normalize-action-shell-cmd") action)
   (let* ((tool (if (eq? action 'system) 'sh action))
          (action-args (assoc-val action action-alist)))
     `((:cmd
@@ -42,13 +42,14 @@
   (format #t "~A: ~A\n" (blue "normalize-action-file-op") pkg)
   (format #t "  action: ~A\n" action)
   (format #t "  action-alist: ~A\n" action-alist)
+  (format #t "  targets: ~A\n" targets)
+  (format #t "  deps: ~A\n" deps)
   (let* ((tool action) ;; (run-action->toolname pkg-path action stanza))
          (action-args (assoc-val action action-alist))
          (_ (format #t "action-args: ~A\n" action-args))
-         (args (expand-deps action-args
-                               pkg ;; paths
-                               ;; action-alist
-                               '()))
+         (args (expand-cmd-args action-args targets deps))
+                               ;; ;; action-alist
+                               ;; '()))
          (_ (format #t "expanded args: ~A\n" args)))
     `((:cmd
        (:tool ,tool)
@@ -193,9 +194,7 @@
   )
 
 (define (normalize-action-write-file pkg action action-alist targets deps)
-  ;; action stanza)
-  ;; action target targets deps)
-  ;; (format #t "NORMALIZE-WRITE-FILE ~A\n" action)
+  (format #t "~A: ~A\n" (blue "normalize-action-write-file") action)
   ;; (format #t "    action-alist ~A\n" action-alist)
 
   (let* ((args (assoc-val 'write-file action-alist))

@@ -107,7 +107,7 @@
                     )))
 
 (define (handle-tagged-dep deplist paths expanded-deps)
-  ;; (format #t "HANDLE-TAGGED-dep: ~A\n" deplist)
+  (format #t "~A: ~A\n" (blue "handle-tagged-dep") deplist)
   ;; (format #t "expanded-deps: ~A\n" expanded-deps)
   ;; kw :_ is reserved for non-tagged symlist
   ;; to avoid name clash, convert user keywords to double-colon, e.g.
@@ -120,11 +120,11 @@
         (tagged (expand-deps (cdr deplist)
                                  paths ;;stanza-alist
                                  '()))) ;;expanded-deps)))
-    ;; (format #t "tagged dep lbl: ~A\n" lbl)
-    ;; (format #t "tagged dep: ~A\n" tagged)
+    (format #t "tagged dep lbl: ~A\n" lbl)
+    (format #t "tagged dep: ~A\n" tagged)
     (if (pair? (car tagged))
         (if (equal? :_ (caar tagged))
-            (cons (cons lbl (cdar tagged))
+            (cons (cons lbl (cadar tagged))
                   expanded-deps)
             (append (cons lbl tagged) expanded-deps))
         (cons (cons lbl tagged) expanded-deps))))
@@ -273,16 +273,20 @@
 
                     ;; else car of deplist not a keyword
                     ;; must be either a ':' tagged dep or a filename literal
-                    (let ((dep (if (symbol? (car deplist))
-                                   (symbol->string (car deplist))
-                                   (car deplist))))
-                      (if (char=? #\: (string-ref dep 0))
+                    ;; or, if its a cmd arg, may be %{foo}
+                    (let ((dep (format #f "~A" (car deplist))))
+                      (cond
+                       ((char=? #\: (string-ref dep 0))
                           (begin
                             ;; (format #t "TAGGED DEP : ~A\n" deplist)
                             (handle-tagged-dep
-                             deplist paths expanded-deps))
+                             deplist paths expanded-deps)))
 
-                          ;; else must be a filename literal
+                       ;; ((char=? #\% (string-ref dep 0))
+                       ;;  )
+
+                       (else
+                          ;; must be a filename literal?
                           ;; return (:static <path> <fname>)
                           ;; or (:dynamic <path> <fname>)
                           (begin
@@ -290,13 +294,7 @@
                             (handle-filename-literal-dep
                              dep deplist paths
                              ;; stanza-alist
-                             expanded-deps)
-
-                            ;; (let ((dep (make-filedep-arg pkg-path
-                            ;;                            (cadar deps)
-                            ;;                            (caar deps) '())))
-                            ;;   )
-                            ))))
+                             expanded-deps))))))
             ))))
 
 ;; expand-deps: deps -> file-deps, vars, env-vars
