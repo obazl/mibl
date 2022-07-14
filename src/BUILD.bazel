@@ -1,6 +1,6 @@
 load("@rules_cc//cc:defs.bzl", "cc_library")
 
-load(":BUILD.bzl", "SRCS", "mac_mkhdr_srcs")
+load(":BUILD.bzl", "SRCS", "mkhdr_srcs")
 
 HDRS = [
     "load_dune.h",
@@ -84,7 +84,7 @@ genrule(
     srcs = SRCS + ["ansi_colors.h"],
     outs = HDRS,
     cmd = CMD_HDR + "$(location @makeheaders//:makeheaders) "
-    + mac_mkhdr_srcs() + "; cp $${SRCDIR1}/*.h $(@D)",
+    + mkhdr_srcs() + "; cp $${SRCDIR1}/*.h $(@D)",
     tools = ["@makeheaders//:makeheaders"],
     visibility = ["//visibility:public"]
 )
@@ -96,7 +96,7 @@ genrule(
     outs = ["mibl.h"],
     cmd = CMD_HDR
     + "$(location @makeheaders//:makeheaders) -H "
-    + mac_mkhdr_srcs()
+    + mkhdr_srcs()
     + " > $@",
     tools = ["@makeheaders//:makeheaders"],
     visibility = ["//visibility:public"]

@@ -66,11 +66,12 @@
        ((libraries) (values)) ;; handled separately
        ((modules) (values)) ;; handled separately
 
+       ((preprocess) (preprocess-fld->mibl fld-assoc stanza-alist))
+       ((preprocessor_deps) ;; handled along with preprocess fld
+        (values))
+
        ((wrapped) (values))
-       (else
-        (begin
-          (format #t "~A: ~A\n" (red "unhandled lib fld") fld-assoc)
-          fld-assoc))
+       (else (error 'fixme (format #f "unhandled lib fld: ~A~%" fld-assoc)))
        ) ;; end case
      ) ;; end lamda
    stanza-alist))

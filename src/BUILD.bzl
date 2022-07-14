@@ -19,7 +19,7 @@ def linux_srcs():
         locs.append("$(location {})".format(f))
     return " ".join(locs)
 
-def mac_mkhdr_srcs():
+def mkhdr_srcs():
     locs = []
     for f in SRCS:
         locs.append("$(location {})".format(f))

@@ -1,0 +1,24 @@
+load("@rules_ocaml//build:rules.bzl",
+     "ocaml_module",
+     "ocaml_signature",
+)
+
+LIB_B_DEPS = ["foo", "bar"]
+
+LIB_B_OPTS = ["-open", "foo", "-open", "bar", "-linkall"]
+
+#############################
+####  Aggregate Targets  ####
+
+#############################
+####  Singleton Targets  ####
+
+)
+
+)
+
+#############################
+####  Signature Targets  ####
+
+)
+

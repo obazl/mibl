@@ -6,19 +6,26 @@
   (format #t "~A: ~A\n" (blue "get-manifest") stanza-alist)
   (format #t "~A: ~A\n" "pkg" pkg)
   ;; (if deps
-      (let ((submods+sigs-list
-             (modules-fld->submodules-fld
-              (assoc 'modules stanza-alist)
-              ;; files
-              (assoc :modules pkg)
-              ;; deps
-              (assoc-val :signatures pkg)
-              (assoc-val :structures pkg)
-              )))
-        (format #t "submods+sigs-list: ~A\n" submods+sigs-list)
-        (if (null? submods+sigs-list)
-            '()
-            (cons :manifest (remove () submods+sigs-list)))))
+  (let* ((submods+sigs-list
+          (modules-fld->submodules-fld
+           (assoc 'modules stanza-alist)
+           ;; files
+           (assoc :modules pkg)
+           ;; deps
+           (assoc-val :signatures pkg)
+           (assoc-val :structures pkg)))
+         (submods+sigs-list (if (equal? (cadr submods+sigs-list)
+                                     '(:signatures))
+                                (list (car submods+sigs-list))
+                                submods+sigs-list))
+         (submods+sigs-list (if (equal? (cdr submods+sigs-list)
+                                     '(:modules))
+                                (cdr submods+sigs-list)
+                                submods+sigs-list)))
+    (format #t "submods+sigs-list: ~A\n" submods+sigs-list)
+    (if (null? submods+sigs-list)
+        '()
+        (cons :manifest (remove () submods+sigs-list)))))
             ;; (let ((submods (reverse (car submods+sigs-list)))
             ;;       (subsigs (reverse (cdr submods+sigs-list))))
             ;;   (cons :manifest (remove '()
@@ -150,7 +157,9 @@
       (format #t " sigs: ~A\n" sigs)
       (format #t " structs: ~A\n" structs)
       (let* ((modifiers (cdr std-list)) ;; car is always :standard
-             (pkg-module-names (get-module-names (cdr pkg-modules)))
+             (pkg-module-names (if pkg-modules
+                                   (get-module-names (cdr pkg-modules))
+                                   '()))
              (struct-module-names (get-module-names structs))
              (pkg-module-names (if struct-module-names
                                    (append struct-module-names
@@ -326,7 +335,7 @@
           ;; else no modules in pkg
           (begin
             (format #t "no pkg-modules, pkg-structs\n")
-            '()))
+            '((:modules) (:signatures))))
       ) ;; lamda
     ) ;; let
   ) ;; define

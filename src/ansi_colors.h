@@ -16,7 +16,6 @@
 #define MAG "\033[0;35m"
 #define CYN "\033[0;36m"
 #define WHT "\033[0;37m"
-#endif
 
 //Regular bold text
 #define BBLK "\033[1;30m"
@@ -79,3 +78,4 @@
 #define BHWHT "\033[1;97m"
 
 #define CMDCLR BHWHT
+#endif

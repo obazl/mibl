@@ -1,0 +1,14 @@
+(executable
+ (name main)
+ (public_name main)
+ (flags (:standard -open A
+                   -open B
+                   -linkall))
+ (link_flags -link_flag_a)
+ (libraries A B
+            (select a.ml from
+                     (x -> a_x.ml)
+                     (-> a_default.ml)))
+ (ocamlc_flags -foo)
+ (ocamlopt_flags -bar)
+ (modules Main))

@@ -7,7 +7,7 @@
                     ;; (format #t "lib-stanza->ppx ~A\n" stanza-alist)
                     (let* ((stanza-name (symbol->string
                                          (cadr (assoc 'name stanza-alist))))
-                           (ppx-alist (normalize-ppx-attrs (cdr ppx)
+                           (ppx-alist (-pps->mibl (cdr ppx)
                                                            stanza-name))
 
                            (ppx-name (string-append "ppx_" stanza-name))
@@ -15,9 +15,9 @@
                            (inline-tests? (if (assoc 'inline_tests stanza-alist)
                                               #t #f)))
                       ;; (format #t "X: ~A\n" ppx-alist)
-                      `(:ppx ((:name ,ppx-name)
+                      `(:ppx (;; (:name ,ppx-name)
                               (:args (-bar))
-                              (:deps ((:constant (ppx_inline_test))))))))
+                              (:manifest ((:constant (ppx_inline_test))))))))
                   #f)
           #f))
 
@@ -62,33 +62,33 @@
 ;; ppx_inline_test: must add ppx_args=["-inline-test-lib", "foo"]
 ;; dune doc: https://dune.readthedocs.io/en/stable/tests.html#inline-tests
 
-;; normalize-ppx-attrs derives :ppx* flds for the stanza to be emitted
-(define normalize-ppx-attrs
+;; -pps->mibl derives :ppx* flds for the stanza to be emitted
+(define -pps->mibl
   (let ((+documentation+
-         "(normalize-ppx-attrs ppx stanza-name) derives :ppx* flds for the stanza to be emitted"))
-    (lambda (ppx stanza-name) ;; stanza-alist)
-      (format #t "NORMALIZE-PPX-ATTRS ~A: ~A\n" stanza-name ppx)
+         "(-pps->mibl stanza-name ppxes) derives :ppx* flds for the stanza to be emitted"))
+    (lambda (stanza-name ppxes) ;; stanza-alist)
+      (format #t "~A ~A: ~A\n" (blue "-pps->mibl") stanza-name ppxes)
 
       ;; NB: :scope defaults to :all, but will be a list of modules
       ;; for 'per_module' ppxes (not yet implemented).
 
-      (let ((ppx-name (string-append "ppx_" stanza-name)))
+      (let ((ppx-name 'ppx.exe)) ;; (string-append "ppx_" stanza-name)))
         ;; e.g. (pps ppx1 -foo ppx2 -- -bar 42)
-        (let recur ((ppx ppx)
+        (let recur ((ppx ppxes)
                     (ppx-libs '())
                     (ppx-args '()))
           (format #t "car: ~A\n" ppx)
           (if (null? ppx)
               (if (null? ppx-args)
-                  `((:ppx
-                     (((:name ,ppx-name)
-                       (:scope :all)
-                       (:deps ,(reverse ppx-libs))))))
-                  `((:ppx
-                     (((:name ,ppx-name)
-                       (:scope :all)
-                       (:deps ,(reverse ppx-libs))
-                       (:args ,ppx-args))))))
+                  (cons :ppx
+                        (list ;; `(:name ,ppx-name)
+                              '(:scope :all)
+                              `(:manifest ,@(reverse ppx-libs))))
+                  (cons :ppx
+                        (list ;; `(:name ,ppx-name)
+                              (:scope :all)
+                              `(:manifest ,(reverse ppx-libs))
+                              `(:args ,ppx-args))))
               (if (equal? 'ppx_inline_test (car ppx))
                   (begin
                     ;; ppx_inline_test implies fld (inline_tests),
@@ -102,25 +102,28 @@
                     )
                   (if (equal? '-- (car ppx))
                       ;; everything after '--' is an arg
-                      `((:ppx
-                         (((:name ,ppx-name)
-                           (:scope :all)
-                           (:deps ,(reverse ppx-libs))
-                           (:args ,(concatenate
-                                    ppx-args
-                                    (reverse
-                                     (let recur2 ((ppx2 (cdr ppx))
-                                                  (args '()))
-                                       (if (null? ppx2)
-                                           args
-                                           (recur2
-                                            (cdr ppx2)
-                                            (cons
-                                             (if (number? (car ppx2))
-                                                 (number->string
-                                                  (car ppx2))
-                                                 (car ppx2))
-                                             args)))))))))))
+                      ;; TODO: group options as pairs (-foo x)
+                      (cons :ppx
+                            (list ;; `(:name ,ppx-name)
+                                  '(:scope :all)
+                                  `(:manifest ,@(reverse ppx-libs))
+                                  `(:args ,@(cdr ppx))
+                                    ;;,(concatenate
+                                          ;;  ppx-args
+                                            ;; ,(reverse
+                                            ;;  (let recur2 ((ppx2 (cdr ppx))
+                                            ;;               (args '()))
+                                            ;;    (if (null? ppx2)
+                                            ;;        args
+                                            ;;        (recur2
+                                            ;;         (cdr ppx2)
+                                            ;;         (cons
+                                            ;;          (if (number? (car ppx2))
+                                            ;;              (number->string
+                                            ;;               (car ppx2))
+                                            ;;              (car ppx2))
+                                            ;;          args)))))
+                                            ))
                       (if (string-prefix? "-"
                                           (symbol->string (car ppx)))
                           (recur (cdr ppx)
@@ -131,7 +134,7 @@
                                  ppx-args))))))))))
 
 (define (analyze-pps-action ppx-action stanza-name)
-  (normalize-ppx-attrs (cdr ppx-action) stanza-name))
+  (-pps->mibl stanza-name (cdr ppx-action)))
 
 (define (ppxmods->name ppx-modules)
   (apply string-append
@@ -258,43 +261,46 @@
  ;;             (staged_pps ppx1 -foo ppx2 -- -bar 42))
 
 ;; returns (values flds ppx_stanza)
-(define normalize-preproc-attrs
-  (let ((+documentation+ "(normalize-preproc-attrs pp-assoc stanza-alist) converts (preprocess ...) subfields 'pps' and 'per_module' to :ppx* flds for use in generating OBazl targets. Does not convert 'action' subfield, since it does not correspond to any OBazl rule attribute ('(action...)' generates a genrule."))
-    (lambda (pp-fld stanza-alist)
-      ;; (format #t "NORMALIZE-PREPROC-ATTRS: ~A\n" pp-fld)
-      (remove '()
-              (map (lambda (pp)
-                     ;; (format #t "PP: ~A\n" pp)
-                     (case (car pp)
-                       ((action)
-                        ;; "(preprocess (action <action>)) acts as if you had
-                        ;; setup a rule for every file of the form:
-                        ;; (rule
-                        ;;  (target file.pp.ml)
-                        ;;  (deps   file.ml)
-                        ;;  (action (with-stdout-to %{target}
-                        ;;           (chdir %{workspace_root} <action>))))"
-                        ;; So an action pp has no role in ocaml_module, we ignore it
-                        ;; here; elsewhere we use it to generate a genrule
-                        (format #t "IGNORING pp action ~A\n" pp)
-                        '())
-                       ((pps)
-                        ;; normalize-ppx-attrs result:
-                        ;;   ((:ppx ....) (:ppx-args ...))
-                        (let ((nm (cadr (assoc 'name stanza-alist))))
-                          `,@(normalize-ppx-attrs (cdr pp)
-                                                  (symbol->string nm))))
+(define preprocess-fld->mibl
+  (let ((+documentation+ "(preprocess-fld->mibl pp-assoc stanza-alist) converts (preprocess ...) subfields 'pps' and 'per_module' to :ppx* flds for use in generating OBazl targets. Does not convert 'action' subfield, since it does not correspond to any OBazl rule attribute ('(action...)' generates a genrule."))
 
-                       ((per_module)
-                        (let ((nm (cadr (assoc 'name stanza-alist))))
-                          (normalize-ppx-attrs-per_module (cdr pp) nm)))
+    (lambda (pp-assoc stanza-alist)
+      (format #t "~A: ~A\n" (blue "preprocess-fld->mibl") pp-assoc)
+      (let ((ppx-data (assoc-val 'preprocessor_deps stanza-alist))
+            (ppx (map (lambda (pp)
+                        (format #t "PP: ~A\n" pp)
+                        (case (car pp)
+                          ((action)
+                           ;; "(preprocess (action <action>)) acts as if you had
+                           ;; setup a rule for every file of the form:
+                           ;; (rule
+                           ;;  (target file.pp.ml)
+                           ;;  (deps   file.ml)
+                           ;;  (action (with-stdout-to %{target}
+                           ;;           (chdir %{workspace_root} <action>))))"
+                           ;; So an action pp has no role in ocaml_module, we ignore it
+                           ;; here; elsewhere we use it to generate a genrule
+                           (format #t "IGNORING pp action ~A\n" pp)
+                           '())
+                          ((pps)
+                           ;; -pps->mibl result:
+                           ;;   ((:ppx ....) (:ppx-args ...))
+                           (let ((nm (cadr (assoc 'name stanza-alist))))
+                             `,@(-pps->mibl (symbol->string nm) (cdr pp))))
 
-                       ((staged_pps)
-                        (normalize-ppx-attrs-staged (cdr pp) stanza-alist))
-                       (else
-                        (error 'bad-arg
-                               (format #f "unexpected 'preprocess' subfield: ~A\n"
-                                       pp)))
-                       ))
-                   pp-fld)))))
+                          ((per_module)
+                           (let ((nm (cadr (assoc 'name stanza-alist))))
+                             (normalize-ppx-attrs-per_module (cdr pp) nm)))
+
+                          ((staged_pps)
+                           (normalize-ppx-attrs-staged (cdr pp) stanza-alist))
+                          (else
+                           (error 'bad-arg
+                                  (format #f "unexpected 'preprocess' subfield: ~A\n"
+                                          pp)))
+                          ))
+                      (cdr pp-assoc))))
+        (if ppx-data
+            (append ppx (list (cons :ppx-data ppx-data)))
+            ppx)))))
 

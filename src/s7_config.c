@@ -32,7 +32,7 @@
 /* char *callback_script_file = "dune.scm"; // passed in 'data' attrib */
 char *callback = "camlark_handler"; /* fn in callback_script_file  */
 
-#if INTERFACE
+#if EXPORT_INTERFACE
 #define TO_STR(x) s7_object_to_c_string(s7, x)
 #endif
 

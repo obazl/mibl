@@ -25,6 +25,7 @@
 (load "dune/normalize.scm")
 (load "dune/pkg_api.scm")
 (load "dune/predicates.scm")
+(load "dune/ppx.scm")
 
 (load "dune/actions_with_output_to.scm")
 

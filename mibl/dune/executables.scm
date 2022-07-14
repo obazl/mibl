@@ -60,7 +60,11 @@
                                (cons :ocamlc (cdr ocflags)) '()))
          (ocamlopt_flags (if-let ((ocflags
                                    (assoc 'ocamlopt_flags stanza-alist)))
-                                 (cons :ocamlopt (cdr ocflags)) '())))
+                                 (cons :ocamlopt (cdr ocflags)) '()))
+         (link-flags (if-let ((lf (assoc 'link_flags stanza-alist)))
+                             lf '()))
+         ;; integrate flags into link-flags
+         )
          ;; (_ (format #t "exec flags: ~A\n" flags))
          ;; (compile-flags '("-compile-flags"))
          ;; (link-flags '("-link_flags")))
@@ -73,15 +77,22 @@
       (format #t "~A: ~A~%" (red "flags")    flags)
       (format #t "~A: ~A~%" (red "ocamlc_flags") ocamlc_flags)
       (format #t "~A: ~A~%" (red "ocamlopt_flags") ocamlopt_flags)
+      (format #t "~A: ~A~%" (red "link_flags") link-flags)
 
-      (values
-       (list ;; compile-flags
-        (cons :opts
-              (append (remove '() (list standard opens options flags))
-                      (list ocamlc_flags ocamlopt_flags))))
-       (list ;; link-flags
-        (cons :opts (remove '() (list standard options flags))))
-       ))))
+      ;; deal with empty lists
+      (let* ((cflags (remove '() (list standard opens options flags)))
+             (tcflags (remove '() (list ocamlc_flags ocamlopt_flags)))
+             (compile-flags (append cflags tcflags))
+             (link-flags (remove '()
+                                 (list standard options
+                                       (cons (car flags)
+                                             (append (cdr link-flags)
+                                                   (cdr flags)))))))
+
+        (values
+         (if (null? compile-flags) '() (list (cons :opts compile-flags)))
+         (if (null? link-flags) '() (list (cons :opts link-flags))))
+        ))))
 
 (define (-exec-modules-fld->mibl stanza-alist)
   (format #t "~A: ~A\n" (blue "-exec-modules-fld->mibl") stanza-alist)
@@ -114,7 +125,7 @@
          (case (car fld-assoc)
 
            ;; link flds (executable)
-           ((name) (values)) ;`(:privname ,(cadr fld-assoc)))
+           ((name) `(:main ,(cadr fld-assoc)))
            ((public_name) (values)) ;; `(:pubname ,(cadr fld-assoc)))
            ((package) ;;
             ;; (package <package>) if there is a
@@ -125,7 +136,7 @@
             ;; varexpr.
             `(:package ,(cadr fld-assoc)))
            ((forbidden_libraries) (error 'fixme "forbidden_libraries"))
-           ((link_flags) (cons :link-flags (cdr fld-assoc)))
+           ((link_flags) (values)) ;; (cons :link-flags (cdr fld-assoc)))
            ((link_deps) (cons :link-deps (cdr fld-assoc)))
            ((optional) (error 'fixme "forbidden_libraries"))
 
@@ -150,8 +161,8 @@
            ((ocamlopt_flags) (values))
 
            ((root_module) (values))
-           ((preprocess) (values))
-           ((preprocess_deps) (values))
+           ((preprocess) (error 'fixme "unhandled: preprocess"))
+           ((preprocess_deps) (error 'fixme "unhandled: preprocess_deps"))
 
            (else (error 'fixme fld-assoc))))
        stanza-alist))
@@ -172,7 +183,7 @@
 
            ((root_module) (error 'fixme "root_module"))
            ((preprocess) (error 'fixme "preprocess"))
-           ((preprocess_deps) (error 'fixme "preprocess"))
+           ((preprocess_deps) (error 'fixme "preprocess_deps"))
 
            ;; ignore the rest
            (else (values))))
@@ -243,7 +254,8 @@
       (values (cons :compile
                     (remove '() (list manifest compile-flds depslist)))
               ;; (remove '() (list compile-flds compile-manifest)))
-              (cons :link (remove '() (list manifest link-flds)))))))
+              (cons :link (remove '() (append (list manifest)
+                                             link-flds)))))))
 
   ;; (let-values (((compile-modules link-modules)
   ;;               ())))
