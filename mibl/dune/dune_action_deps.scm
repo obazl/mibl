@@ -45,7 +45,8 @@
                       (format #t "src-assoc: ~A~%" src-assoc)
                       (if (equal? :_ (car src-assoc))
                           ;; (:_ "foo.txt" "bar.txt" ...)
-                          (begin (format #t "HHHHHHHHHHHHHHHH\n")
+                          (begin
+                            ;;(format #t "HHHHHHHHHHHHHHHH\n")
                           (map (lambda (srcfile)
                                  (format #t "srcfile: ~A~%" srcfile)
                                  (let ((dname (dirname srcfile))
@@ -59,7 +60,7 @@
                                ;;  (assoc-val :file srcfile)))))
                                (cdr src-assoc)))
                           ;; else tagged (:foo . "foo.txt")
-                          (begin (format #t "JJJJJJJJJJJJJJJJ\n")
+                          (begin ;; (format #t "JJJJJJJJJJJJJJJJ\n")
                           (map (lambda (srcfile)
                                  (format #t "srcfile: ~A~%" srcfile)
                                  (let ((dname (dirname srcfile))

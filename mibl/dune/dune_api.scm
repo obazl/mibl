@@ -79,8 +79,7 @@
           (if (null? (cdr structs))
                 (dissoc! '(:structures) pkg))))
 
-;; original: dune_stanzas.scm Xnormalize-stanza
-(define (dune-stanza->mibl pkg stanza nstanzas)
+(define (dune-stanza->mibl pkg stanza nstanzas exports)
   (format #t "~A: ~A\n" (blue "dune-stanza->mibl") stanza)
   (format #t "pkg: ~A\n" pkg)
   ;; (format #t "  nstanzas: ~A\n" nstanzas)
@@ -101,7 +100,7 @@
              (set-cdr! nstanzas
                        (append
                         (cdr nstanzas)
-                        (dune-library->mibl pkg stanza))))
+                        (dune-library->mibl pkg stanza exports))))
 
             ;; ((alias) (normalize-stanza-alias stanza))
             ;; ((copy_files#) (normalize-stanza-copy_files pkg-path stanza))
@@ -146,7 +145,7 @@
 
     pkg))
 
-(define (dune-pkg->mibl pkg)
+(define (dune-pkg->mibl pkg exports)
   (format #t "~A: ~A\n" (blue "dune-pkg->mibl") pkg)
   (let* ((nstanzas (list :dune))
          (pkg+ (append pkg (list nstanzas))))
@@ -157,7 +156,8 @@
                (map
                 (lambda (stanza)
                   ;; (format #t "STANZA COPY: ~A\n" stanza)
-                  (let ((normed (dune-stanza->mibl pkg+ stanza nstanzas)))
+                  (let ((normed (dune-stanza->mibl
+                                 pkg+ stanza nstanzas exports)))
                     ;; pkg-path
                     ;; ;; dune-project-stanzas
                     ;; srcfiles ;; s/b '() ??
@@ -168,4 +168,7 @@
                 (assoc-val 'dune pkg+))))
           ;; (format #t "NEW PKG: ~A\n" pkg+)
           pkg+)
-        (error 'no-pkg (format #f "no dune pkg for ~A\n" pkg)))))
+        (begin
+          (format #t "~A ~A\n" (red "WARNING: no dune pkg for")
+                  (assoc-val :pkg-path pkg))
+          pkg))))

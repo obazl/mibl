@@ -1,5 +1,3 @@
-(load "dune/dune_actions.scm")
-
 (begin
   (load "dune.scm")
   (let* ((pkg '((:ws-path "/Users/gar/obazl/mibl/test")

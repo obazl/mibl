@@ -138,27 +138,81 @@ UT_string *xdg_data_home;
 
 /* NB: we need to escape #\" in C... */
 #define LOAD_DUNE_FORMAL_PARAMS "s"
+
 #endif
 
-/* s7_pointer pkg_tbl; */
 
-/* EXPORT UT_array *inventory_opam(void) */
-/* { */
-/*     config_opam(NULL); */
-/*     log_debug("opam switch: %s", utstring_body(opam_switch)); */
-/*     log_debug("opam bin: %s", utstring_body(opam_bin)); */
-/*     log_debug("opam lib: %s", utstring_body(opam_lib)); */
+s7_pointer initialize_mibl_data_model(s7_scheme *s7)
+{
+    /*
+     * data model:
+     * wss: alist, keys are ws names with @, values are alists
+     * ws item alist:
+     *   ws name
+     *   ws path (realpath)
+     *   pkg_exports: hash_table keyedy by target, vals: pkg paths
+     *   pkgs: hash_table keyed by pkg path
+     */
 
-/*     // FIXME: make re-entrant */
-/*     UT_array *opam_dirs;             /\* string list *\/ */
-/*     utarray_new(opam_dirs, &ut_str_icd); */
+    log_debug("_initialize_mibl_data_model");
 
-/*     // FIXME: add support for exclusions list */
-/*     //int rc = */
-/*     dirseq(utstring_body(opam_lib), opam_dirs); */
+    /* _s7_acons = _load_acons(s7); */
+    /* _s7_list_set = _load_list_set(s7); */
+    /* printf("_s7_list_set: %s\n", TO_STR(_s7_list_set)); */
 
-/*     return opam_dirs; */
-/* } */
+    s7_pointer key, datum;
+    s7_pointer q = s7_name_to_value(s7, "quote");
+    printf("QQQQ: %s\n", TO_STR(q));
+
+    s7_pointer root_ws = s7_call(s7, q,
+                                 s7_list(s7, 1,
+                                         s7_list(s7, 1,
+                                                 s7_make_symbol(s7, "@"))));
+
+    /* _s7_append = _load_append(s7); */
+
+    /* s7_pointer base_entry = s7_make_list(s7, 4, s7_f(s7)); */
+    key = s7_make_symbol(s7, "name");
+    datum = s7_make_symbol(s7, "@");
+    root_ws = s7_call(s7, _s7_append,
+                      s7_list(s7, 2, root_ws,
+                              s7_list(s7, 1,
+                                      s7_list(s7, 2, key, datum))));
+    printf("root_ws: %s\n", TO_STR(root_ws));
+
+    key   = s7_make_symbol(s7, "path");
+    datum = s7_make_string(s7, bws_root);
+    root_ws = s7_call(s7, _s7_append,
+                      s7_list(s7, 2, root_ws,
+                              s7_list(s7, 1,
+                                      s7_list(s7, 2, key, datum))));
+    printf("root_ws: %s\n", TO_STR(root_ws));
+
+    /* table of "exports" - libs etc. possibly referenced as deps */
+    key   = s7_make_symbol(s7, "exports");
+    datum = s7_make_hash_table(s7, 64);
+    root_ws = s7_call(s7, _s7_append,
+                      s7_list(s7, 2, root_ws,
+                              s7_list(s7, 1,
+                                      s7_list(s7, 2, key, datum))));
+    printf("root_ws: %s\n", TO_STR(root_ws));
+
+    key   = s7_make_symbol(s7, "pkgs");
+    datum = s7_make_hash_table(s7, 32);
+    root_ws = s7_call(s7, _s7_append,
+                      s7_list(s7, 2, root_ws,
+                              s7_list(s7, 1,
+                                      s7_list(s7, 2, key, datum))));
+    printf("root_ws: %s\n", TO_STR(root_ws));
+
+    root_ws = s7_list(s7, 1, root_ws);
+
+    printf("root_ws: %s\n", TO_STR(root_ws));
+
+    s7_define_variable(s7, "-mibl-ws-table", root_ws);
+
+    return root_ws;
+}
 
 s7_pointer _init_scheme_fns(s7_scheme *s7)
 {

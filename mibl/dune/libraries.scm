@@ -99,7 +99,10 @@
          (_ (format #t "lib-flds (mibl): ~A~%" lib-flds))
          (lib-flds (if wrapped?
                        (append (list (cons :ns
-                                            (assoc-val :pubname lib-flds)))
+                                           (if-let ((pn
+                                                     (assoc-val :pubname lib-flds)))
+                                                   pn
+                                                   (assoc-val :privname lib-flds))))
                                lib-flds)
                        lib-flds))
          ) ;; end let bindings
@@ -138,13 +141,32 @@
                                          ))))
     ))
 
-(define (dune-library->mibl pkg stanza)
+(define (dune-library->mibl pkg stanza exports)
   (format #t "~A: ~A\n" (blue "dune-library->mibl")
           (assoc-val 'name (cdr stanza)))
   (format #t "stanza: ~A\n" stanza)
 
   ;; FIXME: if not wrapped => :archive
   ;; else => :library
+
+  ;; add lib names to exports table
+  ;; (let ((exports (car (assoc-val 'exports (assoc-val '@ -mibl-ws-table)))))
+  ;;   (format #t "hidden exports: ~A\n" exports))
+
+  (if-let ((privname (assoc-val 'name (cdr stanza))))
+          (begin
+            (format #t "adding privname ~A to exports tbl\n" (car privname))
+            (format #t "path: ~A\n" (assoc-val :pkg-path pkg))
+            (hash-table-set! exports (car privname)
+                             (car (assoc-val :pkg-path pkg)))
+            ))
+
+  (if-let ((pubname (assoc-val 'public_name (cdr stanza))))
+          (begin
+            (format #t "adding pubname ~A to exports tbl\n" (car pubname))
+            (hash-table-set! exports (car pubname)
+                             (car (assoc-val :pkg-path pkg)))
+            ))
 
   (let* ((stanza-alist (cdr stanza))
          (stanza-alist (if-let ((mods (assoc 'modules stanza-alist)))
@@ -163,6 +185,7 @@
          ;; (stanza-alist (cons submods stanza-alist))
          ;; (_ (format #t "STANZA ALIST + SUBMODS: ~A\n" stanza-alist))
 
+         ;; CONVERT THE STANZA:
          (mibl-stanza (-lib-flds->mibl pkg stanza-alist wrapped?))
          )
 

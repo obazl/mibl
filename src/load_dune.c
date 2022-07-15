@@ -30,8 +30,6 @@ int dunefile_ct = 0;
 int file_ct = 0;
 int dir_ct  = 0;
 
-#define PKG_CT 50
-
 void _indent(int i)
 {
     /* printf("_indent: %d\n", i); */
@@ -1108,7 +1106,7 @@ LOCAL void _handle_ml_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
     }
     else {
         printf(RED "UNKNOWN ml ext: :%-6s\n" CRESET, ext);
-        exit(EXIT_FAILURE);
+        /* exit(EXIT_FAILURE); */
     }
     /* printf("%s" CRESET " ", ftsentry->fts_name); */
     /* printf("\n"); */
@@ -1405,77 +1403,6 @@ s7_pointer _merge_pkg_tbls(s7_scheme *s7, s7_pointer ht1, s7_pointer ht2)
     return ht1;
 }
 
-s7_pointer _initialize_mibl_data_model(s7_scheme *s7)
-{
-    /*
-     * data model:
-     * wss: alist, keys are ws names with @, values are alists
-     * ws item alist:
-     *   ws name
-     *   ws path (realpath)
-     *   pkg_exports: hash_table keyedy by target, vals: pkg paths
-     *   pkgs: hash_table keyed by pkg path
-     */
-
-    log_debug("_initialize_mibl_data_model");
-
-    /* _s7_acons = _load_acons(s7); */
-    /* _s7_list_set = _load_list_set(s7); */
-    /* printf("_s7_list_set: %s\n", TO_STR(_s7_list_set)); */
-
-    s7_pointer key, datum;
-    s7_pointer q = s7_name_to_value(s7, "quote");
-    printf("QQQQ: %s\n", TO_STR(q));
-
-    s7_pointer root_ws = s7_call(s7, q,
-                                 s7_list(s7, 1,
-                                         s7_list(s7, 1,
-                                                 s7_make_symbol(s7, "@"))));
-
-    /* _s7_append = _load_append(s7); */
-
-    /* s7_pointer base_entry = s7_make_list(s7, 4, s7_f(s7)); */
-    key = s7_make_symbol(s7, "name");
-    datum = s7_make_symbol(s7, "@");
-    root_ws = s7_call(s7, _s7_append,
-                      s7_list(s7, 2, root_ws,
-                              s7_list(s7, 1,
-                                      s7_list(s7, 2, key, datum))));
-    printf("root_ws: %s\n", TO_STR(root_ws));
-
-    key   = s7_make_symbol(s7, "path");
-    datum = s7_make_string(s7, bws_root);
-    root_ws = s7_call(s7, _s7_append,
-                      s7_list(s7, 2, root_ws,
-                              s7_list(s7, 1,
-                                      s7_list(s7, 2, key, datum))));
-    printf("root_ws: %s\n", TO_STR(root_ws));
-
-    key   = s7_make_symbol(s7, "exports");
-    datum = s7_f(s7);
-    root_ws = s7_call(s7, _s7_append,
-                      s7_list(s7, 2, root_ws,
-                              s7_list(s7, 1,
-                                      s7_list(s7, 2, key, datum))));
-    printf("root_ws: %s\n", TO_STR(root_ws));
-
-    key   = s7_make_symbol(s7, "pkgs");
-    datum = s7_make_hash_table(s7, PKG_CT);
-    root_ws = s7_call(s7, _s7_append,
-                      s7_list(s7, 2, root_ws,
-                              s7_list(s7, 1,
-                                      s7_list(s7, 2, key, datum))));
-    printf("root_ws: %s\n", TO_STR(root_ws));
-
-    root_ws = s7_list(s7, 1, root_ws);
-
-    printf("root_ws: %s\n", TO_STR(root_ws));
-
-    s7_define_variable(s7, "ws-table", root_ws);
-
-    return root_ws;
-}
-
 EXPORT s7_pointer g_load_dune(s7_scheme *s7,  s7_pointer args)
 {
     if (debug) {
@@ -1489,10 +1416,10 @@ EXPORT s7_pointer g_load_dune(s7_scheme *s7,  s7_pointer args)
 
     /* s7_pointer wss =  */
     ///s7_pointer root_ws =
-    _initialize_mibl_data_model(s7);
+    initialize_mibl_data_model(s7);
 
     s7_pointer _pkg_tbl =
-        s7_eval_c_string(s7, "(cadr (assoc-in '(@ pkgs) ws-table))");
+        s7_eval_c_string(s7, "(cadr (assoc-in '(@ pkgs) -mibl-ws-table))");
     printf("pkg_tbl: %s\n", TO_STR(_pkg_tbl));
 
     const char *rootdir, *pathdir;
@@ -1551,13 +1478,13 @@ EXPORT s7_pointer g_load_dune(s7_scheme *s7,  s7_pointer args)
                                             s7_list(s7, 2,
                                                     s7_make_symbol(s7, "@"),
                                                     s7_make_symbol(s7, "pkgs")),
-                                            s7_name_to_value(s7, "ws-table")),
+                                            s7_name_to_value(s7, "-mibl-ws-table")),
                                     _pkg_tbl),
                         s7_rootlet(s7));
 
-                printf("root_ws 1: %s\n", TO_STR(s7_name_to_value(s7, "ws-table")));
+                printf("root_ws 1: %s\n", TO_STR(s7_name_to_value(s7, "-mibl-ws-table")));
 
-                return s7_name_to_value(s7, "ws-table");
+                return s7_name_to_value(s7, "-mibl-ws-table");
             }
             else if (s7_is_string(arg)) {
                 /* one string arg == path relative to current wd */
@@ -1569,12 +1496,13 @@ EXPORT s7_pointer g_load_dune(s7_scheme *s7,  s7_pointer args)
                     s7_pointer _pkg_tbl = load_dune(rootdir, pathdir);
 
                     //TODO: use s7_eval?
-                    s7_eval_c_string_with_environment(s7, "(set-cdr! (assoc-in '(@ pkgs) ws-table) (list _pkg_tbl))",
+                    s7_eval_c_string_with_environment(s7,
+                                                      "(set-cdr! (assoc-in '(@ pkgs) -mibl-ws-table) (list _pkg_tbl))",
                                                       s7_inlet(s7, s7_list(s7, 1,
                                                                            s7_cons(s7, s7_make_symbol(s7, "_pkg_tbl"), _pkg_tbl))));
-                    printf("root_ws 2: %s\n", TO_STR(s7_name_to_value(s7, "ws-table")));
+                    printf("root_ws 2: %s\n", TO_STR(s7_name_to_value(s7, "-mibl-ws-table")));
 
-                    return s7_name_to_value(s7, "ws-table");
+                    return s7_name_to_value(s7, "-mibl-ws-table");
 
                 } else {
                     log_error("cwd: %s", getcwd(NULL,0));
@@ -1605,7 +1533,7 @@ EXPORT s7_pointer g_load_dune(s7_scheme *s7,  s7_pointer args)
     /* should not happen? */
     _pkg_tbl = load_dune(rootdir, pathdir);
 
-    //  (set-cdr! (assoc-in '(@ pkgs) ws-table) )
+    //  (set-cdr! (assoc-in '(@ pkgs) -mibl-ws-table) )
     s7_eval(s7, s7_list(s7, 3,
                         _s7_set_cdr,
                         s7_list(s7, 3,
@@ -1613,13 +1541,13 @@ EXPORT s7_pointer g_load_dune(s7_scheme *s7,  s7_pointer args)
                                 s7_list(s7, 2,
                                         s7_make_symbol(s7, "@"),
                                         s7_make_symbol(s7, "pkgs")),
-                                s7_name_to_value(s7, "ws-table")),
+                                s7_name_to_value(s7, "-mibl-ws-table")),
                         _pkg_tbl),
             s7_rootlet(s7));
 
-    printf("root_ws 3: %s\n", TO_STR(s7_name_to_value(s7, "ws-table")));
+    printf("root_ws 3: %s\n", TO_STR(s7_name_to_value(s7, "-mibl-ws-table")));
 
-    return s7_name_to_value(s7, "ws-table");
+    return s7_name_to_value(s7, "-mibl-ws-table");
 }
 
 /* FIXME: use same logic for rootdir as */
@@ -1729,16 +1657,22 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
                                 s7_make_string(s7, _traversal_root[0])));
     }
 
-    s7_pointer pkg_tbl = s7_make_hash_table(s7, PKG_CT);
+    /* s7_pointer pkg_tbl = s7_make_hash_table(s7, PKG_CT); */
     /* s7_define_variable(s7, "pkg-tbl", pkg_tbl); */
+    s7_pointer pkg_tbl =
+        s7_eval_c_string(s7, "(cadr (assoc-in '(@ pkgs) -mibl-ws-table))");
+    printf("pkg_tbl: %s\n", TO_STR(pkg_tbl));
 
     char *ext;
 
+    /* TRAVERSAL STARTS HERE */
     if (NULL != tree) {
         while( (ftsentry = fts_read(tree)) != NULL) {
             if (debug) {
-                log_debug("ftsentry: %s, type: %d",
-                          ftsentry->fts_name, ftsentry->fts_info);
+                log_debug("ftsentry: %2/%s, type: %d",
+                          ftsentry->fts_path,
+                          ftsentry->fts_name,
+                          ftsentry->fts_info);
             }
             switch (ftsentry->fts_info)
                 {
@@ -1747,6 +1681,12 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
                     /* fts_set(tree, ftsentry, FTS_SKIP); */
                     break;
                 case FTS_D : // dir visited in pre-order
+                    if (strncmp(ftsentry->fts_name, "_build", 6) == 0) {
+                        /* skip _build (dune) */
+                        fts_set(tree, ftsentry, FTS_SKIP);
+                        break;
+                    }
+
                     dir_ct++;
                     _handle_dir(pkg_tbl, tree, ftsentry);
                     /* printf("pkg tbl: %s\n", TO_STR(pkg_tbl)); */

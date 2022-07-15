@@ -83,11 +83,14 @@
       (let* ((cflags (remove '() (list standard opens options flags)))
              (tcflags (remove '() (list ocamlc_flags ocamlopt_flags)))
              (compile-flags (append cflags tcflags))
-             (link-flags (remove '()
+             (link-flags (if (null? flags) '()
+                             (remove '()
                                  (list standard options
-                                       (cons (car flags)
-                                             (append (cdr link-flags)
-                                                   (cdr flags)))))))
+                                       (if (null? link-flags)
+                                           flags
+                                           (cons (car flags)
+                                                 (append (cdr link-flags)
+                                                         (cdr flags)))))))))
 
         (values
          (if (null? compile-flags) '() (list (cons :opts compile-flags)))
@@ -125,7 +128,7 @@
          (case (car fld-assoc)
 
            ;; link flds (executable)
-           ((name) `(:main ,(cadr fld-assoc)))
+           ((name) `(:main ,(normalize-module-name (cadr fld-assoc))))
            ((public_name) (values)) ;; `(:pubname ,(cadr fld-assoc)))
            ((package) ;;
             ;; (package <package>) if there is a
@@ -472,8 +475,8 @@
                           (cadr pubname) privname))
          (modules (assoc 'modules stanza-alist))
          (filtered-stanza-alist (alist-delete '(names public_names) stanza-alist)))
-    ;; (format #t " N: ~A\n" privname)
-    ;; (format #t " Ms: ~A\n" modules)
+    (format #t " N: ~A\n" privname)
+    (format #t " Ms: ~A\n" modules)
 
     ;; if has modules list, one must match 'name'
     (if modules
