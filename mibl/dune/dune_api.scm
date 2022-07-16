@@ -79,7 +79,7 @@
           (if (null? (cdr structs))
                 (dissoc! '(:structures) pkg))))
 
-(define (dune-stanza->mibl pkg stanza nstanzas exports)
+(define (dune-stanza->mibl ws pkg stanza nstanzas)
   (format #t "~A: ~A\n" (blue "dune-stanza->mibl") stanza)
   (format #t "pkg: ~A\n" pkg)
   ;; (format #t "  nstanzas: ~A\n" nstanzas)
@@ -94,13 +94,13 @@
              (set-cdr! nstanzas
                        (append
                         (cdr nstanzas)
-                        (dune-rule->mibl pkg stanza))))
+                        (dune-rule->mibl ws pkg stanza))))
 
             ((library)
              (set-cdr! nstanzas
                        (append
                         (cdr nstanzas)
-                        (dune-library->mibl pkg stanza exports))))
+                        (dune-library->mibl ws pkg stanza))))
 
             ;; ((alias) (normalize-stanza-alias stanza))
             ;; ((copy_files#) (normalize-stanza-copy_files pkg-path stanza))
@@ -115,7 +115,7 @@
              (set-cdr! nstanzas
                        (append
                         (cdr nstanzas)
-                        (dune-executable->mibl pkg stanza))))
+                        (dune-executable->mibl ws pkg stanza))))
 
             ;; ((executables) (normalize-stanza-executables :executables
             ;;                 pkg-path ocaml-srcs stanza))
@@ -145,7 +145,7 @@
 
     pkg))
 
-(define (dune-pkg->mibl pkg exports)
+(define (dune-pkg->mibl ws pkg)
   (format #t "~A: ~A\n" (blue "dune-pkg->mibl") pkg)
   (let* ((nstanzas (list :dune))
          (pkg+ (append pkg (list nstanzas))))
@@ -156,8 +156,8 @@
                (map
                 (lambda (stanza)
                   ;; (format #t "STANZA COPY: ~A\n" stanza)
-                  (let ((normed (dune-stanza->mibl
-                                 pkg+ stanza nstanzas exports)))
+                  (let ((normed (dune-stanza->mibl ws
+                                 pkg+ stanza nstanzas)))
                     ;; pkg-path
                     ;; ;; dune-project-stanzas
                     ;; srcfiles ;; s/b '() ??
@@ -166,9 +166,8 @@
                     normed))
                 ;; (cdr dune-stanzas))))
                 (assoc-val 'dune pkg+))))
-          ;; (format #t "NEW PKG: ~A\n" pkg+)
+          (format #t "NEW PKG: ~A\n" pkg+)
           pkg+)
         (begin
-          (format #t "~A ~A\n" (red "WARNING: no dune pkg for")
-                  (assoc-val :pkg-path pkg))
+          (format #t "~A ~A\n" (red "WARNING: no dune pkg for") pkg)
           pkg))))

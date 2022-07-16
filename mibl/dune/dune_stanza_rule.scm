@@ -142,7 +142,7 @@
 
 (define dune-rule->mibl
   (let ((+documentation+ "INTERNAL. Updates pkg arg, returns normalized stanza. stanza: raw dune stanza (input); nstanza: normalized (output)"))
-    (lambda (pkg stanza)
+    (lambda (ws pkg stanza)
       (format #t "~A: ~A\n" (blue "dune-rule->mibl") stanza)
       ;; for other stanza types we can normalize fields in isolation. For
       ;; 'rule' stanzas, we need a higher level of analysis, so we cannot

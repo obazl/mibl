@@ -141,7 +141,7 @@
                                          ))))
     ))
 
-(define (dune-library->mibl pkg stanza exports)
+(define (dune-library->mibl ws pkg stanza)
   (format #t "~A: ~A\n" (blue "dune-library->mibl")
           (assoc-val 'name (cdr stanza)))
   (format #t "stanza: ~A\n" stanza)
@@ -150,23 +150,23 @@
   ;; else => :library
 
   ;; add lib names to exports table
-  ;; (let ((exports (car (assoc-val 'exports (assoc-val '@ -mibl-ws-table)))))
-  ;;   (format #t "hidden exports: ~A\n" exports))
+  (let ((exports (car (assoc-val :exports (assoc-val ws -mibl-ws-table)))))
+    (format #t "hidden exports: ~A\n" exports)
 
-  (if-let ((privname (assoc-val 'name (cdr stanza))))
-          (begin
-            (format #t "adding privname ~A to exports tbl\n" (car privname))
-            (format #t "path: ~A\n" (assoc-val :pkg-path pkg))
-            (hash-table-set! exports (car privname)
-                             (car (assoc-val :pkg-path pkg)))
-            ))
+    (if-let ((privname (assoc-val 'name (cdr stanza))))
+            (begin
+              (format #t "adding privname ~A to exports tbl\n" (car privname))
+              (format #t "path: ~A\n" (assoc-val :pkg-path pkg))
+              (hash-table-set! exports (car privname)
+                               (car (assoc-val :pkg-path pkg)))
+              ))
 
-  (if-let ((pubname (assoc-val 'public_name (cdr stanza))))
-          (begin
-            (format #t "adding pubname ~A to exports tbl\n" (car pubname))
-            (hash-table-set! exports (car pubname)
-                             (car (assoc-val :pkg-path pkg)))
-            ))
+    (if-let ((pubname (assoc-val 'public_name (cdr stanza))))
+            (begin
+              (format #t "adding pubname ~A to exports tbl\n" (car pubname))
+              (hash-table-set! exports (car pubname)
+                               (car (assoc-val :pkg-path pkg)))
+              )))
 
   (let* ((stanza-alist (cdr stanza))
          (stanza-alist (if-let ((mods (assoc 'modules stanza-alist)))

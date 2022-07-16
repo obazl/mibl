@@ -132,10 +132,10 @@
 
 ;; called for (action (run ...) ...)
 (define (normalize-action-run-dsl pkg action-alist targets deps)
-  ;; (format #t "NORMALIZE-ACTION-RUN-DSL ~A\n" action-alist)
+  (format #t "~A: ~A\n" (blue "normalize-action-run-dsl") action-alist)
   (let* ((run-alist (cdar action-alist))
          (cmd (car (expand-cmd-list run-alist targets deps))))
-    ;; (format #t "RUN CMD: ~A\n" cmd)
+    (format #t "RUN CMD: ~A\n" cmd)
     (list (cons :cmd cmd)))) ;; :run ???
 
 (define (normalize-action-setenv-dsl action stanza)

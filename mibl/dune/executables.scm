@@ -429,7 +429,7 @@
 ;; ))))
 
 ;; (define (normalize-stanza-executable typ pkg-path srcfiles stanza)
-(define (dune-executable->mibl pkg stanza)
+(define (dune-executable->mibl ws pkg stanza)
   ;; type:: :executable || test
   ;; (let ((privname (cadr (assoc 'name (cdr stanza)))))
   (format #t "~A: ~A\n" (blue "dune-executable->mibl") pkg)
@@ -468,7 +468,7 @@
                                stanza-alist
                                (append stanza-alist
                                        (list '(modules :standard)))))
-         (pkg-path (assoc-val :pkg-path pkg))
+         (pkg-path (car (assoc-val :pkg-path pkg)))
          ;; 'name' fld is required
          (privname (cadr (assoc 'name stanza-alist)))
          (pubname (if-let ((pubname (assoc 'public_name stanza-alist)))
@@ -477,6 +477,10 @@
          (filtered-stanza-alist (alist-delete '(names public_names) stanza-alist)))
     (format #t " N: ~A\n" privname)
     (format #t " Ms: ~A\n" modules)
+
+    (if pubname
+        ;; update exports table with 'bin:pubname'
+        (update-exports-table! ws :bin pubname pkg-path))
 
     ;; if has modules list, one must match 'name'
     (if modules

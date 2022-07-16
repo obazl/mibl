@@ -92,12 +92,17 @@
 
      ((string-prefix? "%{bin:" arg)
       ;; (format #t "BIN: ~A\n" arg)
-      (let* ((kw (substring arg 6 (- (length arg) 1)))
-             (keysym (string->keyword kw)))
+      (let* ((kw (substring arg 2 (- (length arg) 1)))
+             (keysym (string->keyword
+                      (string-append ":" kw))))
+        (symbol kw)))
+      ;; (let* ((kw (substring arg 6 (- (length arg) 1)))
+      ;;        (keysym (string->keyword kw)))
         ;; (format #t "kw ~A\n" kw)
         ;; (format #t "keysym ~A\n" keysym)
-        `((:pkg :bin)
-                (:tgt ,keysym))))
+        ;; `((:pkg :bin)
+        ;;         (:tgt ,keysym))))
+
       ;; (cons
       ;;  (list :_bin arg)
       ;;  (expand-cmd-args pkg-path
@@ -297,7 +302,7 @@
 
                   ((string? arg)
                    (let ((sarg (expand-string-arg arg targets deps)))
-                     (append sarg
+                     (append (list sarg)
                            (expand-cmd-args (cdr args) targets deps))))
                             ;; pkg-path target targets
                             ;; (cdr args) filedeps vars)))))
@@ -419,7 +424,7 @@ write-file))
             ;; car is atom
             (let* ((kw (car raw-cmds)))
               (if (member kw dune-dsl-cmds)
-                  `(((:tool ,kw)
+                  `(((:Tool ,kw)
                      (:args
                       ,@(expand-cmd-args (cdr raw-cmds) targets deps))))
 
@@ -436,7 +441,7 @@ write-file))
 
                           ;; e.g. (run %{bin:foo} ...)
                           (list
-                           (list (cons :tool
+                           (list (list :tool
                                        (car (expand-run-tool kw targets deps)))
                                 (cons :args
                                        (expand-cmd-args (cdr raw-cmds)
