@@ -142,7 +142,7 @@ UT_string *xdg_data_home;
 #endif
 
 
-s7_pointer initialize_mibl_data_model(s7_scheme *s7)
+void initialize_mibl_data_model(s7_scheme *s7)
 {
     /*
      * data model:
@@ -161,57 +161,72 @@ s7_pointer initialize_mibl_data_model(s7_scheme *s7)
     /* printf("_s7_list_set: %s\n", TO_STR(_s7_list_set)); */
 
     s7_pointer key, datum;
-    s7_pointer q = s7_name_to_value(s7, "quote");
-    printf("QQQQ: %s\n", TO_STR(q));
+    /* s7_pointer q = s7_name_to_value(s7, "quote"); */
 
-    s7_pointer root_ws = s7_call(s7, q,
-                                 s7_list(s7, 1,
-                                         s7_list(s7, 1,
-                                                 s7_make_symbol(s7, "@"))));
+    /* s7_pointer root_ws = s7_call(s7, q, */
+    /*                              s7_list(s7, 1, */
+    /*                                      s7_list(s7, 1, */
+    /*                                              s7_make_symbol(s7, "@")))); */
 
     /* _s7_append = _load_append(s7); */
 
-    /* s7_pointer base_entry = s7_make_list(s7, 4, s7_f(s7)); */
-    key = s7_make_symbol(s7, "name");
-    datum = s7_make_symbol(s7, "@");
-    root_ws = s7_call(s7, _s7_append,
-                      s7_list(s7, 2, root_ws,
-                              s7_list(s7, 1,
-                                      s7_list(s7, 2, key, datum))));
-    printf("root_ws: %s\n", TO_STR(root_ws));
+    UT_string *init_sexp;
+    utstring_new(init_sexp);
+    utstring_printf(init_sexp, "(define -mibl-ws-table "
+                    "`((:@ (:name \"@\") (:path %s) "
+                    "(:exports ,(make-hash-table)) "
+                    "(:pkgs ,(make-hash-table)))))",
+                    bws_root);
 
-    key   = s7_make_symbol(s7, "path");
-    datum = s7_make_string(s7, bws_root);
-    root_ws = s7_call(s7, _s7_append,
-                      s7_list(s7, 2, root_ws,
-                              s7_list(s7, 1,
-                                      s7_list(s7, 2, key, datum))));
-    printf("root_ws: %s\n", TO_STR(root_ws));
+    s7_pointer wss = s7_eval_c_string(s7, utstring_body(init_sexp));
+    printf("wss: %s\n", TO_STR(wss));
 
-    /* table of "exports" - libs etc. possibly referenced as deps */
-    key   = s7_make_symbol(s7, "exports");
-    datum = s7_make_hash_table(s7, 64);
-    root_ws = s7_call(s7, _s7_append,
-                      s7_list(s7, 2, root_ws,
-                              s7_list(s7, 1,
-                                      s7_list(s7, 2, key, datum))));
-    printf("root_ws: %s\n", TO_STR(root_ws));
+    /* /\* s7_pointer base_entry = s7_make_list(s7, 4, s7_f(s7)); *\/ */
+    /* key = s7_make_symbol(s7, "name"); */
+    /* datum = s7_make_symbol(s7, "@"); */
+    /* s7_pointer root_ws = s7_call(s7, _s7_append, */
+    /*                              s7_list(s7, 2, root_ws, */
+    /*                                      s7_list(s7, 1, */
+    /*                                   s7_list(s7, 2, key, datum)))); */
+    /* if (debug) */
+    /*     log_debug("root_ws: %s\n", TO_STR(root_ws)); */
 
-    key   = s7_make_symbol(s7, "pkgs");
-    datum = s7_make_hash_table(s7, 32);
-    root_ws = s7_call(s7, _s7_append,
-                      s7_list(s7, 2, root_ws,
-                              s7_list(s7, 1,
-                                      s7_list(s7, 2, key, datum))));
-    printf("root_ws: %s\n", TO_STR(root_ws));
+    /* key   = s7_make_symbol(s7, "path"); */
+    /* datum = s7_make_string(s7, bws_root); */
+    /* root_ws = s7_call(s7, _s7_append, */
+    /*                   s7_list(s7, 2, root_ws, */
+    /*                           s7_list(s7, 1, */
+    /*                                   s7_list(s7, 2, key, datum)))); */
+    /* if (debug) */
+    /*     log_debug("root_ws: %s\n", TO_STR(root_ws)); */
 
-    root_ws = s7_list(s7, 1, root_ws);
+    /* /\* table of "exports" - libs etc. possibly referenced as deps *\/ */
+    /* key   = s7_make_symbol(s7, "exports"); */
+    /* datum = s7_make_hash_table(s7, 64); */
+    /* root_ws = s7_call(s7, _s7_append, */
+    /*                   s7_list(s7, 2, root_ws, */
+    /*                           s7_list(s7, 1, */
+    /*                                   s7_list(s7, 2, key, datum)))); */
+    /* if (debug) */
+    /*     log_debug("root_ws: %s\n", TO_STR(root_ws)); */
 
-    printf("root_ws: %s\n", TO_STR(root_ws));
+    /* key   = s7_make_symbol(s7, "pkgs"); */
+    /* datum = s7_make_hash_table(s7, 32); */
+    /* root_ws = s7_call(s7, _s7_append, */
+    /*                   s7_list(s7, 2, root_ws, */
+    /*                           s7_list(s7, 1, */
+    /*                                   s7_list(s7, 2, key, datum)))); */
+    /* if (debug) */
+    /*     log_debug("root_ws: %s\n", TO_STR(root_ws)); */
 
-    s7_define_variable(s7, "-mibl-ws-table", root_ws);
+    /* root_ws = s7_list(s7, 1, root_ws); */
 
-    return root_ws;
+    /* if (debug) */
+    /*     log_debug("root_ws: %s\n", TO_STR(root_ws)); */
+
+    /* s7_define_variable(s7, "-mibl-ws-table", root_ws); */
+
+    /* return root_ws; */
 }
 
 s7_pointer _init_scheme_fns(s7_scheme *s7)
@@ -813,7 +828,7 @@ LOCAL void s7_config_repl(s7_scheme *sc)
 #endif
 }
 
-EXPORT void s7_configure(void)
+EXPORT s7_scheme *s7_configure(void)
 {
     s7 = s7_init();
 
@@ -871,6 +886,8 @@ EXPORT void s7_configure(void)
 
     /* libc_s7_init(s7); */
     chdir(bws_root);            /* always run from base ws root */
+
+    return s7;
 }
 
 EXPORT void s7_shutdown(s7_scheme *s7)

@@ -1425,14 +1425,17 @@ EXPORT s7_pointer g_load_dune(s7_scheme *s7,  s7_pointer args)
     initialize_mibl_data_model(s7);
 
     s7_pointer _pkg_tbl =
-        s7_eval_c_string(s7, "(cadr (assoc-in '(@ pkgs) -mibl-ws-table))");
-    printf("pkg_tbl: %s\n", TO_STR(_pkg_tbl));
+        s7_eval_c_string(s7, "(cadr (assoc-in '(:@ :pkgs) -mibl-ws-table))");
+    /* printf("pkg_tbl: %s\n", TO_STR(_pkg_tbl)); */
 
     const char *rootdir, *pathdir;
 
     if ( s7_is_null(s7, args) ) {
         rootdir = getcwd(NULL, 0);
         pathdir = ".";
+        _pkg_tbl = load_dune(rootdir, pathdir);
+        printf(RED "LOADED DUNE NOARG" CRESET "\n");
+        return s7_name_to_value(s7, "-mibl-ws-table");
     } else {
         s7_int args_ct = s7_list_length(s7, args);
         if (debug)
@@ -1463,32 +1466,35 @@ EXPORT s7_pointer g_load_dune(s7_scheme *s7,  s7_pointer args)
                     pathdir = _get_path_dir(item);
                     if (pathdir) {
                         s7_pointer _pkgs = load_dune(rootdir, pathdir);
-                        if (s7_is_hash_table(_pkgs)) {
-                            _pkg_tbl = _merge_pkg_tbls(s7, _pkg_tbl, _pkgs);
-                            log_debug("merged result: %s", TO_STR(_pkg_tbl));
-                        } else {
-                            log_error("load_dune returned %s", TO_STR(_pkgs));
-                            return s7_nil(s7);
-                        }
+                        printf(RED "LOADED DUNE 1" CRESET "\n");
+
+                        //FIXME: is this needed?
+                        /* if (s7_is_hash_table(_pkgs)) { */
+                        /*     _pkg_tbl = _merge_pkg_tbls(s7, _pkg_tbl, _pkgs); */
+                        /*     log_debug("merged result: %s", TO_STR(_pkg_tbl)); */
+                        /* } else { */
+                        /*     log_error("load_dune returned %s", TO_STR(_pkgs)); */
+                        /*     return s7_nil(s7); */
+                        /* } */
                     } else {
                         log_error("cwd: %s", getcwd(NULL,0));
                     }
                     arglist = s7_cdr(arglist);
                 }
                 /* return _pkg_tbl; */
-                //  (set-cdr! (assoc-in '(@ pkgs) ws-table) )
-                s7_eval(s7, s7_list(s7, 3,
-                                    _s7_set_cdr,
-                                    s7_list(s7, 3,
-                                            assoc_in,
-                                            s7_list(s7, 2,
-                                                    s7_make_symbol(s7, "@"),
-                                                    s7_make_symbol(s7, "pkgs")),
-                                            s7_name_to_value(s7, "-mibl-ws-table")),
-                                    _pkg_tbl),
-                        s7_rootlet(s7));
+                //  (set-cdr! (assoc-in '(:@ :pkgs) ws-table) )
+                /* s7_eval(s7, s7_list(s7, 3, */
+                /*                     _s7_set_cdr, */
+                /*                     s7_list(s7, 3, */
+                /*                             assoc_in, */
+                /*                             s7_list(s7, 2, */
+                /*                                     s7_make_keyword(s7, "@"), */
+                /*                                     s7_make_keyword(s7, "pkgs")), */
+                /*                             s7_name_to_value(s7, "-mibl-ws-table")), */
+                /*                     _pkg_tbl), */
+                /*         s7_rootlet(s7)); */
 
-                printf("root_ws 1: %s\n", TO_STR(s7_name_to_value(s7, "-mibl-ws-table")));
+                /* printf("root_ws 1: %s\n", TO_STR(s7_name_to_value(s7, "-mibl-ws-table"))); */
 
                 return s7_name_to_value(s7, "-mibl-ws-table");
             }
@@ -1500,13 +1506,16 @@ EXPORT s7_pointer g_load_dune(s7_scheme *s7,  s7_pointer args)
                 /* s7_pointer q = s7_name_to_value(s7, "quote"); */
                 if (pathdir) {
                     s7_pointer _pkg_tbl = load_dune(rootdir, pathdir);
+                    printf(RED "LOADED DUNE 2" CRESET "\n");
+
+                    //FIXME: is this needed?
 
                     //TODO: use s7_eval?
-                    s7_eval_c_string_with_environment(s7,
-                                                      "(set-cdr! (assoc-in '(@ pkgs) -mibl-ws-table) (list _pkg_tbl))",
-                                                      s7_inlet(s7, s7_list(s7, 1,
-                                                                           s7_cons(s7, s7_make_symbol(s7, "_pkg_tbl"), _pkg_tbl))));
-                    printf("root_ws 2: %s\n", TO_STR(s7_name_to_value(s7, "-mibl-ws-table")));
+                    /* s7_eval_c_string_with_environment(s7, */
+                    /*                                   "(set-cdr! (assoc-in '(:@ :pkgs) -mibl-ws-table) (list _pkg_tbl))", */
+                    /*                                   s7_inlet(s7, s7_list(s7, 1, */
+                    /*                                                        s7_cons(s7, s7_make_symbol(s7, "_pkg_tbl"), _pkg_tbl)))); */
+                    /* /\* printf("root_ws 2: %s\n", TO_STR(s7_name_to_value(s7, "-mibl-ws-table"))); *\/ */
 
                     return s7_name_to_value(s7, "-mibl-ws-table");
 
@@ -1536,24 +1545,29 @@ EXPORT s7_pointer g_load_dune(s7_scheme *s7,  s7_pointer args)
         /* strlcpy(rootdir, s, 256); */
         /* rootdir = "test"; */
     }
-    /* should not happen? */
-    _pkg_tbl = load_dune(rootdir, pathdir);
 
-    //  (set-cdr! (assoc-in '(@ pkgs) -mibl-ws-table) )
-    s7_eval(s7, s7_list(s7, 3,
-                        _s7_set_cdr,
-                        s7_list(s7, 3,
-                                assoc_in,
-                                s7_list(s7, 2,
-                                        s7_make_symbol(s7, "@"),
-                                        s7_make_symbol(s7, "pkgs")),
-                                s7_name_to_value(s7, "-mibl-ws-table")),
-                        _pkg_tbl),
-            s7_rootlet(s7));
+    /* char *sexp = "(set-cdr! " */
+    /*     "(assoc-in '(:@ :pkgs) -mibl-ws-table) " */
+    /*     "_pkg_tbl)"; */
 
-    printf("root_ws 3: %s\n", TO_STR(s7_name_to_value(s7, "-mibl-ws-table")));
+    /* s7_eval_c_string(s7, sexp); */
+    /* s7_eval_c_string_with_environment(s7, sexp, */
+    /*                                   s7_inlet(s7, s7_list(s7, 1, */
+    /*                                                        s7_cons(s7, s7_make_symbol(s7, "_pkg_tbl"), _pkg_tbl)))); */
 
-    return s7_name_to_value(s7, "-mibl-ws-table");
+    /* s7_eval(s7, s7_list(s7, 3, */
+    /*                     _s7_set_cdr, */
+    /*                     s7_list(s7, 3, */
+    /*                             assoc_in, */
+    /*                             /\* FIXME: figure out how to quote this *\/ */
+    /*                             s7_list(s7, 2, */
+    /*                                     s7_make_keyword(s7, "@"), */
+    /*                                     s7_make_keyword(s7, "pkgs")), */
+    /*                             s7_name_to_value(s7, "-mibl-ws-table")), */
+    /*                     _pkg_tbl), */
+    /*         s7_rootlet(s7)); */
+
+    /* printf("root_ws 3: %s\n", TO_STR(s7_name_to_value(s7, "-mibl-ws-table"))); */
 }
 
 /* FIXME: use same logic for rootdir as */
@@ -1668,9 +1682,10 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
 
     /* s7_pointer pkg_tbl = s7_make_hash_table(s7, PKG_CT); */
     /* s7_define_variable(s7, "pkg-tbl", pkg_tbl); */
+
     s7_pointer pkg_tbl =
-        s7_eval_c_string(s7, "(cadr (assoc-in '(@ pkgs) -mibl-ws-table))");
-    printf("pkg_tbl: %s\n", TO_STR(pkg_tbl));
+        s7_eval_c_string(s7, "(cadr (assoc-in '(:@ :pkgs) -mibl-ws-table))");
+    log_debug("building pkg_tbl: %s\n", TO_STR(pkg_tbl));
 
     char *ext;
 
@@ -1808,5 +1823,9 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
         log_debug("FTS_F: %d", FTS_F);
         log_debug("exiting load_dune");
     }
+    /* s7_pointer pkg_tbl = */
+    /*     s7_eval_c_string(s7, "(set-cdr! (assoc-in '(:@ :pkgs) -mibl-ws-table))"); */
+
+    /* we were called by g_load_dune, which expects pkg tbl: */
     return pkg_tbl;
 }

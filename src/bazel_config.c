@@ -133,9 +133,12 @@ char *_effective_ws_root(char *dir)
 
 char *effective_ws_root(char *_dir)
 {
-   /* log_debug("effective_ws_root: %s", dir); */
-   char *dir = strdup(_dir);
-   return _effective_ws_root(dir);
+    /* log_debug("effective_ws_root: %s", dir); */
+    /* use realpath to remove cwd dot, e.g. /home/uid/foo/bar.  */
+    char *d = realpath(_dir, NULL); /* FIXME: d must be freed */
+    char *dir = strdup(d);
+    free(d);
+    return _effective_ws_root(dir);
 }
 
 /*
