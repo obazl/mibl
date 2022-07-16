@@ -171,9 +171,10 @@ bool _is_ws_root(FTSENT *ftsentry)
 LOCAL void _handle_dir(s7_pointer pkg_tbl, FTS* tree, FTSENT *ftsentry)
 {
     if (debug) {
-        log_debug("_handle_dir %s", ftsentry->fts_name);
+        log_debug("_handle_dir: %s", ftsentry->fts_name);
         log_info("%-20s%s", "base ws:", bws_root);
         log_info("%-20s%s", "effective ws:",ews_root);
+        log_info("%-20s%s", "ftsentry->name:", ftsentry->fts_name);
         log_info("%-20s%s", "ftsentry->path:", ftsentry->fts_path);
         log_info("%-20s%s", "ftsentry->accpath:", ftsentry->fts_accpath);
     }
@@ -204,12 +205,14 @@ LOCAL void _handle_dir(s7_pointer pkg_tbl, FTS* tree, FTSENT *ftsentry)
         /* process the "." passed to fts_open, skip any others */
         if (ftsentry->fts_pathlen > 1) {
             // do not process children of hidden dirs
-            printf("Skipping dotted dir: %s\n", ftsentry->fts_name);
+            printf("Skipping dotted dir: %s/%s\n",
+                   ftsentry->fts_path, ftsentry->fts_name);
             fts_set(tree, ftsentry, FTS_SKIP);
             return;
         } else
             printf("ROOT DOT dir\n");
     }
+
 
     /* // fts_path is relative to traversal root */
     /* printf("DIR path    %s\n", ftsentry->fts_path); */
@@ -218,6 +221,7 @@ LOCAL void _handle_dir(s7_pointer pkg_tbl, FTS* tree, FTSENT *ftsentry)
     /* printf("DIR accpath %s\n", ftsentry->fts_accpath); */
 
     s7_pointer key = s7_make_string(s7, ftsentry->fts_path);
+    printf(RED "pkg-path: %s" CRESET "\n", TO_STR(key));
     /* s7_pointer test_assoc = s7_list(s7, 2, */
     /*                                 s7_make_keyword(s7, "test"), */
     /*                                 s7_make_symbol(s7, "dummy")); */
@@ -228,6 +232,9 @@ LOCAL void _handle_dir(s7_pointer pkg_tbl, FTS* tree, FTSENT *ftsentry)
     char *rpath = realpath(ftsentry->fts_path, NULL);
     /* FIXME: check result */
     /* s7_pointer result = */
+
+    /* printf("PKG TBL: %s\n", TO_STR(pkg_tbl)); */
+
     s7_hash_table_set(s7, pkg_tbl, key,
                       s7_list(s7, 3,
                               //FIXME: use a ws-alist instead of
@@ -296,15 +303,15 @@ LOCAL void _update_pkg_files(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
     }
 
     /* s7_pointer pkg_tbl = s7_name_to_value(s7, "pkg-tbl"); */
-    if (debug)
-        log_debug("pkg_tbl: %s", TO_STR(pkg_tbl));
+    /* if (debug) */
+    /*     log_debug("pkg_tbl: %s", TO_STR(pkg_tbl)); */
 
     char *pkg_name = dirname(ftsentry->fts_path);
 
     s7_pointer pkg_key = s7_make_string(s7, pkg_name);
     s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
-    if (debug)
-        log_debug("pkg_alist: %s", TO_STR(pkg_alist));
+    /* if (debug) */
+    /*     log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
 
     char *file_ext =  strrchr(ftsentry->fts_name, '.');
     file_ext++; // exclude dot
@@ -414,15 +421,15 @@ LOCAL void _update_pkg_script_files(s7_pointer pkg_tbl,
     }
 
     /* s7_pointer pkg_tbl = s7_name_to_value(s7, "pkg-tbl"); */
-    if (debug)
-        log_debug("pkg_tbl: %s", TO_STR(pkg_tbl));
+    /* if (debug) */
+    /*     log_debug("pkg_tbl: %s", TO_STR(pkg_tbl)); */
 
     char *pkg_name = dirname(ftsentry->fts_path);
 
     s7_pointer pkg_key = s7_make_string(s7, pkg_name);
     s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
-    if (debug)
-        log_debug("pkg_alist: %s", TO_STR(pkg_alist));
+    /* if (debug) */
+    /*     log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
 
     if (pkg_alist == s7_f(s7)) {
         // FIXME: should not happen, we always add a pkg entry first
@@ -500,14 +507,14 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
     }
     if (debug) {
         log_debug("pkg_name: %s", pkg_name);
-        log_debug("pkg_tbl: %s", TO_STR(pkg_tbl));
+        /* log_debug("pkg_tbl: %s", TO_STR(pkg_tbl)); */
     }
     s7_pointer pkg_key = s7_make_string(s7, pkg_name);
     if (debug)
         log_debug("pkg_key: %s", TO_STR(pkg_key));
     s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
-    if (debug)
-        log_debug("pkg_alist: %s", TO_STR(pkg_alist));
+    /* if (debug) */
+    /*     log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
 
     if (pkg_alist == s7_f(s7)) {
         if (debug)
@@ -577,9 +584,9 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
             s7_pointer new_pkg_alist = s7_append(s7, pkg_alist,
                                                  s7_list(s7, 1,
                                                          modules_assoc));
-            if (debug)
-                log_debug("pkg_alist: %s",
-                       TO_STR(new_pkg_alist));
+            /* if (debug) */
+            /*     log_debug("pkg_alist: %s", */
+            /*            TO_STR(new_pkg_alist)); */
 
             s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg_alist);
         } else {
@@ -599,7 +606,7 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
             if (debug) {
                 log_debug("assoc-in: %s", TO_STR(assoc_in));
                 log_debug("keypath: %s", TO_STR(keypath));
-                log_debug("pkg_alist: %s", TO_STR(pkg_alist));
+                /* log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
             }
 
             s7_pointer module_alist = s7_call(s7, assoc_in,
@@ -688,13 +695,13 @@ LOCAL void _update_pkg_sigs(s7_pointer pkg_tbl,
     }
     if (debug) {
         log_debug("pkg_name: %s", pkg_name);
-        log_debug("pkg_tbl: %s", TO_STR(pkg_tbl));
+        /* log_debug("pkg_tbl: %s", TO_STR(pkg_tbl)); */
     }
     s7_pointer pkg_key = s7_make_string(s7, pkg_name);
     if (debug) log_debug("pkg_key: %s", TO_STR(pkg_key));
 
     s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
-    if (debug) log_debug("pkg_alist: %s", TO_STR(pkg_alist));
+    /* if (debug) log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
 
     if (pkg_alist == s7_f(s7)) {
         if (debug)
@@ -739,9 +746,9 @@ LOCAL void _update_pkg_sigs(s7_pointer pkg_tbl,
             s7_pointer new_pkg_alist = s7_append(s7, pkg_alist,
                                                  s7_list(s7, 1,
                                                          sigs_assoc));
-            if (debug)
-                log_debug("pkg_alist: %s",
-                       TO_STR(new_pkg_alist));
+            /* if (debug) */
+            /*     log_debug("pkg_alist: %s", */
+            /*            TO_STR(new_pkg_alist)); */
 
             s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg_alist);
         } else {
@@ -758,7 +765,7 @@ LOCAL void _update_pkg_sigs(s7_pointer pkg_tbl,
             if (debug) {
                 /* log_debug("assoc-in: %s", TO_STR(assoc_in)); */
                 log_debug("keypath: %s", TO_STR(keypath));
-                log_debug("pkg_alist: %s", TO_STR(pkg_alist));
+                /* log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
             }
 
             s7_pointer sig_alist = s7_call(s7, assoc_in,
@@ -838,13 +845,13 @@ LOCAL void _update_pkg_structs(s7_pointer pkg_tbl,
     }
     if (debug) {
         log_debug("pkg_name: %s", pkg_name);
-        log_debug("pkg_tbl: %s", TO_STR(pkg_tbl));
+        /* log_debug("pkg_tbl: %s", TO_STR(pkg_tbl)); */
     }
     s7_pointer pkg_key = s7_make_string(s7, pkg_name);
     if (debug) log_debug("pkg_key: %s", TO_STR(pkg_key));
 
     s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
-    if (debug) log_debug("pkg_alist: %s", TO_STR(pkg_alist));
+    /* if (debug) log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
 
     if (pkg_alist == s7_f(s7)) {
         if (debug)
@@ -889,9 +896,9 @@ LOCAL void _update_pkg_structs(s7_pointer pkg_tbl,
             s7_pointer new_pkg_alist = s7_append(s7, pkg_alist,
                                                  s7_list(s7, 1,
                                                          structs_assoc));
-            if (debug)
-                log_debug("pkg_alist: %s",
-                       TO_STR(new_pkg_alist));
+            /* if (debug) */
+            /*     log_debug("pkg_alist: %s", */
+            /*            TO_STR(new_pkg_alist)); */
 
             s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg_alist);
         } else {
@@ -908,7 +915,7 @@ LOCAL void _update_pkg_structs(s7_pointer pkg_tbl,
             if (debug) {
                 log_debug("assoc-in: %s", TO_STR(assoc_in));
                 log_debug("keypath: %s", TO_STR(keypath));
-                log_debug("pkg_alist: %s", TO_STR(pkg_alist));
+                /* log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
             }
 
             s7_pointer struct_alist = s7_call(s7, assoc_in,
@@ -1188,8 +1195,8 @@ LOCAL void _handle_dune_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
         log_debug("pkg key: %s", TO_STR(pkg_key));
 
     s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
-    if (debug)
-        log_debug("pkg_alist: %s", TO_STR(pkg_alist));
+    /* if (debug) */
+    /*     log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
 
     s7_pointer assoc = _load_assoc();
     if (assoc == s7_undefined(s7)) {
@@ -1215,9 +1222,8 @@ LOCAL void _handle_dune_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
         s7_set_cdr(stanzas_alist, stanzas);
     }
 
-    if (debug)
-        log_debug("updated pkg-tbl: %s", TO_STR(pkg_tbl));
-
+    /* if (debug) */
+    /*     log_debug("updated pkg-tbl: %s", TO_STR(pkg_tbl)); */
 }
 
 LOCAL void _handle_dune_project_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
@@ -1243,8 +1249,8 @@ LOCAL void _handle_dune_project_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
         log_debug("pkg key: %s", TO_STR(key));
 
     s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, key);
-    if (debug)
-        log_debug("pkg_alist: %s", TO_STR(pkg_alist));
+    /* if (debug) */
+    /*     log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
 
     s7_pointer dune_project_assoc = s7_cons(s7, dune_project_sym,
                                             stanzas);
@@ -1256,8 +1262,8 @@ LOCAL void _handle_dune_project_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
                       s7_append(s7, pkg_alist,
                                 s7_list(s7, 1,
                                         dune_project_assoc)));
-    if (debug)
-        log_debug("updated pkg-tbl: %s", TO_STR(pkg_tbl));
+    /* if (debug) */
+    /*     log_debug("updated pkg-tbl: %s", TO_STR(pkg_tbl)); */
 
     /* return pkg_tbl; */
 }
@@ -1641,6 +1647,9 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
         NULL
     };
     if (debug) log_debug("_traversal_root: %s\n", _traversal_root[0]);
+    if (debug) log_debug("real _traversal_root: %s\n",
+                         realpath(_traversal_root[0], NULL));
+
     errno = 0;
     tree = fts_open(_traversal_root,
                     FTS_COMFOLLOW
