@@ -184,10 +184,10 @@ LOCAL void _handle_dir(s7_pointer pkg_tbl, FTS* tree, FTSENT *ftsentry)
         /* is this a ws root? */
         if (_is_ws_root(ftsentry)) {
             log_debug("SKIPPING ws root: %s", ftsentry->fts_path);
-            log_debug("SKIPPING ws root: %s", ftsentry->fts_path);
             /* do not process */
-            fts_set(tree, ftsentry, FTS_SKIP);
-            return;
+            /* Why? */
+            /* fts_set(tree, ftsentry, FTS_SKIP); */
+            /* return; */
         }
     }
 
@@ -221,7 +221,8 @@ LOCAL void _handle_dir(s7_pointer pkg_tbl, FTS* tree, FTSENT *ftsentry)
     /* printf("DIR accpath %s\n", ftsentry->fts_accpath); */
 
     s7_pointer key = s7_make_string(s7, ftsentry->fts_path);
-    printf(RED "pkg-path: %s" CRESET "\n", TO_STR(key));
+    if (trace)
+        printf(RED "pkg-path: %s" CRESET "\n", TO_STR(key));
     /* s7_pointer test_assoc = s7_list(s7, 2, */
     /*                                 s7_make_keyword(s7, "test"), */
     /*                                 s7_make_symbol(s7, "dummy")); */
@@ -1090,26 +1091,30 @@ LOCAL void _handle_ml_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
     }
     else if ((strncmp(ext, ".mlh", 4) == 0)
         && (strlen(ext) == 4)) {
-        printf(RED ":%-6s %s\n" CRESET, "mlh", ftsentry->fts_name);
+        if (debug)
+            printf(RED ":%-6s %s\n" CRESET, "mlh", ftsentry->fts_name);
     }
     else if ((strncmp(ext, ".mllib", 6) == 0)
         && (strlen(ext) == 6)) {
-        printf(RED ":%-6s %s\n" CRESET, "mllib", ftsentry->fts_name);
+        if (debug)
+            printf(RED ":%-6s %s\n" CRESET, "mllib", ftsentry->fts_name);
     }
     else if ((strncmp(ext, ".mligo", 6) == 0)
         && (strlen(ext) == 6)) {
         /* tezos */
-        printf(BLU ":%-6s" CRESET " %s\n", "mligo", ftsentry->fts_name);
+        if (debug)
+            printf(BLU ":%-6s" CRESET " %s\n", "mligo", ftsentry->fts_name);
     }
     else if ((strncmp(ext, ".mldylib", 8) == 0)
         && (strlen(ext) == 8)) {
         /* mina */
-        printf(RED ":%-6s %s\n" CRESET, "mldylib", ftsentry->fts_name);
+        if (debug)
+            printf(RED ":%-6s %s\n" CRESET, "mldylib", ftsentry->fts_name);
     }
     else if ((strncmp(ext, ".md", 3) == 0)
         && (strlen(ext) == 3)) {
-        printf(BLU ":%-6s" CRESET " %s\n",
-               "md", ftsentry->fts_name);
+        if (debug)
+            printf(BLU ":%-6s" CRESET " %s\n", "md", ftsentry->fts_name);
     }
     else {
         printf(RED "UNKNOWN ml ext: :%-6s\n" CRESET, ext);
@@ -1434,7 +1439,8 @@ EXPORT s7_pointer g_load_dune(s7_scheme *s7,  s7_pointer args)
         rootdir = getcwd(NULL, 0);
         pathdir = ".";
         _pkg_tbl = load_dune(rootdir, pathdir);
-        printf(RED "LOADED DUNE NOARG" CRESET "\n");
+        if (trace)
+            printf(RED "LOADED DUNE NOARG" CRESET "\n");
         return s7_name_to_value(s7, "-mibl-ws-table");
     } else {
         s7_int args_ct = s7_list_length(s7, args);
