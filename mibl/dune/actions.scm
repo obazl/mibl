@@ -4,7 +4,7 @@
 (load "dune/actions_with_output_to.scm")
 
 ;; (system <cmd>), (bash <cmd>), (echo <string>)
-(define (normalize-action-shell-cmd pkg action action-alist targets deps)
+(define (normalize-action-shell-cmd ws pkg action action-alist targets deps)
   ;; FIXME: shell cmd args may include filename literals; find way to expand?
   ;; FIXME: may include ${target}
   ;; FIXME: in general: expand all '${}' in args
@@ -15,8 +15,8 @@
        (:tool ,tool)
        (cons :args ,@action-args)))))
 
-(define (normalize-action-chdir-dsl pkg action-alist targets deps)
-  (format #t "NORMALIZE-ACTION-CHDIR-DSL ~A\n" action-alist)
+(define (normalize-action-chdir-dsl ws pkg action-alist targets deps)
+  (format #t "~A: ~A\n" (blue "normalize-action-chdir-dsl") action-alist)
   (let* ((action-assoc (car action-alist))
          (_ (format #t "action-assoc: ~A\n" action-assoc))
          (ctx (cadr action-assoc))
@@ -27,23 +27,25 @@
          (_ (format #t "subaction: ~A\n" subaction))
          (cmd (if-let ((cmd-fn (assoc-val subaction dune-action-cmds-dsl)))
                       (let ((cmd-list (apply (car cmd-fn)
-                                             (list pkg
+                                             (list ws pkg
                                                    (list subaction-alist)
                                                    targets deps))))
                         cmd-list)
                       (begin
                         (format #t "UNHANDLED ACTION: ~A\n" action)
                         stanza))))
-    (list (cons :cmd cmd)
-          `(:ctx ,ctx))))
+    (append cmd
+          `((:ctx ,ctx)))))
 
 ;; cat, cmp, copy, copy#, diff, diff?
-(define (normalize-action-file-op pkg action action-alist targets deps)
+(define (normalize-action-file-op ws pkg action action-alist targets deps)
   (format #t "~A: ~A\n" (blue "normalize-action-file-op") pkg)
+  (format #t "~A: ~A\n" (green "ws") ws)
   (format #t "  action: ~A\n" action)
   (format #t "  action-alist: ~A\n" action-alist)
   (format #t "  targets: ~A\n" targets)
   (format #t "  deps: ~A\n" deps)
+  (format #t "  deps (dune): ~A\n" (assoc-in '(dune rule deps) pkg))
   (let* ((tool action) ;; (run-action->toolname pkg-path action stanza))
          (action-args (assoc-val action action-alist))
          (_ (format #t "action-args: ~A\n" action-args))
@@ -95,7 +97,7 @@
   '()
   )
 
-(define (normalize-action-progn-dsl pkg action-alist targets deps)
+(define (normalize-action-progn-dsl ws pkg action-alist targets deps)
   ;; (format #t "NORMALIZE-ACTION-PROGN-DSL ~A\n" action-alist)
   (let* ((progn-alist (cdar action-alist))
          ;;(_ (format #t "progn-alist: ~A\n" progn-alist))
@@ -112,14 +114,15 @@
                        ;; (_ (format #t "args: ~A\n" args))
                        (cmd (if-let ((cmd-fn (assoc-val action dune-action-cmds-no-dsl)))
                                     (let ((cmd-list (apply (car cmd-fn)
-                                                           (list pkg action
+                                                           (list ws pkg
+                                                                 action
                                                                  (list progn)
                                                                  targets deps))))
                                       cmd-list)
                                     (if-let ((cmd-fn (assoc-val subaction
                                                                 dune-action-cmds-dsl)))
                                             (let ((cmd-list (apply (car cmd-fn)
-                                                                   (list pkg
+                                                                   (list ws pkg
                                                                          (list subaction-alist)
                                                                          targets deps))))
                                               cmd-list)
@@ -131,7 +134,7 @@
     (list (cons :progn progns))))
 
 ;; called for (action (run ...) ...)
-(define (normalize-action-run-dsl pkg action-alist targets deps)
+(define (normalize-action-run-dsl ws pkg action-alist targets deps)
   (format #t "~A: ~A\n" (blue "normalize-action-run-dsl") action-alist)
   (let* ((run-alist (cdar action-alist))
          (cmd (car (expand-cmd-list run-alist targets deps))))
@@ -148,7 +151,7 @@
   '()
   )
 
-(define (normalize-action-with-outputs-to-dsl pkg action-alist targets deps)
+(define (normalize-action-with-outputs-to-dsl ws pkg action-alist targets deps)
   (format #t "~A: ~A\n" (blue "normalize-action-with-outputs-to-dsl")
           action-alist)
   (let* ((action-assoc (car action-alist))
@@ -164,7 +167,7 @@
          (cmd (if-let ((cmd-fn (assoc-val subaction
                                           dune-action-cmds-no-dsl)))
                       (let ((cmd-list (apply (car cmd-fn)
-                                             (list pkg
+                                             (list ws pkg
                                                    subaction
                                                    (list subaction-alist)
                                                    targets deps))))
@@ -172,7 +175,7 @@
                       (if-let ((cmd-fn (assoc-val subaction
                                                   dune-action-cmds-dsl)))
                               (let ((cmd-list (apply (car cmd-fn)
-                                                     (list pkg
+                                                     (list ws pkg
                                                            (list subaction-alist)
                                                            targets deps))))
                                 cmd-list)
@@ -193,21 +196,31 @@
   '()
   )
 
-(define (normalize-action-write-file pkg action action-alist targets deps)
+(define (normalize-action-write-file ws pkg action action-alist targets deps)
   (format #t "~A: ~A\n" (blue "normalize-action-write-file") action)
-  ;; (format #t "    action-alist ~A\n" action-alist)
+  (format #t "~A: ~A\n" (green "ws") ws)
+  (format #t "    action-alist: ~A\n" action-alist)
+  (format #t "    targets: ~A\n" targets)
 
   (let* ((args (assoc-val 'write-file action-alist))
+         (_ (format #t "args: ~A\n" args))
+         ;; (args (cdr args))
          (file (car args))
-         ;; (_ (format #t "file: ~A\n" file))
+         (_ (format #t "file: ~A\n" file))
          (content `(:content ,(cadr args)))
-         (args (car (expand-deps (list file)
-                                pkg ;; paths
-                                ;; action-alist
-                                '()))))
+         (_ (format #t "content: ~A\n" content))
+
+         (target (if (null? targets)
+                     file
+                     (cadar targets))))
+
+    ;; update exports table with outfile
+    (update-exports-table! ws :_ target
+                           (car (assoc-val :pkg-path pkg)))
+
     `((:cmd
-       ((:tool ,action)
-        ,(cons :args (list args content)))))))
+       (:tool :skylib-write-file)
+       ,(cons :args (list `(:_ ,(format #f "~A" target)) content))))))
 
     ;; `(:write-file
     ;;   (:out ,outfile)
@@ -497,7 +510,7 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define (normalize-action pkg stanza-alist targets deps) ;; rule stanza
+(define (normalize-action ws pkg stanza-alist targets deps) ;; rule stanza
   (format #t "~A: ~A\n" (blue "normalize-action") stanza-alist)
   (let* ((action-assoc (assoc 'action stanza-alist))
          (action-alist (assoc-val 'action stanza-alist))
@@ -510,11 +523,12 @@
 
     (if-let ((cmd-fn (assoc-val action dune-action-cmds-no-dsl)))
             (let ((cmd-list (apply (car cmd-fn)
-                            (list pkg action action-alist targets deps))))
+                            (list ws pkg action action-alist targets deps))))
               cmd-list)
             (if-let ((cmd-fn (assoc-val action dune-action-cmds-dsl)))
                     (let ((cmd-list (apply (car cmd-fn)
-                                      (list pkg action-alist targets deps))))
+                                           (list ws pkg
+                                                 action-alist targets deps))))
                       cmd-list)
                     (begin
                       (format #t "UNHANDLED ACTION: ~A\n" action)

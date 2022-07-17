@@ -1,7 +1,7 @@
 ;; (display "pkg_api.scm") (newline)
 
 ;; return normalized path relative to ws-root
-(define (resolve-pkg-path path ws-root)
+(define (normalize-pkg-path path ws-root)
   ;; path is not in pkg-path dir
   (let ((rp (realpath path (string))))
     ;; (format #t "f rel path: ~A\n" path)

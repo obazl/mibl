@@ -147,6 +147,7 @@
 
 (define (dune-pkg->mibl ws pkg)
   (format #t "~A: ~A\n" (blue "dune-pkg->mibl") pkg)
+  (format #t "~A: ~A\n" (green "ws") ws)
   (let* ((nstanzas (list :dune))
          (pkg+ (append pkg (list nstanzas))))
     (format #t "pkg+: ~A\n" (assoc 'dune pkg+))
@@ -166,7 +167,7 @@
                     normed))
                 ;; (cdr dune-stanzas))))
                 (assoc-val 'dune pkg+))))
-          (format #t "NEW PKG: ~A\n" pkg+)
+          ;; (format #t "NEW PKG: ~A\n" pkg+)
           pkg+)
         (begin
           (format #t "~A ~A\n" (red "WARNING: no dune pkg for") pkg)

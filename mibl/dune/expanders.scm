@@ -282,9 +282,9 @@
                      (cond
                       ((eq? '%{deps} arg)
                        (let ((exp (expand-cmd-args (cdr args) targets deps))
-                             (xdeps (-deps->srcs "fake" deps)))
-                         (format #t "YYYYYYYYYYYYYYYY: ~A\n" xdeps)
-                         (append xdeps exp)))
+                             ;; (xdeps (-deps->srcs-attr "fake" deps))
+                             )
+                         (append '(::deps) exp)))
                       ((eq? '%{workspace_root} arg)
                        (cons :WS-ROOT
                              (expand-cmd-args (cdr args) targets deps)))
@@ -424,7 +424,7 @@ write-file))
             ;; car is atom
             (let* ((kw (car raw-cmds)))
               (if (member kw dune-dsl-cmds)
-                  `(((:Tool ,kw)
+                  `(((:tool ,kw)
                      (:args
                       ,@(expand-cmd-args (cdr raw-cmds) targets deps))))
 

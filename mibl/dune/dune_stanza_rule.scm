@@ -144,6 +144,7 @@
   (let ((+documentation+ "INTERNAL. Updates pkg arg, returns normalized stanza. stanza: raw dune stanza (input); nstanza: normalized (output)"))
     (lambda (ws pkg stanza)
       (format #t "~A: ~A\n" (blue "dune-rule->mibl") stanza)
+      (format #t "~A: ~A\n" (green "ws") ws)
       ;; for other stanza types we can normalize fields in isolation. For
       ;; 'rule' stanzas, we need a higher level of analysis, so we cannot
       ;; 'map' over the fields. Instead we extract the fields into local
@@ -194,7 +195,9 @@
         ;; https://dune.readthedocs.io/en/stable/concepts.html#user-actions
         (if (assoc 'action rule-alist)
             ;; the main dispatcher is 'normalize-action'
-            (let* ((nzaction (normalize-action pkg rule-alist targets deps))
+            (let* ((nzaction (normalize-action
+
+                              ws pkg rule-alist targets deps))
                    (_ (format #t "~A: ~A\n"
                               (red "normalized action") nzaction))
                    ;; (rule-tag (-action->rule-tag nzaction))

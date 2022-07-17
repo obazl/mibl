@@ -14,13 +14,17 @@
                 ((:lib) (symbol (format #f "lib:~A" name)))
                 ((:libexec) (symbol (format #f "libexec:~A" name)))
                 (else name)))
-         (spec `((,tag #t)
+         (tag (case tag
+                ((:bin :lib :libexec) (list (cons tag #t)))
+                (else '())))
+         (spec `(,@tag
                  (:pkg ,pkg-path)
                  (:tgt ,(format #f "~A" name)))))
     (format #t "hidden exports tbl: ~A\n" exports)
 
     (format #t "adding ~A to exports tbl\n" name)
-    (hash-table-set! exports key spec)))
+    (hash-table-set! exports key spec)
+    (format #t "updated exports tbl: ~A\n" exports)))
 ;;(car (assoc-val :pkg-path pkg)))))
 
 (define (-fixup-deps! ws stanza)
@@ -30,10 +34,12 @@
     (format #t "fixup hidden exports tbl: ~A\n" exports)
     (case (car stanza)
       ((:ns-archive)
+       (format #t "~A~%" (magenta "fixup :ns-archive"))
        (let ((deps (assoc-val :deps stanza-alist)))
          (format #t "ns-archive deps: ~A~%" deps)))
 
       ((:executable)
+       (format #t "~A~%" (magenta "fixup :executable"))
        ;; FIXME: also handle :dynamic
        (let ((deps (assoc-in '(:compile :deps :fixed) stanza-alist)))
          (format #t "exec deps: ~A~%" deps)
@@ -48,23 +54,32 @@
                ))
 
       ((:rule)
-       ;; tool and deps
+       (format #t "~A~%" (magenta "fixup :rule"))
        (let ((targets (assoc-val :targets stanza-alist))
              (deps (assoc-val :deps stanza-alist))
              (action (assoc-val :action stanza-alist))
              (tool (assoc-in '(:action :cmd :tool) stanza-alist)))
-         (format #t "rule action: ~A~%" action)
-         (format #t "rule tool: ~A~%" tool)
-         (format #t "rule targets: ~A~%" targets)
-         (format #t "rule deps: ~A~%" deps)
-         (let* ((tool-label (hash-table-ref exports (cadr tool)))
-                (_ (format #t "tool-label: ~A~%" tool-label))
-                (pkg (car (assoc-val :pkg tool-label)))
-                (tgt (car (assoc-val :tgt tool-label)))
-                (label (format #f "//~A:~A" pkg tgt)))
-           (format #t "tool-label: ~A\n" tool-label)
-           (set-cdr! tool (list label))
-           '())))
+
+         ;; if rule is :progn, then interate over the list of (:cmd ...)
+         (if (equal? :progn (caar action))
+             (for-each (lambda (c)
+                         (format #t "~A\n" (assoc-in
+                                            '(:args :_) (cdr c))))
+                       (cdar action))
+             (begin
+               (format #t "rule action: ~A~%" action)
+               (format #t "rule tool: ~A~%" tool)
+               (format #t "rule targets: ~A~%" targets)
+               (format #t "rule deps: ~A~%" deps)
+               (if-let ((tool-label (hash-table-ref exports (cadr tool))))
+                       (let* ((_ (format #t "tool-label: ~A~%" tool-label))
+                              (pkg (car (assoc-val :pkg tool-label)))
+                              (tgt (car (assoc-val :tgt tool-label)))
+                              (label (format #f "//~A:~A" pkg tgt))
+                              (_ (format #t "tool-label: ~A\n" tool-label)))
+                         (set-cdr! tool (list label)))
+                       ;; FIXME: handle deps
+                       '())))))
 
       (else
        (error 'unhandled (format #f "-fixup-deps!: ~A\n" (car stanza)))))))
@@ -76,14 +91,13 @@
       (format #t "~A for ws: ~A\n" (blue "resolve-labels") ws)
               ;; (assoc-val 'name ws))
       (let* ((pkgs (car (assoc-val :pkgs ws)))
-             (_ (format #t "PKGS: ~A\n" pkgs))
+             ;; (_ (format #t "PKGS: ~A\n" pkgs))
              (exports (car (assoc-val :exports ws))))
-        (format #t "resolving labels for pkgs: ~A\n"
-                (hash-table-keys pkgs))
-        (format #t "exports: ~A\n" exports)
+        ;; (format #t "resolving labels for pkgs: ~A\n" (hash-table-keys pkgs))
+        ;; (format #t "exports: ~A\n" exports)
         (for-each (lambda (kv)
-                    (format #t "pkg path: ~A~%" (car kv))
-                    (format #t "pkg: ~A~%" (cdr kv))
+                    ;; (format #t "pkg path: ~A~%" (car kv))
+                    ;; (format #t "pkg: ~A~%" (cdr kv))
                     (if-let ((stanzas (assoc-val :dune (cdr kv))))
                             (for-each (lambda (stanza)
                                         (-fixup-deps! ws stanza)
