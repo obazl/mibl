@@ -8,6 +8,16 @@ grammar=1.0.0-BETA  ;; version number of config grammar, not obazl program
 
 include = test
 ;; cwd always included
+
+;; broken:
+exclude = test/b
+exclude = test/c
+exclude = test/d
+exclude = test/dune/unit_tests/fields/modules/a
+exclude = test/dune/tezos/lib_requester/test
+exclude = test/dune/tezos/lib_clic/test
+
+;; non-dune dirs
 exclude = bzl
 exclude = convert
 exclude = deploy
