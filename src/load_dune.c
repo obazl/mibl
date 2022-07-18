@@ -39,6 +39,8 @@ void _indent(int i)
 
 UT_string *dunefile_name;
 
+s7_int dune_gc_loc = -1;
+
 LOCAL s7_pointer _read_dunefile(char *path) //, char *fname)
 {
     if (debug)
@@ -59,27 +61,42 @@ LOCAL s7_pointer _read_dunefile(char *path) //, char *fname)
             s7_shutdown(s7);
             exit(EXIT_FAILURE);
         }
+    } else {
+        log_trace("opened port for %s", utstring_body(dunefile_name));
     }
 
-    s7_pointer stanzas = s7_list(s7, 0);
+    dune_gc_loc = s7_gc_protect(s7, port);
+
+    s7_pointer stanzas = s7_list(s7, 0); // s7_nil(s7));
 
     close_error_config();
+    init_error_handling();
     error_config();
+
+    if (trace)
+        log_trace("reading stanzas of %s\n", utstring_body(dunefile_name));
     /* repeat until all objects read */
     while(true) {
+        printf("reading stanza\n");
         s7_pointer stanza = s7_read(s7, port);
         errmsg = s7_get_output_string(s7, s7_current_error_port(s7));
+
         if ((errmsg) && (*errmsg)) {
             if (debug)
                 log_error("[%s\n]", errmsg);
+            s7_gc_unprotect_at(s7, dune_gc_loc);
             s7_close_input_port(s7, port);
             //if ".)", read file into buffer, convert to "\.)", then
             // read with the scheme reader
-            if (strstr(errmsg, "\"unexpected close paren:")
-                != NULL) {
+            if (strstr(errmsg, "BADDOT") != NULL) {
+                log_info("fixing baddot in %s", utstring_body(dunefile_name));
+                s7_gc_unprotect_at(s7, dune_gc_loc);
                 s7_close_input_port(s7, port);
                 /* clear out old error */
                 close_error_config();
+                init_error_handling();
+                error_config();
+
                 s7_pointer fixed = fix_baddot(dunefile_name);
                 log_debug("FIXED: %s", TO_STR(fixed));
                 if (s7_is_null(s7,stanzas)) {
@@ -90,44 +107,62 @@ LOCAL s7_pointer _read_dunefile(char *path) //, char *fname)
                                         /* s7_list(s7, 1, fixed)); */
                 }
             }
+            close_error_config();
+            init_error_handling();
+            error_config();
             /* s7_quit(s7); */
             /* exit(EXIT_FAILURE); */
             break;
         }
-        if (stanza == s7_eof_object(s7)) break;
-        /* log_debug("SEXP: %s", TO_STR(stanza)); */
-        if (debug)
-            log_debug("stanza: %s",
-                  TO_STR(s7_car(stanza)));
-        if (s7_is_equal(s7, s7_car(stanza),
-                        s7_make_symbol(s7, "include"))) {
-            log_debug("FOUND (include ...)");
-            /* we can't insert a comment, e.g. ;;(include ...)
-               instead we would have to put the included file in an
-               alist and add a :comment entry. but we needn't bother,
-               we're not going for roundtrippability.
-            */
+        printf("readed stanza\n");
 
-            s7_pointer inc_file = s7_cadr(stanza);
-            log_debug("    including %s", TO_STR(inc_file));
-            UT_string *dunepath;
-            utstring_new(dunepath);
-            utstring_printf(dunepath, "%s/%s", path, TO_STR(inc_file));
-            s7_pointer nested = _read_dunefile(utstring_body(dunepath));
-            /* s7_pointer nested = _read_dunefile(path, TO_STR(inc_file)); */
-            log_debug("nested:", TO_STR(nested));
-            stanzas = s7_append(s7,stanzas, nested);
-            /* alt: (:include "(include dune.inc)" (included ...)) */
-        } else {
-            if (s7_is_null(s7,stanzas)) {
-                stanzas = s7_cons(s7, stanza, stanzas);
-            } else{
-                stanzas = s7_append(s7,stanzas, s7_list(s7, 1, stanza));
+        if (stanza == s7_eof_object(s7)) {
+            printf("readed eof\n");
+            break;
+        }
+        /* log_debug("SEXP: %s", TO_STR(stanza)); */
+        /* if (debug) */
+        /*     log_debug("stanza: %s", TO_STR(s7_car(stanza))); */
+
+        if (s7_is_pair(stanza)) {
+            if (s7_is_equal(s7, s7_car(stanza),
+                            s7_make_symbol(s7, "include"))) {
+                log_debug("FOUND (include ...)");
+                /* we can't insert a comment, e.g. ;;(include ...)
+                   instead we would have to put the included file in an
+                   alist and add a :comment entry. but we needn't bother,
+                   we're not going for roundtrippability.
+                */
+
+                s7_pointer inc_file = s7_cadr(stanza);
+                log_debug("    including %s", TO_STR(inc_file));
+                UT_string *dunepath;
+                utstring_new(dunepath);
+                utstring_printf(dunepath, "%s/%s",
+                                //FIXME: dirname may mutate its arg
+                                dirname(path), TO_STR(inc_file));
+                s7_pointer nested = _read_dunefile(utstring_body(dunepath));
+                /* s7_pointer nested = _read_dunefile(path, TO_STR(inc_file)); */
+                log_debug("nested:", TO_STR(nested));
+                stanzas = s7_append(s7,stanzas, nested);
+                /* alt: (:include "(include dune.inc)" (included ...)) */
+            } else {
+                if (s7_is_null(s7,stanzas)) {
+                    stanzas = s7_cons(s7, stanza, stanzas);
+                } else{
+                    stanzas = s7_append(s7,stanzas, s7_list(s7, 1, stanza));
+                }
             }
+        } else {
+            /* stanza not a pair - automatically means corrupt dunefile? */
+            log_error("corrupt dune file? %s\n", utstring_body(dunefile_name));
+            /* if exit-on-error */
+            exit(EXIT_FAILURE);
         }
         /* if (debug) */
         /*     log_debug("stanzas: %s", TO_STR(stanzas)); */
     }
+    s7_gc_unprotect_at(s7, dune_gc_loc);
     s7_close_input_port(s7, port);
 
     return stanzas;
@@ -164,6 +199,23 @@ bool _is_ws_root(FTSENT *ftsentry)
     return false;
 }
 
+LOCAL bool _this_is_hidden(FTSENT *ftsentry)
+{
+    if (ftsentry->fts_name[0] == '.') {
+        /* process the "." passed to fts_open, skip any others */
+        if (ftsentry->fts_pathlen > 1) {
+            // do not process children of hidden dirs
+            if (trace)
+                log_trace("Skipping hidden dir: %s/%s\n",
+                          ftsentry->fts_path, ftsentry->fts_name);
+            return true;
+            /* } else { */
+            /*     printf("ROOT DOT dir\n"); */
+        }
+    }
+    return false;
+}
+
 /*
   create a pkg-tbl entry if dir contains a dune file or at least one
   OCaml source file.
@@ -171,7 +223,8 @@ bool _is_ws_root(FTSENT *ftsentry)
 LOCAL void _handle_dir(s7_pointer pkg_tbl, FTS* tree, FTSENT *ftsentry)
 {
     if (debug) {
-        log_debug("_handle_dir: %s", ftsentry->fts_name);
+        log_debug(CYN "_handle_dir:" CRESET " %s (%s)",
+                  ftsentry->fts_name, ftsentry->fts_path);
         log_info("%-20s%s", "base ws:", bws_root);
         log_info("%-20s%s", "effective ws:",ews_root);
         log_info("%-20s%s", "ftsentry->name:", ftsentry->fts_name);
@@ -181,11 +234,10 @@ LOCAL void _handle_dir(s7_pointer pkg_tbl, FTS* tree, FTSENT *ftsentry)
 
     if (strncmp(ews_root, ftsentry->fts_path,
                  strlen(ftsentry->fts_path)) != 0) {
-        /* is this a ws root? */
+        /* is this a ws root (other than base ws)? */
         if (_is_ws_root(ftsentry)) {
-            log_debug("SKIPPING ws root: %s", ftsentry->fts_path);
-            /* do not process */
-            /* Why? */
+            /* log_debug("SKIPPING ws root: %s", ftsentry->fts_path); */
+            /* do not process embedded subrepos yet */
             /* fts_set(tree, ftsentry, FTS_SKIP); */
             /* return; */
         }
@@ -201,19 +253,6 @@ LOCAL void _handle_dir(s7_pointer pkg_tbl, FTS* tree, FTSENT *ftsentry)
 
     /* create pkg table entry for this dir */
 
-    if (ftsentry->fts_name[0] == '.') {
-        /* process the "." passed to fts_open, skip any others */
-        if (ftsentry->fts_pathlen > 1) {
-            // do not process children of hidden dirs
-            printf("Skipping dotted dir: %s/%s\n",
-                   ftsentry->fts_path, ftsentry->fts_name);
-            fts_set(tree, ftsentry, FTS_SKIP);
-            return;
-        } else
-            printf("ROOT DOT dir\n");
-    }
-
-
     /* // fts_path is relative to traversal root */
     /* printf("DIR path    %s\n", ftsentry->fts_path); */
 
@@ -222,7 +261,7 @@ LOCAL void _handle_dir(s7_pointer pkg_tbl, FTS* tree, FTSENT *ftsentry)
 
     s7_pointer key = s7_make_string(s7, ftsentry->fts_path);
     if (trace)
-        printf(RED "pkg-path: %s" CRESET "\n", TO_STR(key));
+        log_trace(RED "pkg-path: %s" CRESET, TO_STR(key));
     /* s7_pointer test_assoc = s7_list(s7, 2, */
     /*                                 s7_make_keyword(s7, "test"), */
     /*                                 s7_make_symbol(s7, "dummy")); */
@@ -365,10 +404,10 @@ LOCAL void _update_pkg_files(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
                but we need the alist */
             s7_pointer files_alist = s7_cdr(files_assoc);
 
-            if (debug) {
-                log_debug("updating :files");
-                log_debug("files_alist: %s", TO_STR(files_alist));
-            }
+            /* if (debug) { */
+            /*     log_debug("updating :files"); */
+            /*     log_debug("files_alist: %s", TO_STR(files_alist)); */
+            /* } */
 
             /* s7_pointer file_pair = */
             /*     s7_list(s7, 2, */
@@ -474,7 +513,7 @@ LOCAL void _update_pkg_script_files(s7_pointer pkg_tbl,
                        TO_STR(scripts_list));
             }
             s7_pointer new_scripts_list =
-                s7_list(s7, 2,
+                s7_cons(s7,
                         s7_make_string(s7, ftsentry->fts_name),
                         s7_cdr(scripts_list));
             log_debug("new scripts_list: %s",
@@ -993,9 +1032,9 @@ LOCAL void _update_mli(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
     /* printf("_update_mli: "); */
     char *pkg_name = dirname(ftsentry->fts_path);
     char *mname = _module_name(ftsentry, ext);
-    if (verbose) {
-        printf(BLU ":module" CRESET " %s; ", mname);
-        printf("pkg name: %s; fname: %s\n", pkg_name, ftsentry->fts_name);
+    if (trace) {
+        log_trace("_update_mli: %s; ", mname);
+        log_trace("pkg name: %s; fname: %s", pkg_name, ftsentry->fts_name);
     }
     char *ml_name = strdup(ftsentry->fts_name);
     ml_name[strlen(ftsentry->fts_name) - 1] = '\0';
@@ -1026,8 +1065,8 @@ LOCAL void _update_ml(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
     char *pkg_name = dirname(ftsentry->fts_path);
     char *mname = _module_name(ftsentry, ext);
     if (verbose) {
-        printf(BLU ":module" CRESET " %s; ", mname);
-        printf("pkg name: %s; fname: %s\n", pkg_name, ftsentry->fts_name);
+        log_info(BLU "_update_ml:" CRESET " %s; ", mname);
+        log_info("pkg name: %s; fname: %s", pkg_name, ftsentry->fts_name);
     }
 
     char *ml_name = strdup(ftsentry->fts_name);
@@ -1079,45 +1118,40 @@ LOCAL void _handle_ml_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
     else if ((strncmp(ext, ".mlt", 4) == 0)
         /* .mlt - ocamlformat file, not a module */
         && (strlen(ext) == 4)) {
-        printf(":%-6s %s\n" CRESET, "mlt", ftsentry->fts_name);
+        log_warn("UNHANDLED: :%-6s %s", "mlt", ftsentry->fts_name);
     }
     else if ((strncmp(ext, ".mll", 4) == 0)
         && (strlen(ext) == 4)) {
-        printf(BLU ":%-6s" CRESET " %s\n", "mll", ftsentry->fts_name);
+        log_warn("UNHANDLED: :%-6s %s", "mll", ftsentry->fts_name);
     }
     else if ((strncmp(ext, ".mly", 4) == 0)
         && (strlen(ext) == 4)) {
-        printf(BLU ":%-6s" CRESET " %s\n", "mly", ftsentry->fts_name);
+        log_warn("UNHANDLED: :%-6s %s", "mly", ftsentry->fts_name);
     }
     else if ((strncmp(ext, ".mlh", 4) == 0)
         && (strlen(ext) == 4)) {
-        if (debug)
-            printf(RED ":%-6s %s\n" CRESET, "mlh", ftsentry->fts_name);
+        log_warn("UNHANDLED: :%-6s %s", "mlh", ftsentry->fts_name);
     }
     else if ((strncmp(ext, ".mllib", 6) == 0)
         && (strlen(ext) == 6)) {
-        if (debug)
-            printf(RED ":%-6s %s\n" CRESET, "mllib", ftsentry->fts_name);
+        log_warn("UNHANDLED: :%-6s %s", "mllib", ftsentry->fts_name);
     }
     else if ((strncmp(ext, ".mligo", 6) == 0)
         && (strlen(ext) == 6)) {
         /* tezos */
-        if (debug)
-            printf(BLU ":%-6s" CRESET " %s\n", "mligo", ftsentry->fts_name);
+        log_warn("UNHANDLED: :%-6s %s", "mligo", ftsentry->fts_name);
     }
     else if ((strncmp(ext, ".mldylib", 8) == 0)
         && (strlen(ext) == 8)) {
         /* mina */
-        if (debug)
-            printf(RED ":%-6s %s\n" CRESET, "mldylib", ftsentry->fts_name);
+        log_warn("UNHANDLED: :%-6s %s", "mldylib", ftsentry->fts_name);
     }
     else if ((strncmp(ext, ".md", 3) == 0)
         && (strlen(ext) == 3)) {
-        if (debug)
-            printf(BLU ":%-6s" CRESET " %s\n", "md", ftsentry->fts_name);
+        log_warn("UNHANDLED: :%-6s %s", "md", ftsentry->fts_name);
     }
     else {
-        printf(RED "UNKNOWN ml ext: :%-6s\n" CRESET, ext);
+        log_warn(RED "UNKNOWN ml ext: :%-6s\n" CRESET, ext);
         /* exit(EXIT_FAILURE); */
     }
     /* printf("%s" CRESET " ", ftsentry->fts_name); */
@@ -1133,7 +1167,16 @@ LOCAL void _handle_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
     /* _indent(ftsentry->fts_level); */
     /* printf("%d. %s\n", ftsentry->fts_level, ftsentry->fts_name); */
 
-    _update_pkg_files(pkg_tbl, ftsentry, ext);
+    if (ftsentry->fts_name[0] == '.') {
+        // do not process hidden files
+        if (trace) {
+            log_trace("Skipping hidden file: %s/%s\n",
+                      ftsentry->fts_path, ftsentry->fts_name);
+        }
+        return;
+    } else {
+        _update_pkg_files(pkg_tbl, ftsentry, ext);
+    }
 }
 
 LOCAL void _handle_dune_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
@@ -1192,16 +1235,16 @@ LOCAL void _handle_dune_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
     dunefile_ct++;
 
     s7_pointer stanzas = _read_dunefile(ftsentry->fts_path); //, "dune");
-    /* log_debug("stanzas: %s", TO_STR(stanzas)); */
+    log_debug("readed stanzas: %s", TO_STR(stanzas));
 
     s7_pointer pkg_key = s7_make_string(s7, dirname(ftsentry->fts_path));
 
-    if (debug)
-        log_debug("pkg key: %s", TO_STR(pkg_key));
+    if (debug) log_debug("pkg tbl: %s", TO_STR(pkg_tbl));
+    if (debug) log_debug("pkg key: %s", TO_STR(pkg_key));
 
     s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
-    /* if (debug) */
-    /*     log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
+    if (debug)
+        log_debug("pkg_alist: %s", TO_STR(pkg_alist));
 
     s7_pointer assoc = _load_assoc();
     if (assoc == s7_undefined(s7)) {
@@ -1210,10 +1253,12 @@ LOCAL void _handle_dune_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
         s7_error(s7, s7_make_symbol(s7, "unbound-symbol"),
                  s7_list(s7, 1, s7_make_string(s7, "assoc")));
     }
+
     s7_pointer stanzas_alist =
         s7_call(s7, assoc, s7_list(s7, 2,
                                    dune_stanzas_sym,
                                    pkg_alist));
+
     if (stanzas_alist == s7_f(s7)) {
         s7_pointer stanzas_assoc = s7_cons(s7, dune_stanzas_sym, stanzas);
         /* log_debug("appending new stanzas_assoc: %s", TO_STR(stanzas_assoc)); */
@@ -1318,13 +1363,14 @@ LOCAL void _handle_symlink(s7_pointer pkg_tbl, FTS *tree, FTSENT *ftsentry)
 {
     if (strncmp(ftsentry->fts_name, "bazel-", 6) == 0) {
         /* skip Bazel dirs, e.g. bazel-bin */
-        printf("Skipping Bazel dir: %s\n", ftsentry->fts_name);
+        if (verbose)
+            log_info("Skipping Bazel dir: %s", ftsentry->fts_name);
         fts_set(tree, ftsentry, FTS_SKIP);
         return;
     }
 
     if (strncmp(ftsentry->fts_name, "dune", 4) == 0) {
-        log_warn("SYMLINKED dunefile: %s\n", ftsentry->fts_name);
+        log_warn("SYMLINKED dunefile: %s", ftsentry->fts_name);
         return;
     }
 
@@ -1361,7 +1407,9 @@ int _compare(const FTSENT** one, const FTSENT** two)
 
 LOCAL const char *_get_path_dir(s7_pointer arg)
 {
-    printf("_get_path_dir: %s\n", TO_STR(arg));
+    if (trace)
+        printf("_get_path_dir: %s\n", TO_STR(arg));
+
     const char *pathdir = s7_string(arg);
 
     if (pathdir[0] == '/') {
@@ -1429,8 +1477,8 @@ EXPORT s7_pointer g_load_dune(s7_scheme *s7,  s7_pointer args)
     ///s7_pointer root_ws =
     initialize_mibl_data_model(s7);
 
-    s7_pointer _pkg_tbl =
-        s7_eval_c_string(s7, "(cadr (assoc-in '(:@ :pkgs) -mibl-ws-table))");
+    /* FIXME: s7_pointer _pkg_tbl = */
+    s7_eval_c_string(s7, "(cadr (assoc-in '(:@ :pkgs) -mibl-ws-table))");
     /* printf("pkg_tbl: %s\n", TO_STR(_pkg_tbl)); */
 
     const char *rootdir, *pathdir;
@@ -1438,7 +1486,8 @@ EXPORT s7_pointer g_load_dune(s7_scheme *s7,  s7_pointer args)
     if ( s7_is_null(s7, args) ) {
         rootdir = getcwd(NULL, 0);
         pathdir = ".";
-        _pkg_tbl = load_dune(rootdir, pathdir);
+        /* FIXME: _pkg_tbl = */
+        load_dune(rootdir, pathdir);
         if (trace)
             printf(RED "LOADED DUNE NOARG" CRESET "\n");
         return s7_name_to_value(s7, "-mibl-ws-table");
@@ -1471,8 +1520,10 @@ EXPORT s7_pointer g_load_dune(s7_scheme *s7,  s7_pointer args)
                         log_info("item: %s", TO_STR(item));
                     pathdir = _get_path_dir(item);
                     if (pathdir) {
-                        s7_pointer _pkgs = load_dune(rootdir, pathdir);
-                        printf(RED "LOADED DUNE 1" CRESET "\n");
+                        /* FIXME: s7_pointer _pkgs = */
+                        load_dune(rootdir, pathdir);
+                        if (trace)
+                            printf(RED "LOADED DUNE 1" CRESET "\n");
 
                         //FIXME: is this needed?
                         /* if (s7_is_hash_table(_pkgs)) { */
@@ -1507,12 +1558,15 @@ EXPORT s7_pointer g_load_dune(s7_scheme *s7,  s7_pointer args)
             else if (s7_is_string(arg)) {
                 /* one string arg == path relative to current wd */
                 rootdir = getcwd(NULL,0);
-                printf("Rootdir: %s\n", rootdir);
+                if (debug)
+                    printf("Rootdir: %s\n", rootdir);
                 pathdir = _get_path_dir(arg);
                 /* s7_pointer q = s7_name_to_value(s7, "quote"); */
                 if (pathdir) {
-                    s7_pointer _pkg_tbl = load_dune(rootdir, pathdir);
-                    printf(RED "LOADED DUNE 2" CRESET "\n");
+                    /* FIXME: s7_pointer _pkg_tbl = */
+                    load_dune(rootdir, pathdir);
+                    if (trace)
+                        printf(RED "LOADED DUNE 2" CRESET "\n");
 
                     //FIXME: is this needed?
 
@@ -1574,12 +1628,81 @@ EXPORT s7_pointer g_load_dune(s7_scheme *s7,  s7_pointer args)
     /*         s7_rootlet(s7)); */
 
     /* printf("root_ws 3: %s\n", TO_STR(s7_name_to_value(s7, "-mibl-ws-table"))); */
+    return s7_name_to_value(s7, "-mibl-ws-table");
 }
 
-/* FIXME: use same logic for rootdir as */
+bool _include_this(FTSENT *ftsentry)
+{
+    if (trace)
+        log_trace("_include_this? %s (%s)",
+                  ftsentry->fts_name, ftsentry->fts_path);
+
+    if (ftsentry->fts_name[0] == '.') {
+        if (ftsentry->fts_path[0] == '.') {
+            if (strlen(ftsentry->fts_path) == 1) {
+                return true;
+            }
+        }
+    }
+    /* exclusions override inclusiongs */
+    /* if exclude return false */
+    /* otherwise, if include return true else false */
+
+    /* for exclusions we want an exact match */
+    char *ptr = NULL;
+    if (ftsentry->fts_path[0] == '.' & ftsentry->fts_path[1] == '/')
+        ptr = ftsentry->fts_path+2;
+    else
+        ptr = ftsentry->fts_path+2;
+
+    printf("srch ptr: %s\n", ptr);
+    const char **p;
+    p = NULL;
+    p = utarray_find(mibl_config.exclude_dirs,
+                     &ptr,
+                     /* &ftsentry->fts_path, */
+                     strsort);
+    if  (p != NULL) {
+        if (verbose) { // & (verbosity > 2)) {
+            log_info(RED "Excluding:" CRESET " '%s'", ftsentry->fts_path);
+        }
+        return false;
+    }
+
+    /* for inclusions: true if tbl contains prefix of fts_path. so we
+       cannot use utstring_find, we must iterate. */
+    p = NULL;
+    while ( (p=(char**)utarray_next(mibl_config.include_dirs, p))) {
+            log_debug("  testing pfx: '%s', path: '%s'",
+                      *p, ftsentry->fts_path);
+            if (strncmp(p, ftsentry->fts_path, strlen(p)) < 1) {
+                if (verbose) { // & verbosity > 2) {
+                    log_info("Include! '%s'", ftsentry->fts_path);
+                }
+                return true;
+            };
+        }
+    if (verbose) { // & verbosity > 2) {
+        log_debug("Include '%s'? %d", ftsentry->fts_path, false);
+    }
+    return false;
+
+    /* if (debug) { */
+    /*     log_debug("mibl_config:"); */
+    /*     char **p; */
+    /*     p = NULL; */
+    /*     while ( (p=(char**)utarray_next(mibl_config.include_dirs, p))) { */
+    /*         log_debug("  include: %s",*p); */
+    /*     } */
+    /*     p = NULL; */
+    /*     while ( (p=(char**)utarray_next(mibl_config.exclude_dirs, p))) { */
+    /*         log_debug("  exclude: %s",*p); */
+    /*     } */
+    /* } */
+}
+
 EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
 {
-    printf("load_dune\n");
     if (debug) {
         log_debug("load_dune");
         log_debug("%-16s%s", "launch_dir:", launch_dir);
@@ -1592,6 +1715,13 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
         printf(YEL "%-16s%s\n" CRESET, "current dir:", getcwd(NULL, 0));
         printf(YEL "%-16s%s\n" CRESET, "traversal_root:", traversal_root);
     }
+
+
+    /*
+      FIXME: traversal root(s) to be determined by miblrc.srcs.include
+      default is cwd, but if miblrc designates 'include' dirs, then
+      cwd must be excluded, and each 'include' dir traversed.
+     */
 
     UT_string *abs_troot;
     utstring_new(abs_troot);
@@ -1614,6 +1744,7 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
         log_debug("haystack (troot): %s", utstring_body(abs_troot));
         log_debug("needle (ews): %s", ews_root);
     }
+
     char *resolved_troot = strnstr(utstring_body(abs_troot),
                                    ews_root, strlen(ews_root));
     if (resolved_troot) {
@@ -1663,7 +1794,8 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
     errno = 0;
 
     char *const _traversal_root[] = {
-        [0] = resolved_troot, // traversal_root;
+        /* [0] = resolved_troot, // traversal_root; */
+        [0] = traversal_root,
         NULL
     };
     if (debug) log_debug("_traversal_root: %s\n", _traversal_root[0]);
@@ -1691,41 +1823,63 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
 
     s7_pointer pkg_tbl =
         s7_eval_c_string(s7, "(cadr (assoc-in '(:@ :pkgs) -mibl-ws-table))");
-    log_debug("building pkg_tbl: %s\n", TO_STR(pkg_tbl));
+    if (debug)
+        log_debug("building pkg_tbl: %s\n", TO_STR(pkg_tbl));
 
     char *ext;
+
+    if (verbose)
+        log_info("beginning traversal at %s\n", resolved_troot);
 
     /* TRAVERSAL STARTS HERE */
     if (NULL != tree) {
         while( (ftsentry = fts_read(tree)) != NULL) {
             if (debug) {
-                log_debug("ftsentry: %2/%s, type: %d",
-                          ftsentry->fts_path,
-                          ftsentry->fts_name,
-                          ftsentry->fts_info);
+                if (ftsentry->fts_info != FTS_DP) {
+                    log_debug(YEL "ftsentry:" CRESET " %s (%s), type: %d",
+                              ftsentry->fts_name,
+                              ftsentry->fts_path,
+                              ftsentry->fts_info);
+                }
             }
             switch (ftsentry->fts_info)
                 {
-                case FTS_DOT : // not specified to fts_open
-                    // do not process children of hidden dirs
-                    /* fts_set(tree, ftsentry, FTS_SKIP); */
-                    break;
                 case FTS_D : // dir visited in pre-order
-                    if (strncmp(ftsentry->fts_name, "_build", 6) == 0) {
-                        /* skip _build (dune) */
+                    if (trace)
+                        log_trace("visiting dir: %s (%s) :: (%s)",
+                                  ftsentry->fts_name,
+                                  ftsentry->fts_path,
+                                  ftsentry->fts_accpath);
+                    if (_this_is_hidden(ftsentry)) {
                         fts_set(tree, ftsentry, FTS_SKIP);
                         break;
                     }
-
-                    dir_ct++;
-                    _handle_dir(pkg_tbl, tree, ftsentry);
-                    /* printf("pkg tbl: %s\n", TO_STR(pkg_tbl)); */
+                    if (_include_this(ftsentry)) {
+                        printf("INCLUDING\n");
+                        if (strncmp(ftsentry->fts_name, "_build", 6) == 0) {
+                            /* skip _build (dune) */
+                            fts_set(tree, ftsentry, FTS_SKIP);
+                            break;
+                        }
+                        dir_ct++;
+                        _handle_dir(pkg_tbl, tree, ftsentry);
+                        /* printf("pkg tbl: %s\n", TO_STR(pkg_tbl)); */
+                    } else {
+                        fts_set(tree, ftsentry, FTS_SKIP);
+                    }
                     break;
                 case FTS_DP:
                     /* postorder directory */
                     break;
                 case FTS_F : // regular file
                     file_ct++;
+
+                    if (strncmp(ftsentry->fts_name,"BUILD.bazel", 11)==0){
+                            /* skip BUILD.bazel files */
+                            break;
+                    }
+                    /* TODO: skip *.bzl files */
+                    /* TODO: skip standard files: READMEs, LICENSE, etc. */
                     /* _handle_regular_file(ftsentry); */
                     if (strncmp(ftsentry->fts_name, "dune-project", 12)
                         == 0) {
@@ -1812,6 +1966,10 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
                 case FTS_DEFAULT:
                     log_warn("FTS_DEFAULT: %s", ftsentry->fts_path);
                     break;
+                /* case FTS_DOT : // not specified to fts_open */
+                /*     // do not process children of hidden dirs */
+                /*     /\* fts_set(tree, ftsentry, FTS_SKIP); *\/ */
+                /*     break; */
                 default:
                     log_error(RED "Unhandled FTS type %d\n",
                               ftsentry->fts_info);

@@ -64,8 +64,9 @@ int main(int argc, char **argv)
         }
     }
 
+    /* first bazel, then mibl */
     bazel_configure(); // getcwd(NULL, 0));
-
+    mibl_configure();
     deploy();
 
     return 0;

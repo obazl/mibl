@@ -1,4 +1,4 @@
-(format #t "loading dune/predicates.scm\n")
+;; (format #t "loading dune/predicates.scm\n")
 
 (define (structfile? s)
   (let ((f (if (symbol? s) (symbol->string s) s)))
@@ -8,4 +8,4 @@
   (let ((f (if (symbol? s) (symbol->string s) s)))
     (eq? 0 (fnmatch "*.mli" f 0))))
 
-(format #t "loaded dune/predicates.scm\n")
+;; (format #t "loaded dune/predicates.scm\n")

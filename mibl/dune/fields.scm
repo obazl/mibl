@@ -1,4 +1,4 @@
-(format #t "loading dune/fields.scm\n")
+;; (format #t "loading dune/fields.scm\n")
 
 ;; mv select targets to pkg :modules
 ;; rm select apodoses from pkg :structures, :signatures
@@ -129,4 +129,4 @@
                                              (cons :conditionals conditionals))))))
                 (filter (lambda (d) (not (null? d))) deps))))))))
 
-(format #t "loaded dune/fields.scm\n")
+;; (format #t "loaded dune/fields.scm\n")

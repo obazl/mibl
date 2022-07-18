@@ -201,9 +201,12 @@
                    (_ (format #t "~A: ~A\n"
                               (red "normalized action") nzaction))
                    ;; (rule-tag (-action->rule-tag nzaction))
+                   ;; (_ (format #t "rule-tag: ~A\n" rule-tag))
                    (r-alist (list (cons ':targets targets)
                                   ;; (cons ':deps deps)
-                                  (cons ':action nzaction)))
+                                  (if (assoc :progn nzaction)
+                                      (cons :action (cdar nzaction))
+                                      (cons :action nzaction))))
                    (r-alist (if deps (cons `(:deps ,@deps) r-alist)
                                 r-alist))
                    (r-alist (if package (cons (list ':package package)

@@ -27,6 +27,9 @@
     (format #t "updated exports tbl: ~A\n" exports)))
 ;;(car (assoc-val :pkg-path pkg)))))
 
+(define (-fixup-progn-cmd! ws c targets deps)
+  (format #t "~A: ~A\n" (blue "-fixup-progn-cmd!") c))
+
 (define (-fixup-deps! ws stanza)
   (format #t "~A: ~A\n" (blue "-fixup-deps!") stanza)
   (let* ((exports (car (assoc-val :exports ws)))
@@ -54,32 +57,47 @@
                ))
 
       ((:rule)
-       (format #t "~A~%" (magenta "fixup :rule"))
-       (let ((targets (assoc-val :targets stanza-alist))
-             (deps (assoc-val :deps stanza-alist))
-             (action (assoc-val :action stanza-alist))
-             (tool (assoc-in '(:action :cmd :tool) stanza-alist)))
+       (format #t "~A: ~A~%" (magenta "fixup :rule") stanza-alist)
+       (let* ((targets (assoc-val :targets stanza-alist))
+              (_ (format #t "targets: ~A~%" targets))
+              (deps (if-let ((deps (assoc :deps stanza-alist)))
+                            (cadr deps) '()))
+              (_ (format #t "deps: ~A~%" deps))
+              (action (if-let ((action (assoc-val :action stanza-alist)))
+                              action
+                              (if-let ((action
+                                        (assoc-val :progn stanza-alist)))
+                                      action
+                                      (error 'bad-action "unexpected action in :rule"))))
+              (_ (format #t "action: ~A~%" action))
+              (tool (assoc-in '(:action :cmd :tool) stanza-alist)))
+         (format #t "Tool: ~A~%" tool)
+         (format #t "Action: ~A~%" action)
+         (format #t "xxxx: ~A~%" stanza-alist)
 
          ;; if rule is :progn, then interate over the list of (:cmd ...)
-         (if (equal? :progn (caar action))
-             (for-each (lambda (c)
-                         (format #t "~A\n" (assoc-in
-                                            '(:args :_) (cdr c))))
-                       (cdar action))
+         (if (assoc :progn stanza-alist)
+             (begin
+               (format #t "PROGN~%")
+               (for-each (lambda (c)
+                           (format #t "PROGN cmd: ~A~%" c)
+                           (-fixup-progn-cmd! ws c targets deps))
+                         (cdar action)))
              (begin
                (format #t "rule action: ~A~%" action)
                (format #t "rule tool: ~A~%" tool)
                (format #t "rule targets: ~A~%" targets)
                (format #t "rule deps: ~A~%" deps)
-               (if-let ((tool-label (hash-table-ref exports (cadr tool))))
-                       (let* ((_ (format #t "tool-label: ~A~%" tool-label))
-                              (pkg (car (assoc-val :pkg tool-label)))
-                              (tgt (car (assoc-val :tgt tool-label)))
-                              (label (format #f "//~A:~A" pkg tgt))
-                              (_ (format #t "tool-label: ~A\n" tool-label)))
-                         (set-cdr! tool (list label)))
-                       ;; FIXME: handle deps
-                       '())))))
+               ;; (if-let ((tool-label (hash-table-ref exports (cadr tool))))
+               ;;         (let* ((_ (format #t "tool-label: ~A~%" tool-label))
+               ;;                (pkg (car (assoc-val :pkg tool-label)))
+               ;;                (tgt (car (assoc-val :tgt tool-label)))
+               ;;                (label (format #f "//~A:~A" pkg tgt))
+               ;;                (_ (format #t "tool-label: ~A\n" tool-label)))
+               ;;           (set-cdr! tool (list label)))
+               ;;         ;; FIXME: handle deps
+               ;;         '())
+               ))))
 
       (else
        (error 'unhandled (format #f "-fixup-deps!: ~A\n" (car stanza)))))))

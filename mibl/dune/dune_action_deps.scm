@@ -123,6 +123,8 @@
 
 (define (handle-filename-literal-dep dep deplist paths expanded-deps)
   (format #t "~A: ~A\n" (blue "handle-filename-literal-dep") dep)
+  (format #t "deplist: ~A\n" deplist)
+  (format #t "paths: ~A\n" paths)
   (format #t "expanded-deps: ~A\n" expanded-deps)
   (let* (;; (_ (format #t "dep: ~A\n" dep))
          (pkg-path (car (assoc-val :pkg-path paths)))
@@ -130,15 +132,23 @@
          ;; dep always relative: prepend pkg dir, may give path with .. segs
          ;; etc. then normalize
 
-         (kind (if (file-exists? (format #f "~A/~A" pkg-path dep))
+         (dep (format #f "~A" dep))
+
+         (dep-path (format #f "~A/~A" pkg-path dep))
+         (_ (format #t "dep-path: ~A~%" dep-path))
+         (kind (if (file-exists? dep-path)
                    :static :dynamic))
          (_ (format #t "~A: ~A~%" (red "kind") kind))
 
+         (_ (format #t "(dirname dep) ~A~%" (dirname dep)))
+
          (local? (equal? dep (dirname dep)))
+         (_ (format #t "local? ~A~%" local?))
 
          (path (if (equal? dep (dirname dep))
                    dep
                    (string-append pkg-path "/" dep)))
+         (_ (format #t "path ~A~%" path))
 
          (expanded-path (if (eq? kind :static)
                             (if local? path

@@ -17,11 +17,13 @@
 ;; (action (run %{deps} --test))
 (define expand-run-tool
   ;; (lambda (tool pkg-path target targets args filedeps vars)
-  (lambda (tool targets deps)
-    ;; (format #t "expand-run-tool ~A\n" tool)
-    ;; for now, leave it to clients to decide what to do with it
-    (let ((x (expand-cmd-args (list tool) targets deps)))
-      x)))
+  (lambda (tool pkg targets deps)
+    (format #t "~A: ~A\n" (blue "expand-run-tool") tool)
+    (let ((xtool (handle-filename-literal-dep
+                  tool deps pkg '())))
+      xtool)))
+    ;; (let ((x (expand-cmd-args (list tool) targets deps)))
+    ;;   x)))
 
 ;; expand-cmd-args:
     ;; if it is a 'dep:' var %{dep:rejections.sh}, use file-exists?
@@ -143,76 +145,14 @@
      ((string-prefix? "%{lib:" arg)
       ;; (format #t "LIB: ~A\n" arg)
       ;; (format #t "pkg-path: ~A\n" pkg-path)
-      :LIB)
-      ;; (cons
-      ;;  (list :_lib arg)
-      ;;  (expand-cmd-args pkg-path
-      ;;                   target targets
-      ;;                   (cdr args) filedeps vars)))
+      (error 'unhandled-var (format #f "unhandled var: ~A~%" arg)))
 
      ((string-prefix? "%{dep:" arg)
       ;; "dep:<path> expands to <path>"
       ;; (cons `(:fixme ,arg)
       ;; (format #t "DEP: var\n")
       ;; (format #t "pkg-path: ~A\n" pkg-path)
-      :DEP)
-      ;; (let* ((dep-path (string-drop-right ;; drop '}'
-      ;;                   (string-drop arg 6) 1))
-      ;;        (segs (string-split dep-path #\/))
-      ;;        (seg-ct (length segs))
-      ;;        (resolved (let recur ((segs segs)
-      ;;                              (path pkg-path))
-      ;;                    (format #t "Recur: ~A; path: ~A\n"
-      ;;                            segs path)
-      ;;                    (if (null? segs)
-      ;;                        path ;; should not happen?
-      ;;                        (if (string=? ".." (car segs))
-      ;;                            (let ((last-slash
-      ;;                                   (string-index-right
-      ;;                                    path (lambda (ch) (char=? ch #\/)))))
-      ;;                              (if last-slash
-      ;;                                  (recur (cdr segs)
-      ;;                                         (string-drop-right
-      ;;                                          path (- (length path) last-slash)))
-      ;;                                  ;; no slash in pkg-path
-      ;;                                  (recur (cdr segs) ".")))
-      ;;                            ;; all leading '..' processed, no further recursion
-      ;;                            ;; FIXME: what if '..' is embedded, e.g. a/../b?
-      ;;                            ;; segs may still contain multiple segs;
-      ;;                            ;; we need all but the last to be added to the path
-      ;;                            ;; so we can form a label of form //a/b/c:x
-      ;;                            (if (> (length segs) 1)
-      ;;                                (begin
-      ;;                                  ;; e.g. path: runtime/caml, segs (".." ".." "tools" "make-version-header.sh");
-      ;;                                  (let ((fpath (string-append path "/"
-      ;;                                                              (string-join segs "/"))))
-      ;;                                    (if (file-exists? fpath)
-      ;;                                        (let* ((path-segs (reverse (cdr (reverse segs))))
-      ;;                                               (segpath (string-join path-segs "/"))
-      ;;                                               (last (car (reverse segs)))
-      ;;                                               (p (if (equal? "." path)
-      ;;                                                      segpath
-      ;;                                                      (string-append path "/" segpath))))
-      ;;                                          (list :_srcfile p last)
-      ;;                                          (list :_genfile p last)))))
-      ;;                                ;; one seg left
-      ;;                                (let ((fpath (string-append path "/" (car segs))))
-      ;;                                  (if (file-exists? fpath)
-      ;;                                      (list :_srcfile path (car segs))
-      ;;                                      ;; (string-append "$(location //" fpath ")") ;; (list :_srcfile fpath)
-      ;;                                      (list :_genfile path (car segs))
-      ;;                                      ;; (string-append "$(location //" fpath ")") ;; (list :_genfile fpath)
-      ;;                                      )))
-      ;;                            )))))
-      ;;   (format #t "Resolved dep path: ~A\n" resolved)
-      ;;   (cons resolved
-      ;;         (expand-cmd-args pkg-path
-      ;;                          target targets
-      ;;                          (cdr args)
-      ;;                          filedeps vars))))
-     ;; (run-recur (cdr cmd-args)
-     ;;            ;; run-deps ;; (cons arg run-deps)
-     ;;            (cons arg run-args))))
+      (error 'unhandled-var (format #f "unhandled var: ~A~%" arg)))
 
      ((string-prefix? "%{" arg)
       (format #t "VAR: ~A\n" arg)
@@ -225,22 +165,14 @@
         (if-let ((val (assoc keysym deps)))
                 (begin
                   (format #t "VAR VAL: ~A\n" val)
-                  ;; (cons val
-                  ;;       (expand-cmd-args (cdr args)
-                  ;;                        targets deps)))
-                  ;; (list (cons :dep keysym))
                   keysym
                   )
                 ;; not a dep, try installed execs
-                (cons
-                 :VAR keysym))))
-     ;; (expand-cmd-args pkg-path
-     ;;                  target targets
-     ;;                  (cdr args)
-     ;;                  filedeps vars)))))
+                ;;(cons :VAR keysym)
+                (error 'unhandled-var (format #f "unhandled var: ~A~%" arg)))))
 
-     (else ;; give arg is string
-      ;; (format #t "OTHER STRING: ~A\n" arg)
+     (else ;; arg is string
+      (format #t "STRING LITERAL: ~A\n" arg)
       arg)
       ;; (cons
       ;;  arg
@@ -402,7 +334,7 @@ pipe-stdout progn setenv system with-accepted-exit-codes
 with-outputs-to with-stderr-to with-stdin-from with-stdout-to
 write-file))
 
-(define (expand-cmd-list -raw-cmds targets deps)
+(define (expand-cmd-list pkg -raw-cmds targets deps)
   (format #t "~A: ~A\n" (blue "expand-cmd-list") -raw-cmds)
 
   (let recur ((raw-cmds -raw-cmds)
@@ -439,10 +371,12 @@ write-file))
                           (recur kw tool expanded-cmds
                                    (expand-cmd-args args targets deps))
 
-                          ;; e.g. (run %{bin:foo} ...)
+                          ;; kw in in list of dune std tools, must be
+                          ;; (run %{bin:foo} ...), (run ../foo/bar.exe) etc.
                           (list
                            (list (list :tool
-                                       (car (expand-run-tool kw targets deps)))
+                                       (car
+                                        (expand-run-tool kw pkg targets deps)))
                                 (cons :args
                                        (expand-cmd-args (cdr raw-cmds)
                                                         targets deps))))))))))))

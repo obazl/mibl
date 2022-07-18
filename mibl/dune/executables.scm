@@ -1,4 +1,4 @@
-(display "dune/executables.scm loading ...\n")
+;; (display "dune/executables.scm loading ...\n")
 
 ;; executable optional fields:
 ;; public_name - intallation name; "same as adding following stanza:"
@@ -634,4 +634,4 @@
                )
              (cdr privnames)))))
 
-(display "loaded dune/executables.scm\n")
+;; (display "loaded dune/executables.scm\n")

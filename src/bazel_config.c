@@ -21,7 +21,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "ini.h"
+/* #include "ini.h" */
 #include "log.h"
 
 #if EXPORT_INTERFACE
@@ -49,9 +49,6 @@ char *traversal_root;           /* maybe not same as ws root */
 /* UT_string *runfiles_root;       /\* bazel only *\/ */
 /* UT_string *config_obazl; // obazl_d; */
 
-#define MIBL    "mibl"
-#define MIBL_S7 MIBL "/s7"
-#define OIBL   "mibl"
 #define XDG_LOCAL_SHARE ".local/share"
 
 UT_string *runtime_data_dir;
@@ -59,20 +56,8 @@ UT_string *runtime_data_dir;
 bool ini_error; // = false;
 UT_string *obazl_ini_path; // .config
 
-#if EXPORT_INTERFACE
-struct configuration_s {
-    char *obazl_version;
-    int libct;
-    UT_array *src_dirs;         /* string list; used by fileseq to get src_files */
-    UT_array *watch_dirs;       /* string list */
-    /* struct lib_s *ocamllibs[10]; /\* is 10 enough? *\/ */
-    /* struct lib_s *coqlibs[10]; /\* is 10 enough? *\/ */
-};
-#endif
 
 #define OBAZL_VERSION "0.1.0"
-
-struct configuration_s bazel_config = {.obazl_version = OBAZL_VERSION, .libct = 0};
 
 /* UT_array *src_files;            /\* FIXME: put this in configuration_s? *\/ */
 char *homedir;
@@ -206,136 +191,6 @@ EXPORT void bazel_configure(void) // char *_exec_root)
 
     _set_base_ws_root();
 
-    /* **************** */
-    /* project-local .config/miblrc config file */
-    utstring_new(obazl_ini_path);
-    utstring_printf(obazl_ini_path, "%s/%s",
-                    bws_root, MIBL_INI_FILE);
-
-    rc = access(utstring_body(obazl_ini_path), R_OK);
-    if (rc) {
-        if (verbose || debug)
-            log_warn("NOT FOUND: miblrc config file %s",
-                     utstring_body(obazl_ini_path));
-        //FIXME: also look in XDG_CONFIG_HOME
-    } else {
-        ini_error = false;
-        if (verbose || debug)
-            log_info("FOUND: miblrc config file %s",
-                     utstring_body(obazl_ini_path));
-
-        utarray_new(bazel_config.src_dirs, &ut_str_icd);
-        utarray_new(bazel_config.watch_dirs, &ut_str_icd);
-        rc = ini_parse(utstring_body(obazl_ini_path), config_handler, &bazel_config);
-        if (rc < 0) {
-            //FIXME: deal with missing .obazl
-            perror("ini_parse");
-            log_fatal("Can't load/parse ini file: %s",
-                      utstring_body(obazl_ini_path));
-            exit(EXIT_FAILURE);
-        }
-        if (ini_error) {
-            log_error("Error parsing ini file");
-            exit(EXIT_FAILURE);
-            /* } else { */
-            /*     log_debug("Config loaded from %s", utstring_body(obazl_ini_path)); */
-        }
-    }
+    /* mibl_config(); */
     /* utarray_new(src_files,&ut_str_icd); */
 }
-
-EXPORT int config_handler(void* config, const char* section, const char* name, const char* value)
-{
-    /* log_debug("config_handler section %s: %s=%s", section, name, value); */
-    struct configuration_s *pconfig = (struct configuration_s*)config;
-
-    #define MATCH(s, n) strcmp(section, s) == 0 && strcmp(name, n) == 0
-
-    if (MATCH("obazl", "version")) {
-        if (verbose)
-            log_debug("obazl version: %s", value);
-        return 1;
-    }
-
-    if (MATCH("srcs", "dirs")) {
-        /* log_debug("section: srcs; entry: dirs"); */
-        /* log_debug("\t%s", value); */
-        char *token, *sep = " ,\t";
-        token = strtok((char*)value, sep);
-        while( token != NULL ) {
-            /* if (token[0] == '/') { */
-            /*     log_error("Ini file: 'dir' values in section 'srcs' must be relative paths: %s", token); */
-            /*     ini_error = true; */
-            /*     return 0; */
-            /* } else { */
-                /* log_debug("pushing src dir: %s", token); */
-                utarray_push_back(pconfig->src_dirs, &token);
-                token = strtok(NULL, sep);
-            /* } */
-        }
-        return 1;
-    }
-
-    if (MATCH("watch", "dirs")) {
-        /* log_debug("section: watch; entry: dirs"); */
-        /* log_debug("\t%s", value); */
-        char *token, *sep = " ,\t";
-        token = strtok((char*)value, sep);
-        while( token != NULL ) {
-            if (token[0] == '/') {
-                log_error("Ini file: 'dir' values in section 'watch' must be relative paths: %s", token);
-                ini_error = true;
-                return 0;
-            } else {
-                /* log_debug("pushing watch dir: %s", token); */
-                utarray_push_back(pconfig->watch_dirs, &token);
-                token = strtok(NULL, sep);
-            }
-        }
-        return 1;
-    }
-
-    /* if (MATCH("obazl", "repos")) { */
-    /*     resolve_repos((char*)value); */
-    /* } */
-
-    /* if (MATCH("repos", "coq")) { */
-    /*     resolve_coq_repos((char*)value); */
-    /* } */
-
-    /* if (MATCH("repos", "ocaml")) { */
-    /*     resolve_ocaml_repos((char*)value); */
-    /* } */
-
-    /* if ( strncmp(section, "repo:", 5) == 0 ) { */
-    /*     /\* printf("REPO section: %s (%s = %s)\n", section, name, value); *\/ */
-    /*     char *the_repo = &section[5]; */
-
-    /*     char *repo_dir = get_workspace_dir(the_repo); */
-    /*     printf("repo: %s -> %s\n", the_repo, repo_dir); */
-
-    /*     /\* tmp_repo = NULL; *\/ */
-    /*     /\* HASH_FIND_STR(repo_map, the_repo, tmp_repo);  /\\* already in the hash? *\\/ *\/ */
-    /*     /\* if (tmp_repo) { *\/ */
-    /*     /\*     printf("%s -> %s\n", tmp_repo->name, tmp_repo->base_path); *\/ */
-    /*     /\* } else { *\/ */
-    /*     /\*     fprintf(stderr, "No WS repo found for '%s' listed in .obazlrc\n", the_repo); *\/ */
-    /*     /\*     exit(EXIT_FAILURE); *\/ */
-    /*     /\* } *\/ */
-    /* } */
-
-    /* if ( strcmp(section, "coqlibs") == 0 ) { */
-    /*     struct lib_s *cl = calloc(1, sizeof *cl); */
-    /*     cl->name = strdup(name); */
-    /*     cl->path = strdup(value); */
-    /*     pconfig->coqlibs[pconfig->libct] = cl; */
-    /*     /\* printf("loaded lib %d (%p): %s -> %s\n", *\/ */
-    /*     /\*        pconfig->libct, *\/ */
-    /*     /\*        pconfig->coqlibs[pconfig->libct], *\/ */
-    /*     /\*        pconfig->coqlibs[pconfig->libct]->name, *\/ */
-    /*     /\*        pconfig->coqlibs[pconfig->libct]->path); *\/ */
-    /*     pconfig->libct++; */
-    /* } */
-    return 1;
-}
-

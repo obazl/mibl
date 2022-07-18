@@ -12,7 +12,7 @@
 
 (rule
  (alias runtest_clic)
- (action (run %{exe:test_clic.exe})))
+ (action (run %{exe:test_clic.exe} .)))
 
 (rule
  (alias runtest)

@@ -29,7 +29,7 @@ extern bool trace;
 extern bool verbose;
 extern bool ini_error;
 /* extern UT_string *obazl_ini_path; */
-extern struct configuration_s bazel_config;
+/* extern struct configuration_s bazel_config; */
 
 /* UT_array *opam_dirs;             /\* string list *\/ */
 /* extern UT_string *codept_args_file; */
@@ -156,8 +156,9 @@ int main(int argc, char **argv)
         }
     }
 
-   /* initialize in this order: bazel then s7 */
+   /* initialize in this order: bazel then mibl then s7 */
     bazel_configure(); // getcwd(NULL, 0));
+    mibl_configure();
     s7_configure();
     /* chdir(launch_dir); */
     /* if (debug) */

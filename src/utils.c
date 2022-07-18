@@ -29,6 +29,13 @@
 
 #include "utils.h"
 
+int strsort(const void *_a, const void *_b)
+{
+    const char *a = *(const char* const *)_a;
+    const char *b = *(const char* const *)_b;
+    return strcmp(a,b);
+}
+
 EXPORT char * run_cmd(char *executable, char **argv)
 {
     log_debug("run_cmd %s", argv[0]);

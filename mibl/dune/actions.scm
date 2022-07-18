@@ -98,9 +98,9 @@
   )
 
 (define (normalize-action-progn-dsl ws pkg action-alist targets deps)
-  ;; (format #t "NORMALIZE-ACTION-PROGN-DSL ~A\n" action-alist)
+  (format #t "~A: ~A\n" (blue "normalize-action-progn-dsl") action-alist)
   (let* ((progn-alist (cdar action-alist))
-         ;;(_ (format #t "progn-alist: ~A\n" progn-alist))
+         (_ (format #t "progn-alist: ~A\n" progn-alist))
          (progns
           (let recur ((progn-list progn-alist)
                       (cmd-list '()))
@@ -109,9 +109,9 @@
                 cmd-list
                 (let* ((progn (car progn-list))
                        (action (car progn))
-                       ;; (_ (format #t "progn action: ~A\n" action))
+                       (_ (format #t "progn action: ~A\n" action))
                        (args (cdr progn))
-                       ;; (_ (format #t "args: ~A\n" args))
+                       (_ (format #t "args: ~A\n" args))
                        (cmd (if-let ((cmd-fn (assoc-val action dune-action-cmds-no-dsl)))
                                     (let ((cmd-list (apply (car cmd-fn)
                                                            (list ws pkg
@@ -119,11 +119,12 @@
                                                                  (list progn)
                                                                  targets deps))))
                                       cmd-list)
-                                    (if-let ((cmd-fn (assoc-val subaction
+                                    (if-let ((cmd-fn (assoc-val action
                                                                 dune-action-cmds-dsl)))
                                             (let ((cmd-list (apply (car cmd-fn)
                                                                    (list ws pkg
-                                                                         (list subaction-alist)
+                                                                         (list progn)
+                                                                         ;;(list action-alist)
                                                                          targets deps))))
                                               cmd-list)
                                             (begin
@@ -137,7 +138,7 @@
 (define (normalize-action-run-dsl ws pkg action-alist targets deps)
   (format #t "~A: ~A\n" (blue "normalize-action-run-dsl") action-alist)
   (let* ((run-alist (cdar action-alist))
-         (cmd (car (expand-cmd-list run-alist targets deps))))
+         (cmd (car (expand-cmd-list pkg run-alist targets deps))))
     (format #t "RUN CMD: ~A\n" cmd)
     (list (cons :cmd cmd)))) ;; :run ???
 
@@ -166,7 +167,8 @@
          (_ (format #t "subaction: ~A\n" subaction))
          (cmd (if-let ((cmd-fn (assoc-val subaction
                                           dune-action-cmds-no-dsl)))
-                      (let ((cmd-list (apply (car cmd-fn)
+                      (let ((_ (format #t "found cmd-no-dsl\n"))
+                            (cmd-list (apply (car cmd-fn)
                                              (list ws pkg
                                                    subaction
                                                    (list subaction-alist)
@@ -174,7 +176,8 @@
                         cmd-list)
                       (if-let ((cmd-fn (assoc-val subaction
                                                   dune-action-cmds-dsl)))
-                              (let ((cmd-list (apply (car cmd-fn)
+                              (let ((_ (format #t "found cmd-dsl\n"))
+                                    (cmd-list (apply (car cmd-fn)
                                                      (list ws pkg
                                                            (list subaction-alist)
                                                            targets deps))))
@@ -182,7 +185,8 @@
                               (begin
                                 (format #t "UNHANDLED WST ACTION: ~A\n"
                                         subaction)
-                                stanza)))))
+                                stanza))
+                      )))
     (append cmd
           `((:stdout ,arg1)))))
 

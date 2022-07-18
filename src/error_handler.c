@@ -1,3 +1,6 @@
+#include <assert.h>
+#include <regex.h>
+
 #include "s7.h"
 #include "log.h"
 #include "utstring.h"
@@ -6,48 +9,102 @@
 
 s7_pointer old_err_port;
 const char *errmsg = NULL;
-int gc_loc = -1;
+s7_int gc_loc = -1;
 
 #define ERRSEXP "(with-let (owlet) " \
     "(format #t \"file: ~A, line ~A\n\" error-file error-line))"
 
-s7_pointer s7_error_handler(s7_scheme *sc, s7_pointer args)
+s7_pointer _s7_error_handler(s7_scheme *sc, s7_pointer args)
 {
-    /* log_error("error: %s\n", s7_string(s7_car(args))); */
-    fprintf(stderr, RED "ERROR:" CRESET " %s\n", s7_string(s7_car(args)));
+    log_error("_s7_error_handler\n");
+
+    if (strstr(s7_string(s7_car(args)), "unexpected close paren:") != NULL) {
+        if (debug)
+            printf(RED "Error: BAD DOT" CRESET "\n");
+        s7_write(s7, s7_make_string(s7, "BADDOT"),
+                 s7_current_error_port(s7));
+        return s7_f(s7);
+    } else {
+        //TODO: write to error port
+        fprintf(stdout, RED "Error:" CRESET " %s\n",
+                s7_string(s7_car(args)));
+        fprintf(stdout, RED "[begin error context]\n");
+        s7_eval_c_string(s7, ERRSEXP);
+        char *sexp = "(do ((e (outlet (owlet)) (outlet e))) "
+            "((eq? e (rootlet))) "
+            "(format () \"~{~A ~}~%\" e)) ";
+        s7_eval_c_string(s7, sexp);
+        s7_write(s7,
+                 s7_make_string(s7, s7_car(args)),
+                 // s7_string(s7_car(args)),
+                 s7_current_error_port(s7));
+        fprintf(stdout, "[end error context]" CRESET "\n");
+
+        /* (stacktrace) has no effect(?) */
+        /* s7_eval_c_string(s7, "(stacktrace)"); */
+
+        /* printf("EXIT ON ERROR? %s\n" TO_STR(s7_name_to_value(s7, *exit-on-error*))); */
+
+        if (s7_name_to_value(s7, "*exit-on-error*") == s7_t(s7)) {
+            fprintf(stdout, RED "exiting..." CRESET "\n");
+            exit(EXIT_FAILURE);
+        }
+
+        /* s7_pointer eline = s7_eval_c_string(s7, "(with-let (owlet) error-line"); */
+        /* fprintf(stderr, "file: %s, line: %s\n", TO_STR(efile), TO_STR(eline)); */
+
+        /* fprintf(stderr, "%s\n", TO_STR(owlet)); */
+        /* fprintf(stderr, "\n"); */
+        /* fprintf(stderr, "%s\n", TO_STR(owlet)); */
+        return(s7_f(s7));
+    }
+}
+
+s7_pointer _s7_read_error_handler(s7_scheme *sc, s7_pointer args)
+{
+    fprintf(stderr, RED "READ ERROR:" CRESET " %s\n",
+            s7_string(s7_car(args)));
     s7_eval_c_string(s7, ERRSEXP);
-
-    /* s7_pointer eline = s7_eval_c_string(s7, "(with-let (owlet) error-line"); */
-    /* fprintf(stderr, "file: %s, line: %s\n", TO_STR(efile), TO_STR(eline)); */
-
-    /* fprintf(stderr, "%s\n", TO_STR(owlet)); */
-    /* fprintf(stderr, "\n"); */
-    /* fprintf(stderr, "%s\n", TO_STR(owlet)); */
-    return(s7_f(sc));
+    return(s7_f(s7));
 }
 
 void init_error_handling(void)
 {
     s7_define_function(s7, "error-handler",
-                       s7_error_handler, 1, 0, false,
+                       _s7_error_handler, 1, 0, false,
                        "our error handler");
 
-    /* if (with_error_hook) */
     s7_eval_c_string(s7, "(set! (hook-functions *error-hook*) \n\
                             (list (lambda (hook) \n\
                                     (error-handler \n\
                                       (apply format #f (hook 'data))) \n\
                                     (set! (hook 'result) 'our-error))))");
+
+    /* read-error-hook evidently only catches problems with # names
+       and \ escapes, not general read errors. */
+    s7_define_function(s7, "read-error-handler",
+                       _s7_read_error_handler, 1, 0, false,
+                       "our read error handler");
+
+    s7_eval_c_string(s7, "(set! (hook-functions *read-error-hook*) \n\
+                            (list (lambda (hook) \n\
+                                    (read-error-handler \n\
+                                      (apply format #f (hook 'data))) \n \
+                                    (set! (hook 'result) 'read-error))))");
 }
 
 void error_config(void)
 {
-    old_err_port = s7_set_current_error_port(s7, s7_open_output_string(s7));
-    if (old_err_port != s7_nil(s7))
-        gc_loc = s7_gc_protect(s7, old_err_port);
-    /* s7_flush_output_port(s7, old_err_port); */
-    /* s7_flush_output_port(s7, s7_current_error_port(s7)); */
+    if (trace) log_trace(BLU "error_config" CRESET);
 
+    old_err_port = s7_set_current_error_port(s7, s7_open_output_string(s7));
+    if (old_err_port != s7_nil(s7)) {
+        /* if (s7_is_output_port(s7, old_err_port)) { */
+        /*     s7_flush_output_port(s7, old_err_port); */
+        /* } */
+        gc_loc = s7_gc_protect(s7, old_err_port);
+    }
+    s7_flush_output_port(s7, s7_current_error_port(s7));
 }
 
 void close_error_config(void) // s7_pointer err_port)
@@ -121,39 +178,78 @@ char *dunefile_to_string(UT_string *dunefile_name)
     /* log_debug("readed %d bytes", read_ct); */
     fclose(inFp);
 
-    // FIXME: loop over the entire buffer
+    /* printf(RED "READED:\n" CRESET " %s\n", buffer); */
 
-    char *cursor = strstr((const char*) buffer, ".)");
-    if (cursor == NULL) {
-        // FIXME: should not happen, we only get here if s7_read choke
-        // on ".)"
-    } else {
-        /* log_debug("FOUND \".)\" at pos: %d", cursor - buffer); */
-        size_t ct = strlcpy(fixbuf, (const char*)buffer, cursor - buffer);
-        if (ct >= BUFSZ) {
-            // output string has been truncated
+    // FIXME: loop over the entire buffer
+    char *bptr = (char*)buffer;
+    char *fptr = (char*)fixbuf;
+
+    regex_t re;
+    int rc = regcomp(&re, "\\. *)", REG_EXTENDED);
+    assert(rc == 0);
+
+    regmatch_t matches[1];
+
+    while (true) {
+        /* printf(RED "bptr:\n" CRESET " %s\n", bptr); */
+        /* printf(RED "fixbuf:\n" CRESET " %s\n", fixbuf); */
+
+        //FIXME: use regex.  When the need arises.
+        /* rc = regexec(&re, bptr, */
+        /*              sizeof(matches)/sizeof(matches[0]), */
+        /*              (regmatch_t*)&matches,0); */
+        /* if (rc == 0) { */
+        /*     printf(MAG "regex match:" CRESET " %s\n", */
+        /*            bptr + matches[0].rm_so); */
+        /*     /\* char *val = strndup(data+matches[1].rm_so, *\/ */
+        /*     /\*                     matches[1].rm_eo - matches[1].rm_so); *\/ */
+        /* } else { */
+        /*     printf("regex NO match\n"); */
+        /* } */
+
+        char *cursor = strstr((const char*) bptr, ".)");
+
+
+        if (cursor == NULL) {
+            size_t ct = strlcpy(fptr, (const char*)bptr, strlen(bptr));
+            break;
+        } else {
+            /* log_debug("FOUND \".)\" at pos: %d", cursor - buffer); */
+            size_t ct = strlcpy(fptr, (const char*)bptr, cursor - bptr);
+            if (ct >= BUFSZ) {
+                // output string has been truncated
+            }
+            fptr = fptr + (cursor - bptr) - 1;
+            fptr[cursor - bptr] = '\0';
+            ct = strlcat(fptr, " ./", BUFSZ);
+            fptr += 3;
+
+            bptr = bptr + (cursor - bptr) + 1;
+
+            /* printf(GRN "bptr:\n" CRESET " %s\n", bptr); */
+
+            if (ct >= BUFSZ) {
+                // output string has been truncated
+            }
+            /* log_debug("first seg: %s", fixbuf); */
+            /* log_debug("first seg len: %d", strlen((char*)fixbuf)); */
+            /* log_debug("cursor - buffer = %d", cursor - buffer); */
+            /* log_debug("second seg %s", buffer + 225); */
+            /* ct = strlcat((char*)fixbuf, buffer + (cursor - buffer) + 1, BUFSZ); */
+            /* if (ct >= BUFSZ) { */
+            /*     // output string has been truncated */
+            /* } */
+            /* log_debug("fixed: %s", (char*)fixbuf); */
         }
-        fixbuf[cursor - buffer] = '\0';
-        ct = strlcat(fixbuf, "./", BUFSZ);
-        if (ct >= BUFSZ) {
-            // output string has been truncated
-        }
-        /* log_debug("first seg: %s", fixbuf); */
-        /* log_debug("first seg len: %d", strlen((char*)fixbuf)); */
-        /* log_debug("cursor - buffer = %d", cursor - buffer); */
-        /* log_debug("second seg %s", buffer + 225); */
-        ct = strlcat((char*)fixbuf, buffer + (cursor - buffer) + 1, BUFSZ);
-        if (ct >= BUFSZ) {
-            // output string has been truncated
-        }
-        /* log_debug("fixed: %s", (char*)fixbuf); */
 
     }
+    /* log_debug("final:\n %s", (char*)fixbuf); */
     return fixbuf;
 }
 
 s7_pointer fix_baddot(UT_string *dunefile_name)
 {
+    //FIXME: this duplicates the code in load_dune:_read_dunefile
     log_debug("fix_baddot");
 
     char *dunestring = dunefile_to_string(dunefile_name);

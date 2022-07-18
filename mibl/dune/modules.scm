@@ -77,12 +77,12 @@
       (format #t "get-module-names: ~A\n" modules-alist)
       (if modules-alist
           (let* ((statics (assoc-val :static modules-alist))
-                 ;; (_ (format #t "statics: ~A\n" statics))
+                 (_ (format #t "statics: ~A\n" statics))
                  (dynamics (assoc-val :dynamic modules-alist))
-                 ;; (_ (format #t "dynamics: ~A\n" dynamics))
+                 (_ (format #t "dynamics: ~A\n" dynamics))
                  (both (map first (append statics dynamics)))
                  )
-            ;; (format #t "both: ~A\n" both)
+            (format #t "both: ~A\n" both)
             both)
           '()))))
 

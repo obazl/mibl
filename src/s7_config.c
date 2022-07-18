@@ -65,13 +65,6 @@ s7_pointer _s7_quote = NULL;
 s7_pointer _s7_set_car = NULL;
 s7_pointer _s7_set_cdr = NULL;
 
-#define HOME_MIBL ".mibl"
-#if INTERFACE
-#define MIBL_INI_FILE ".config/miblrc"
-#endif
-
-UT_string *config_mibl;        /* work string */
-
 int rc;
 
 #define MIBL    "mibl"
@@ -154,13 +147,14 @@ void initialize_mibl_data_model(s7_scheme *s7)
      *   pkgs: hash_table keyed by pkg path
      */
 
-    log_debug("_initialize_mibl_data_model");
+    if (trace)
+        log_debug("_initialize_mibl_data_model");
 
     /* _s7_acons = _load_acons(s7); */
     /* _s7_list_set = _load_list_set(s7); */
     /* printf("_s7_list_set: %s\n", TO_STR(_s7_list_set)); */
 
-    s7_pointer key, datum;
+    /* s7_pointer key, datum; */
     /* s7_pointer q = s7_name_to_value(s7, "quote"); */
 
     /* s7_pointer root_ws = s7_call(s7, q, */
@@ -179,7 +173,8 @@ void initialize_mibl_data_model(s7_scheme *s7)
                     bws_root);
 
     s7_pointer wss = s7_eval_c_string(s7, utstring_body(init_sexp));
-    printf("wss: %s\n", TO_STR(wss));
+    if (verbose) // & verbosity > 1)
+        printf("wss: %s\n", TO_STR(wss));
 
     /* /\* s7_pointer base_entry = s7_make_list(s7, 4, s7_f(s7)); *\/ */
     /* key = s7_make_symbol(s7, "name"); */
@@ -833,8 +828,8 @@ EXPORT s7_scheme *s7_configure(void)
     s7 = s7_init();
 
     /* trap error messages */
-    init_error_handling();
-    error_config();
+    /* init_error_handling(); */
+    /* error_config(); */
 
     if (bws_root) {
         s7_define_variable(s7, "ws-root", s7_make_string(s7, bws_root));

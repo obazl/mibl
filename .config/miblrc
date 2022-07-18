@@ -1,0 +1,23 @@
+; mibl config
+
+[mibl]
+version = 0.1.0
+grammar=1.0.0-BETA  ;; version number of config grammar, not obazl program
+
+[srcs]
+
+include = test
+;; cwd always included
+exclude = bzl
+exclude = convert
+exclude = deploy
+exclude = docs
+exclude = external
+exclude = mibl
+exclude = obsolete
+exclude = private
+exclude = repl
+exclude = src
+exclude = tools
+
+exclude = test/dune/stanzas/library/root_module/fail1
