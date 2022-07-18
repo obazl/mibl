@@ -206,7 +206,7 @@ LOCAL bool _this_is_hidden(FTSENT *ftsentry)
         if (ftsentry->fts_pathlen > 1) {
             // do not process children of hidden dirs
             if (trace)
-                log_trace("Skipping hidden dir: %s/%s\n",
+                log_trace(RED "Excluding" CRESET " hidden dir: %s/%s\n",
                           ftsentry->fts_path, ftsentry->fts_name);
             return true;
             /* } else { */
@@ -881,7 +881,7 @@ LOCAL void _update_pkg_structs(s7_pointer pkg_tbl,
                                char *fname, int ftype)
 {
     if (trace) {
-        log_trace(RED "_UPDATE_PKG_STRUCTS" CRESET);
+        log_trace(BLU "_update_pkg_structs" CRESET);
     }
     if (debug) {
         log_debug("pkg_name: %s", pkg_name);
@@ -936,9 +936,9 @@ LOCAL void _update_pkg_structs(s7_pointer pkg_tbl,
             s7_pointer new_pkg_alist = s7_append(s7, pkg_alist,
                                                  s7_list(s7, 1,
                                                          structs_assoc));
-            /* if (debug) */
-            /*     log_debug("pkg_alist: %s", */
-            /*            TO_STR(new_pkg_alist)); */
+            if (debug)
+                log_debug("updated pkg_alist: %s",
+                       TO_STR(new_pkg_alist));
 
             s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg_alist);
         } else {
@@ -1078,7 +1078,7 @@ LOCAL void _update_ml(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
     /* add terminal 'i' with printf */
     utstring_printf(mli_test, "%s/%si", dirname(dname), ml_name);
     if (trace) {
-        log_debug(RED "Checking for companion .mli:" CRESET  " %s",
+        log_debug("Checking for companion .mli: %s",
                   utstring_body(mli_test));
     }
     int rc = access(utstring_body(mli_test), F_OK);
@@ -1170,7 +1170,7 @@ LOCAL void _handle_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
     if (ftsentry->fts_name[0] == '.') {
         // do not process hidden files
         if (trace) {
-            log_trace("Skipping hidden file: %s/%s\n",
+            log_trace(RED "Excluding" CRESET " hidden file: %s/%s\n",
                       ftsentry->fts_path, ftsentry->fts_name);
         }
         return;
@@ -1239,8 +1239,8 @@ LOCAL void _handle_dune_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
 
     s7_pointer pkg_key = s7_make_string(s7, dirname(ftsentry->fts_path));
 
-    if (debug) log_debug("pkg tbl: %s", TO_STR(pkg_tbl));
-    if (debug) log_debug("pkg key: %s", TO_STR(pkg_key));
+    /* if (debug) log_debug("pkg tbl: %s", TO_STR(pkg_tbl)); */
+    /* if (debug) log_debug("pkg key: %s", TO_STR(pkg_key)); */
 
     s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
     if (debug)
@@ -1364,7 +1364,7 @@ LOCAL void _handle_symlink(s7_pointer pkg_tbl, FTS *tree, FTSENT *ftsentry)
     if (strncmp(ftsentry->fts_name, "bazel-", 6) == 0) {
         /* skip Bazel dirs, e.g. bazel-bin */
         if (verbose)
-            log_info("Skipping Bazel dir: %s", ftsentry->fts_name);
+            log_info(RED "Excluding" CRESET " Bazel dir: %s", ftsentry->fts_name);
         fts_set(tree, ftsentry, FTS_SKIP);
         return;
     }
@@ -1655,7 +1655,7 @@ bool _include_this(FTSENT *ftsentry)
     else
         ptr = ftsentry->fts_path+2;
 
-    printf("srch ptr: %s\n", ptr);
+    if (debug) log_debug("srch ptr: %s", ptr);
     const char **p;
     p = NULL;
     p = utarray_find(mibl_config.exclude_dirs,
@@ -1675,7 +1675,9 @@ bool _include_this(FTSENT *ftsentry)
     while ( (p=(char**)utarray_next(mibl_config.include_dirs, p))) {
             log_debug("  testing pfx: '%s', path: '%s'",
                       *p, ftsentry->fts_path);
-            if (strncmp(p, ftsentry->fts_path, strlen(p)) < 1) {
+            log_debug("result: %d\n",
+                      strncmp(*p, ftsentry->fts_path, strlen(p)));
+            if (strncmp(*p, ftsentry->fts_path, strlen(p)) < 1) {
                 if (verbose) { // & verbosity > 2) {
                     log_info("Include! '%s'", ftsentry->fts_path);
                 }
@@ -1683,22 +1685,9 @@ bool _include_this(FTSENT *ftsentry)
             };
         }
     if (verbose) { // & verbosity > 2) {
-        log_debug("Include '%s'? %d", ftsentry->fts_path, false);
+        log_debug("Include? '%s': %d", ftsentry->fts_path, false);
     }
     return false;
-
-    /* if (debug) { */
-    /*     log_debug("mibl_config:"); */
-    /*     char **p; */
-    /*     p = NULL; */
-    /*     while ( (p=(char**)utarray_next(mibl_config.include_dirs, p))) { */
-    /*         log_debug("  include: %s",*p); */
-    /*     } */
-    /*     p = NULL; */
-    /*     while ( (p=(char**)utarray_next(mibl_config.exclude_dirs, p))) { */
-    /*         log_debug("  exclude: %s",*p); */
-    /*     } */
-    /* } */
 }
 
 EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
@@ -1980,15 +1969,18 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
         chdir(old_cwd);
         /* printf(RED "Restored cwd: %s\n" CRESET, getcwd(NULL, 0)); */
     }
-    if (trace) {
-        log_debug("cwd: %s", getcwd(NULL, 0));
-        log_debug("FTS_D: %d", FTS_D);
-        log_debug("FTS_DP: %d", FTS_DP);
-        log_debug("FTS_F: %d", FTS_F);
-        log_debug("exiting load_dune");
-    }
     /* s7_pointer pkg_tbl = */
     /*     s7_eval_c_string(s7, "(set-cdr! (assoc-in '(:@ :pkgs) -mibl-ws-table))"); */
+
+    if (verbose) {
+        log_info("cwd: %s", getcwd(NULL, 0));
+        log_info("bws: %s", bws_root);
+        log_info("ews: %s", ews_root);
+        log_info("dir count: %d", dir_ct);
+        log_info("file count: %d", file_ct);
+        log_info("dunefile count: %d", dunefile_ct);
+        log_info("exiting load_dune");
+    }
 
     /* we were called by g_load_dune, which expects pkg tbl: */
     return pkg_tbl;

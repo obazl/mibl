@@ -112,7 +112,9 @@ int main(int argc, char *argv[])
                                   /* s7_list(s7, 1, s7_make_string(s7, pkgarg))); */
         /* s7_pointer _wss = s7_eval_c_string(s7, "(load-dune)"); */
     }
-    printf("_wss: %s\n", TO_STR(_wss));
+    /* printf("_wss: %s\n", TO_STR(_wss)); */
+
+    return 0;
 
     /*
       1. get :@ ws
@@ -152,10 +154,4 @@ int main(int argc, char *argv[])
 
     /* printf("npkgs: %s\n", TO_STR(npkgs)); */
 
-    if (verbose) {
-        printf("ews: %s\n", ews_root);
-        printf("dir count: %d\n", dir_ct);
-        printf("file count: %d\n", file_ct);
-        printf("dunefile count: %d\n", dunefile_ct);
-    }
 }
