@@ -88,7 +88,8 @@ EXPORT s7_pointer g_effective_ws_root(s7_scheme *s7,  s7_pointer args)
 
 char *_effective_ws_root(char *dir)
 {
-   /* log_debug("effective_ws_root: %s", dir); */
+    if (trace)
+        log_debug("effective_ws_root: %s", dir);
 
    if (strncmp(homedir, dir, strlen(dir)) == 0) {
        log_debug("xxxx");

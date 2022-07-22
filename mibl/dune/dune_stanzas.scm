@@ -296,7 +296,7 @@
     ;;(let ((contingent 
     ;; (format #t "constant deps: ~A\n" constant)
     ;; (format #t "contingent deps: ~A\n" contingent)
-    `(:deps
+    `(:dePs
       ((:constant ,(sort! constant sym<?))
        ,(cons :contingent contingent)))))
 

@@ -65,6 +65,8 @@
        ;; (values) returns "nothing"
        ((libraries) (values)) ;; handled separately
        ((modules) (values)) ;; handled separately
+       ((modules_without_implementation)
+        (cons :sigs (cdr fld-assoc)))
 
        ((preprocess) (preprocess-fld->mibl fld-assoc stanza-alist))
        ((preprocessor_deps) ;; handled along with preprocess fld
@@ -108,7 +110,7 @@
          ) ;; end let bindings
 
     ;; now handle modules (modules fld) and submodules (deps fld)
-    (format #t "~A: ~A\n" (red "DEPS") deps)
+    ;; (format #t "~A: ~A\n" (red "libDEPS") deps)
     (let* ((depslist
             (if deps (remove '()
                              (list :deps
@@ -119,7 +121,7 @@
                                    (if-let ((seldeps (assoc :seldeps deps)))
                                            seldeps '())))
                 '()))
-           (_ (format #t "modules: ~A\n" modules))
+           ;; (_ (format #t "libModules: ~A\n" modules))
            ;; (submods
            ;;  (if modules
            ;;      (if-let ((submods-assoc (assoc :submodules modules)))
@@ -190,7 +192,11 @@
          )
 
     ;; namespaced?
-    (let ((res (list (cons (if wrapped? :ns-archive :library)
+    (let ((res (list (cons (if wrapped?
+                               (if *wrapped-libs-to-ns-archives*
+                                   :ns-archive :ns-library)
+                               (if *unwrapped-libs-to-archives*
+                                   :archive :library))
                            mibl-stanza))))
       res)
     )

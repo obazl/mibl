@@ -214,16 +214,5 @@ EXPORT void mibl_configure(void)
     utarray_sort(mibl_config.include_dirs, strsort);
     utarray_sort(mibl_config.exclude_dirs, strsort);
 
-    if (debug) {
-        log_debug("mibl_config:");
-        char **p;
-        p = NULL;
-        while ( (p=(char**)utarray_next(mibl_config.include_dirs,p))) {
-            log_debug("  include: %s",*p);
-        }
-        p = NULL;
-        while ( (p=(char**)utarray_next(mibl_config.exclude_dirs,p))) {
-            log_debug("  exclude: %s",*p);
-        }
-    }
+    if (debug) dump_mibl_config();
 }

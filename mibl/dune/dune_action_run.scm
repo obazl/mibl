@@ -80,7 +80,7 @@
      (else
       (if deps
           (begin
-            (format #t "DEPS:: ~A\n" deps)
+            (format #t "rlt DEPS:: ~A\n" deps)
             ;; e.g. (deps (:exe gen/bip39_generator.exe) ...)
             ;; e.g. (deps (:gen gen.exe))
             (let ((deps-list (cdr deps)))
@@ -100,78 +100,78 @@
                   (string-append "FIXME2-" toolname)))))))
      ))
 
-(define (run-action->toolname pkg-path run-alist) ;; stanza)
-  (format #t "run-action->toolname: ~A: ~A\n" pkg-path run-alist)
-  ;; run-alist taken from (run ...) : e.g.
-  ;; (bash %{libexec:tezos-stdlib:test-ocp-indent.sh} %{deps}))
+;; (define (run-action->toolname pkg-path run-alist) ;; stanza)
+;;   (format #t "run-action->toolname: ~A: ~A\n" pkg-path run-alist)
+;;   ;; run-alist taken from (run ...) : e.g.
+;;   ;; (bash %{libexec:tezos-stdlib:test-ocp-indent.sh} %{deps}))
 
-  ;; tool examples:
-  ;; (run (progn))
-  ;; (run %{bin:tezos-protocol-compiler} ...)
-  ;; (run %{libexec:tezos-protocol-compiler:replace} ...)
-  ;; (run %{exe:main.exe} -v -q)
-  ;;      [and generally (run ${exe:foo.exe} ...)]
+;;   ;; tool examples:
+;;   ;; (run (progn))
+;;   ;; (run %{bin:tezos-protocol-compiler} ...)
+;;   ;; (run %{libexec:tezos-protocol-compiler:replace} ...)
+;;   ;; (run %{exe:main.exe} -v -q)
+;;   ;;      [and generally (run ${exe:foo.exe} ...)]
 
-  ;; (run %{<} %{targets})
-  ;; (run %{deps} ...) where (deps ...) declares an executable, e.g.
-  ;; (rule ... (deps gen.exe) (action (run %{deps} ...)))
-  ;; (run bash ...)
-  ;; (run ./main.exe "test" "Unit")
+;;   ;; (run %{<} %{targets})
+;;   ;; (run %{deps} ...) where (deps ...) declares an executable, e.g.
+;;   ;; (rule ... (deps gen.exe) (action (run %{deps} ...)))
+;;   ;; (run bash ...)
+;;   ;; (run ./main.exe "test" "Unit")
 
-  ;; (run cp %{deps} ./)
+;;   ;; (run cp %{deps} ./)
 
-  ;; tezos src/lib_sapling/binding:
-  ;; (rule
-  ;;  (targets rustzcash_ctypes_stubs.ml rustzcash_ctypes_c_stubs.c)
-  ;;  (deps    (:gen ./rustzcash_ctypes_gen.exe))
-  ;;  (action  (run %{gen} %{targets})))
+;;   ;; tezos src/lib_sapling/binding:
+;;   ;; (rule
+;;   ;;  (targets rustzcash_ctypes_stubs.ml rustzcash_ctypes_c_stubs.c)
+;;   ;;  (deps    (:gen ./rustzcash_ctypes_gen.exe))
+;;   ;;  (action  (run %{gen} %{targets})))
 
-  (let* (;; (run-list (cadr action-alist))
-         (prog-atom (car run-alist))
-         (prog-str (if (symbol? prog-atom)
-                       (symbol->string prog-atom) prog-atom)))
-    (format #t "  prog-atom: ~A\n" prog-atom)
-    (format #t "  prog-str: ~A\n" prog-str)
+;;   (let* (;; (run-list (cadr action-alist))
+;;          (prog-atom (car run-alist))
+;;          (prog-str (if (symbol? prog-atom)
+;;                        (symbol->string prog-atom) prog-atom)))
+;;     (format #t "  prog-atom: ~A\n" prog-atom)
+;;     (format #t "  prog-str: ~A\n" prog-str)
 
-    (if (char=? #\% (string-ref prog-str 0))
-        ;; extract from %{ }
-        (let ((prog-vname (substring prog-str
-                                     2 (- (length prog-str) 1))))
-          ;; (format #t "  prog-vname: ~A\n" prog-vname)
-          ;; return "std" exec names as-is; they will be resolved by
-          ;; emitter. convert the others to bazel labels.
-          (cond
+;;     (if (char=? #\% (string-ref prog-str 0))
+;;         ;; extract from %{ }
+;;         (let ((prog-vname (substring prog-str
+;;                                      2 (- (length prog-str) 1))))
+;;           ;; (format #t "  prog-vname: ~A\n" prog-vname)
+;;           ;; return "std" exec names as-is; they will be resolved by
+;;           ;; emitter. convert the others to bazel labels.
+;;           (cond
 
-           ;;FIXME: prefixe names may contain '../' etc.
-           ;; e.g. %{exe:../config/discover.exe}
+;;            ;;FIXME: prefixe names may contain '../' etc.
+;;            ;; e.g. %{exe:../config/discover.exe}
 
-           ((string-prefix? "bin:" prog-vname)
-            ;; (format #t "BIN prog: ~A\n" prog-vname)
-            prog-atom)
-           ((string-prefix? "exe:" prog-vname)
-            ;; (format #t "EXE prog: ~A\n" prog-vname)
-            prog-atom)
-           ((string-prefix? "libexec:" prog-vname)
-            ;; (format #t "LIBEXEC prog: ~A\n" prog-vname)
-            prog-atom)
-           ((string-prefix? "lib:" prog-vname)
-            ;; (format #t "LIB prog: ~A\n" prog-vname)
-            prog-atom)
-           (else
-            ;; user-tagged executable dep, e.g. %{<}
-            (format #t "CUSTOM progvar2: ~A\n" prog-vname)
-            (let ((kw (string->keyword (string-append ":" prog-vname))))
-              (format #t "CUSTOM kw: ~A\n" kw)
-              kw))
-            ;; (resolve-local-toolname pkg-path prog-vname action-alist stanza))
-           ))
-        ;; else not a ${} var
-        (cond
-         ((equal? 'bash prog-atom) prog-atom)
-         (else prog-atom))
-        )
-        ;; else (char=? #\% (string-ref prog-str 0))
-        ))
+;;            ((string-prefix? "bin:" prog-vname)
+;;             ;; (format #t "BIN prog: ~A\n" prog-vname)
+;;             prog-atom)
+;;            ((string-prefix? "exe:" prog-vname)
+;;             ;; (format #t "EXE prog: ~A\n" prog-vname)
+;;             prog-atom)
+;;            ((string-prefix? "libexec:" prog-vname)
+;;             ;; (format #t "LIBEXEC prog: ~A\n" prog-vname)
+;;             prog-atom)
+;;            ((string-prefix? "lib:" prog-vname)
+;;             ;; (format #t "LIB prog: ~A\n" prog-vname)
+;;             prog-atom)
+;;            (else
+;;             ;; user-tagged executable dep, e.g. %{<}
+;;             (format #t "CUSTOM progvar2: ~A\n" prog-vname)
+;;             (let ((kw (string->keyword (string-append ":" prog-vname))))
+;;               (format #t "CUSTOM kw: ~A\n" kw)
+;;               kw))
+;;             ;; (resolve-local-toolname pkg-path prog-vname action-alist stanza))
+;;            ))
+;;         ;; else not a ${} var
+;;         (cond
+;;          ((equal? 'bash prog-atom) prog-atom)
+;;          (else prog-atom))
+;;         )
+;;         ;; else (char=? #\% (string-ref prog-str 0))
+;;         ))
         ;; (format #t "  prog-atom: ~A\n" prog-atom))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

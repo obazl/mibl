@@ -10,10 +10,15 @@
   ;; FIXME: in general: expand all '${}' in args
   (format #t "~A: ~A\n" (blue "normalize-action-shell-cmd") action)
   (let* ((tool (if (eq? action 'system) 'sh action))
+         (k (case action
+              ((bash) :bash)
+              ((system) :sh)
+              (else :script)))
+         (_ (format #t "k: ~A~%" k))
          (action-args (assoc-val action action-alist)))
     `((:cmd
        (:tool ,tool)
-       (cons :args ,@action-args)))))
+       (:args (,k ,@action-args))))))
 
 (define (normalize-action-chdir-dsl ws pkg action-alist targets deps)
   (format #t "~A: ~A\n" (blue "normalize-action-chdir-dsl") action-alist)
@@ -46,10 +51,10 @@
   (format #t "  targets: ~A\n" targets)
   (format #t "  deps: ~A\n" deps)
   (format #t "  deps (dune): ~A\n" (assoc-in '(dune rule deps) pkg))
-  (let* ((tool action) ;; (run-action->toolname pkg-path action stanza))
+  (let* ((tool (string->symbol (format #f ":~A" action)))
          (action-args (assoc-val action action-alist))
          (_ (format #t "action-args: ~A\n" action-args))
-         (args (expand-cmd-args action-args targets deps))
+         (args (expand-cmd-args action-args pkg targets deps))
                                ;; ;; action-alist
                                ;; '()))
          (_ (format #t "expanded args: ~A\n" args)))
@@ -137,8 +142,13 @@
 ;; called for (action (run ...) ...)
 (define (normalize-action-run-dsl ws pkg action-alist targets deps)
   (format #t "~A: ~A\n" (blue "normalize-action-run-dsl") action-alist)
+  (format #t "  targets: ~A\n" targets)
+  (format #t "  deps: ~A\n" deps)
   (let* ((run-alist (cdar action-alist))
-         (cmd (car (expand-cmd-list pkg run-alist targets deps))))
+         (cmd (car (expand-cmd-list pkg run-alist targets deps)))
+         (cmd (filter (lambda (fld)
+                        (not (null? (cdr fld))))
+                   cmd)))
     (format #t "RUN CMD: ~A\n" cmd)
     (list (cons :cmd cmd)))) ;; :run ???
 
@@ -202,9 +212,9 @@
 
 (define (normalize-action-write-file ws pkg action action-alist targets deps)
   (format #t "~A: ~A\n" (blue "normalize-action-write-file") action)
-  (format #t "~A: ~A\n" (green "ws") ws)
-  (format #t "    action-alist: ~A\n" action-alist)
-  (format #t "    targets: ~A\n" targets)
+  (format #t "~A: ~A\n" (green "action-alist") action-alist)
+  (format #t "targets: ~A\n" targets)
+  (format #t "deps: ~A\n" deps)
 
   (let* ((args (assoc-val 'write-file action-alist))
          (_ (format #t "args: ~A\n" args))
@@ -216,15 +226,18 @@
 
          (target (if (null? targets)
                      file
-                     (cadar targets))))
+                     (caar targets)))
+         (_ (format #t "~A: ~A~%" (red "target") target))
+         )
 
     ;; update exports table with outfile
     (update-exports-table! ws :_ target
                            (car (assoc-val :pkg-path pkg)))
 
-    `((:cmd
-       (:tool :skylib-write-file)
-       ,(cons :args (list `(:_ ,(format #f "~A" target)) content))))))
+    `(;;  (:output ,@targets)
+      (:cmd
+       (:tool ::write-file)
+       ,(cons :args (list target content))))))
 
     ;; `(:write-file
     ;;   (:out ,outfile)
@@ -514,8 +527,10 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; called by normalize-action-rule
 (define (normalize-action ws pkg stanza-alist targets deps) ;; rule stanza
   (format #t "~A: ~A\n" (blue "normalize-action") stanza-alist)
+  (format #t "~A: ~A~%" (blue "deps") deps)
   (let* ((action-assoc (assoc 'action stanza-alist))
          (action-alist (assoc-val 'action stanza-alist))
          (action (if (pair? (car action-alist)) ;; e.g. (action (tool ...))
@@ -537,6 +552,118 @@
                     (begin
                       (format #t "UNHANDLED ACTION: ~A\n" action)
                       stanza)))))
+
+(define (normalize-action-rule ws pkg rule-alist targets deps)
+  (format #t "~A: ~A\n" (blue "normalize-action-rule") rule-alist)
+  (format #t "deps: ~A\n" deps)
+  (format #t "targets: ~A\n" targets)
+  (format #t "ws: ~A\n" ws)
+  (let* ((nzaction (normalize-action
+
+                    ws pkg rule-alist targets deps))
+         (_ (format #t "~A: ~A\n"
+                    (green "normalized action") nzaction))
+         (package (if-let ((p (assoc-val 'package rule-alist))) (car p)))
+         (mode (if-let ((m (assoc-val 'mode rule-alist))) (car m)))
+         (fallback (if-let ((fb (assoc-val 'fallback rule-alist)))
+                           (car fb)))
+         (locks (assoc-val 'locks rule-alist))
+         (alias (if-let ((a (assoc-val 'alias rule-alist))) (car a)))
+         (package (if-let ((p (assoc-val 'package rule-alist))) (car p)))
+
+         (enabled-if (if-let ((p (assoc-val 'enabled_if rule-alist)))
+                             (car p)))
+
+         ;; (rule-tag (-action->rule-tag nzaction))
+         ;; (_ (format #t "rule-tag: ~A\n" rule-tag))
+         ;; (_ (format #t "~A: ~A\n" (green "TARGETS") targets))
+         (r-alist (if (null? targets)
+                      (list (if (assoc :progn nzaction)
+                                (cons :actions (cdar nzaction))
+                                (cons :actions nzaction)))
+                      (list (list :outputs `,@targets)
+                            ;; (cons ':deps deps)
+                            (if (assoc :progn nzaction)
+                                (cons :actions (cdar nzaction))
+                                (cons :actions nzaction)))))
+         (r-alist (if-let ((ctx (assoc :ctx nzaction)))
+                          (cons ctx r-alist)
+                          r-alist))
+         (r-alist (if deps ;; (null? deps) ???
+                      (cons deps r-alist)
+                      ;; (cons `(:Deps ,@deps) r-alist)
+                      r-alist))
+         (r-alist (if package (cons (list ':package package)
+                                    r-alist)
+                      r-alist))
+         (r-alist (if mode (cons (list ':mode mode) r-alist)
+                      r-alist))
+         (r-alist (if locks (cons (list ':locks locks) r-alist)
+                      r-alist))
+         (r-alist (if fallback (cons (list ':fallback fallback)
+                                     r-alist)
+                      r-alist))
+         (r-alist (if enabled-if (cons (list ':enabled-if
+                                             enabled-if)
+                                       r-alist)
+                      r-alist))
+         (r-alist (if alias (cons (list ':alias alias) r-alist)
+                      r-alist)))
+    ;; (list (cons rule-tag r-alist)))
+    (list (cons ':rule r-alist))))
+
+;; (define (normalize-copy-rule ws pkg rule-alist targets deps)
+;;   (format #t "~A: ~A\n" (blue "normalize-copy-rule") rule-alist)
+;;   (format #t "rule-alist: ~A\n" rule-alist)
+
+;;   (let* ((nzaction (normalize-action-file-op
+;;                     ws pkg 'copy rule-alist targets deps))
+;;          (_ (format #t "nzaction: ~A\n" nzaction))
+;;          (package (if-let ((p (assoc-val 'package rule-alist))) (car p)))
+;;          (mode (if-let ((m (assoc-val 'mode rule-alist))) (car m)))
+;;          (fallback (if-let ((fb (assoc-val 'fallback rule-alist)))
+;;                            (car fb)))
+;;          (locks (assoc-val 'locks rule-alist))
+;;          (alias (if-let ((a (assoc-val 'alias rule-alist))) (car a)))
+;;          (package (if-let ((p (assoc-val 'package rule-alist))) (car p)))
+
+;;          (enabled-if (if-let ((p (assoc-val 'enabled_if rule-alist)))
+;;                              (car p)))
+
+;;          (r-alist (if (null? targets)
+;;                       (list (if (assoc :progn nzaction)
+;;                                 (cons :actions (cdar nzaction))
+;;                                 (cons :actions nzaction)))
+;;                       (list (list :outputs targets)
+;;                             ;; (cons ':deps deps)
+;;                             (if (assoc :progn nzaction)
+;;                                 (cons :actions (cdar nzaction))
+;;                                 (cons :actions nzaction)))))
+;;          (r-alist (if-let ((ctx (assoc :ctx nzaction)))
+;;                           (cons ctx r-alist)
+;;                           r-alist))
+;;          (r-alist (if deps ;; (null? deps) ???
+;;                       (cons `(:dEps ,@deps) r-alist)
+;;                       r-alist))
+;;          (r-alist (if package (cons (list ':package package)
+;;                                     r-alist)
+;;                       r-alist))
+;;          (r-alist (if mode (cons (list ':mode mode) r-alist)
+;;                       r-alist))
+;;          (r-alist (if locks (cons (list ':locks locks) r-alist)
+;;                       r-alist))
+;;          (r-alist (if fallback (cons (list ':fallback fallback)
+;;                                      r-alist)
+;;                       r-alist))
+;;          (r-alist (if enabled-if (cons (list ':enabled-if
+;;                                              enabled-if)
+;;                                        r-alist)
+;;                       r-alist))
+;;          (r-alist (if alias (cons (list ':alias alias) r-alist)
+;;                       r-alist)))
+;;     ;; (list (cons rule-tag r-alist)))
+;;     (list (cons ':rule r-alist)))
+;;   )
 
 ;;     (case action  ;; (car action)
 ;;     ;;   ((copy#) (normalize-copy-action pkg-path action stanza srcfiles))

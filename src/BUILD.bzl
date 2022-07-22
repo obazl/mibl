@@ -7,7 +7,6 @@ SRCS = [
     "error_handler.c",
     "fs.c",
     "utils.c",
-    # "@uthash//:include",
 ]
 
 ## selects are not iterable
@@ -26,6 +25,9 @@ def mkhdr_srcs():
     args = " ".join(locs) + "    $(location ansi_colors.h)"
     args = args + select({
         "//bzl/host:linux": linux_srcs(),
+        "//conditions:default": ""
+    }) + select({
+        "//bzl/compilation_mode:dbg": " $(location debug.c)",
         "//conditions:default": ""
     })
     return args

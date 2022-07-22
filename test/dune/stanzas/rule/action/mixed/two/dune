@@ -1,8 +1,0 @@
-
-(rule
-  (deps a.ml)
-  (action (cat a.ml)))
-
-(rule
-  (deps a.ml b.ml)
-  (action (cmp a.ml b.ml)))

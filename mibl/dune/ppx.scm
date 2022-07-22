@@ -188,7 +188,7 @@
                               (ppx-action (car ppx-item))
                               (ppx-modules (cdr ppx-item)))
                          (recur (cdr ppx) (- ppx-ct 1)
-                                (cons `((:action ,ppx-action) (:scope ,ppx-modules))
+                                (cons `((:actions ,ppx-action) (:scope ,ppx-modules))
                                       ppx-specs)))
                        ;; else ppx: (<action> <modslist>)
                        (let* ((ppx-item (car ppx))
@@ -205,7 +205,7 @@
                                            "_"
                                            (ppxmods->name ppx-modules)))
                                        (:scope ,ppx-modules))
-                                     `((:action ,ppx-action)
+                                     `((:actions ,ppx-action)
                                        (:scope ,ppx-modules)))
                                  ppx-specs)
                                 ))

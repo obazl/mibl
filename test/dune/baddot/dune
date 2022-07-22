@@ -8,7 +8,7 @@
 (rule
  (alias buildtest)
  (deps test_clic.exe)
- (action (progn a .)))
+ (action (progn)))
 
 (rule
  (alias runtest_clic)

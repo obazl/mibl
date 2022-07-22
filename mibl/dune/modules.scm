@@ -12,8 +12,8 @@
            ;; files
            (assoc :modules pkg)
            ;; deps
-           (assoc-val :signatures pkg)
-           (assoc-val :structures pkg)))
+           (assoc :signatures pkg)
+           (assoc :structures pkg)))
          (submods+sigs-list (if (equal? (cadr submods+sigs-list)
                                      '(:signatures))
                                 (list (car submods+sigs-list))
@@ -31,6 +31,7 @@
             ;;   (cons :manifest (remove '()
             ;;                            (list submods subsigs)))))))
 
+;; only used for generated files, so returns :ml_, :mli_
 (define (filename->module-assoc filename)
   ;; (format #t "filename->module-assoc ~A\n" filename)
   (let* ((ext (filename-extension filename))
@@ -40,9 +41,9 @@
     (let ((a
            (cond
             ((string=? ext ".mli") (cons mname
-                                         (list (list :mli filename))))
+                                         (list (cons :mli_ filename))))
             ((string=? ext ".ml") (cons mname
-                                        (list (list :ml filename))))
+                                        (list (cons :ml_ filename))))
             (else #t))))
       ;; (format #t "f->m result: ~A" a)
       a)))
@@ -68,23 +69,56 @@
                         (recur (cdr srcfiles)))))))))))
 
 ;; modules-assoc:
-;;   (modules (:static (A (:ml "a.ml")) (:dynamic (B (:ml "b.ml")))))
+;;   (:modules (A (:ml "a.ml") (B (:ml_ "b.ml"))))
+;;   (:structures (A . "a.ml") (B . "b.ml"))
+;;   (:signatures (A . "a.mli") (B . "b.mli"))
 ;; (define (expand-std-modules modules-spec pkg-modules)
 (define get-module-names
   (let ((+documentation+ "Returns module names from modules-assoc, which has the form ((:static (A (:ml a.ml) (:mli a.mli)...) (:dynamic ...))")
         (+signature+ '(get-module-names modules-alist)))
     (lambda (modules-alist)
-      (format #t "get-module-names: ~A\n" modules-alist)
+      (format #t "~A: ~A\n" (blue "get-module-names") modules-alist)
       (if modules-alist
-          (let* ((statics (assoc-val :static modules-alist))
-                 (_ (format #t "statics: ~A\n" statics))
-                 (dynamics (assoc-val :dynamic modules-alist))
-                 (_ (format #t "dynamics: ~A\n" dynamics))
-                 (both (map first (append statics dynamics)))
-                 )
-            (format #t "both: ~A\n" both)
-            both)
+          (case (car modules-alist)
+            ((:modules)
+             ;; (format #t "~A~%" (red ":MODULES"))
+             (let ((mods (map car (cdr modules-alist))))
+               ;; (format #t "mods: ~A~%" mods)
+               mods))
+             ;; (let* ((modules (if-let ((ms (assoc-val :modules modules-alist)))
+             ;;                         (begin
+             ;;                           (format #t "~A: ~A~%" (red "ms") ms)
+             ;;                           (map car ms))
+             ;;                         '())))
+             ;;   modules))
+
+            ((:structures)
+             ;; (format #t "~A: ~A~%" (red ":STRUCTURES") (cdr modules-alist))
+             (let ((structs (if-let ((ms (assoc-val :static (cdr modules-alist))))
+                                    (begin
+                                      ;; (format #t "~A: ~A~%" (red "stuctstatic") ms)
+                                      (map car ms))
+                                    '())))
+               ;; (format #t "structs: ~A~%" structs)
+               structs))
+
+            ((:signatures)
+             ;; (format #t "~A: ~A~%" (red ":SIGNATURES") (cdr modules-alist))
+             (let ((sigs (if-let ((ms (assoc-val :static (cdr modules-alist))))
+                                    (begin
+                                      ;; (format #t "~A: ~A~%" (red "sigstatic") ms)
+                                      (map car ms))
+                                    '())))
+               ;; (format #t "sigs: ~A~%" sigs)
+               sigs))
+
+            (else
+             (error 'fixme "modules-alist missing key")))
+          ;;  else no arg
           '()))))
+          ;;   (format #t "modules: ~A\n" modules)
+          ;;   modules)
+          ;; '()))))
 
 ;;;;; expand dune constant ':standard' for modules
 ;; e.g.
@@ -158,7 +192,7 @@
       (format #t " structs: ~A\n" structs)
       (let* ((modifiers (cdr std-list)) ;; car is always :standard
              (pkg-module-names (if pkg-modules
-                                   (get-module-names (cdr pkg-modules))
+                                   (get-module-names pkg-modules)
                                    '()))
              (struct-module-names (get-module-names structs))
              (pkg-module-names (if struct-module-names
@@ -218,7 +252,7 @@
 (define modules-fld->submodules-fld
   ;;TODO: direct/indirect distinction. indirect are generated src files
   (let ((+documentation+ "Expand  'modules' field (of library or executable stanzas) and convert to pair of :submodules :subsigs assocs. modules-spec is a '(modules ...)' field from a library stanza; pkg-modules is the list of modules in the package: an alist whose assocs have the form (A (:ml a.ml)(:mli a.mli)), i.e. keys are module names.")
-        (+signature+ '(modules-fld->submodules-fld modules-spec pkg-modules sigs structs))) ;;  modules-deps
+        (+signature+ '(modules-fld->submodules-fld modules-spec pkg-modules pkg-sigs pkg-structs))) ;;  modules-deps
         ;; modules-ht)))
     (lambda (modules-spec pkg-modules pkg-sigs pkg-structs)
       (format #t "~A\n" (blue "modules-fld->submodules-fld"))
@@ -233,14 +267,17 @@
                                         (cdr modules-spec)))
                      (pkg-module-names (if pkg-modules
                                            (get-module-names
-                                            (cdr pkg-modules))
+                                            pkg-modules)
                                            '()))
                      (struct-module-names (get-module-names pkg-structs))
+                     (_ (format #t "struct-module-names:: ~A\n" struct-module-names))
                      (pkg-module-names (if struct-module-names
                                            (append struct-module-names
                                                    pkg-module-names)
                                            pkg-module-names))
+                     (_ (format #t "pkg-module-names:: ~A\n" pkg-module-names))
                      (sig-module-names (get-module-names pkg-sigs))
+                     (_ (format #t "sig-module-names:: ~A\n" sig-module-names))
                      (_ (format #t "modules-spec:: ~A\n" modules-spec))
                      (tmp (let recur ((modules-spec modules-spec)
                                       (submods '())
@@ -288,13 +325,11 @@
                              ((equal? :standard (car modules-spec))
                               ;; e.g. (modules :standard ...)
                               (begin
-                                (format #t "(equal? :standard (car modules-spec))\n")
+                                (format #t "modules-spec contains :standard\n")
                                 (let-values (((mods-expanded sigs-expanded)
                                               (expand-std-modules
                                                       modules-spec
-                                                      pkg-modules
-                                                      ;; deps
-                                                      pkg-sigs pkg-structs)))
+                                                      pkg-modules pkg-sigs pkg-structs)))
                                   (format #t "mods-expanded: ~A\n"
                                           mods-expanded)
                                   (format #t "sigs-expanded: ~A\n"
@@ -323,14 +358,15 @@
                                         (recur (cdr modules-spec)
                                                submods
                                                (cons (car modules-spec) subsigs))
-                                        (error 'bad-arg "included module not in list")))))
+                                        (error 'bad-arg (format #f "included module not in list: ~A"
+                                                                (car modules-spec)))))))
                              ) ;; cond
                             ))) ;; recur
                 tmp) ;; let*
               ;; no modules-spec - default is all
               (begin
                 (format #t "no modules-spec\n")
-                (get-module-names (cdr pkg-modules)))
+                (get-module-names pkg-modules))
               ) ;; if modules-spec
           ;; else no modules in pkg
           (begin

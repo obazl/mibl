@@ -1,13 +1,16 @@
 ;; (display "pkg_api.scm") (newline)
 
 ;; return normalized path relative to ws-root
+;; FIXME: returns #f for non-existent paths
+;; use ->canonical-path instead
 (define (normalize-pkg-path path ws-root)
+  (format #t "~A: ~A~%" (blue "normalize-pkg-path") path)
   ;; path is not in pkg-path dir
-  (let ((rp (realpath path (string))))
-    ;; (format #t "f rel path: ~A\n" path)
-    ;; (format #t "f realpath: ~A\n" rp)
-    ;; (format #t "ws root: ~A\n" ws-root)
-    ;; (format #t "pfx?: ~A\n" (string-prefix? ws-root rp))
+  (let ((rp (realpath path '())))
+    (format #t "f rel path: ~A\n" path)
+    (format #t "f realpath: ~A\n" rp)
+    (format #t "ws root: ~A\n" ws-root)
+    (format #t "pfx?: ~A\n" (string-prefix? ws-root rp))
     (if (string-prefix? ws-root rp)
         (string-drop rp (+ 1 (string-length ws-root)))
         "problem")))
@@ -24,9 +27,7 @@
               fname)))))
 
 (define (filename->kind filename)
-  (let* ((fname (if (symbol? filename) (symbol->string filename)
-                    (if (string? filename) filename
-                        (error 'wrong-type-arg "target type should be symbol or string: ~A" filename))))
+  (let* ((fname (format #f "~A" filename))
          (ext (filename-extension fname)))
     (cond
       ((string=? ext ".mli") :module)
@@ -45,10 +46,60 @@
       ((string=? ext ".json") :data)
       (else :file))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; may update :signatures in pkg files
+(define (-find-sig-in-sigs!? m-name tgt sigs)
+  (format #t "~A: ~A~%" (blue "-find-sig-in-sigs!?") m-name)
+  (format #t "~A: ~A~%" (white "tgt") tgt)
+  (format #t "~A: ~A~%" (white "sigs") sigs)
+  (if sigs
+      (let* ((sig-alists (cdr sigs))
+             (statics (assoc :static sig-alists))
+             (dynamics (assoc :dynamic sig-alists))
+             (fileset (if statics statics
+                          (if dynamics dynamics
+                              '()))))
+        (format #t "~A: ~A~%" (white "statics") statics)
+        (format #t "~A: ~A~%" (white "dynamics") dynamics)
+
+        (let ((match (find-if (lambda (sig)
+                                (format #t "~A: ~A~%" (green "sig") sig)
+                                (equal? (format #f "~A" m-name)
+                                        (format #f "~A" (car sig))))
+                              (cdr fileset))))
+          (format #t "~A: ~A~%" (red "MATCH") match)
+          (if match
+              ;; remove from pkg files, then return
+              (begin
+                (format #t "~A: ~A from: ~A~%" (red "removing") match fileset)
+                (let ((new (dissoc (list (car match)) (cdr fileset))))
+                  (format #t "~A: ~A~%" (red "new fs") new)
+                  (set-cdr! fileset new)
+                  match))
+
+              (let ((match (find-if (lambda (sig)
+                                      (format #t "dynamic ~A: ~A~%" (green "sig") sig)
+                                      #f)
+                                    (if dynamics
+                                        (cdr dynamics)
+                                        '()))))
+                (if match
+                    #f
+                    #f)))))
+      #f))
+
+(define (-remove-from-pkg-files kind sig pkg)
+  (format #t "~A: ~A, ~A~%" (blue "-remove-from-pkg-files") kind sig)
+  ;; (format #t "~A: ~A~%" (blue "pkg") pkg)
+  (let ((fileset (assoc kind pkg)))
+    (format #t "~A: ~A~%" (cyan "fileset") fileset))
+  )
+
+
 (define update-pkg-with-targets!
   (let ((+documentation+ "INTERNAL. Add tgts to :modules (or :files etc) fld of pkg."))
     (lambda (pkg tgts)
-      ;; (format #t "update-pkg-with-targets!\n")
+      (format #t "~A: ~A~%" (magenta "update-pkg-with-targets!") tgts)
       ;; (format #t "  package: ~A\n" pkg)
       ;; (format #t "  targets: ~A\n" tgts)
 
@@ -68,24 +119,51 @@
            (let ((kind (filename->kind tgt)))
              (case kind
                ((:module)
-                ;; (format #t ":module tgt: ~A\n" tgt)
-                (let* ((massoc (filename->module-assoc tgt))
-                       ;; massoc == (A (:ml "a.ml"))
-                       (mod (car massoc))
-                       (pr (cadr massoc))
-                       ;; (_ (format #t "pr: ~A\n" pr))
+                (format #t ":module tgt: ~A\n" tgt)
+                ;; if we already have corresponding sig, move to :modules
+                ;; else update :structures
+                (let* ((m-assoc (filename->module-assoc tgt))
+                       ;; m-assoc == (A (:ml "a.ml"))
+                       (m-name (car m-assoc))
+                       (pr (cadr m-assoc))
+                       (_ (format #t "~A: ~A\n" (red "PR") pr))
+                       (sigs (assoc :signatures pkg))
+                       (_ (format #t "~A: ~A~%" (cyan "sigs") sigs))
+                       ;; removes matching sig from :signatures
+                       (matching-sig (-find-sig-in-sigs!? m-name tgt sigs))
+                       (_ (format #t "~A: ~A~%" (cyan "matched") matching-sig))
                        )
-                  (alist-update-in! pkg `(:modules :dynamic ,mod)
-                                    (lambda (old)
-                                      ;; (format #t "module OLD: ~A\n" old)
-                                      (if (null? old)
-                                          (list pr)
-                                          ;;(filename->module-assoc tgt)
-                                          (append
-                                           old
-                                           (list pr)
-                                           ;;(filename->module-assoc tgt)
-                                           )))))
+                  (if matching-sig
+                      (begin ;; we know this file is not in :modules since it was in sigs
+                        (format #t "~A: ~A~%" (red "updating :modules") m-name)
+                        (alist-update-in! pkg `(:modules ,m-name)
+                                          (lambda (old)
+                                            (format #t "module OLD: ~A\n" old)
+                                            (if (null? old)
+                                                (list pr (cons :mli (cdr matching-sig)))
+                                                ;;(filename->module-assoc tgt)
+                                                (append
+                                                 old
+                                                 (list pr)
+                                                 ;;(filename->module-assoc tgt)
+                                                 )))))
+                      ;; else no sig, so update :structures
+                      (let* ((s-assoc (assoc-in '(:structures :dynamic) pkg))
+                             ;; (structures (if s-assoc (append (cadr s-assoc) '(Foo . bar)) '()))
+                             )
+                        ;; (format #t "~A: ~A~%" (red "STructures") structures)
+                        (alist-update-in! pkg `(:structures :dynamic)
+                                        (lambda (old)
+                                          (format #t "module OLD: ~A\n" old)
+                                          (if (null? old)
+                                              (cons m-name (cdr pr))
+                                              ;;(filename->module-assoc tgt)
+                                              (append
+                                               old
+                                               (list (cons m-name (cdr pr)))
+                                               ;; structures
+                                               ;;(filename->module-assoc tgt)
+                                               )))))))
                 pkg)
                ;; (if modules-assoc
                ;;     (begin

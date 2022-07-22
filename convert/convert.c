@@ -92,6 +92,8 @@ int main(int argc, char *argv[])
     /* printf("*exit-on-error*? %d\n", */
     /*        (s7_t(s7) == s7_name_to_value(s7, "*exit-on-error*"))); */
 
+    s7_load(s7, "dune.scm");
+
     char *rootdir;
     char *pathdir;
 
@@ -112,9 +114,9 @@ int main(int argc, char *argv[])
                                   /* s7_list(s7, 1, s7_make_string(s7, pkgarg))); */
         /* s7_pointer _wss = s7_eval_c_string(s7, "(load-dune)"); */
     }
-    /* printf("_wss: %s\n", TO_STR(_wss)); */
 
-    return 0;
+    /* printf("_wss: %s\n", TO_STR(_wss)); */
+    /* return 0; */
 
     /*
       1. get :@ ws
@@ -124,14 +126,18 @@ int main(int argc, char *argv[])
 
     s7_pointer root_ws =
         s7_eval_c_string(s7, "(assoc-val :@ -mibl-ws-table)");
+
     /* printf("root_ws: %s\n", TO_STR(root_ws)); */
+    /* return 0; */
 
     s7_pointer pkgs =
         s7_eval_c_string_with_environment(s7,
                        "(car (assoc-val :pkgs @ws))",
                        s7_inlet(s7, s7_list(s7, 1,
                        s7_cons(s7, s7_make_symbol(s7, "@ws"), root_ws))));
-    /* printf("pkgs: %s\n", TO_STR(pkgs)); */
+    printf("pkgs: %s\n", TO_STR(pkgs));
+
+    /* return 0; */
 
     char *sexp =
         "(map (lambda (kv) "
@@ -143,15 +149,31 @@ int main(int argc, char *argv[])
         s7_eval_c_string_with_environment(s7, sexp,
                                           s7_inlet(s7, s7_list(s7, 1,
                                                                s7_cons(s7, s7_make_symbol(s7, "pkgs"), pkgs))));
-    /* printf("npkgs: %s\n", TO_STR(npkgs)); */
+    printf(RED "npkgs:" CRESET " %s\n", TO_STR(npkgs));
 
-    /* sexp = "(resolve-labels (assoc-val :@ -mibl-ws-table))"; */
-    /* s7_eval_c_string(s7, sexp); */
+    sexp = "(car (assoc-val :exports (assoc-val :@ -mibl-ws-table)))";
+    s7_pointer exports = s7_eval_c_string(s7, sexp);
+    printf("exports: %s\n", TO_STR(exports));
 
-    /* sexp = "(car (assoc-val :exports (assoc-val :@ -mibl-ws-table)))"; */
-    /* s7_pointer exports = s7_eval_c_string(s7, sexp); */
-    /* printf("exports: %s\n", TO_STR(exports)); */
+    sexp = "(car (assoc-val :filegroups (assoc-val :@ -mibl-ws-table)))";
+    s7_pointer filegroups = s7_eval_c_string(s7, sexp);
+    printf("filegroups: %s\n", TO_STR(filegroups));
 
-    /* printf("npkgs: %s\n", TO_STR(npkgs)); */
+    /* return 0; */
 
+    /* sexp = "(mibl->starlark :@ -mibl-ws-table)"; */
+
+    sexp = "(resolve-labels (assoc-val :@ -mibl-ws-table))";
+    s7_eval_c_string(s7, sexp);
+
+    sexp = "(car (assoc-val :exports (assoc-val :@ -mibl-ws-table)))";
+    exports = s7_eval_c_string(s7, sexp);
+    printf("exports: %s\n", TO_STR(exports));
+
+    printf(RED "updated npkgs:" CRESET " %s\n", TO_STR(npkgs));
+
+    sexp = "(emit-mibl)";
+    exports = s7_eval_c_string(s7, sexp);
+
+    printf("exiting...\n");
 }

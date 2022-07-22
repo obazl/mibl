@@ -100,7 +100,7 @@
 (define (-exec-modules-fld->mibl stanza-alist)
   (format #t "~A: ~A\n" (blue "-exec-modules-fld->mibl") stanza-alist)
   (let* ((modules (assoc 'modules stanza-alist)))
-    (format #t "modules: ~A\n" modules)
+    (format #t "x modules: ~A\n" modules)
     (if modules
         (if (> (length (cdr modules)) 1)
             (begin
@@ -216,7 +216,7 @@
     (format #t "~A: ~A\n" (red "compile-flds") compile-flds)
 
     ;; now handle manifest (modules fld) and submodules (deps fld)
-    (format #t "~A: ~A\n" (red "DEPS") deps)
+    (format #t "~A: ~A\n" (red "x DEPS") deps)
     (let* ((depslist
             (if deps (remove '()
                              (list :deps

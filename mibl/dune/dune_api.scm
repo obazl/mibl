@@ -5,7 +5,7 @@
 ;; apodoses in 'select' clauses are not pkg-level build targets
 ;; remove them from :structures, :signatures
 (define (-mark-apodoses! pkg)
-  (format #t "-mark-apodoses! ~A\n" pkg)
+  ;; (format #t "-mark-apodoses! ~A\n" pkg)
   (if-let ((conditionals (assoc-in '(:dune :library :conditionals) pkg)))
          ;; conditionals val: list of alists
           (let* ((apodoses (apply append
@@ -37,7 +37,17 @@
                         (cdr structs-static))
               ))))
 
-(define (_trim-pkg-sigs-structs! pkg)
+(define (-trim-pkg! pkg)
+  ;; (format #t "~A: ~A~%" (blue "-trim-pkg!") pkg)
+  ;; deps
+  (if-let ((deps (assoc-in '(:dune :rule :deps) pkg)))
+          (begin
+            ;; (format #t "~A: ~A~%" (red "trimming deps") deps)
+            (if (null? (cdr deps))
+                (alist-update-in! pkg '(:dune :rule)
+                                  (lambda (old)
+                                    (dissoc! '(:deps) old))))))
+
   ;;;; sigs
   (if-let ((sigs (assoc-in '(:signatures :static) pkg)))
           (if (null? (cdr sigs))
@@ -135,13 +145,13 @@
             ;; ((:dune-project) stanza)
 
               (else
-               (format #t "dune-stanza->mibl unhandled: ~A\n" stanza)))))
+               (format #t "~A: ~A\n" (red "unhandled") stanza)))))
     ;; (format #t "normalized pkg: ~A\n" pkg)
 
     (-mark-apodoses! pkg)
 
-    ;; remove empty :signatures, :structures
-    (_trim-pkg-sigs-structs! pkg)
+    ;; remove empty fields
+    (-trim-pkg! pkg)
 
     pkg))
 
@@ -170,5 +180,7 @@
           ;; (format #t "NEW PKG: ~A\n" pkg+)
           pkg+)
         (begin
-          (format #t "~A ~A\n" (red "WARNING: no dune pkg for") pkg)
-          pkg))))
+          (format #t "~A: ~A\n"
+                  (red "WARNING: omitting pkg w/o dunefile")
+                  (assoc-val :pkg-path pkg))
+          '()))))

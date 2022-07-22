@@ -16,7 +16,7 @@ s7_int gc_loc = -1;
 
 s7_pointer _s7_error_handler(s7_scheme *sc, s7_pointer args)
 {
-    log_error("_s7_error_handler\n");
+    /* log_error("_s7_error_handler\n"); */
 
     if (strstr(s7_string(s7_car(args)), "unexpected close paren:") != NULL) {
         if (debug)
@@ -95,7 +95,7 @@ void init_error_handling(void)
 
 void error_config(void)
 {
-    if (trace) log_trace(BLU "error_config" CRESET);
+    /* if (trace) log_trace(BLU "error_config" CRESET); */
 
     old_err_port = s7_set_current_error_port(s7, s7_open_output_string(s7));
     if (old_err_port != s7_nil(s7)) {

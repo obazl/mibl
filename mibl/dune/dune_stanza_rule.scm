@@ -23,16 +23,16 @@
         result
         (list result))))
 
-(define (normalize-copy-rule pkg-path action stanza srcfiles)
-  (format #t "NORMALIZE-COPY-RULE: ~A: ~A\n" pkg-path action)
-  ;; (format #t "  STANZA: ~A\n" stanza)
+;; (define (normalize-copy-rule pkg-path action stanza srcfiles)
+;;   (format #t "NORMALIZE-COPY-RULE: ~A: ~A\n" pkg-path action)
+;;   ;; (format #t "  STANZA: ~A\n" stanza)
 
-  (let* ((src (cadr action))
-         (dst (caddr action)))
+;;   (let* ((src (cadr action))
+;;          (dst (caddr action)))
 
-    `(:copy
-      (:src ,src)
-      (:dst ,dst))))
+;;     `(:copy
+;;       (:src ,src)
+;;       (:dst ,dst))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; https://dune.readthedocs.io/en/stable/dune-files.html#rule
@@ -100,24 +100,24 @@
 ;; ")))
 
 ;; e.g.
-;; (:action (:tool cat)...) => :cat
-;; chdir:  (:action (:tool ...sth...)...) => :rule
-(define (-action->rule-tag action)
-  (if-let ((tag (assoc-in '(:cmd :tool) action)))
-          (case (cadr tag)
-            ((cat) :action-cat)
-            ((cmp) :action-cmp)
-            ((copy) :action-copy)
-            ((diff) :action-diff)
-            ((echo) :action-echo)
-            ((progn) :action-progn)
-            ((system) :action-system)
-            ((with-stdout-to) :action-with-stdout-to)
-            ((write-file) :action-write-file)
-            (else ':RULE))
-          (if-let ((tag (assoc-in '(:run :tool) action)))
-                  (begin :action-run)
-                  (error 'missing-tool "rule stanza missing tool"))))
+;; (:actions (:tool cat)...) => :cat
+;; chdir:  (:actions (:tool ...sth...)...) => :rule
+;; (define (-action->rule-tag action)
+;;   (if-let ((tag (assoc-in '(:cmd :tool) action)))
+;;           (case (cadr tag)
+;;             ((cat) :action-cat)
+;;             ((cmp) :action-cmp)
+;;             ((copy) :action-copy)
+;;             ((diff) :action-diff)
+;;             ((echo) :action-echo)
+;;             ((progn) :action-progn)
+;;             ((system) :action-system)
+;;             ((with-stdout-to) :action-with-stdout-to)
+;;             ((write-file) :action-write-file)
+;;             (else ':RULE))
+;;           (if-let ((tag (assoc-in '(:run :tool) action)))
+;;                   (begin :action-run)
+;;                   (error 'missing-tool "rule stanza missing tool"))))
 
 ;; Normalization: omit the rules we don't need. The remaining rules
 ;; require package- (or global-) level analysis, so leave that to the
@@ -140,8 +140,17 @@
 
 ;; (define (normalize-stanza-rule pkg-path srcfiles stanza)
 
+;; https://dune.readthedocs.io/en/stable/concepts.html#user-actions
+(define dune-dsl-cmds
+  ;; all except 'run' and 'dynamic-run'
+  '(bash cat chdir cmp copy copy# diff diff? echo ignore-outputs-to
+ignore-stderr-to ignore-stdout-to no-infer pipe-outputs pipe-stderr
+pipe-stdout progn setenv system with-accepted-exit-codes
+with-outputs-to with-stderr-to with-stdin-from with-stdout-to
+write-file))
+
 (define dune-rule->mibl
-  (let ((+documentation+ "INTERNAL. Updates pkg arg, returns normalized stanza. stanza: raw dune stanza (input); nstanza: normalized (output)"))
+  (let ((+documentation+ "INTERNAL. Updates pkg arg, returns normalized stanza. stanza: raw dune stanza (input); nstanza: miblized (output)"))
     (lambda (ws pkg stanza)
       (format #t "~A: ~A\n" (blue "dune-rule->mibl") stanza)
       (format #t "~A: ~A\n" (green "ws") ws)
@@ -157,8 +166,8 @@
              ;; (_ (format #t "Targets: ~A\n" (assoc-val 'targets rule-alist)))
 
              ;; Step 1: rule deps don't depend on targets, so do first
-             (deps (expand-rule-deps pkg rule-alist))
-             (_ (format #t "EXPANDED rule deps: ~A\n" deps))
+             (deps (expand-rule-deps ws pkg rule-alist))
+             (_ (format #t "~A: ~A\n" (red "EXPANDED rule deps") deps))
 
              ;; Step 2: 'target' and 'targets' fields list files generated
              ;; by the action. Add them to the pkg :modules and :files
@@ -169,66 +178,76 @@
                                         (assoc-val 'targets rule-alist)))
                                       tgts
                                       '())))
+             (_ (format #t "targets: ~A\n" targets))
+
              ;; add to pkg fields
              (pkg (if (null? targets)
                       pkg
                       (set! pkg (update-pkg-with-targets! pkg targets))))
-             ;; (_ (format #t "rule: updated pkg: ~A\n" pkg))
+             (_ (format #t "rule: updated pkg: ~A\n" pkg))
 
              ;; normalize
-             (targets (expand-targets pkg targets deps))
-             ;; (_ (format #t "EXPANDED rule targets: ~A\n" targets))
+             (targets (expand-targets ws pkg targets deps))
+             (_ (format #t "EXPANDED rule targets: ~A\n" targets))
 
-             (mode (if-let ((m (assoc-val 'mode rule-alist))) (car m)))
-             (fallback (if-let ((fb (assoc-val 'fallback rule-alist)))
-                                 (car fb)))
-             (locks (assoc-val 'locks rule-alist))
-             (alias (if-let ((a (assoc-val 'alias rule-alist))) (car a)))
-             (package (if-let ((p (assoc-val 'package rule-alist))) (car p)))
-
-             (enabled-if (if-let ((p (assoc-val 'enabled_if rule-alist)))
-                                 (car p)))
              )
+
+        (format #t (red "dispatching  on action\n"))
+
         ;; rule type is determined by 'action' field, which can be:
         ;; bash, copy, run, etc.
         ;; every rule stanza has an action field
         ;; https://dune.readthedocs.io/en/stable/concepts.html#user-actions
-        (if (assoc 'action rule-alist)
-            ;; the main dispatcher is 'normalize-action'
-            (let* ((nzaction (normalize-action
+        ;; sadly, the documentation does not match the implementation,
+        ;; which allows (rule (<action> ...)) w/o and explicit 'action fld.
+        (let ((mibl-rule
+               (cond
+                ((assoc 'action rule-alist)
+                 (format #t "handling action rule\n" )
+                 (format #t "deps: ~A~%" deps)
+                 (normalize-action-rule ws pkg rule-alist targets
+                                        (if deps deps (list :deps))))
 
-                              ws pkg rule-alist targets deps))
-                   (_ (format #t "~A: ~A\n"
-                              (red "normalized action") nzaction))
-                   ;; (rule-tag (-action->rule-tag nzaction))
-                   ;; (_ (format #t "rule-tag: ~A\n" rule-tag))
-                   (r-alist (list (cons ':targets targets)
-                                  ;; (cons ':deps deps)
-                                  (if (assoc :progn nzaction)
-                                      (cons :action (cdar nzaction))
-                                      (cons :action nzaction))))
-                   (r-alist (if deps (cons `(:deps ,@deps) r-alist)
-                                r-alist))
-                   (r-alist (if package (cons (list ':package package)
-                                                 r-alist)
-                                r-alist))
-                   (r-alist (if mode (cons (list ':mode mode) r-alist)
-                                r-alist))
-                   (r-alist (if locks (cons (list ':locks locks) r-alist)
-                                r-alist))
-                   (r-alist (if fallback (cons (list ':fallback fallback)
-                                                 r-alist)
-                                r-alist))
-                   (r-alist (if enabled-if (cons (list ':enabled-if
-                                                         enabled-if)
-                                                 r-alist)
-                                r-alist))
-                   (r-alist (if alias (cons (list ':alias alias) r-alist)
-                                r-alist)))
-              ;; (list (cons rule-tag r-alist)))
--              (list (cons ':rule r-alist)))
-            (format #t "UNHANDLED RULE: ~A\n" rule-alist))
-        ))))
+                ;; rules whose action is not wrapped by (run ...)
+                ;; TODO: use dispatch table dune-action-cmds-no-dsl
+                ;; if stanza contains a field in dune-dsl-cmds then dispatch
+                (else
+                 (let ((action (find-if (lambda (fld)
+                                          (format #t "~A: ~A~%" (red "RULE FLD") fld)
+                                          (member (car fld) dune-dsl-cmds))
+                                        rule-alist)))
+                   (format #t "~A: ~A~%" (red "FOUND") action)
+                   (if action
+                       (let ((rule-alist (map (lambda (fld)
+                                                (if (equal? (car fld) (car action))
+                                                    (list 'action fld)
+                                                    fld))
+                                                rule-alist)))
+                         (format #t "~A: ~A~%" (red "updated alist") rule-alist)
+                         (normalize-action-rule ws pkg rule-alist targets
+                                                (if deps deps (list :deps))))
+                       (error 'no-action (format #f "rule without action: ~A" rule-alist))))))))
+                ;; ((assoc 'copy rule-alist)
+                ;;  (format #t "handling copy rule\n" )
+                ;;  (normalize-copy-rule ws pkg rule-alist targets deps))
+
+                ;; ((assoc 'with-stdout-to rule-alist)
+                ;;  (format #t "handling write-file rule\n" )
+                ;;  (normalize-action-with-outputs-to-dsl
+                ;;   ws pkg rule-alist targets deps))
+
+                ;; ((assoc 'write-file rule-alist)
+                ;;  (format #t "handling write-file rule\n" )
+                ;;  (normalize-action-write-file
+                ;;   ws pkg rule-alist targets deps))
+
+                ;; (else
+                ;;  (error 'unhandled-rule
+                ;;         (format #f "unhandled rule: ~A" rule-alist))))))
+          (format #t "~A: ~A~%" (green "mibl-rule") mibl-rule)
+          (update-exports-table-with-targets!
+           ws (assoc-in '(:rule :outputs) mibl-rule) pkg-path)
+          mibl-rule)))))
 
     ;; (let ((result (map (lambda (fld-assoc)
     ;;                      ;; (display (format #f "fld: ~A" fld-assoc)) (newline)

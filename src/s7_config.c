@@ -143,8 +143,12 @@ void initialize_mibl_data_model(s7_scheme *s7)
      * ws item alist:
      *   ws name
      *   ws path (realpath)
-     *   pkg_exports: hash_table keyedy by target, vals: pkg paths
+     *   exports: hash_table keyedy by target, vals: pkg paths
+     *   filegroups:  derived from glob_file expressions in dunefile
      *   pkgs: hash_table keyed by pkg path
+
+     * exports and filegroups are temporary, used to support multiple
+     * passes.
      */
 
     if (trace)
@@ -169,12 +173,13 @@ void initialize_mibl_data_model(s7_scheme *s7)
     utstring_printf(init_sexp, "(define -mibl-ws-table "
                     "`((:@ (:name \"@\") (:path %s) "
                     "(:exports ,(make-hash-table)) "
+                    "(:filegroups ,(make-hash-table)) "
                     "(:pkgs ,(make-hash-table)))))",
                     bws_root);
 
     s7_pointer wss = s7_eval_c_string(s7, utstring_body(init_sexp));
     if (verbose) // & verbosity > 1)
-        printf("wss: %s\n", TO_STR(wss));
+        log_info("wss: %s\n", TO_STR(wss));
 
     /* /\* s7_pointer base_entry = s7_make_list(s7, 4, s7_f(s7)); *\/ */
     /* key = s7_make_symbol(s7, "name"); */
@@ -828,8 +833,8 @@ EXPORT s7_scheme *s7_configure(void)
     s7 = s7_init();
 
     /* trap error messages */
-    /* init_error_handling(); */
-    /* error_config(); */
+    init_error_handling();
+    error_config();
 
     if (bws_root) {
         s7_define_variable(s7, "ws-root", s7_make_string(s7, bws_root));
@@ -843,10 +848,22 @@ EXPORT s7_scheme *s7_configure(void)
                             g_effective_ws_root,
                             0, 1, 0, NULL);
 
-    s7_define_safe_function(s7, "load-dune", g_load_dune,
+    s7_define_function(s7, "load-dune", g_load_dune,
                             0, 2, 0,
                                  /* LOAD_DUNE_FORMAL_PARAMS, */
                             LOAD_DUNE_HELP);
+
+    /* generate obazl code for top-down namespacing */
+    s7_define_variable(s7, "*ns-topdown*", s7_t(s7));
+
+    /* map dune library (wrapped) to :ns-archive or :ns-library */
+    s7_define_variable(s7, "*wrapped-libs-to-ns-archives*", s7_t(s7));
+
+    /* map dune library (unwrapped) to :archive or :library */
+    s7_define_variable(s7, "*unwrapped-libs-to-archives*", s7_t(s7));
+
+    /* emit ocaml_signature for every sigfile target */
+    s7_define_variable(s7, "*build-dyads*", s7_t(s7));
 
     /* initialize s7 stuff */
     //FIXME: do this in config, no need to rerun for each load_dune

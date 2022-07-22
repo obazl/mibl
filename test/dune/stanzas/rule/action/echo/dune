@@ -1,4 +1,0 @@
-
-(rule
- (deps a.txt)
- (action (echo "Hello world")))

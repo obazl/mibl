@@ -21,6 +21,9 @@ cc_library(
     srcs = SRCS + HDRS + select({
         "//bzl/host:linux": ["strlcat.c", "strlcpy.c", "strnstr.c"],
         "//conditions:default":   []
+    }) + select({
+        "//bzl/compilation_mode:dbg": ["debug.c", "debug.h"],
+        "//conditions:default": []
     }) + ["@uthash//:include"],
     hdrs = ["mibl.h"],
     data = [
@@ -81,8 +84,15 @@ CMD_HDR = "\n".join([
 ########
 genrule(
     name = "mkhdrs",
-    srcs = SRCS + ["ansi_colors.h"],
-    outs = HDRS,
+    srcs = SRCS + select({
+        "//bzl/compilation_mode:dbg": ["debug.c"],
+        "//conditions:default": []
+    }) + ["ansi_colors.h"],
+    outs = HDRS + ["debug.h"], #FIXME select isn't working
+    # outs = HDRS + select({
+    #     "//bzl/compilation_mode:dbg": ["debug.h"],
+    #     "//conditions:default": []
+    # }),
     cmd = CMD_HDR + "$(location @makeheaders//:makeheaders) "
     + mkhdr_srcs() + "; cp $${SRCDIR1}/*.h $(@D)",
     tools = ["@makeheaders//:makeheaders"],
@@ -92,7 +102,11 @@ genrule(
 ########
 genrule(
     name = "mkhdrs-export",
-    srcs = SRCS + ["ansi_colors.h"],
+    srcs = SRCS + select({
+        "//bzl/compilation_mode:dbg": ["debug.c"],
+        "//conditions:default": []
+    }) + ["ansi_colors.h"],
+    # srcs = SRCS + ["ansi_colors.h"],
     outs = ["mibl.h"],
     cmd = CMD_HDR
     + "$(location @makeheaders//:makeheaders) -H "
