@@ -32,5 +32,7 @@
 (load "dune/actions_with_output_to.scm")
 (load "dune/emit.scm")
 (load "dune/miblark.scm")
+(load "dune/aliases.scm")
+(load "dune/updaters.scm")
 
 ;; (format #t "loaded mibl/dune.scm") (newline)

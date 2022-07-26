@@ -1,90 +1,3 @@
-;; %{bin:foo} etc. Dune uses those prefixes to reference installation
-;; locations. Since we do not do any installation, they're just labels
-;; to us. E.g. when we process an executable with public name foo, we
-;; add 'bin:foo' to the exports table. Any target that uses it (in a
-;; rule action for example) will refer to it as 'bin:foo', so we can
-;; just look it up to find its Bazel label.
-
-(define (update-exports-table! ws tag name pkg-path)
-  (format #t "~A: ~A -> ~A\n" (magenta "update-exports-table!") name pkg-path)
-  (let* ((exports (car (assoc-val :exports
-                                  (assoc-val ws -mibl-ws-table))))
-         (key (case tag
-                ((:bin) (symbol (format #f "bin:~A" name)))
-                ((:lib) (symbol (format #f "lib:~A" name)))
-                ((:libexec) (symbol (format #f "libexec:~A" name)))
-                (else name)))
-         (tag (case tag
-                ((:bin :lib :libexec) (list (cons tag #t)))
-                (else '())))
-         (spec `(,@tag
-                 (:pkg ,pkg-path)
-                 (:tgt ,(format #f "~A" name)))))
-    (format #t "hidden exports tbl: ~A\n" exports)
-
-    (format #t "adding ~A to exports tbl\n" name)
-    (hash-table-set! exports key spec)
-    (format #t "updated exports tbl: ~A\n" exports)))
-
-(define (update-exports-table-with-targets! ws targets pkg-path)
-  (format #t "~A: ~A~%" (magenta "update-exports-table-with-targets!") targets)
-  (if targets
-      (for-each (lambda (target)
-              (format #t "~A: ~A~%" (red "target") target)
-              (let* ((pkg-tgt (cdr target))
-                     (pkg (assoc-val :pkg pkg-tgt))
-                     (tgt (assoc-val :tgt pkg-tgt)))
-                (format #t "~A: ~A~%" (magenta "pkg") pkg)
-                (format #t "~A: ~A~%" (magenta "tgt") tgt)
-
-                (update-exports-table! ws :_ tgt pkg)
-
-               ;; (case (car target)
-                ;;   ((::)
-                ;;    (update-exports-table! ws :_ (cadr target) pkg-path))
-
-                ;;   ((:_)
-                ;;    (error 'fixme "unhandled :_ target"))
-
-                ;;   (else
-                ;;    (if (list? (cadr target))
-                ;;        ;; (:foo.sh (:pkg "foo/bar") (:tgt "foo.sh"))
-                ;;        (error 'fixme (format #f "~A" "unhandled  target"))
-                ;;        ;; else (:foo.sh "foo.sh")
-                ;;        (update-exports-table! ws :_ (cadr target) pkg-path)))
-                ;;   )
-                ))
-            (cdr targets))))
-
-(define (update-filegroups-table! ws pkg-path tgt pattern)
-  (format #t "~A: ~A~%" (magenta "update-filegroups-table!") pkg-path)
-  (format #t "~A: ~A~%" (green "tgt") tgt)
-  (format #t "~A: ~A~%" (green "pattern") pattern)
-
-  (let* ((filegroups (car (assoc-val :filegroups
-                                     (assoc-val ws -mibl-ws-table))))
-         (glob? (string-index pattern (lambda (ch)
-                                              (equal? ch #\*)))))
-
-    (format #t "hidden filegroups tbl: ~A\n" filegroups)
-    (format #t "adding ~A:~A to filegroups tbl\n" pkg-path tgt)
-
-    (let ((fgroups (hash-table-ref filegroups pkg-path)))
-      (format #t "~A: ~A~%" (red "fgroups") fgroups)
-      (if fgroups
-          (hash-table-set! filegroups pkg-path
-                           (append
-                            fgroups
-                            (list (cons tgt (if glob?
-                                                (list (cons :glob pattern))
-                                                pattern)))))
-          ;; else new
-          (hash-table-set! filegroups pkg-path
-                           (list (cons tgt (if glob?
-                                               (list (cons :glob pattern))
-                                               pattern)))))
-      (format #t "updated filegroups tbl: ~A\n" filegroups))))
-
 (define (-fixup-progn-cmd! ws c targets deps)
   (format #t "~A: ~A\n" (blue "-fixup-progn-cmd!") c)
   c)
@@ -100,10 +13,15 @@
        (let ((deps (assoc-val :deps stanza-alist)))
          (format #t "ns-archive deps: ~A~%" deps)))
 
+      ((:archive)
+       (format #t "~A~%" (magenta "fixup :archive"))
+       (let ((deps (assoc-val :deps stanza-alist)))
+         (format #t "archive deps: ~A~%" deps)))
+
       ((:library)
        (format #t "~A~%" (magenta "fixup :library"))
        (let ((deps (assoc-val :deps stanza-alist)))
-         (format #t "ns-archive deps: ~A~%" deps)))
+         (format #t "library deps: ~A~%" deps)))
 
       ((:executable)
        (format #t "~A~%" (magenta "fixup :executable"))
@@ -171,9 +89,9 @@
 ;; updates stanzas
 (define resolve-labels!
   (let ((+documentation+ "Map dune target references to bazel labels using exports table.")
-        (+signature+ '(resolve-labels workspace)))
+        (+signature+ '(resolve-labels! workspace)))
     (lambda (ws)
-      (format #t "~A for ws: ~A\n" (blue "resolve-labels") ws)
+      (format #t "~A for ws: ~A\n" (blue "resolve-labels!") ws)
               ;; (assoc-val 'name ws))
       (let* ((pkgs (car (assoc-val :pkgs ws)))
              ;; (_ (format #t "PKGS: ~A\n" pkgs))

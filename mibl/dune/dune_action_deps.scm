@@ -106,21 +106,23 @@
       #f))
 
 (define (add-literal-to-expanded-deps local? expanded-path expanded-deps)
-  (format #t "~A: ~A, ~A~%" (blue "add-literal-to-expanded-deps")
-          expanded-path expanded-deps)
+  (format #t "~A~%" (blue "add-literal-to-expanded-deps"))
+  (format #t "~A: ~A~%" (white "expanded-path") expanded-path)
+  (format #t "~A: ~A~%" (white "expanded-deps") expanded-deps)
   ;; expanded deps is an alist like ((:_ "a.ml" "a.mli") (:css "a.css")...)
-  ;; merge path into :_ list
-  (alist-update-in! expanded-deps
-                    '() ;; (if local? '(:X:) '(:Y_))
-                      (lambda (old)
-                        (let ((expanded (if (null? old)
-                                            expanded-path
-                                            (append old
-                                                    (list expanded-path)))))
-                          (format #t "old: ~A\n" old)
-                          (format #t "expanded: ~A\n" expanded)
-                          expanded))))
+  (append expanded-deps (list expanded-path)))
+  ;; (alist-update-in! expanded-deps
+  ;;                   '() ;; (if local? '(:X:) '(:Y_))
+  ;;                     (lambda (old)
+  ;;                       (let ((expanded (if (null? old)
+  ;;                                           expanded-path
+  ;;                                           (append old
+  ;;                                                   (list expanded-path)))))
+  ;;                         (format #t "old: ~A\n" old)
+  ;;                         (format #t "expanded: ~A\n" expanded)
+  ;;                         expanded))))
 
+;; if file is not in this pkg, add it to filegroups table
 (define (handle-filename-literal-dep ws dep deplist paths expanded-deps)
   (format #t "~A: ~A\n" (blue "handle-filename-literal-dep") dep)
   (format #t "deplist: ~A\n" deplist)
@@ -164,6 +166,14 @@
          ;; (expanded-path (if local? path canonical-path))
          (expanded-path canonical-path)
 
+         (tgt (if (equal? pkg-path (dirname expanded-path))
+                     (basename expanded-path)
+                     (basename expanded-path)))
+                     ;;(string->keyword (format #f "fg_~A" (basename expanded-path)))))
+
+         (tgt-tag (if (equal? pkg-path (dirname expanded-path))
+                      :tgt :fg))
+
          ;; (new-expanded-deps (alist-update-in! expanded-deps `(,kind)
          ;;                                      (lambda (p)
          ;;                                        (format #t "update fn here\n")
@@ -177,35 +187,55 @@
          )
     (format #t "FILENAME LITERAL : ~A (~A)\n" dep (type-of dep))
     (format #t "expanded-path: ~A\n" expanded-path)
+    (format #t "tgt: ~A\n" tgt)
     (format #t "kind : ~A\n" kind)
     (format #t "new-expanded-deps : ~A\n" expanded-deps)
     ;; find it and resolve pkg path
     ;; if not found mark it as :dynamic
     (expand-deps ws (cdr deplist)
-                    paths ;; stanza
-                    ;; new-expanded-deps
+                    paths
                     (if (null? expanded-deps)
-                        ;; needs to be an alisg
-                        ;; (list (list :_ expanded-path))
                         (list (list
-                               ;;(if local? :: :_)
                                (string->keyword (format #f "~A" dep))
                                (cons :pkg (dirname expanded-path))
-                               (cons :tgt (basename expanded-path))))
-                                    ;; `((:pkg ,(dirname expanded-path))
-                                    ;;   (:file ,(basename expanded-path)))))
+                               (cons tgt-tag tgt #|(basename expanded-path)|# )))
                         (add-literal-to-expanded-deps
                          local?
-                         ;;expanded-path
                          (list
-                          ;;(if local? :: :_)
                           (string->keyword (format #f "~A" dep))
                           (cons :pkg (dirname expanded-path))
-                          (cons :tgt (basename expanded-path)))
-                         ;; `((:pkg ,(dirname expanded-path))
-                         ;;   (:file ,(basename expanded-path)))
+                          (cons tgt-tag tgt #|(basename expanded-path)|# ))
                          expanded-deps))
                     )))
+
+(define (deps->tag-for-file deps arg)
+  (format #t "~A: ~A~%" (blue "deps->tag-for-file") arg)
+  (format #t "~A: ~A~%" (white "deps") deps)
+  (let* ((key (string->keyword (format #f "~A" arg)))
+         (deps (cdr deps))
+         (match (find-if (lambda (dep)
+                           (format #t "~A: ~A~%" (cyan "dep") dep)
+                           (if (equal? (car dep) key)
+                               #t
+                               (let ((tgt (assoc-val :tgt (cdr dep))))
+                                 (format #t "~A: ~A~%" (cyan "tgt") tgt)
+                                 (equal? tgt arg))))
+                         deps)))
+    (format #t "~A: ~A~%" (cyan "match") match)
+    (if match (car match) #f)))
+
+(define (targets->tag-for-file targets arg)
+  (format #t "~A: ~A~%" (blue "targets->tag-for-file") arg)
+  (format #t "~A: ~A~%" (white "targets") targets)
+  (let* ((targets (cdr targets))
+         (match (find-if (lambda (tgt)
+                           (format #t "~A: ~A~%" (cyan "tgt") tgt)
+                           (let ((tgt (assoc-val :tgt (cdr tgt))))
+                             (format #t "~A: ~A~%" (cyan "tgt") tgt)
+                             (equal? tgt arg)))
+                         targets)))
+    (format #t "~A: ~A~%" (cyan "match") match)
+    (if match (car match) #f)))
 
 ;; tagged literals: (:foo foo.ml), (:foo ../foo.ml), (:foo bar/foo.ml)
 (define (handle-tagged-literal-dep ws deplist paths expanded-deps)
@@ -247,7 +277,7 @@
   ;; kw :_ is reserved for non-tagged symlist
   ;; to avoid name clash, convert user keywords to double-colon, e.g.
   ;; :foo => ::foo
-  (let* ((lbl (string->keyword (format #f "~A" (car deplist))))
+  (let* ((lbl (string->keyword (format #f "~A" (keyword->symbol (car deplist)))))
          (pattern (cadr deplist))
          (_ (format #t "~A: ~A~%" (green "pattern") pattern))
          (pattern (format #f "~A" (cadr pattern)))
@@ -285,12 +315,13 @@
         (if (eq? 'glob_files (car (cadr deplist)))
             (update-filegroups-table!
              ws (dirname canonical-path)
-             (keyword->symbol lbl) (basename pattern))))
+             lbl ;; (keyword->symbol lbl)
+             (basename pattern))))
 
     (list (list lbl
                 (cons :pkg (dirname tagged))
                 ;; NB: :tgt for singleton, :tgts for globs
-                (cons :tgts (keyword->symbol lbl)))
+                (cons :tgts lbl))
           `,@expanded-deps)
     ;; (if (symbol? tagged)
     ;;     (list (list lbl tagged) `,@expanded-deps)

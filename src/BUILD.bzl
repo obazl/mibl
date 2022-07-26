@@ -7,6 +7,7 @@ SRCS = [
     "error_handler.c",
     "fs.c",
     "utils.c",
+    "debug.c"
 ]
 
 ## selects are not iterable

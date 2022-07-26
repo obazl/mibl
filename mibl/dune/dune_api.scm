@@ -39,6 +39,10 @@
 
 (define (-trim-pkg! pkg)
   ;; (format #t "~A: ~A~%" (blue "-trim-pkg!") pkg)
+
+  ;; remove null lists from :dune alist
+  (let ((dune (assoc :dune pkg)))
+    (set-cdr! dune (remove '() (cdr dune))))
   ;; deps
   (if-let ((deps (assoc-in '(:dune :rule :deps) pkg)))
           (begin
@@ -130,6 +134,13 @@
             ;; ((executables) (normalize-stanza-executables :executables
             ;;                 pkg-path ocaml-srcs stanza))
 
+            ((alias)
+             (set-cdr! nstanzas
+                       (append
+                        (cdr nstanzas)
+                        (dune-alias->mibl ws pkg stanza))))
+
+
             ;; ((install) (normalize-stanza-install
             ;;             pkg-path
             ;;             ;;dune-project-stanzas
@@ -145,7 +156,8 @@
             ;; ((:dune-project) stanza)
 
               (else
-               (format #t "~A: ~A\n" (red "unhandled") stanza)))))
+               ;; (format #t "~A: ~A\n" (red "unhandled") stanza)
+               (error 'fixme (format #f "~A: ~A~%" (red "unhandled") stanza))))))
     ;; (format #t "normalized pkg: ~A\n" pkg)
 
     (-mark-apodoses! pkg)
@@ -158,9 +170,9 @@
 (define (dune-pkg->mibl ws pkg)
   (format #t "~A: ~A\n" (blue "dune-pkg->mibl") pkg)
   (format #t "~A: ~A\n" (green "ws") ws)
-  (let* ((nstanzas (list :dune))
+  (let* ((nstanzas (list :dune '())) ;; hack to make sure pkg is always an alist
          (pkg+ (append pkg (list nstanzas))))
-    (format #t "pkg+: ~A\n" (assoc 'dune pkg+))
+    (format #t "pkg+: ~A\n" pkg+) ;; (assoc 'dune pkg+))
     ;; (set-car! dune-stanzas :dune-stanzas)
     (if (assoc 'dune pkg+)
         (let ((new-pkg

@@ -102,41 +102,76 @@
   '()
   )
 
+(define (-handle-progn-item item ws pkg targets deps)
+  (format #t "~A: ~A~%" (blue "-handle-progn-item") item)
+  (format #t "~A: ~A~%" (white "targets") targets)
+  (format #t "~A: ~A~%" (blue "deps") deps)
+  (let* ((progn item) ;; (car progn-list))
+         (action (car progn))
+         (_ (format #t "progn action: ~A\n" action))
+         (args (cdr progn))
+         (_ (format #t "args: ~A\n" args))
+         (cmd (if-let ((cmd-fn (assoc-val action dune-action-cmds-no-dsl)))
+                      (let ((cmd-list (apply (car cmd-fn)
+                                             (list ws pkg
+                                                   action
+                                                   (list progn)
+                                                   targets deps))))
+                        cmd-list)
+                      (if-let ((cmd-fn (assoc-val action
+                                                  dune-action-cmds-dsl)))
+                              (let ((cmd-list (apply (car cmd-fn)
+                                                     (list ws pkg
+                                                           (list progn)
+                                                           ;;(list action-alist)
+                                                           targets deps))))
+                                cmd-list)
+                              (begin
+                                (format #t "UNHANDLED PROGN ACTION: ~A\n"
+                                        action)
+                                stanza)))))
+    (format #t "~A: ~A~%" (red "PROGN ITEM") cmd)
+    cmd))
+
 (define (normalize-action-progn-dsl ws pkg action-alist targets deps)
   (format #t "~A: ~A\n" (blue "normalize-action-progn-dsl") action-alist)
-  (let* ((progn-alist (cdar action-alist))
-         (_ (format #t "progn-alist: ~A\n" progn-alist))
-         (progns
-          (let recur ((progn-list progn-alist)
-                      (cmd-list '()))
-            ;; (format #t "progn cmdlist ~A\n" cmd-list)
-            (if (null? progn-list)
-                cmd-list
-                (let* ((progn (car progn-list))
-                       (action (car progn))
-                       (_ (format #t "progn action: ~A\n" action))
-                       (args (cdr progn))
-                       (_ (format #t "args: ~A\n" args))
-                       (cmd (if-let ((cmd-fn (assoc-val action dune-action-cmds-no-dsl)))
-                                    (let ((cmd-list (apply (car cmd-fn)
-                                                           (list ws pkg
-                                                                 action
-                                                                 (list progn)
-                                                                 targets deps))))
-                                      cmd-list)
-                                    (if-let ((cmd-fn (assoc-val action
-                                                                dune-action-cmds-dsl)))
-                                            (let ((cmd-list (apply (car cmd-fn)
-                                                                   (list ws pkg
-                                                                         (list progn)
-                                                                         ;;(list action-alist)
-                                                                         targets deps))))
-                                              cmd-list)
-                                            (begin
-                                              (format #t "UNHANDLED PROGN ACTION: ~A\n"
-                                                      action)
-                                              stanza)))))
-                  (recur (cdr progn-list) (append cmd-list cmd)))))))
+  (let* ((progn-items (cdar action-alist))
+         (_ (format #t "progn-items: ~A\n" progn-items))
+         (progns (map (lambda (item)
+                        (-handle-progn-item item ws pkg targets deps))
+                      progn-items)))
+  ;; (let recur ((progn-list progn-items)
+  ;;             (cmd-list '()))
+  ;;   ;; (format #t "progn cmdlist ~A\n" cmd-list)
+  ;;   (if (null? progn-list)
+  ;;       cmd-list
+  ;;       (let* ((progn (car progn-list))
+  ;;              (action (car progn))
+  ;;              (_ (format #t "progn action: ~A\n" action))
+  ;;              (args (cdr progn))
+  ;;              (_ (format #t "args: ~A\n" args))
+  ;;              (cmd (if-let ((cmd-fn (assoc-val action dune-action-cmds-no-dsl)))
+  ;;                           (let ((cmd-list (apply (car cmd-fn)
+  ;;                                                  (list ws pkg
+  ;;                                                        action
+  ;;                                                        (list progn)
+  ;;                                                        targets deps))))
+  ;;                             cmd-list)
+  ;;                           (if-let ((cmd-fn (assoc-val action
+  ;;                                                       dune-action-cmds-dsl)))
+  ;;                                   (let ((cmd-list (apply (car cmd-fn)
+  ;;                                                          (list ws pkg
+  ;;                                                                (list progn)
+  ;;                                                                ;;(list action-alist)
+  ;;                                                                targets deps))))
+  ;;                                     cmd-list)
+  ;;                                   (begin
+  ;;                                     (format #t "UNHANDLED PROGN ACTION: ~A\n"
+  ;;                                             action)
+  ;;                                     stanza)))))
+  ;;         (recur (cdr progn-list) (append cmd-list cmd)))))
+
+    (format #t "~A: ~A~%" (cyan "progns") progns)
     (list (cons :progn progns))))
 
 ;; called for (action (run ...) ...)
@@ -210,6 +245,21 @@
   '()
   )
 
+(define (-find-item-in-targets item targets)
+  (format #t "~A: ~A in ~A~%" (blue "-find-item-in-targets") item targets)
+  (let* ((items (cdr targets))
+         (_ (format #t "~A: ~A~%" (red "items") items))
+         (lbl (find-if (lambda (-item)
+                         (format #t "~A: ~A~%" (white "-item") -item)
+                         (let* ((key (car -item))
+                                (label (cdr -item))
+                                (tgt (cadr label)))
+                           (format #t "~A: ~A~%" (white "tgt") tgt)
+                           (equal? (format #f "~A" item) (cdr tgt))))
+                       items)))
+    (format #t "~A: ~A~%" (red "found label") lbl)
+    (if lbl (car lbl) #f)))
+
 (define (normalize-action-write-file ws pkg action action-alist targets deps)
   (format #t "~A: ~A\n" (blue "normalize-action-write-file") action)
   (format #t "~A: ~A\n" (green "action-alist") action-alist)
@@ -218,15 +268,21 @@
 
   (let* ((args (assoc-val 'write-file action-alist))
          (_ (format #t "args: ~A\n" args))
-         ;; (args (cdr args))
-         (file (car args))
-         (_ (format #t "file: ~A\n" file))
+
+         (output (car args))
+         (_ (format #t "~A: ~A~%" (white "output") output))
+
+         ;; (file (car args))
+         ;; (_ (format #t "file: ~A\n" file))
          (content `(:content ,(cadr args)))
          (_ (format #t "content: ~A\n" content))
 
          (target (if (null? targets)
-                     file
-                     (caar targets)))
+                     output
+                     ;; get tagged-label from targets, for output
+                     (if-let ((t (-find-item-in-targets output targets)))
+                             t
+                             (-infer-output! output targets pkg))))
          (_ (format #t "~A: ~A~%" (red "target") target))
          )
 
@@ -530,7 +586,8 @@
 ;; called by normalize-action-rule
 (define (normalize-action ws pkg stanza-alist targets deps) ;; rule stanza
   (format #t "~A: ~A\n" (blue "normalize-action") stanza-alist)
-  (format #t "~A: ~A~%" (blue "deps") deps)
+  (format #t "~A: ~A~%" (white "targets") targets)
+  (format #t "~A: ~A~%" (white "deps") deps)
   (let* ((action-assoc (assoc 'action stanza-alist))
          (action-alist (assoc-val 'action stanza-alist))
          (action (if (pair? (car action-alist)) ;; e.g. (action (tool ...))
@@ -552,156 +609,3 @@
                     (begin
                       (format #t "UNHANDLED ACTION: ~A\n" action)
                       stanza)))))
-
-(define (normalize-action-rule ws pkg rule-alist targets deps)
-  (format #t "~A: ~A\n" (blue "normalize-action-rule") rule-alist)
-  (format #t "deps: ~A\n" deps)
-  (format #t "targets: ~A\n" targets)
-  (format #t "ws: ~A\n" ws)
-  (let* ((nzaction (normalize-action
-
-                    ws pkg rule-alist targets deps))
-         (_ (format #t "~A: ~A\n"
-                    (green "normalized action") nzaction))
-         (package (if-let ((p (assoc-val 'package rule-alist))) (car p)))
-         (mode (if-let ((m (assoc-val 'mode rule-alist))) (car m)))
-         (fallback (if-let ((fb (assoc-val 'fallback rule-alist)))
-                           (car fb)))
-         (locks (assoc-val 'locks rule-alist))
-         (alias (if-let ((a (assoc-val 'alias rule-alist))) (car a)))
-         (package (if-let ((p (assoc-val 'package rule-alist))) (car p)))
-
-         (enabled-if (if-let ((p (assoc-val 'enabled_if rule-alist)))
-                             (car p)))
-
-         ;; (rule-tag (-action->rule-tag nzaction))
-         ;; (_ (format #t "rule-tag: ~A\n" rule-tag))
-         ;; (_ (format #t "~A: ~A\n" (green "TARGETS") targets))
-         (r-alist (if (null? targets)
-                      (list (if (assoc :progn nzaction)
-                                (cons :actions (cdar nzaction))
-                                (cons :actions nzaction)))
-                      (list (list :outputs `,@targets)
-                            ;; (cons ':deps deps)
-                            (if (assoc :progn nzaction)
-                                (cons :actions (cdar nzaction))
-                                (cons :actions nzaction)))))
-         (r-alist (if-let ((ctx (assoc :ctx nzaction)))
-                          (cons ctx r-alist)
-                          r-alist))
-         (r-alist (if deps ;; (null? deps) ???
-                      (cons deps r-alist)
-                      ;; (cons `(:Deps ,@deps) r-alist)
-                      r-alist))
-         (r-alist (if package (cons (list ':package package)
-                                    r-alist)
-                      r-alist))
-         (r-alist (if mode (cons (list ':mode mode) r-alist)
-                      r-alist))
-         (r-alist (if locks (cons (list ':locks locks) r-alist)
-                      r-alist))
-         (r-alist (if fallback (cons (list ':fallback fallback)
-                                     r-alist)
-                      r-alist))
-         (r-alist (if enabled-if (cons (list ':enabled-if
-                                             enabled-if)
-                                       r-alist)
-                      r-alist))
-         (r-alist (if alias (cons (list ':alias alias) r-alist)
-                      r-alist)))
-    ;; (list (cons rule-tag r-alist)))
-    (list (cons ':rule r-alist))))
-
-;; (define (normalize-copy-rule ws pkg rule-alist targets deps)
-;;   (format #t "~A: ~A\n" (blue "normalize-copy-rule") rule-alist)
-;;   (format #t "rule-alist: ~A\n" rule-alist)
-
-;;   (let* ((nzaction (normalize-action-file-op
-;;                     ws pkg 'copy rule-alist targets deps))
-;;          (_ (format #t "nzaction: ~A\n" nzaction))
-;;          (package (if-let ((p (assoc-val 'package rule-alist))) (car p)))
-;;          (mode (if-let ((m (assoc-val 'mode rule-alist))) (car m)))
-;;          (fallback (if-let ((fb (assoc-val 'fallback rule-alist)))
-;;                            (car fb)))
-;;          (locks (assoc-val 'locks rule-alist))
-;;          (alias (if-let ((a (assoc-val 'alias rule-alist))) (car a)))
-;;          (package (if-let ((p (assoc-val 'package rule-alist))) (car p)))
-
-;;          (enabled-if (if-let ((p (assoc-val 'enabled_if rule-alist)))
-;;                              (car p)))
-
-;;          (r-alist (if (null? targets)
-;;                       (list (if (assoc :progn nzaction)
-;;                                 (cons :actions (cdar nzaction))
-;;                                 (cons :actions nzaction)))
-;;                       (list (list :outputs targets)
-;;                             ;; (cons ':deps deps)
-;;                             (if (assoc :progn nzaction)
-;;                                 (cons :actions (cdar nzaction))
-;;                                 (cons :actions nzaction)))))
-;;          (r-alist (if-let ((ctx (assoc :ctx nzaction)))
-;;                           (cons ctx r-alist)
-;;                           r-alist))
-;;          (r-alist (if deps ;; (null? deps) ???
-;;                       (cons `(:dEps ,@deps) r-alist)
-;;                       r-alist))
-;;          (r-alist (if package (cons (list ':package package)
-;;                                     r-alist)
-;;                       r-alist))
-;;          (r-alist (if mode (cons (list ':mode mode) r-alist)
-;;                       r-alist))
-;;          (r-alist (if locks (cons (list ':locks locks) r-alist)
-;;                       r-alist))
-;;          (r-alist (if fallback (cons (list ':fallback fallback)
-;;                                      r-alist)
-;;                       r-alist))
-;;          (r-alist (if enabled-if (cons (list ':enabled-if
-;;                                              enabled-if)
-;;                                        r-alist)
-;;                       r-alist))
-;;          (r-alist (if alias (cons (list ':alias alias) r-alist)
-;;                       r-alist)))
-;;     ;; (list (cons rule-tag r-alist)))
-;;     (list (cons ':rule r-alist)))
-;;   )
-
-;;     (case action  ;; (car action)
-;;     ;;   ((copy#) (normalize-copy-action pkg-path action stanza srcfiles))
-;;     ;;   ((copy) (normalize-copy-action pkg-path action stanza srcfiles))
-
-;;       ((run)
-;;        ;; (normalize-run-action pkg action stanza-alist))
-;;        (let ((cmd-list (normalize-run-action pkg action-alist targets deps)))
-;;          (format #t "RUN ACTION: ~A\n" cmd-list)
-;;          (set-cdr! action-assoc (list cmd-list))
-;;          cmd-list))
-
-
-;;       ;; pkg-path action stanza srcfiles))
-
-;;       ((progn) (normalize-progn-action pkg stanza-alist))
-;;        ;; (normalize-progn-action pkg-path action stanza srcfiles))
-
-;;       ((with-stdout-to)
-;;        (let ((cmd-list (normalize-with-stdout-to
-;;                         pkg action-alist targets deps)))
-;;          ;; (set-cdr! action-assoc (list cmd-list))
-;;          cmd-list))
-;;        ;; (normalize-with-stdout-to pkg stanza-alist))
-;;        ;; (normalize-with-stdout-to pkg-path action stanza srcfiles))
-
-;;     ;;   ((with-stderr-to) stanza)
-;;     ;;   ((with-stdin-from) stanza)
-;;     ;;   ((with-outputs-to) stanza)
-
-;;     ;;   ((write-file) (normalize-write-file action stanza))
-
-;;       (else
-;;        (format #t "UNHANDLED ACTION\n")
-;;        stanza))
-;; ))
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; (display "loaded dune/dune_actions.scm") (newline)

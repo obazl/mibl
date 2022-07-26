@@ -243,7 +243,7 @@ LOCAL void _handle_dir(s7_pointer pkg_tbl, FTS* tree, FTSENT *ftsentry)
         if (debug)
             log_warn(RED "dunefile not found in: " CRESET "%s",
                       ftsentry->fts_path);
-        return;
+        /* return; */
     }
 
     if (strncmp(ews_root, ftsentry->fts_path,
@@ -1134,43 +1134,53 @@ LOCAL void _handle_ml_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
         /* printf("%s", "mli"); */
         _update_mli(pkg_tbl, ftsentry, ext);
     }
+    /*  */
     else if ((strncmp(ext, ".mlt", 4) == 0)
         /* .mlt - ocamlformat file, not a module */
         && (strlen(ext) == 4)) {
-        log_warn("UNHANDLED: :%-6s %s", "mlt", ftsentry->fts_name);
+        /* log_warn("UNHANDLED: :%-6s %s", "mlt", ftsentry->fts_name); */
+        _update_pkg_files(pkg_tbl, ftsentry, ext);
     }
     else if ((strncmp(ext, ".mll", 4) == 0)
         && (strlen(ext) == 4)) {
-        log_warn("UNHANDLED: :%-6s %s", "mll", ftsentry->fts_name);
+        /* log_warn("UNHANDLED: :%-6s %s", "mll", ftsentry->fts_name); */
+        _update_pkg_files(pkg_tbl, ftsentry, ext);
     }
     else if ((strncmp(ext, ".mly", 4) == 0)
         && (strlen(ext) == 4)) {
-        log_warn("UNHANDLED: :%-6s %s", "mly", ftsentry->fts_name);
+        /* log_warn("UNHANDLED: :%-6s %s", "mly", ftsentry->fts_name); */
+        _update_pkg_files(pkg_tbl, ftsentry, ext);
     }
     else if ((strncmp(ext, ".mlh", 4) == 0)
         && (strlen(ext) == 4)) {
-        log_warn("UNHANDLED: :%-6s %s", "mlh", ftsentry->fts_name);
+        /* log_warn("UNHANDLED: :%-6s %s", "mlh", ftsentry->fts_name); */
+        _update_pkg_files(pkg_tbl, ftsentry, ext);
     }
     else if ((strncmp(ext, ".mllib", 6) == 0)
         && (strlen(ext) == 6)) {
-        log_warn("UNHANDLED: :%-6s %s", "mllib", ftsentry->fts_name);
+        /* log_warn("UNHANDLED: :%-6s %s", "mllib", ftsentry->fts_name); */
+        _update_pkg_files(pkg_tbl, ftsentry, ext);
     }
     else if ((strncmp(ext, ".mligo", 6) == 0)
         && (strlen(ext) == 6)) {
         /* tezos */
-        log_warn("UNHANDLED: :%-6s %s", "mligo", ftsentry->fts_name);
+        /* log_warn("UNHANDLED: :%-6s %s", "mligo", ftsentry->fts_name); */
+        _update_pkg_files(pkg_tbl, ftsentry, ext);
     }
     else if ((strncmp(ext, ".mldylib", 8) == 0)
         && (strlen(ext) == 8)) {
         /* mina */
-        log_warn("UNHANDLED: :%-6s %s", "mldylib", ftsentry->fts_name);
+        /* log_warn("UNHANDLED: :%-6s %s", "mldylib", ftsentry->fts_name); */
+        _update_pkg_files(pkg_tbl, ftsentry, ext);
     }
     else if ((strncmp(ext, ".md", 3) == 0)
         && (strlen(ext) == 3)) {
-        log_warn("UNHANDLED: :%-6s %s", "md", ftsentry->fts_name);
+        /* log_warn("UNHANDLED: :%-6s %s", "md", ftsentry->fts_name); */
+        _update_pkg_files(pkg_tbl, ftsentry, ext);
     }
     else {
         log_warn(RED "UNKNOWN ml ext: :%-6s\n" CRESET, ext);
+        _update_pkg_files(pkg_tbl, ftsentry, ext);
         /* exit(EXIT_FAILURE); */
     }
     /* printf("%s" CRESET " ", ftsentry->fts_name); */
@@ -1941,11 +1951,13 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
                         }
                         else if ((strncmp(ext, ".sh", 3) == 0)
                                  && (strlen(ext) == 3)) {
-                            _handle_script_file(pkg_tbl, ftsentry, ext);
+                            _handle_file(pkg_tbl, ftsentry, ext);
+                            /*_handle_script_file(pkg_tbl, ftsentry, ext);*/
                         }
                         else if ((strncmp(ext, ".py", 3) == 0)
                                  && (strlen(ext) == 3)) {
-                            _handle_script_file(pkg_tbl, ftsentry, ext);
+                            _handle_file(pkg_tbl, ftsentry, ext);
+                            /*_handle_script_file(pkg_tbl, ftsentry, ext);*/
                         }
                         else if ((strncmp(ext, ".opam", 5) == 0)
                                  && (strlen(ext) == 5)) {

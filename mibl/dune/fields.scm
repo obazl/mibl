@@ -3,6 +3,7 @@
 ;; mv select targets to pkg :modules
 ;; rm select apodoses from pkg :structures, :signatures
 ;; xpkg: (p . pkg), so we can set! pkg by (set-cdr! x)
+;; FIXME: replace with pkg_api.scm::update-pkg-files!
 (define (-update-pkg-files! pkg conditional)
   (format #t "~A: ~A\n" (blue "-update-pkg-files!") conditional)
   (let* ((target (car (assoc-val :target conditional)))

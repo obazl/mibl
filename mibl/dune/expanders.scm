@@ -136,19 +136,179 @@
           (if t (car t) tool))
         )))
 
-;; updates deps
-(define (-infer-dep! arg deps pkg)
-  (format #t "~A: ~A (~A)~%" (blue "-infer-dep") arg (type-of arg))
-  (format #t "~A: ~A~%" (red "deps") deps)
+;; may update deps
+(define (find-sigfile-in-pkg-files!? arg deps pkg)
+  (format #t "~A: ~A~%" (blue "find-sigfile-in-pkg-files") arg)
+  (format #t "~A: ~A~%" (red ":signatures") (assoc-val :signatures pkg))
+
+  (let ((sig
+         (find-if (lambda (f-assoc)
+                    ;; (format #t "~A: ~A~%" (white "f-assoc")
+                    ;;         f-assoc)
+                    (find-if (lambda (f)
+                               ;; (format #t "~A: ~A (~A)~%" (white "f") (cdr f) (type-of (cdr f)))
+                               (equal? (format #f "~A" arg)
+                                       (format #f "~A" (cdr f))))
+                             (cdr f-assoc)))
+                  (if-let ((sigs (assoc-val :signatures pkg)))
+                          sigs
+                          '()))))
+    (format #t "~A: ~A~%" (white "sig") sig)
+    (if sig
+        (let ((key (string->keyword arg)))
+          (format #t "~A: ~A~%" (magenta "sigfile INFERRED dep") sig)
+          (set-cdr! deps (cons (cons key
+                                     (list (cons :pkg (assoc-val :pkg-path pkg))
+                                           (cons :tgt arg)))
+                               (cdr deps)))
+          key)
+        ;; else search :modules
+        (let ((sig
+               (find-if (lambda (m-assoc)
+                          (format #t "~A: ~A~%" (white "m-assoc") m-assoc)
+                          (find-if (lambda (m)
+                                     (format #t "~A: ~A (~A)~%" (white "m") (cdr m) (type-of (cdr m)))
+                                     (let ((ml (cdr m)))
+                                       (format #t "~A: ~A~%" (white "(cdr m)") ml)
+                                       (equal? (format #f "~A" arg)
+                                               (format #f "~A" ml))))
+                                   (cdr m-assoc)))
+                        (if-let ((modules (assoc-val :modules pkg)))
+                                modules
+                                '()))))
+          (if sig
+              (let ((key (string->keyword arg)))
+                (format #t "~A: ~A~%" (magenta "sig INFERRED DEP") sig)
+                (set-cdr! deps (cons (cons key
+                                           (list (cons :pkg (assoc-val :pkg-path pkg))
+                                                 (cons :tgt arg)))
+                                     (cdr deps)))
+                key)
+              #f)))))
+
+;; may update deps
+(define (find-structfile-in-pkg-files!? arg deps pkg)
+  (format #t "~A: ~A~%" (blue "find-structfile-in-pkg-files") arg)
+  (format #t "~A: ~A~%" (red ":structures") (assoc-val :structures pkg))
+  (format #t "~A: ~A~%" (red ":modules") (assoc-val :modules pkg))
+
+  (let* ((struct-files (if-let ((files (assoc :structures pkg)))
+                               (cdr files) '()))
+         (_ (format #t "~A: ~A~%" (magenta "struct-files") struct-files))
+         (struct-files (append
+                        (if-let ((sfiles (assoc-val :static struct-files)))
+                                sfiles '())
+                        (if-let ((dfiles (assoc-val :dynamic struct-files)))
+                                dfiles '())))
+         (_ (format #t "~A: ~A~%" (cyan "struct-files") struct-files))
+         (struct
+          (find-if (lambda (f-assoc)
+                    (format #t "~A: ~A~%" (white "f-assoc") f-assoc)
+                    (equal? (format #f "~A" arg) (format #f "~A" (cdr f-assoc))))
+                   struct-files)))
+                  ;; (if-let ((structs (assoc-val :structures pkg)))
+                  ;;         structs
+                  ;;         '()))))
+
+    (format #t "~A: ~A~%" (white "struct") struct)
+    (if struct
+        (let ((key (string->keyword arg)))
+          (format #t "~A: ~A~%" (magenta "structfile INFERRED dep") struct)
+          (set-cdr! deps (cons (cons key
+                                     (list (cons :pkg (assoc-val :pkg-path pkg))
+                                           (cons :tgt arg)))
+                               (cdr deps)))
+          key)
+        ;; else search :modules
+        (let ((struct
+               (find-if (lambda (m-assoc)
+                          (format #t "~A: ~A~%" (white "m-assoc") m-assoc)
+                          (find-if (lambda (m)
+                                     (format #t "~A: ~A (~A)~%" (white "m") (cdr m) (type-of (cdr m)))
+                                     (let ((ml (cdr m)))
+                                       (format #t "~A: ~A~%" (white "(cdr m)") ml)
+                                       (equal? (format #f "~A" arg)
+                                               (format #f "~A" ml))))
+                                   (cdr m-assoc)))
+                        (if-let ((modules (assoc-val :modules pkg)))
+                                modules
+                                '()))))
+          (if struct
+              (let ((key (string->keyword arg)))
+                (format #t "~A: ~A~%" (magenta "INFERRED DEP") struct)
+                (set-cdr! deps (cons (cons key
+                                           (list (cons :pkg (assoc-val :pkg-path pkg))
+                                                 (cons :tgt arg)))
+                                     (cdr deps)))
+                key)
+              #f)))))
+
+;; may update deps
+(define (find-file-in-pkg-files!? arg deps pkg)
+  (format #t "~A: ~A~%" (blue "find-file-in-pkg-files") arg)
+  (format #t "~A: ~A~%" (blue ":files") (assoc-val :files pkg))
+  (format #t "~A: ~A~%" (blue "deps") deps)
+  ;; (format #t "~A: ~A~%" (red ":scripts") (assoc-val :scripts pkg))
+
+  (if (assoc-val :files pkg)
+      (let* ((pkg-files (if-let ((files (assoc-val :files pkg)))
+                                files '()))
+             (pkg-files (append
+                         (if-let ((statics (assoc-val :static pkg-files)))
+                                 statics '())
+                         (if-let ((dynamics (assoc-val :dynamic pkg-files)))
+                                 dynamics '())))
+             (_ (format #t "~A: ~A~%" (cyan "pkg-files") pkg-files))
+             (file
+              (find-if (lambda (f)
+                         (format #t "~A: ~A~%" (white "f") f)
+                         (equal? (format #f "~A" arg)
+                                 (format #f "~A" f)))
+                       pkg-files)))
+        (format #t "~A: ~A~%" (white "found file") file)
+        (if file
+            #t
+            ;; update deps/targets but no dups
+            ;; (let ((key (string->keyword (format #f "~A" arg))))
+            ;;   (format #t "~A: ~A~%" (magenta "FOUND ~A in :files") file)
+            ;;   (set-cdr! deps (cons (cons key
+            ;;                              (list (cons :pkg (assoc-val :pkg-path pkg))
+            ;;                                    (cons :tgt arg)))
+            ;;                        (cdr deps)))
+            ;;   key)
+            ;; else not found in :files, so add it
+            (begin
+              (if (not (string-index (format #f "~A" arg)
+                                     (lambda (ch) (equal? ch #\/))))
+                  (begin
+                    (set! pkg (update-pkg-files! pkg (list arg)))
+                    #t)
+                  #f #|(string->keyword (format #f "~A" arg))|# ))))
+      ;; else no :files field; add it
+      (begin
+        (set! pkg (update-pkg-files! pkg (list arg)))
+        #t #|(string->keyword (format #f "~A" arg))|# )))
+
+;; updates :outputs. called by normalize-action-write-file if no (targets)
+;; targets should be (:outputs)
+(define (-infer-output! arg targets pkg)
+  (format #t "~A: ~A (~A)~%" (blue "-infer-output!") arg (type-of arg))
+  (format #t "~A: ~A~%" (red "targets") targets)
   (format #t "~A: ~A~%" (red ":signatures") (assoc-val :signatures pkg))
   (format #t "~A: ~A~%" (red ":structures") (assoc-val :structures pkg))
   (format #t "~A: ~A~%" (red ":modules") (assoc-val :modules pkg))
-  ;; if extension == .ml search structs then modules
-  ;; if extension == .mli search sigs
-  ;; else search :files, :scripts, ...
+
+  ;; if arg in targets return
+  ;; else search pkgfiles
+
+  ;; search pkg files - if found then we're overwriting? should not happen?
+  ;; expected: arg is not found in pkg files, so we
+  ;; 1. add to pkg files
+  ;; 2. add to :targets
 
   (cond
-   ((fnmatch "*.ml" arg 0)
+   ((eq? (fnmatch "*.ml" (format #f "~A" arg) 0) 0)
+    (format #t "~A: ~A~%" (red "Matched *.ml") arg)
     (let ((struct (find-if (lambda (f-assoc)
                                ;; (format #t "~A: ~A~%" (white "f-assoc")
                                ;;         f-assoc)
@@ -193,17 +353,53 @@
                     key)
                   ;; else no matching file
                   ;; PROBLEM: distinguish between string args and labels of targets in other pkgs
-                  ;; solution: second pass, to check exports table
+                  ;; solution: assume "foo.ml" is a file name
                   (begin
-                    (format #t "~A: ~A~%" (red "NO MATCHING FILE") struct)
+                    (format #t "~A: ~A~%" (red "NO MATCH in pkg files for") arg)
+                    ;; 1. add to pkg files :structures or :modules
+                    ;; 2. add to :targets
                     ;;(string->keyword arg)
                     arg))))))
 
-   ((fnmatch "*.mli" arg 0)
-    (error 'fixme "not yet implemented"))
+   ((eq? (fnmatch "*.mli" (format #f "~A" arg) 0) 0)
+    (error 'fixme (format #f "not yet implemented for: ~A" arg)))
+
+   ;;((eq? (fnmatch "*.mli" (format #f "~A" arg) 0) 0)
+   ((string=? "%{target}" (format #f "~A" arg))
+    ;; targets should be a singleton list
+    ;; e.g. (:outputs (:foo.txt (:pkg "a/b") (:tgt "foo.txt")))
+    (let ((targets (car (cdr targets))))
+      (format #t "~A: ~A~%" (red "targets") targets)
+      (car targets)))
 
    (else
-    (error 'fixme "not yet implemented"))))
+    (let ((f (find-file-in-pkg-files!? arg targets pkg)))
+      (if f
+          (update-tagged-label-list! arg targets pkg))))))
+
+;; search pkg files for arg
+;; if found update deps
+(define (-infer-dep! arg deps pkg)
+  (format #t "~A: ~A (~A)~%" (blue "-infer-dep!") arg (type-of arg))
+  (format #t "~A: ~A~%" (red "pkg") pkg)
+  (format #t "~A: ~A~%" (red "deps") deps)
+  (format #t "~A: ~A~%" (red ":signatures") (assoc-val :signatures pkg))
+  (format #t "~A: ~A~%" (red ":structures") (assoc-val :structures pkg))
+  (format #t "~A: ~A~%" (red ":modules") (assoc-val :modules pkg))
+  (format #t "~A: ~A~%" (red ":files") (assoc-val :files pkg))
+
+  (cond
+   ((eq? 0 (fnmatch "*.ml" arg 0))
+    (find-structfile-in-pkg-files!? arg deps pkg))
+
+   ((eq? 0 (fnmatch "*.mli" arg 0))
+    (find-sigfile-in-pkg-files!? arg deps pkg))
+
+   (else
+    ;; search :files
+    (let ((f (find-file-in-pkg-files!? arg deps pkg)))
+      (format #t "~A: ~A~%" (red "found file in pkg files?") f)
+      (if f (update-tagged-label-list! arg deps pkg))))))
 
 ;; string args may include suffixed vars, e.g. %{test}.corrected
 (define expand-string-arg
@@ -239,11 +435,18 @@
       (format #t "deps: ~A\n" deps)
       (-expand-pct-tool arg))
 
-     (else ;; arg is string
-      ;; search pkg files for inferred input dep
-      (if-let ((inferred-dep (-infer-dep! arg deps pkg)))
-              inferred-dep
-              arg))
+     (else
+      (format #t "~A: ~A~%" (white "string literal") arg)
+      ;; arg is string. check deps and targets, then pkg files
+      (if-let ((tag (deps->tag-for-file deps arg)))
+              tag
+              (if-let ((tag (targets->tag-for-file targets arg)))
+                      tag
+                      ;; else search pkg files for file not listed in :deps
+                      ;; if found, -infer-dep! adds to :deps
+                      (if-let ((inferred-dep (-infer-dep! arg deps pkg)))
+                              inferred-dep
+                              arg))))
       ;; (cons
       ;;  arg
       ;;  ;;(resolve-string-arg pkg-path arg vars)
@@ -282,6 +485,7 @@
                   ;;                         (cdr args) filedeps vars)))
 
                   ((symbol? arg)
+                   (format #t "~A: ~A~%" (red "arg is symbol") arg)
                    (begin
                      ;; (format #t "ARGSYM: ~A\n" arg)
                      (cond
@@ -290,16 +494,16 @@
                              ;; (xdeps (-deps->srcs-attr "fake" deps))
                              )
                          (append '(::deps) exp)))
+
                       ((eq? '%{workspace_root} arg)
                        (cons :WS-ROOT
                              (expand-cmd-args (cdr args) pkg targets deps)))
 
                       ((eq? '%{targets} arg)
-                       ;; (format #t "~A: ~A~%" (green "%{targets}") targets)
-                       ;; (cons targets
-                       ;;       (expand-cmd-args (cdr args) pkg targets deps))
-                       (cons :outputs
-                             (expand-cmd-args (cdr args) pkg targets deps)))
+                       (let ((exp (expand-cmd-args (cdr args) pkg targets deps))
+                             ;; (xdeps (-deps->srcs-attr "fake" deps))
+                             )
+                         (append '(::targets) exp)))
 
                       ((eq? '%{target} arg)
                        (cons (cons :target (cdar targets))
@@ -311,6 +515,7 @@
                                (expand-cmd-args (cdr args) pkg targets deps)))))))
 
                   ((string? arg)
+                   (format #t "~A: ~A~%" (red "arg is string") arg)
                    (let ((sarg (expand-string-arg arg pkg targets deps)))
                      (append (list sarg)
                            (expand-cmd-args (cdr args) pkg targets deps))))

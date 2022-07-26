@@ -163,7 +163,7 @@ int main(int argc, char *argv[])
 
     /* sexp = "(mibl->starlark :@ -mibl-ws-table)"; */
 
-    sexp = "(resolve-labels (assoc-val :@ -mibl-ws-table))";
+    sexp = "(resolve-labels! (assoc-val :@ -mibl-ws-table))";
     s7_eval_c_string(s7, sexp);
 
     sexp = "(car (assoc-val :exports (assoc-val :@ -mibl-ws-table)))";
