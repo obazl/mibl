@@ -141,26 +141,35 @@ write-file))
 
              )
 
-        (for-each (lambda (dep)
-                    (format #t "~A: ~A~%" (red "filegroup dep?") dep)
-                    (let* ((lbl (cdr dep))
-                           (pkg (assoc-val :pkg lbl))
-                           (tgt (if-let ((tgt (assoc-val :tgt lbl)))
-                                        tgt
-                                        (if-let ((tgts (assoc-val :tgts lbl)))
-                                                tgts
-                                                (if-let ((fg (assoc-val :fg lbl)))
-                                                        fg
-                                                        ;; should not happen:
-                                                        (error 'fixme "label pair lacks :tgt and :tgts")))))
-                           (tgt-tag (caadr lbl)))
-                      (format #t "~A: ~A~%" (red "pkg") pkg)
-                      (format #t "~A: ~A~%" (red "tgt") tgt)
-                      (format #t "~A: ~A~%" (red "pkg-path") pkg-path)
-                      (if (not (equal? (format #f "~A" pkg) pkg-path))
-                          (if (not (member tgt-tag '(:tgt :tgts)))
-                              (update-filegroups-table! ws pkg (string->keyword tgt) tgt)))))
-                  (cdr deps))
+        (if deps
+            (for-each (lambda (dep)
+                        (format #t "~A: ~A~%" (red "filegroup dep?") dep)
+                        (let* ((lbl-tag (car dep))
+                               (lbl (cdr dep))
+                               (pkg (assoc-val :pkg lbl))
+                               (tgt-tag (caadr lbl))
+                               (_ (format #t "~A: ~A~%" (red "tgt-tag") tgt-tag))
+                               (tgt (case tgt-tag
+                                      ((:tgt)
+                                       (assoc-val :tgt lbl))
+                                      ((:tgts)
+                                       (assoc-val :tgts lbl))
+                                      ((:fg)
+                                       (assoc-val :fg lbl))
+                                      (else
+                                       (error 'fixme "label pair lacks :tgt and :tgts"))))
+                               (fg-tag (if (eq? tgt-tag :fg)
+                                           (format #f "*~A*" tgt)
+                                           tgt)))
+                          (format #t "~A: ~A~%" (red "pkg") pkg)
+                          (format #t "~A: ~A~%" (red "lbl-tag") lbl-tag)
+                          (format #t "~A: ~A~%" (red "tgt-tag") tgt-tag)
+                          (format #t "~A: ~A~%" (red "tgt") tgt)
+                          (format #t "~A: ~A~%" (red "pkg-path") pkg-path)
+                          (if (not (equal? (format #f "~A" pkg) pkg-path))
+                              (if (eq? tgt-tag :fg)
+                                  (update-filegroups-table! ws pkg (string->keyword fg-tag) tgt)))))
+                      (cdr deps)))
 
         (format #t "~%~A: ~A~%~%" (red "DISPATCHING  on action") rule-alist)
 

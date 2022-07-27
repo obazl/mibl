@@ -193,6 +193,6 @@
           pkg+)
         (begin
           (format #t "~A: ~A\n"
-                  (red "WARNING: omitting pkg w/o dunefile")
+                  (red "WARNING: pkg w/o dunefile")
                   (assoc-val :pkg-path pkg))
-          '()))))
+          pkg))))

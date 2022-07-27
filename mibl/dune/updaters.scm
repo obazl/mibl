@@ -1,3 +1,71 @@
+(define (update-filegroups-table! ws pkg-path tgt pattern)
+  (format #t "~A: ~A~%" (magenta "update-filegroups-table!") pkg-path)
+  (format #t "~A: ~A~%" (green "tgt") tgt)
+  (format #t "~A: ~A~%" (green "pattern") pattern)
+
+  (let* ((filegroups (car (assoc-val :filegroups
+                                     (assoc-val ws -mibl-ws-table))))
+         (glob? (string-index pattern (lambda (ch)
+                                              (equal? ch #\*)))))
+
+    (format #t "hidden filegroups tbl: ~A\n" filegroups)
+    (format #t "adding ~A~A to filegroups tbl\n" pkg-path tgt)
+
+    (let ((fgroups (hash-table-ref filegroups pkg-path)))
+      (format #t "~A: ~A~%" (red "fgroups") fgroups)
+      (if fgroups
+          (hash-table-set! filegroups pkg-path
+                           (append
+                            fgroups
+                            (list (cons tgt (if glob?
+                                                (list (cons :glob pattern))
+                                                (list (cons :file pattern)))))))
+          ;; else new
+          (hash-table-set! filegroups pkg-path
+                           (list (cons tgt (if glob?
+                                               (list (cons :glob pattern))
+                                               (list (cons :file pattern)))))))
+      (format #t "updated filegroups tbl: ~A\n" filegroups))))
+
+(define (add-filegroups-to-pkgs ws)
+  (format #t "~A: ~A~%" (blue "-add-filegroups-to-pkgs") ws)
+  (let* ((@ws (assoc-val ws -mibl-ws-table))
+         (ws-path (car (assoc-val :path @ws)))
+         (_ (format #t "~A: ~A~%" (blue "ws-path") ws-path))
+         (pkgs (car (assoc-val :pkgs @ws)))
+         (filegroups (car (assoc-val :filegroups @ws))))
+    (for-each (lambda (kv)
+                (format #t "\n~A: ~A~%" (yellow "pkg-path") (car kv))
+                (format #t "~A: ~A~%" (magenta "filegroups") (cdr kv))
+                (let* ((pkg-path (car kv))
+                       (pkg-key (car kv))
+                       (pkg (hash-table-ref pkgs pkg-key)))
+                  (format #t "~A: ~A~%" (yellow "pkg") pkg)
+                  (hash-table-set! pkgs pkg-key
+                                  (append pkg
+                                          (list
+                                           (cons :filegroups (cdr kv)))))
+                  ;; (for-each (lambda (fg)
+                  ;;             (format #t "~A: ~A~%" (yellow "fg") fg))
+                  ;;           (cdr kv))
+                  )
+                )
+              filegroups)))
+    ;;      (pkgs (car (assoc-val :pkgs @ws)))
+    ;;      (mpkg-alist (map (lambda (kv)
+    ;;                        (let ((mibl-pkg (dune-pkg->mibl :@ (cdr kv))))
+    ;;                          (hash-table-set! pkgs (car kv) mibl-pkg)
+    ;;                          mibl-pkg))
+    ;;                      pkgs)))
+    ;;     ;; (_ (format #t "~A: ~A~%" (blue "mpkg-alist")
+    ;;     ;;            mpkg-alist))
+    ;;     ;; (_ (for-each (lambda (k)
+    ;;     ;;                (format #t "~A: ~A~%" (blue "pkg") k))
+    ;;     ;;              (sort! (hash-table-keys pkgs) string<?)))
+    ;; (format #t "~A: ~A~%" (blue "mpkg ct") (length mpkg-alist))
+    ;; mpkg-alist))
+
+
 (define (update-tagged-label-list! filename tllist pkg)
   (format #t "~A: ~A ~A~%" (blue "update-tagged-label-list!")
           filename tllist)
@@ -204,32 +272,3 @@
                 ;;   )
                 ))
             (cdr targets))))
-
-(define (update-filegroups-table! ws pkg-path tgt pattern)
-  (format #t "~A: ~A~%" (magenta "update-filegroups-table!") pkg-path)
-  (format #t "~A: ~A~%" (green "tgt") tgt)
-  (format #t "~A: ~A~%" (green "pattern") pattern)
-
-  (let* ((filegroups (car (assoc-val :filegroups
-                                     (assoc-val ws -mibl-ws-table))))
-         (glob? (string-index pattern (lambda (ch)
-                                              (equal? ch #\*)))))
-
-    (format #t "hidden filegroups tbl: ~A\n" filegroups)
-    (format #t "adding ~A~A to filegroups tbl\n" pkg-path tgt)
-
-    (let ((fgroups (hash-table-ref filegroups pkg-path)))
-      (format #t "~A: ~A~%" (red "fgroups") fgroups)
-      (if fgroups
-          (hash-table-set! filegroups pkg-path
-                           (append
-                            fgroups
-                            (list (cons tgt (if glob?
-                                                (list (cons :glob pattern))
-                                                pattern)))))
-          ;; else new
-          (hash-table-set! filegroups pkg-path
-                           (list (cons tgt (if glob?
-                                               (list (cons :glob pattern))
-                                               pattern)))))
-      (format #t "updated filegroups tbl: ~A\n" filegroups))))
