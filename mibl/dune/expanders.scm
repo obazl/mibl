@@ -34,13 +34,6 @@
                  (car (assoc-val :pkg-path pkg))
                  tool deps))))))))
 
-;; (let ((xtool (handle-filename-literal-dep
-;;               tool deps pkg '())))
-;;   xtool)))
-
-;; (let ((x (expand-cmd-args (list tool) targets deps)))
-;;   x)))
-
 ;; expand-cmd-args:
 ;; if it is a 'dep:' var %{dep:rejections.sh}, use file-exists?
 ;; if it is a resolvable var (e.g. ?) look it up in
@@ -276,14 +269,16 @@
             ;;                                    (cons :tgt arg)))
             ;;                        (cdr deps)))
             ;;   key)
-            ;; else not found in :files, so add it
+
+            ;; else not found in :files
+            ;; if it looks like a filename, add it
             (begin
-              (if (not (string-index (format #f "~A" arg)
-                                     (lambda (ch) (equal? ch #\/))))
+              (if (string-index (format #f "~A" arg)
+                                (lambda (ch) (equal? ch #\/)))
+                  #f ;; skip if not in this pkg
                   (begin
                     (set! pkg (update-pkg-files! pkg (list arg)))
-                    #t)
-                  #f #|(string->keyword (format #f "~A" arg))|# ))))
+                    #t)))))
       ;; else no :files field; add it
       (begin
         (set! pkg (update-pkg-files! pkg (list arg)))
@@ -506,8 +501,11 @@
                          (append '(::targets) exp)))
 
                       ((eq? '%{target} arg)
-                       (cons (cons :target (cdar targets))
+                       ;; assumption: only one tgt in targets
+                       (cons :target ;; (caadr targets))
                              (expand-cmd-args (cdr args) pkg targets deps)))
+
+                      ;; symbol else
                       (else
                        (let ((sarg (expand-string-arg (symbol->string arg)
                                                       pkg targets deps)))

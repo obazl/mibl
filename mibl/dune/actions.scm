@@ -106,6 +106,7 @@
   (format #t "~A: ~A~%" (blue "-handle-progn-item") item)
   (format #t "~A: ~A~%" (white "targets") targets)
   (format #t "~A: ~A~%" (blue "deps") deps)
+
   (let* ((progn item) ;; (car progn-list))
          (action (car progn))
          (_ (format #t "progn action: ~A\n" action))
@@ -131,12 +132,32 @@
                                         action)
                                 stanza)))))
     (format #t "~A: ~A~%" (red "PROGN ITEM") cmd)
-    cmd))
+    ;; (error 'fixme "tmp")
+    (car cmd)))
 
 (define (normalize-action-progn-dsl ws pkg action-alist targets deps)
   (format #t "~A: ~A\n" (blue "normalize-action-progn-dsl") action-alist)
+  (format #t "~A: ~A~%" (green "pkg") pkg)
+  (format #t "~A: ~A~%" (green "targets") targets)
+  (format #t "~A: ~A~%" (green "deps") deps)
+
   (let* ((progn-items (cdar action-alist))
          (_ (format #t "progn-items: ~A\n" progn-items))
+
+         ;; (args (assoc-val 'write-file action-alist))
+         ;; (_ (format #t "args: ~A\n" args))
+
+         ;; (output (car args))
+         ;; (_ (format #t "~A: ~A~%" (white "output") output))
+
+         ;; (target (if (null? targets)
+         ;;             output
+         ;;             ;; get tagged-label from targets, for output
+         ;;             (if-let ((t (-find-item-in-targets output targets)))
+         ;;                     t
+         ;;                     (-infer-output! output targets pkg))))
+         ;; (_ (format #t "~A: ~A~%" (red "target") target))
+
          (progns (map (lambda (item)
                         (-handle-progn-item item ws pkg targets deps))
                       progn-items)))
@@ -175,17 +196,33 @@
     (list (cons :progn progns))))
 
 ;; called for (action (run ...) ...)
-(define (normalize-action-run-dsl ws pkg action-alist targets deps)
-  (format #t "~A: ~A\n" (blue "normalize-action-run-dsl") action-alist)
+(define (normalize-action-run-dsl ws pkg run-list targets deps)
+  (format #t "~A: ~A\n" (blue "normalize-action-run-dsl") run-list)
   (format #t "  targets: ~A\n" targets)
   (format #t "  deps: ~A\n" deps)
-  (let* ((run-alist (cdar action-alist))
-         (cmd (car (expand-cmd-list pkg run-alist targets deps)))
-         (cmd (filter (lambda (fld)
-                        (not (null? (cdr fld))))
-                   cmd)))
-    (format #t "RUN CMD: ~A\n" cmd)
-    (list (cons :cmd cmd)))) ;; :run ???
+  (let* ((run (car run-list))
+         (action-list (cdr run))
+         ;; assert: (null? (cdr action-list))
+         (_ (if (not (null? (cdr action-list)))
+                (error 'fixme "unexpected run-dsl action-list")))
+         (_ (format #t "~A: ~A~%" (green "action-list") action-list))
+         (-action-list (car action-list))
+         (action (car -action-list))
+         (_ (format #t "~A: ~A~%" (green "action") action))
+         (arg-list (cdr -action-list))
+         (_ (format #t "~A: ~A~%" (green "arg-list") arg-list)))
+    (case action
+      ((write-file)
+       (normalize-action-write-file ws pkg action action-list targets deps))
+      ((progn)
+       (normalize-action-progn-dsl ws pkg action-list targets deps))
+      (else ((_ (error 'fixme "run-dsl fixme")))))))
+    ;;      (cmd (car (expand-cmd-list pkg run-alist targets deps)))
+    ;;      (cmd (filter (lambda (fld)
+    ;;                     (not (null? (cdr fld))))
+    ;;                cmd)))
+    ;; (format #t "RUN CMD: ~A\n" cmd)
+    ;; (list (cons :cmd cmd)))) ;; :run ???
 
 (define (normalize-action-setenv-dsl action stanza)
   (format #t "NORMALIZE-ACTION-SETENV-DSL ~A\n" action)
@@ -265,6 +302,7 @@
   (format #t "~A: ~A\n" (green "action-alist") action-alist)
   (format #t "targets: ~A\n" targets)
   (format #t "deps: ~A\n" deps)
+  ;; (error 'fixme "tmp")
 
   (let* ((args (assoc-val 'write-file action-alist))
          (_ (format #t "args: ~A\n" args))
@@ -292,7 +330,7 @@
 
     `(;;  (:output ,@targets)
       (:cmd
-       (:tool ::write-file)
+       (:tool :write-file)
        ,(cons :args (list target content))))))
 
     ;; `(:write-file

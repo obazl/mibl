@@ -73,7 +73,7 @@
          (key (string->keyword fname)))
     (set-cdr! tllist
               (cons (cons key
-                          (list (cons :pkg (assoc-val :pkg-path pkg))
+                          (list (cons :pkg (car (assoc-val :pkg-path pkg)))
                                 (cons :tgt fname)))
                          (cdr tllist)))
     key))

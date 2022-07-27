@@ -434,7 +434,7 @@
 (define (handle-package-dep paths deplist)
   (format #t "handle-package-dep: ~A\n" deplist)
 ;; (package <pkg>) depends on all files installed by <package>, as well as on the transitive package dependencies of <package>. This can be used to test a command against the files that will be installed.
-  (list :pkg (cadr deplist)))
+  (cons :pkg (cadr deplist)))
 
 (define (handle-env-var-dep deplist)
   (format #t "handle-env-var-dep: ~A\n" deplist))
