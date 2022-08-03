@@ -410,8 +410,8 @@
 
 (define filename-cache (make-hash-table))
 
-(define (file-name->module-name path)
-  ;; (format #t "file-name->module-name: ~A\n" path)
+(define (filename->module-name path)
+  ;; (format #t "filename->module-name: ~A\n" path)
   (let ((path (if (symbol? path) (symbol->string path) path)))
     (if-let ((modname (filename-cache path)))
             modname

@@ -236,54 +236,6 @@
                 key)
               #f)))))
 
-;; may update deps
-(define (find-file-in-pkg-files!? arg deps pkg)
-  (format #t "~A: ~A~%" (blue "find-file-in-pkg-files") arg)
-  (format #t "~A: ~A~%" (blue ":files") (assoc-val :files pkg))
-  (format #t "~A: ~A~%" (blue "deps") deps)
-  ;; (format #t "~A: ~A~%" (red ":scripts") (assoc-val :scripts pkg))
-
-  (if (assoc-val :files pkg)
-      (let* ((pkg-files (if-let ((files (assoc-val :files pkg)))
-                                files '()))
-             (pkg-files (append
-                         (if-let ((statics (assoc-val :static pkg-files)))
-                                 statics '())
-                         (if-let ((dynamics (assoc-val :dynamic pkg-files)))
-                                 dynamics '())))
-             (_ (format #t "~A: ~A~%" (cyan "pkg-files") pkg-files))
-             (file
-              (find-if (lambda (f)
-                         (format #t "~A: ~A~%" (white "f") f)
-                         (equal? (format #f "~A" arg)
-                                 (format #f "~A" f)))
-                       pkg-files)))
-        (format #t "~A: ~A~%" (white "found file") file)
-        (if file
-            #t
-            ;; update deps/targets but no dups
-            ;; (let ((key (string->keyword (format #f "~A" arg))))
-            ;;   (format #t "~A: ~A~%" (magenta "FOUND ~A in :files") file)
-            ;;   (set-cdr! deps (cons (cons key
-            ;;                              (list (cons :pkg (assoc-val :pkg-path pkg))
-            ;;                                    (cons :tgt arg)))
-            ;;                        (cdr deps)))
-            ;;   key)
-
-            ;; else not found in :files
-            ;; if it looks like a filename, add it
-            (begin
-              (if (string-index (format #f "~A" arg)
-                                (lambda (ch) (equal? ch #\/)))
-                  #f ;; skip if not in this pkg
-                  (begin
-                    (set! pkg (update-pkg-files! pkg (list arg)))
-                    #t)))))
-      ;; else no :files field; add it
-      (begin
-        (set! pkg (update-pkg-files! pkg (list arg)))
-        #t #|(string->keyword (format #f "~A" arg))|# )))
-
 ;; updates :outputs. called by normalize-action-write-file if no (targets)
 ;; targets should be (:outputs)
 (define (-infer-output! arg targets pkg)

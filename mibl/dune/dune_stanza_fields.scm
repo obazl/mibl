@@ -191,7 +191,7 @@
               (modnames '()))
     (if (null? srcfiles)
         modnames
-        (let ((m (file-name->module-name (car srcfiles))))
+        (let ((m (filename->module-name (car srcfiles))))
           (if (member m modnames) ;; avoid .ml/.mli dups
               (recur (cdr srcfiles) modnames)
               (recur (cdr srcfiles) (cons m modnames)))))))

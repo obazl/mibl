@@ -134,7 +134,7 @@
                          (let* ((fname (if (symbol? f) (symbol->string f) f))
                                 (type (if (eq? 0 (fnmatch "*.mli" fname 0))
                                           :mli :ml))
-                                (mname (file-name->module-name fname)))
+                                (mname (filename->module-name fname)))
                            (format #t "mname: ~A\n" mname)
                            (format #t "type: ~A\n" type)
                            (if (eq? type :ml)

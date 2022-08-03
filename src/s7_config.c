@@ -865,6 +865,9 @@ EXPORT s7_scheme *s7_configure(void)
     /* emit ocaml_signature for every sigfile target */
     s7_define_variable(s7, "*build-dyads*", s7_t(s7));
 
+    /* put ppx driver in same pkg as the ppx_executable */
+    s7_define_variable(s7, "*local-ppx-driver*", s7_t(s7));
+
     /* initialize s7 stuff */
     //FIXME: do this in config, no need to rerun for each load_dune
     dune_project_sym = s7_make_symbol(s7, "dune-project"),

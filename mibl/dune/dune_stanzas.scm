@@ -402,31 +402,6 @@
       ;; (format #t "dune pkg name: ~A\n" package)
       (cons :install (list (cdr stanza))))))
 
-(define (normalize-stanza-test pkg-path srcfiles stanza)
-  ;; (display (format #f "dir: ~A" pfx)) (newline)
-  ;; (display (format #f "normalize-stanza-test: ~A" stanza)) (newline)
-  (let* ((stanza-alist (cdr stanza))
-         (privname (assoc 'name stanza-alist)))
-    (list (car stanza)
-          (remove
-           '()
-           (map (lambda (fld-assoc)
-                  (case (car fld-assoc)
-                    ((name) (normalize-stanza-fld-name
-                             pkg-path privname stanza-alist))
-                    ((public_name) '())
-                    ;; ((name) (normalize-stanza-fld-name (cadr fld-assoc)))
-                    ((flags) (normalize-stanza-fld-flags (cadr fld-assoc)))
-                    ((foreign_stubs)
-                     (normalize-stanza-fld-foreign_stubs (cdr fld-assoc)))
-                    (else fld-assoc)))
-                (cdr stanza))))))
-
-(define (normalize-stanza-tests pkg-path ocaml-srcs stanza)
-  ;; (display (format #f "dir: ~A" pfx)) (newline)
-  ;; (display (format #f "normalize-stanza-tests: ~A" stanza)) (newline)
-  (normalize-stanza-executables :tests
-                                pkg-path ocaml-srcs stanza))
 
 ;; moved to normalize.scm (dune-stanza->mibl pkg stanza)
 ;; (define (Xnormalize-stanza pkg-path

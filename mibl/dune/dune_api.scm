@@ -129,10 +129,21 @@
              (set-cdr! nstanzas
                        (append
                         (cdr nstanzas)
-                        (dune-executable->mibl ws pkg stanza))))
+                        (dune-executable->mibl ws pkg :executable stanza))))
 
             ;; ((executables) (normalize-stanza-executables :executables
             ;;                 pkg-path ocaml-srcs stanza))
+
+            ((test)
+             (set-cdr! nstanzas
+                       (append
+                        (cdr nstanzas)
+                        (dune-executable->mibl ws pkg :test stanza))))
+                        ;; (dune-test->mibl ws pkg stanza))))
+            ;; (normalize-stanza-test pkg-path ocaml-srcs stanza))
+
+            ;; ((tests) (normalize-stanza-tests pkg-path ocaml-srcs stanza))
+
 
             ((alias)
              (set-cdr! nstanzas
@@ -150,14 +161,11 @@
 
             ;; ((ocamlyacc) (normalize-stanza-ocamllex stanza))
 
-            ;; ((test) (normalize-stanza-test pkg-path ocaml-srcs stanza))
-            ;; ((tests) (normalize-stanza-tests pkg-path ocaml-srcs stanza))
-
             ;; ((:dune-project) stanza)
 
               (else
                ;; (format #t "~A: ~A\n" (red "unhandled") stanza)
-               (error 'fixme (format #f "~A: ~A~%" (red "unhandled") stanza))))))
+               (error 'fixme (format #f "~A: ~A~%" (red "unhandled stanza") stanza))))))
     ;; (format #t "normalized pkg: ~A\n" pkg)
 
     (-mark-apodoses! pkg)
@@ -170,15 +178,17 @@
 (define (dune-pkg->mibl ws pkg)
   (format #t "~A: ~A\n" (blue "dune-pkg->mibl") pkg)
   (format #t "~A: ~A\n" (green "ws") ws)
-  (let* ((nstanzas (list :dune '())) ;; hack to make sure pkg is always an alist
-         (pkg+ (append pkg (list nstanzas))))
+  (let* ((nstanzas (list :dune )) ;; hack to make sure pkg is always an alist
+         (pkg+ (append pkg (list nstanzas)))
+         ;;(pkg+ pkg)
+         )
     (format #t "pkg+: ~A\n" pkg+) ;; (assoc 'dune pkg+))
     ;; (set-car! dune-stanzas :dune-stanzas)
     (if (assoc 'dune pkg+)
         (let ((new-pkg
                (map
                 (lambda (stanza)
-                  ;; (format #t "STANZA COPY: ~A\n" stanza)
+ ;; (format #t "STANZA COPY: ~A\n" stanza)
                   (let ((normed (dune-stanza->mibl ws
                                  pkg+ stanza nstanzas)))
                     ;; pkg-path
@@ -189,7 +199,7 @@
                     normed))
                 ;; (cdr dune-stanzas))))
                 (assoc-val 'dune pkg+))))
-          ;; (format #t "NEW PKG: ~A\n" pkg+)
+          (format #t "~A: ~A\n" (red "NEW PKG") pkg+)
           pkg+)
         (begin
           (format #t "~A: ~A\n"

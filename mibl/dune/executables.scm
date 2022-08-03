@@ -207,8 +207,15 @@
          ;; (_ (error 'tmp "tmp"))
 
          ;; FIXME: deal with private_modules too
-         (manifest (get-manifest pkg #f stanza-alist))
-         (_ (format #t "~A: ~A\n" (red "get-manifest") manifest))
+         (link-manifest (get-manifest pkg #f stanza-alist))
+         (_ (format #t "~A: ~A\n" (red "link-manifest") link-manifest))
+
+         ;; copy the modules part so we can later set-cdr! on just :compile
+         (compile-manifest (let ((modules (assoc-val :modules
+                                                    (cdr link-manifest))))
+                             (list :manifest (cons :modules
+                                                   (copy modules)))))
+         (_ (format #t "~A: ~A\n" (red "compile-manifest") compile-manifest))
 
          (link-flds (-map-link-flds->mibl stanza-alist))
          (compile-flds (-map-compile-flds->mibl stanza-alist)))
@@ -255,9 +262,10 @@
       ;;   (format #t "compile-flds: ~A\n" compile-flds)
       ;;   (format #t "link-flds: ~A\n" link-flds)
       (values (cons :compile
-                    (remove '() (list manifest compile-flds depslist)))
+                    (remove '()
+                            (list compile-manifest compile-flds depslist)))
               ;; (remove '() (list compile-flds compile-manifest)))
-              (cons :link (remove '() (append (list manifest)
+              (cons :link (remove '() (append (list link-manifest)
                                              link-flds)))))))
 
   ;; (let-values (((compile-modules link-modules)
@@ -282,7 +290,7 @@
 ;;                             '()
 ;;                             (assoc-val :conditionals deps))))
 ;;         (format #t "CTARGETS: ~A~%" ctargets)
-;;         (let* ((cmodules (map file-name->module-name ctargets)))
+;;         (let* ((cmodules (map filename->module-name ctargets)))
 ;;           (format #t "CMODULES: ~A~%" cmodules)
 ;;           (cons :manifest (list
 ;;                            (cons :modules
@@ -303,7 +311,7 @@
 ;;         ;; (they should have already been added)
 ;;         ;; and add the found module to the manifest
 ;;         ;; easier: just ctarget -> module name
-;;         (let* ((cmodules (map file-name->module-name ctargets))
+;;         (let* ((cmodules (map filename->module-name ctargets))
 ;;                (manimods (if manifest (car manifest)))
 ;;                (manisigs (if manifest (cadr manifest))))
 ;;           (format #t "CMODULES: ~A~%" cmodules)
@@ -315,11 +323,12 @@
 ;;                                    (if (null? manisigs) '() manisigs)
 ;;                                    )))))))
 
-(define (-executable->mibl typ ;; :executable || :test
+(define (-executable->mibl kind ;; :executable || :test
                            pkg
                            privname pubname
                            stanza-alist) ;; srcfiles)
   (format #t "~A: ~A, ~A\n" (blue "-executable->mibl") privname pubname)
+  (format #t "~A: ~A~%" (blue "kind") kind)
   ;; (if pubname
   ;;     (if (equal? pubname 'tezos-node)
   ;;         (format #t "stanza-alist: ~A\n" stanza-alist)))
@@ -358,7 +367,7 @@
     ;;        )
 
       ;; (format #t "compile-manifest: ~A\n" compile-manifest)
-      (list typ
+      (list kind
             (cons :pubname pubname)
             (cons :privname privname)
             (append link-flds link-flags)
@@ -398,7 +407,7 @@
 
 ;; WARNING: we dropped modules-ht
 ;; (if-let ((mods (assoc :modules flds-alist)))
-;;         (list typ ;; :executable
+;;         (list kind ;; :executable
 ;;               (concatenate
 ;;                `((:name ((:private ,privname)
 ;;                          (:public ,pubname))))
@@ -413,7 +422,7 @@
 ;;                            :main)
 ;;           ;; (format #t "exec modules-ht: ~A:: ~A\n"
 ;;           ;;         pkg-path modules-ht)
-;;           (list typ ;; :executable
+;;           (list kind ;; :executable
 ;;                 (concatenate
 ;;                  `((:name ((:private ,privname)
 ;;                            (:public ,pubname))))
@@ -428,12 +437,14 @@
 ;;   ) ;; let flds-alist
 ;; ))))
 
-;; (define (normalize-stanza-executable typ pkg-path srcfiles stanza)
-(define (dune-executable->mibl ws pkg stanza)
-  ;; type:: :executable || test
+;; (define (normalize-stanza-executable kind pkg-path srcfiles stanza)
+
+;; this calls -executable-mibl
+(define (dune-executable->mibl ws pkg kind stanza)
+  ;; kind:: :executable || test
   ;; (let ((privname (cadr (assoc 'name (cdr stanza)))))
   (format #t "~A: ~A\n" (blue "dune-executable->mibl") pkg)
-  ;; stanza)
+  (format #t "~A: ~A~%" (blue "kind") kind)
 
   ;; "<name> is a module name that contains the main entry point of
   ;; the executable." So 'name' must correspond to a .ml file. If
@@ -499,7 +510,7 @@
                         privname
                         (normalize-module-name (cadr modules))))))
 
-    (list (-executable->mibl :executable
+    (list (-executable->mibl kind
                              pkg privname pubname
                              filtered-stanza-alist))
     ))
@@ -566,29 +577,29 @@
 ;; ((executables ((names test_clic) (libraries tezos-clic alcotest-lwt) (flags (:standard -open Tezos_stdlib -open Tezos_clic)))) (rule ((alias buildtest) (deps test_clic.exe) (action (progn)))) (rule ((alias runtest_clic) (action (run %{exe:test_clic.exe})))) (rule ((alias runtest) (package tezos-clic) (deps (alias runtest_clic)) (action (progn)))))
 
 ;; EXES normalized: (:executable ((:name ((:private main_snoop) (:module Main_snoop))) (public_names tezos-snoop) (package tezos-snoop) (libraries tezos-base tezos-base.unix tezos-stdlib-unix tezos-clic tezos-benchmark tezos-benchmark-examples tezos-shell-benchmarks tezos-benchmarks-proto-alpha str ocamlgraph pyml pyml-plot latex) (:opts ((:standard) (:opens ("Tezos_benchmark" "Tezos_stdlib_unix" "Tezos_base")) (:raw (:standard -open Tezos_base__TzPervasives -open Tezos_stdlib_unix -open Tezos_benchmark -linkall)) (:flags -open Tezos_base__TzPervasives -open Tezos_stdlib_unix -open Tezos_benchmark -linkall)))))
-;; normalize-stanza-executables: src/lib_store/test
+;; dune-executables->mibl: src/lib_store/test
 
 ;; "The optional fields [for 'tests stanza] that are supported are a
 ;; subset of the alias and executables fields. In particular, all
 ;; fields except for public_names are supported from the executables
 
 ;; stanza. Alias fields apart from name are allowed."
-(define (normalize-stanza-executables typ pkg-path srcfiles stanza)
-  ;; typ:: :executables || :tests
-  (format #t "~A: ~A\n" (blue "normalize-stanza-executables") pkg-path)
-  (format #t "  typ:  ~A\n" typ)
+(define (dune-executables->mibl kind pkg-path srcfiles stanza)
+  ;; kind:: :executable || :test
+  (format #t "~A: ~A\n" (blue "dune-executables->mibl") pkg-path)
+  (format #t "  kind:  ~A\n" kind)
   ;; (format #t "  stanza:  ~A\n" stanza)
   ;; (:executables (names test_clic) ...
   (let* ((stanza-alist (cdr stanza))
          (privnames (assoc 'names stanza-alist))
-         (pubnames (if (equal? typ :executables)
+         (pubnames (if (equal? kind :executable)
                        (assoc 'public_names stanza-alist)
                        #f))
          (filtered-stanza-alist (alist-delete '(names public_names) stanza-alist))
          )
     ;; (format #t "stanza-alist: ~A\n" stanza-alist)
     ;; (format #t "filtered-stanza-alist: ~A\n" filtered-stanza-alist)
-    (if (equal? typ :executables)
+    (if (equal? kind :executable)
         (if (> (length (cdr privnames)) 1)
             (begin
               ;; (format #t "MULTIPLE NAMES\n")
@@ -622,16 +633,14 @@
         (map (lambda (privname)
                ;; (format #t "privname: ~A\n" privname)
                ;; (update-public-exe-table pkg-path privname privname)
-               (-executable->mibl
-                (if (equal? typ :executables)
-                    :executable
-                    (if (equal? typ :tests)
-                        :test
-                        #f))
+               (-executable->mibl kind
+                ;; (if (equal? kind :executable)
+                ;;     :executable
+                ;;     (if (equal? kind :test)
+                ;;         :test
+                ;;         #f))
                 pkg-path privname privname filtered-stanza-alist srcfiles)
                ;; `(:executable ((:name ((:private ,privname)))))
                         ;; (:module ,(normalize-module-name name))))))
                )
              (cdr privnames)))))
-
-;; (display "loaded dune/executables.scm\n")

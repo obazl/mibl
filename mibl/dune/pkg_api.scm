@@ -31,8 +31,8 @@
          (ext (filename-extension fname)))
     (if ext
         (cond
-         ((string=? ext ".mli") :module)
-         ((string=? ext ".ml") :module)
+         ((string=? ext ".mli") :sig)
+         ((string=? ext ".ml") :struct)
 
          ((string=? ext ".sh") :script)
          ((string=? ext ".js") :script)
@@ -49,9 +49,9 @@
         #<undefined>)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; may update :signatures in pkg files
-(define (-find-module-in-sigs!? m-name tgt sigs)
-  (format #t "~A: ~A~%" (blue "-find-module-in-sigs!?") m-name)
+;; may remove item from singletons fld (:structures or :signatures)
+(define (-find-module-in-singletons!? m-name tgt sigs)
+  (format #t "~A: ~A~%" (blue "-find-module-in-singletons!?") m-name)
   (format #t "~A: ~A~%" (white "tgt") tgt)
   (format #t "~A: ~A~%" (white "sigs") sigs)
   (if sigs
@@ -106,7 +106,7 @@
   ;;             (modnames '()))
   ;;   (if (null? srcfiles)
   ;;       modnames
-  ;;       (let ((m (file-name->module-name (car srcfiles))))
+  ;;       (let ((m (filename->module-name (car srcfiles))))
   ;;         (if (member m modnames) ;; avoid .ml/.mli dups
   ;;             (recur (cdr srcfiles) modnames)
   ;;             (recur (cdr srcfiles) (cons m modnames)))))))

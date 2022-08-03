@@ -552,6 +552,190 @@ LOCAL void _update_pkg_script_files(s7_pointer pkg_tbl,
     }
 }
 
+LOCAL void _update_pkg_deps(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
+{
+    char *pkg_name = dirname(ftsentry->fts_path);
+    char *fname = ftsentry->fts_name;
+    char *mname = _module_name(ftsentry, ext);
+    if (verbose) {
+        log_info(BLU "_update_pkg_deps:" CRESET " %s; ", mname);
+        log_info("pkg name: %s; fname: %s", pkg_name, ftsentry->fts_name);
+    }
+
+    char *ml_name = strdup(ftsentry->fts_name);
+
+    s7_pointer pkg_key = s7_make_string(s7, pkg_name);
+    if (debug) log_debug("pkg_key: %s", TO_STR(pkg_key));
+
+    s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
+    if (debug) log_debug("pkg_alist: %s", TO_STR(pkg_alist));
+
+    /* if (pkg_alist == s7_f(s7)) { */
+    /*     if (debug) { */
+    /*         log_debug("no dunefile in this directory"); */
+    /*         /\* FIXME?? *\/ */
+    /*     } */
+    /* } else { */
+    /*     s7_pointer mname_sym   = s7_make_symbol(s7, mname); */
+
+    /*     assoc_in = _load_assoc_in(); */
+    /*     s7_pointer keypath = s7_list(s7, 1, modules_kw); */
+    /*     s7_pointer modules_alist = s7_call(s7, assoc_in, */
+    /*                                        s7_list(s7, 2, */
+    /*                                                keypath, */
+    /*                                                pkg_alist)); */
+
+    /*     s7_pointer ml_assoc = s7_cons(s7, */
+    /*                                   s7_make_keyword(s7, */
+    /*                                                   ftype == TAG_ML */
+    /*                                                   ?"ml" */
+    /*                                                   :ftype == TAG_MLI */
+    /*                                                   ?"mli" */
+    /*                                                   :"UNKNOWN" */
+    /*                                                   ), */
+    /*                                   s7_make_symbol(s7, fname)); */
+    /*     if (debug) */
+    /*         log_debug("ml_assoc: %s", TO_STR(ml_assoc)); */
+
+    /*     /\* if (srcs_alist == s7_f(s7)) { *\/ */
+    /*     if (modules_alist == s7_f(s7)) { */
+    /*         if (debug) */
+    /*             log_debug("INITIALIZING :modules field"); */
+    /*         /\* (acons :srcs *\/ */
+    /*         /\*  ((:modules ((:Foo ((:ml foo.ml) (:mli foo.mli)) *\/ */
+    /*         /\*              (:Bar ((:ml bar.ml) (:mli bar.mli))))))) *\/ */
+    /*         /\*  pkg_alist) *\/ */
+    /*         /\* s7_pointer msrcs_alist = s7_list(s7, 1, ml_assoc); *\/ */
+    /*         /\* log_debug("msrcs_alist: %s", TO_STR(msrcs_alist)); *\/ */
+
+    /*         s7_pointer module_assoc = s7_list(s7, 2, */
+    /*                                           mname_sym, */
+    /*                                           ml_assoc); */
+    /*         /\* msrcs_alist); *\/ */
+    /*         if (debug) */
+    /*             log_debug("module_assoc: %s", TO_STR(module_assoc)); */
+
+    /*         /\* s7_pointer modules_alist = s7_list(s7, 1, module_assoc); *\/ */
+    /*         /\* log_debug("modules_alist: %s", *\/ */
+    /*         /\*        TO_STR(modules_alist)); *\/ */
+
+    /*         /\* s7_pointer statics_assoc = *\/ */
+    /*         /\*     s7_list(s7, 2, *\/ */
+    /*         /\*             static_kw, *\/ */
+    /*         /\*             module_assoc); *\/ */
+
+
+    /*         s7_pointer modules_assoc = s7_list(s7, 2, */
+    /*                                            modules_kw, */
+    /*                                            // statics_assoc */
+    /*                                            module_assoc); */
+    /*         if (debug) log_debug("modules_assoc: %s", TO_STR(modules_assoc)); */
+
+    /*         s7_pointer new_pkg_alist = s7_append(s7, pkg_alist, */
+    /*                                              s7_list(s7, 1, */
+    /*                                                      modules_assoc)); */
+    /*         /\* if (debug) *\/ */
+    /*         /\*     log_debug("pkg_alist: %s", *\/ */
+    /*         /\*            TO_STR(new_pkg_alist)); *\/ */
+
+    /*         s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg_alist); */
+    /*     } else { */
+    /*         if (debug) { */
+    /*             log_debug("UPDATING :modules"); */
+    /*             log_debug("modules_alist: %s", TO_STR(modules_alist)); */
+    /*             log_debug("mname_sym: %s", TO_STR(mname_sym)); */
+    /*         } */
+
+    /*         /\* s7_pointer assoc_in = _load_assoc_in(); *\/ */
+
+    /*         s7_pointer keypath = s7_list(s7, 2, //  3, */
+    /*                                      /\* srcs_kw, *\/ */
+    /*                                      modules_kw, */
+    /*                                      /\* static_kw, *\/ */
+    /*                                      mname_sym); */
+    /*         if (debug) { */
+    /*             log_debug("assoc-in: %s", TO_STR(assoc_in)); */
+    /*             log_debug("keypath: %s", TO_STR(keypath)); */
+    /*             /\* log_debug("pkg_alist: %s", TO_STR(pkg_alist)); *\/ */
+    /*         } */
+
+    /*         s7_pointer module_alist = s7_call(s7, assoc_in, */
+    /*                                           s7_list(s7, 2, */
+    /*                                                   keypath, */
+    /*                                                   pkg_alist)); */
+
+    /*         if (debug) { */
+    /*             log_debug("module_alist: %s", TO_STR(module_alist)); */
+    /*         } */
+    /*         if (module_alist == s7_f(s7)) { */
+    /*             /\* new *\/ */
+    /*             if (debug) */
+    /*                 log_debug(RED "ADDING" CRESET " module %s to %s", */
+    /*                           TO_STR(mname_sym), TO_STR(modules_alist)); */
+    /*             /\* s7_pointer keypath = s7_list(s7, 1, modules_kw); *\/ */
+    /*             /\* if (debug) log_debug("trying keypath: %s", *\/ */
+    /*             /\*                      TO_STR(keypath)); *\/ */
+    /*             if (debug) log_debug("modules_alist: %s", */
+    /*                                  s7_object_to_c_string(s7, */
+    /*                                                        modules_alist)); */
+
+    /*             s7_pointer modules_alist_cdr = s7_cdr(modules_alist); */
+    /*             if (debug) */
+    /*                 log_debug("modules_alist_cdr: %s", */
+    /*                    TO_STR(modules_alist_cdr)); */
+
+    /*             s7_pointer module_assoc = */
+    /*                 s7_list(s7, 1, s7_list(s7, 2, mname_sym, ml_assoc)); */
+    /*             if (debug) log_debug("new module_assoc: %s", */
+    /*                                  TO_STR(module_assoc)); */
+
+    /*             s7_pointer new_modules_alist_cdr = */
+    /*                 s7_append(s7, modules_alist_cdr, module_assoc); */
+    /*                 /\* s7_cons(s7, module_assoc, modules_alist_cdr); *\/ */
+    /*             if (debug) { */
+    /*                 log_debug("new_modules_alist_cdr: %s", */
+    /*                    TO_STR(new_modules_alist_cdr)); */
+    /*             } */
+
+    /*             s7_pointer new_modules_alist */
+    /*                 = s7_set_cdr(modules_alist, new_modules_alist_cdr); */
+
+    /*             if (debug) { */
+    /*                 log_debug("new_modules_alist: %s", */
+    /*                           TO_STR(new_modules_alist)); */
+    /*             } */
+    /*         } else { */
+    /*             /\* update *\/ */
+    /*             if (debug) log_debug(RED "UPDATING" CRESET " module_alist: %s", */
+    /*                                  TO_STR(module_alist)); */
+
+    /*             s7_pointer modules_alist_cdr = s7_cdr(module_alist); */
+    /*             if (debug) */
+    /*                 log_debug("modules_alist_cdr: %s", */
+    /*                    TO_STR(modules_alist_cdr)); */
+
+    /*             /\* s7_pointer msrcs = s7_cons(s7, ml_assoc, modules_alist_cdr); *\/ */
+    /*             s7_pointer msrcs = s7_append(s7, */
+    /*                                          modules_alist_cdr, */
+    /*                                          s7_list(s7, 1, ml_assoc)); */
+
+    /*             /\* if (debug) { *\/ */
+    /*             /\*     log_debug("setting cdr to: %s", TO_STR(msrcs)); *\/ */
+    /*             /\* } *\/ */
+
+    /*             s7_pointer new_modules_alist */
+    /*                 = s7_set_cdr(module_alist, msrcs); */
+
+    /*            if (debug) { */
+    /*                 log_debug("new_modules_alist: %s", */
+    /*                           TO_STR(new_modules_alist)); */
+    /*                 log_debug("new pkgs: %s", TO_STR(pkg_alist)); */
+    /*             } */
+    /*         } */
+    /*     } */
+    /* } */
+}
+
 LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
                                char *pkg_name, char *mname,
                                char *fname, int ftype)
@@ -1128,6 +1312,7 @@ LOCAL void _handle_ml_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
         && (strlen(ext) == 3)) {
         /* printf(":%-6s", "ml"); */
         _update_ml(pkg_tbl, ftsentry, ext);
+        /* _update_pkg_deps(pkg_tbl, ftsentry, ext); */
     }
     else if ((strncmp(ext, ".mli", 4) == 0)
         && (strlen(ext) == 4)) {

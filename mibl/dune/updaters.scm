@@ -78,11 +78,123 @@
                          (cdr tllist)))
     key))
 
+(define (-update-pkg-files-with-struct pkg tgt)
+  (format #t "~A: ~A~%" (yellow "-update-pkg-files-with-struct") tgt)
+  ;; if we already have corresponding sig, move to :modules
+  ;; else update :structures
+  (let* ((m-assoc (filename->module-assoc tgt))
+         ;; m-assoc == (A (:ml "a.ml"))
+         (m-name (car m-assoc))
+         (pr (cadr m-assoc))
+         (_ (format #t "~A: ~A\n" (red "PR") pr))
+         (sigs (assoc :signatures pkg))
+         (_ (format #t "~A: ~A~%" (cyan "sigs") sigs))
+         ;; removes matching sig from :signatures
+         (matching-sig (-find-module-in-singletons!? m-name tgt sigs))
+         (_ (format #t "~A: ~A~%" (cyan "found sig?") matching-sig))
+         )
+    (if matching-sig
+        (begin ;; we know this file is not in :modules since it was in sigs
+          (format #t "~A: ~A~%" (red "updating :modules") m-name)
+          (alist-update-in! pkg `(:modules ,m-name)
+                            (lambda (old)
+                              (format #t "Module OLD: ~A\n" old)
+                              (format #t "adding: ~A\n" matching-sig)
+                              (format #t " pr: ~A\n" pr)
+                              (if (null? old)
+                                  (cons pr
+                                        (list (cons :mli (cdr matching-sig))))
+                                  ;;(filename->module-assoc tgt)
+                                  (list
+                                   old
+                                   (cons pr (list (cons :mli (cdr matching-sig))))
+                                   ;; (list pr)
+                                   ;;(filename->module-assoc tgt)
+                                   )))))
+        ;; else no sig, so update :structures
+        (let* ((s-assoc (assoc-in '(:structures :dynamic) pkg))
+               ;; (structures (if s-assoc (append (cadr s-assoc) '(Foo . bar)) '()))
+               )
+          (format #t "~A: ~A~%" (yellow "UPDATING (:structures :dynamic) : ") s-assoc)
+          (alist-update-in! pkg `(:structures :dynamic)
+                            (lambda (old)
+                              (format #t "structures OLD: ~A\n" old)
+                              (format #t "adding: ~A\n" pr)
+                              (if (null? old)
+                                  (list
+                                   (cons m-name (cdr pr)))
+                                  ;; (list m-name (cdr pr))
+                                  ;;(filename->module-assoc tgt)
+                                  (cons
+                                   old
+                                   (list (cons m-name (cdr pr))) ;;)))
+                                   ;; (list (cons m-name (cdr pr)))
+                                   ;; structures
+                                   ;;(filename->module-assoc tgt)
+                                   )))))))
+  pkg)
+
+(define (-update-pkg-files-with-sig pkg tgt)
+  (format #t "~A: ~A~%" (yellow "-update-pkg-files-with-sig") tgt)
+  ;; if we already have corresponding struct, move to :modules
+  ;; else update :signatures
+  (let* ((m-assoc (filename->module-assoc tgt))
+         ;; m-assoc == (A (:ml "a.ml"))
+         (m-name (car m-assoc))
+         (pr (cadr m-assoc))
+         (_ (format #t "~A: ~A\n" (red "PR") pr))
+         (structs (assoc :structures pkg))
+         (_ (format #t "~A: ~A~%" (cyan "structs") structs))
+         ;; removes matching struct from :structnatures
+         (matching-struct (-find-module-in-singletons!? m-name tgt structs))
+         (_ (format #t "~A: ~A~%" (cyan "found struct?") matching-struct))
+         )
+    (if matching-struct
+        (begin ;; we know this file is not in :modules since it was in structs
+          (format #t "~A: ~A~%" (red "updating :modules") m-name)
+          (alist-update-in! pkg `(:modules ,m-name)
+                            (lambda (old)
+                              (format #t "Module OLD: ~A\n" old)
+                              (format #t "adding: ~A\n" matching-struct)
+                              (format #t " pr: ~A\n" pr)
+                              (if (null? old)
+                                  (cons pr
+                                        (list (cons :mli (cdr matching-struct))))
+                                  ;;(filename->module-assoc tgt)
+                                  (list
+                                   old
+                                   (cons pr (list (cons :mli (cdr matching-struct))))
+                                   ;; (list pr)
+                                   ;;(filename->module-assoc tgt)
+                                   )))))
+        ;; else no matching struct, so update :signatures
+        (let* ((s-assoc (assoc-in '(:signatures :dynamic) pkg))
+               ;; (structures (if s-assoc (append (cadr s-assoc) '(Foo . bar)) '()))
+               )
+          (format #t "~A: ~A~%" (yellow "UPDATING (:signatures :dynamic) : ") s-assoc)
+          (alist-update-in! pkg `(:signatures :dynamic)
+                            (lambda (old)
+                              (format #t "signatures OLD: ~A\n" old)
+                              (format #t "adding: ~A\n" pr)
+                              (if (null? old)
+                                  (list
+                                   (cons m-name (cdr pr)))
+                                  ;; (list m-name (cdr pr))
+                                  ;;(filename->module-assoc tgt)
+                                  (append
+                                   old
+                                   (list (cons m-name (cdr pr))) ;;)))
+                                   ;; (list (cons m-name (cdr pr)))
+                                   ;; structures
+                                   ;;(filename->module-assoc tgt)
+                                   )))))))
+  pkg)
+
 (define update-pkg-files!
   (let ((+documentation+ "INTERNAL. Add tgts to :modules (or :files etc) fld of pkg."))
 
     (lambda (pkg tgts)
-      (format #t "~%~A: ~A~%" (magenta "UPDATE-PKG-FILES!") tgts)
+      (format #t "~%~A: ~A~%" (yellow "UPDATE-PKG-FILES!") tgts)
       (format #t "  package: ~A\n" pkg)
       ;; (format #t "  targets: ~A\n" tgts)
 
@@ -110,58 +222,13 @@
                (let ((kind (filename->kind (format #f "~A" tgt))))
                  (format #t "~A: ~A~%" (red "kind") kind)
                  (case kind
-                   ((:module)
-                    (format #t ":module tgt: ~A\n" tgt)
-                    ;; if we already have corresponding sig, move to :modules
-                    ;; else update :structures
-                    (let* ((m-assoc (filename->module-assoc tgt))
-                           ;; m-assoc == (A (:ml "a.ml"))
-                           (m-name (car m-assoc))
-                           (pr (cadr m-assoc))
-                           (_ (format #t "~A: ~A\n" (red "PR") pr))
-                           (sigs (assoc :signatures pkg))
-                           (_ (format #t "~A: ~A~%" (cyan "sigs") sigs))
-                           ;; removes matching sig from :signatures
-                           (matching-sig (-find-module-in-sigs!? m-name tgt sigs))
-                           (_ (format #t "~A: ~A~%" (cyan "found?") matching-sig))
-                           )
-                      (if matching-sig
-                          (begin ;; we know this file is not in :modules since it was in sigs
-                            (format #t "~A: ~A~%" (red "updating :modules") m-name)
-                            (alist-update-in! pkg `(:modules ,m-name)
-                                              (lambda (old)
-                                                (format #t "module OLD: ~A\n" old)
-                                                (format #t "adding: ~A\n" matching-sig)
-                                                (if (null? old)
-                                                    (cons pr (list (cons :mli (cdr matching-sig))))
-                                                    ;;(filename->module-assoc tgt)
-                                                    (list
-                                                     old
-                                                     (list pr)
-                                                     ;;(filename->module-assoc tgt)
-                                                     )))))
-                          ;; else no sig, so update :structures
-                          (let* ((s-assoc (assoc-in '(:structures :dynamic) pkg))
-                                 ;; (structures (if s-assoc (append (cadr s-assoc) '(Foo . bar)) '()))
-                                 )
-                            (format #t "~A: ~A~%" (red "UPDATING (:structures :dynamic) : ") s-assoc)
-                            (alist-update-in! pkg `(:structures :dynamic)
-                                              (lambda (old)
-                                                (format #t "structures OLD: ~A\n" old)
-                                                (format #t "adding: ~A\n" pr)
-                                                (if (null? old)
-                                                    (list
-                                                     (cons m-name (cdr pr)))
-                                                    ;; (list m-name (cdr pr))
-                                                    ;;(filename->module-assoc tgt)
-                                                    (cons
-                                                     old
-                                                     (list (cons :BAR #|m-name|# (cdr pr))) ;;)))
-                                                     ;; (list (cons m-name (cdr pr)))
-                                                     ;; structures
-                                                     ;;(filename->module-assoc tgt)
-                                                     )))))))
-                    pkg)
+                   ((:struct)
+                    (format #t ":struct tgt: ~A\n" tgt)
+                    (-update-pkg-files-with-struct pkg tgt))
+
+                   ((:sig)
+                    (format #t ":sig tgt: ~A\n" tgt)
+                    (-update-pkg-files-with-sig pkg tgt))
 
                    (else
                     (format #t ":other: ~A\n" tgt)
