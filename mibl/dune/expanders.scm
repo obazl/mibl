@@ -1,5 +1,7 @@
 ;; (display "loading dune/expanders.scm\n")
 
+(load "api_utils.scm")
+
 ;; several expansions: targets, cmd tools, cmd args
 ;; deps (see dune_action_deps.scm)
 
@@ -20,16 +22,17 @@
   (lambda (tool pkg targets deps)
     (format #t "~A: ~A (~A)~%" (blue "expand-run-tool") tool (type-of tool))
     (format #t "~A: ~A~%" (green "deps") deps)
-    ;; at this point we do not have enough info to decide if this tool
-    ;; is a filename literal, produced by this pkg, or by another proj
-    ;; pkg, or by and import. So we punt and leave it up to the
-    ;; resolver to decide later.
+
+    ;; (let ((x (rassoc tool
+
     (case tool
-      ((cp) :copy)
+      ((cp) ::copy) ;;FIXME: use lookup table from constants.scm
       (else
        (let ((tool (format #f "~A" tool)))
          (cond
-          ((string-prefix? "%{" tool) (-expand-pct-tool tool))
+          ((string-prefix? "%{" tool)
+           (-expand-pct-tool!? tool :tool (car (assoc-val :pkg-path pkg))  deps))
+
           (else (-expand-literal-tool!?
                  (car (assoc-val :pkg-path pkg))
                  tool deps))))))))
@@ -63,29 +66,150 @@
 ;;           (expand-cmd-args
 ;;            pkg-path target targets args filedeps vars))))))
 
-(define (-expand-pct-tool arg)
-  (format #t "~A: ~A~%" (blue "-expand-pct-tool") arg)
-  (if (string-suffix? "}" arg)
-      (let* ((kw (substring arg 2 (- (length arg) 1)))
-             (_ (format #t "kw ~A\n" kw))
-             (keysym (string->keyword kw)))
-        (format #t "keysym ~A\n" keysym)
-        keysym)
-      ;; else %{foo}.bar
-      (let* ((bname (bname arg))
-             (_ (format #t "bname: ~A~%" bname))
-             (ext (filename-extension arg))
-             (_ (format #t "ext: ~A~%" ext))
-             (kw (substring bname 2 (- (length bname) 1)))
-             (_ (format #t "kw ~A\n" kw))
-             (keysym (if ext
-                         (string->keyword (string-append ":" kw ext))
-                         (string->keyword (string-append ":" kw)))))
-        (format #t "keysym ~A\n" keysym)
-        ;; resolver will do lookup
-        keysym
-        )))
+;; FIXME: match arg to dep
+;; may update :deps
 
+;; original version:
+
+;; (define (-expand-pct-var!? arg kind deps) ;; kind: :arg or :tool
+;;   (format #t "~A: ~A (~A)~%" (blue "-expand-pct-var!?") arg kind)
+;;   (format #t "~A: ~A~%" (white "deps") deps)
+;;   (if (string-suffix? "}" arg)
+;;       (let* ((kw (substring arg 2 (- (length arg) 1)))
+;;              (_ (format #t "kw ~A\n" kw))
+;;              (keysym (string->keyword kw)))
+;;         (format #t "keysym ~A\n" keysym)
+;;         keysym)
+;;       ;; else %{foo}.bar
+;;       (let* ((bname (bname arg))
+;;              (_ (format #t "bname: ~A~%" bname))
+;;              (ext (filename-extension arg))
+;;              (_ (format #t "ext: ~A~%" ext))
+;;              (kw (substring bname 2 (- (length bname) 1)))
+;;              (_ (format #t "kw ~A\n" kw))
+;;              (keysym (if ext
+;;                          (string->keyword (string-append ":" kw ext))
+;;                          (string->keyword (string-append ":" kw)))))
+;;         (format #t "keysym ~A\n" keysym)
+;;         ;; resolver will do lookup
+;;         keysym
+;;         )))
+
+;; may update deps
+(define (-expand-pct-arg!? arg kind pkg-path deps)
+  (format #t "~A: ~A (~A)~%" (blue "-expand-pct-arg!?")
+          arg (type-of arg))
+  (format #t "deps: ~A~%" deps)
+
+  (let* ((search-key (pct-var->keyword arg))
+         (_ (format #t "~A: ~A~%" (yellow "search-key") search-key))
+         (match
+          ;; find arg in deps
+          (find-if (lambda (dep)
+                     (format #t "~A: ~A~%" (yellow "finding arg") dep)
+                     (equal? (car dep) search-key))
+                   (cdr deps))))
+    (format #t "~A: ~A~%" (yellow "match?") match)
+    search-key))
+
+;; may update deps
+(define (-expand-pct-tool!? arg kind pkg-path deps)
+  (format #t "~A: ~A (~A)~%" (blue "-expand-pct-tool!?")
+          arg (type-of arg))
+  (format #t "deps: ~A~%" deps)
+
+  ;; find arg in deps
+  (let* ((search-key (pct-var->keyword arg))
+         (_ (format #t "~A: ~A (kw? ~A)~%" (yellow "search-key")
+                    search-key (keyword? search-key)))
+         (match (find-if (lambda (dep)
+                           (format #t "~A: ~A (~A)~%" (yellow "finding tool") dep (type-of (car dep)))
+                           ;; (format #t "~A: ~A~%" (yellow "kw?") (keyword?
+                           ;;                                       (car dep)))
+                           (equal? (car dep) search-key))
+                         (cdr deps))))
+    (format #t "~A: ~A~%" (yellow "match?") match)
+    (if match
+        ;;(let ((arg-kw (string->keyword arg)))
+        ;; move it from (:deps) to (:deps ::tools)
+        (begin
+          (format #t "~A: ~A~%" (red "tool in deps") match)
+          (set-cdr! deps
+                    (append
+                     (list (list ::tools match
+                                 #| (list search-key ;; arg-kw
+                                       (cons :pkg pkg-path)
+                                       (cons :tgt arg))|# ))
+                     (alist-delete (list search-key #|arg-kw|# ) (cdr deps)))))
+
+        ;; else add it to (:deps ::tools)
+        ;; (let ((arg-kw (string->keyword arg)))
+        (begin
+          (format #t "~A: ~A~%" (red "tool NOT in deps") search-key deps) ;; t)
+          (set-cdr! deps
+                    (append
+                     (list (cons ::tools
+                                 (list
+                                  (cons search-key ;; arg-kw
+                                        (list (cons :pkg pkg-path)
+                                              (cons :tgt arg))))))
+                     deps))
+          ;; return kw
+          ))
+    search-key))
+
+    ;; (if (null? (cdr deps))
+    ;;     ;; infer dep for arg
+    ;;     (let* ((arg-kw (string->keyword (format #f "~A" arg)))
+    ;;            (_
+    ;;             (format #t "~A: ~A~%" (white "inferring dep for arg") arg-kw))
+    ;;            )
+    ;;       (set-cdr! deps
+    ;;                 (list (cons ::tools
+    ;;                             (list (cons arg-kw `((:pkg ,pkg-path)))
+    ;;                             (cons :tgt arg)))))
+    ;;       arg-kw)
+    ;;     ;; else
+    ;;     (let ((arg (format #f "~A" arg))
+    ;;           (t
+    ;;            (begin
+    ;;              (format #t "~A: ~A for ~A~%" (green "searching deps") (cdr deps) arg)
+    ;;              (find-if (lambda (dep)
+    ;;                         (format #t "~A: ~A~%" (green "find test dep") dep)
+    ;;                         (let* ((pkg-tgt (cdr dep))
+    ;;                                (tgt (if-let ((tgt (assoc-val :tgt pkg-tgt)))
+    ;;                                             (equal? arg tgt)
+    ;;                                             (if-let ((tgts
+    ;;                                                       (assoc-val :tgts pkg-tgt)))
+    ;;                                                     (equal? arg tgts)
+    ;;                                                     (error 'fixme "missing :tgt and :tgts in dep")))))
+    ;;                           tgt))
+    ;;                       (cdr deps)))))
+    ;;       (if t
+    ;;           (let ((arg-kw (string->keyword arg)))
+    ;;             (format #t "~A: ~A~%" (red "arg in deps") t)
+    ;;             ;; move it from (:deps) to (deps ::tools)
+    ;;             (set-cdr! deps
+    ;;                       (append
+    ;;                        (list (list ::tools
+    ;;                                    (list arg-kw
+    ;;                                          (cons :pkg pkg-path)
+    ;;                                          (cons :tgt arg))))
+    ;;                        (alist-delete (list arg-kw) (cdr deps))))
+    ;;             (car t))
+    ;;           ;; else
+    ;;           (let ((_ (format #t "~A: ~A~%" (red "arg not in deps") arg))
+    ;;                 (arg-kw (string->keyword arg)))
+    ;;             (set-cdr! deps
+    ;;                       (append
+    ;;                        (list (cons ::tools
+    ;;                                   (list (cons arg-kw
+    ;;                                               `((:pkg ,pkg-path)))
+    ;;                                         (cons :tgt arg))))
+    ;;                        deps)))))
+    ;;     ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; may update deps
 (define (-expand-literal-tool!? pkg-path tool deps)
   (format #t "~A: ~A (~A)~%" (blue "-expand-literal-tool!?")
@@ -96,37 +220,54 @@
                   (string-drop tool 2) tool)))
     (if (null? (cdr deps))
         ;; infer dep for tool
-        (let ((tool-kw (string->keyword (format #f "~A" tool))))
+        (let* ((tool-kw (string->keyword (format #f "~A" tool)))
+               (_
+                (format #t "~A: ~A~%" (white "inferring dep for tool") tool-kw))
+               )
           (set-cdr! deps
-                    (list (list tool-kw (cons :pkg pkg-path)
-                                (cons :tgt tool))))
+                    (list (cons ::tools
+                                (list
+                                 (cons tool-kw
+                                       (list (cons :pkg pkg-path)
+                                             (cons :tgt tool)))))))
           tool-kw)
         ;; else
         (let ((tool (format #f "~A" tool))
               (t
-               (find-if (lambda (dep)
-                          (format #t "~A: ~A~%" (green "dep") dep)
-                          (let* ((pkg-tgt (cdr dep))
-                                 (tgt (if-let ((tgt (assoc-val :tgt pkg-tgt)))
-                                              (equal? tool tgt)
-                                              (if-let ((tgts
-                                                        (assoc-val :tgts pkg-tgt)))
-                                                      (equal? tool tgts)
-                                                      (error 'fixme "missing :tgt and :tgts in dep")))))
-                            ;;(dep-cadr (format #f "~A" (cadr dep))))
-                            ;; (format #t "~A: ~A (~A)~%" (red "dep-cadr")
-                            ;;         dep-cadr (type-of dep-cadr))
-                            ;; (format #t "~A: ~A~%" (red "teq?")
-                            ;;         (eq? (type-of tool) (type-of dep-cadr)))
-                            ;; (format #t "~A: ~A~%" (red "veq?")
-                            ;;         (equal? tool dep-cadr))
-                            ;; (if (eq? (type-of tool) (type-of dep-cadr))
-                            ;;     (equal? tool dep-cadr)
-                            ;;     #f)
-                            tgt))
-                        (cdr deps))))
-          (format #t "~A: ~A~%" (red "T") t)
-          (if t (car t) tool))
+               (begin
+                 (format #t "~A: ~A~%" (green "searching deps") (cdr deps))
+                 (find-if (lambda (dep)
+                            (format #t "~A: ~A~%" (green "find test dep") dep)
+                            (let* ((pkg-tgt (cdr dep))
+                                   (tgt (if-let ((tgt (assoc-val :tgt pkg-tgt)))
+                                                (equal? tool tgt)
+                                                (if-let ((tgts
+                                                          (assoc-val :tgts pkg-tgt)))
+                                                        (equal? tool tgts)
+                                                        (error 'fixme "missing :tgt and :tgts in dep")))))
+                              tgt))
+                          (cdr deps)))))
+          (if t
+              (let ((tool-kw (string->keyword tool)))
+                (format #t "~A: ~A~%" (red "tool in deps") t)
+                ;; move it from (:deps) to (deps ::tools)
+                (set-cdr! deps
+                          (append
+                           (list (list ::tools
+                                       (list tool-kw
+                                             (cons :pkg pkg-path)
+                                             (cons :tgt tool))))
+                           (alist-delete (list tool-kw) (cdr deps))))
+                (car t))
+              ;; else
+              (let ((tool-kw (string->keyword tool)))
+                (set-cdr! deps
+                          (append
+                           (list (cons ::tools
+                                      (list (cons tool-kw
+                                                  `((:pkg ,pkg-path)))
+                                            (cons :tgt tool))))
+                           deps)))))
         )))
 
 ;; may update deps
@@ -358,6 +499,7 @@
     (cond
      ((string=? "./" arg) ::pkg-dir)
 
+     ;; FIXME: pct-vars should already be handled by -expand-pct-arg?
      ((string=? "%{deps}" arg)
       (let* ((kw (substring arg 6 (- (length arg) 1)))
              (keysym (string->keyword kw)))
@@ -372,7 +514,7 @@
 
      ((string=? "%{target}" arg)
       ;; (format #t "ARG TARGET\n")
-      :TARGET)
+      (error 'fixme "unimplemented: %{target}"))
 
      ;; pass std %{<kind>:foo} as ::kind:foo, let resolver handle
      ;; by looking them up in the exports table
@@ -380,7 +522,8 @@
       ;; %{foo} or %{foo}.suffix
       (format #t "VAR: ~A\n" arg)
       (format #t "deps: ~A\n" deps)
-      (-expand-pct-tool arg))
+      (let ((pkg-path (car (assoc-val :pkg-path pkg))))
+        (-expand-pct-arg!? arg :arg pkg-path deps)))
 
      (else
       (format #t "~A: ~A~%" (white "string literal") arg)
@@ -433,36 +576,49 @@
 
                   ((symbol? arg)
                    (format #t "~A: ~A~%" (red "arg is symbol") arg)
-                   (begin
-                     ;; (format #t "ARGSYM: ~A\n" arg)
+                   (let ((arg-str (format #f "~A" arg)))
                      (cond
-                      ((eq? '%{deps} arg)
-                       (let ((exp (expand-cmd-args (cdr args) pkg targets deps))
-                             ;; (xdeps (-deps->srcs-attr "fake" deps))
-                             )
-                         (append '(::deps) exp)))
+                      ((string-prefix? "%{" arg-str)
+                       ;; %{foo} or %{foo}.suffix
+                       (let* ((pkg-path (car (assoc-val :pkg-path pkg)))
+                              (arg (-expand-pct-arg!? arg :arg pkg-path deps)))
+                         (cons arg
+                               (expand-cmd-args (cdr args) pkg targets deps))))
+                      ( ;; else
+                       (expand-cmd-args (cons arg-str (cdr args))
+                                        pkg targets deps)))))
 
-                      ((eq? '%{workspace_root} arg)
-                       (cons :WS-ROOT
-                             (expand-cmd-args (cdr args) pkg targets deps)))
+                   ;; (begin
+                   ;;   ;; (format #t "ARGSYM: ~A\n" arg)
+                   ;;   (cond
+                   ;;    ((eq? '%{deps} arg)
+                   ;;     (let ((exp (expand-cmd-args (cdr args) pkg targets deps))
+                   ;;           ;; (xdeps (-deps->srcs-attr "fake" deps))
+                   ;;           )
+                   ;;       (append '(::deps) exp)))
 
-                      ((eq? '%{targets} arg)
-                       (let ((exp (expand-cmd-args (cdr args) pkg targets deps))
-                             ;; (xdeps (-deps->srcs-attr "fake" deps))
-                             )
-                         (append '(::targets) exp)))
+                   ;;    ((eq? '%{workspace_root} arg)
+                   ;;     (cons :WS-ROOT
+                   ;;           (expand-cmd-args (cdr args) pkg targets deps)))
 
-                      ((eq? '%{target} arg)
-                       ;; assumption: only one tgt in targets
-                       (cons :target ;; (caadr targets))
-                             (expand-cmd-args (cdr args) pkg targets deps)))
+                   ;;    ((eq? '%{targets} arg)
+                   ;;     (let ((exp (expand-cmd-args (cdr args) pkg targets deps))
+                   ;;           ;; (xdeps (-deps->srcs-attr "fake" deps))
+                   ;;           )
+                   ;;       (append '(::targets) exp)))
 
-                      ;; symbol else
-                      (else
-                       (let ((sarg (expand-string-arg (symbol->string arg)
-                                                      pkg targets deps)))
-                         (cons sarg
-                               (expand-cmd-args (cdr args) pkg targets deps)))))))
+                   ;;    ((eq? '%{target} arg)
+                   ;;     ;; assumption: only one tgt in targets
+                   ;;     (cons :target ;; (caadr targets))
+                   ;;           (expand-cmd-args (cdr args) pkg targets deps)))
+
+                   ;;    ;; symbol else
+                   ;;    (else
+                   ;;     (let ((sarg (expand-string-arg (symbol->string arg)
+                   ;;                                    pkg targets deps)))
+                   ;;       (cons sarg
+                   ;;             (expand-cmd-args (cdr args) pkg targets deps))))))
+                   ;; )
 
                   ((string? arg)
                    (format #t "~A: ~A~%" (red "arg is string") arg)

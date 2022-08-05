@@ -1,5 +1,7 @@
 ;; (display "dune/dune_stanza_rule.scm loading ...") (newline)
 
+(load "expanders.scm")
+
 (define (normalize-action-rule ws pkg rule-alist targets deps)
   (format #t "~A: ~A\n" (blue "normalize-action-rule") rule-alist)
   (format #t "deps: ~A\n" deps)
@@ -89,15 +91,6 @@
     (format #t "~A: ~A~%" (red "pruned") pruned)
     (list (cons :rule pruned))))
 
-;; https://dune.readthedocs.io/en/stable/concepts.html#user-actions
-(define dune-dsl-cmds
-  ;; all except 'run' and 'dynamic-run'
-  '(bash cat chdir cmp copy copy# diff diff? echo ignore-outputs-to
-ignore-stderr-to ignore-stdout-to no-infer pipe-outputs pipe-stderr
-pipe-stdout progn setenv system with-accepted-exit-codes
-with-outputs-to with-stderr-to with-stdin-from with-stdout-to
-write-file))
-
 (define dune-rule->mibl
   (let ((+documentation+ "INTERNAL. Updates pkg arg, returns normalized stanza. stanza: raw dune stanza (input); nstanza: miblized (output)"))
     (lambda (ws pkg stanza)
@@ -141,6 +134,7 @@ write-file))
 
              )
 
+        (format #t "~A: ~A~%" (yellow "iterating deps") deps)
         (if deps
             (for-each (lambda (dep)
                         (format #t "~A: ~A~%" (red "filegroup dep?") dep)

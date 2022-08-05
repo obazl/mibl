@@ -439,6 +439,11 @@
 
 ;; (define (normalize-stanza-executable kind pkg-path srcfiles stanza)
 
+(define (is-test-executable? ws pkg stanza)
+  (format #t "~A: ~A~%" (blue "is-test-executable?") stanza)
+  (let ((libdeps (assoc :libraries (cdr stanza))))
+    #t))
+
 ;; this calls -executable-mibl
 (define (dune-executable->mibl ws pkg kind stanza)
   ;; kind:: :executable || test
@@ -490,8 +495,10 @@
     (format #t " Ms: ~A\n" modules)
 
     (if pubname
-        ;; update exports table with 'bin:pubname'
-        (update-exports-table! ws :bin pubname pkg-path))
+        (update-exports-table! ws
+                               (if (is-test-executable? ws pkg stanza)
+                                   :test :bin)
+                               pubname pkg-path))
 
     ;; if has modules list, one must match 'name'
     (if modules

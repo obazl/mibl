@@ -177,33 +177,34 @@
   (format #t "~A: ~A\n" (blue "handle-tagged-literal-dep") deplist)
   (format #t "expanded-deps: ~A\n" expanded-deps)
   (format #t "car deplist: ~A (~A)\n" (car deplist) (type-of (car deplist)))
-  (let* ((lbl (string->keyword (format #f "~A"
-                                       (keyword->symbol (car deplist)))))
+  (let* ((tag (car deplist))
+         (_ (format #t "~A: ~A~%" (yellow "tag is kw?") (keyword? tag)))
+         ;; (lbl (string->keyword (format #f "~A"
+         ;;                               (car deplist))))
          (tagged (expand-deps ws (cdr deplist)
                               paths ;;stanza-alist
                               '()))
          ;; expand-deps inserts tag derived from literal; remove it
          (tagged (cdar tagged))
          )
-    (format #t "~A lbl: ~A\n" (red "tagged dep") lbl)
-    (format #t "tagged dep: ~A (~A)\n" tagged (type-of tagged))
+    (format #t "~A: ~A (kw? ~A)~%" (yellow "littag") tag (keyword? tag))
+    (format #t "~A: ~A\n" (yellow "tagged lit") tagged)
 
     ;; if tagged val is glob_files, update pkg with filegroup
     (if (list? (cadr deplist))
         (if (eq? 'glob_files (car (cadr deplist)))
             (update-filegroups-table!
-             ws (dirname canonical-path) lbl pattern)))
+             ws (dirname canonical-path) tag pattern)))
 
     (if (symbol? tagged)
-        (list (list lbl tagged) `,@expanded-deps)
+        (list (list tag tagged) `,@expanded-deps)
         (if (pair? (car tagged))
-            ;; omit :: and :_ since we have a tag
-            (if (equal? :: (caar tagged))
-                (append (list (cons lbl (cdar tagged))) expanded-deps)
-                (if (equal? :_ (caar tagged))
-                    (append (list (cons lbl (cdar tagged))) expanded-deps)
-                    `(,(cons lbl tagged) ,@expanded-deps)))
-            (list (list lbl tagged) expanded-deps)))))
+            ;; (if (equal? :: (caar tagged))
+            ;;     (append (list (cons tag (cdar tagged))) expanded-deps)
+            ;;     (if (equal? :_ (caar tagged))
+            ;;         (append (list (cons tag (cdar tagged))) expanded-deps)
+            `(,(cons tag tagged) ,@expanded-deps)
+            (list (list tag tagged) expanded-deps)))))
 
 (define (handle-tagged-glob-dep ws deplist paths expanded-deps)
   (format #t "~A: ~A\n" (blue "handle-tagged-glob-dep") deplist)
@@ -251,23 +252,17 @@
             (update-filegroups-table!
              ws (dirname canonical-path)
              lbl ;; (keyword->symbol lbl)
-             (basename pattern))))
-
-    (list (list lbl
-                (cons :pkg (dirname tagged))
-                ;; NB: :tgt for singleton, :tgts for globs
-                (cons :tgts lbl))
-          `,@expanded-deps)
-    ;; (if (symbol? tagged)
-    ;;     (list (list lbl tagged) `,@expanded-deps)
-    ;;     (if (pair? (car tagged))
-    ;;         (if (equal? :: (caar tagged))
-    ;;             (append (list (cons lbl (cdar tagged))) expanded-deps)
-    ;;             (if (equal? :_ (caar tagged))
-    ;;                 (append (list (cons lbl (cdar tagged))) expanded-deps)
-    ;;                 (append (cons lbl tagged) expanded-deps)))
-    ;;         (cons (cons lbl tagged) expanded-deps)))
-    ))
+             (basename pattern))
+            ))
+    (let ((result
+           (list (list lbl
+                       (cons :pkg (dirname tagged))
+                       ;; NB: :tgt for singleton, :tgts for globs
+                       (cons :tgts lbl))
+                 `,@expanded-deps)))
+      (format #t "~A: ~A~%" (red "expanded-deps") expanded-deps)
+      (format #t "~A: ~A~%" (red "GLOB RESULT") result)
+      result)))
 
 ;; tagged deps: (:foo foo.sh), (:css (glob_files *.css)), what else?
 (define (handle-tagged-dep ws deplist paths expanded-deps)

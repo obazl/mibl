@@ -5,8 +5,10 @@
 (load "string.scm")
 ;; (load "utils.scm")
 
+(load "dune/constants.scm")
 (load "dune/dune_api.scm")
 (load "dune/actions.scm")
+(load "dune/shell_actions.scm")
 
 (load "dune/dune_utils.scm")
 (load "dune/dune_action_deps.scm")
@@ -29,7 +31,7 @@
 (load "dune/pkg_api.scm")
 (load "dune/predicates.scm")
 (load "dune/ppx.scm")
-(load "dune/actions_with_output_to.scm")
+;; (load "dune/actions_with_output_to.scm")
 (load "dune/emit.scm")
 (load "dune/miblark.scm")
 (load "dune/aliases.scm")

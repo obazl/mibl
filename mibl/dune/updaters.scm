@@ -34,15 +34,18 @@
          (_ (format #t "~A: ~A~%" (blue "ws-path") ws-path))
          (pkgs (car (assoc-val :pkgs @ws)))
          (filegroups (car (assoc-val :filegroups @ws))))
+    (format #t "~A: ~A~%" (yellow "fg-table") filegroups)
     (for-each (lambda (kv)
-                (format #t "\n~A: ~A~%" (yellow "pkg-path") (car kv))
-                (format #t "~A: ~A~%" (magenta "filegroups") (cdr kv))
-                (let* ((pkg-path (car kv))
-                       (pkg-key (car kv))
-                       (pkg (hash-table-ref pkgs pkg-key)))
-                  (format #t "~A: ~A~%" (yellow "pkg") pkg)
-                  (hash-table-set! pkgs pkg-key
-                                  (append pkg
+                (let* ((fg-path (car kv))
+                       (fg-key (car kv))
+                       (fg-pkg (hash-table-ref pkgs fg-key)))
+                  (format #t "\n~A: ~A~%" (yellow "fg-path") fg-path)
+                  (format #t "~A: ~A~%" (yellow "fg-key") fg-key)
+                  (format #t "~A: ~A~%" (yellow "pkg") fg-pkg)
+                  ;; WARNING: fg-pkg will be #f if it is not in scope
+                  ;; e.g. its a globbed super-dir
+                  (hash-table-set! pkgs fg-key
+                                  (append fg-pkg
                                           (list
                                            (cons :filegroups (cdr kv)))))
                   ;; (for-each (lambda (fg)
@@ -297,9 +300,10 @@
                 ((:bin) (symbol (format #f "bin:~A" name)))
                 ((:lib) (symbol (format #f "lib:~A" name)))
                 ((:libexec) (symbol (format #f "libexec:~A" name)))
+                ((:test) (string->keyword (format #f "~A.exe" name)))
                 (else name)))
          (tag (case tag
-                ((:bin :lib :libexec) (list (cons tag #t)))
+                ((:bin :lib :libexec :test) (list (cons tag #t)))
                 (else '())))
          (spec `(,@tag
                  (:pkg ,pkg-path)

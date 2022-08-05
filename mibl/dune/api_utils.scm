@@ -1,3 +1,13 @@
+(define (pct-var->keyword v)
+  (format #t "~A: ~A~%" (blue "pct-var->var") v)
+  (let* ((v (format #f "~A" v))
+         (len (length v))
+         (vstr (substring v 2 (- len 1)))
+         (kw (string->keyword vstr)))
+    (format #t "vstr ~A\n" vstr)
+    (format #t "kw ~A\n" kw)
+    kw))
+
 ;;;;;;;;;;;;;;;;;;
 (define (parse-subcmd dsl subcmd cmd-list)
   (format #t "parse-subcmd: ~A\n\t~A\n\t~A\n" dsl subcmd cmd-list)
