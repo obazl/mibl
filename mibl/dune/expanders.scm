@@ -1,6 +1,6 @@
 ;; (display "loading dune/expanders.scm\n")
 
-(load "api_utils.scm")
+(load "dune/api_utils.scm")
 
 ;; several expansions: targets, cmd tools, cmd args
 ;; deps (see dune_action_deps.scm)

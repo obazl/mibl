@@ -2,6 +2,7 @@
 
 (load "alist.scm")
 ;; (load "srfi.scm")
+(load "libc/regex.scm")
 (load "string.scm")
 ;; (load "utils.scm")
 
@@ -18,11 +19,12 @@
 ;; (load "dune/dune_stanza_executable.scm")
 (load "dune/dune_stanza_fields.scm")
 ;; (load "dune/dune_stanza_library.scm")
-(load "dune/dune_stanza_rule.scm")
+(load "dune/rules.scm")
 (load "dune/dune_stanzas.scm")
 (load "dune/lookup_tables.scm")
 
 (load "dune/executables.scm")
+(load "dune/expanders.scm")
 (load "dune/fields.scm")
 (load "dune/flags.scm")
 (load "dune/labels.scm")

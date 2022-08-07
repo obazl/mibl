@@ -255,11 +255,18 @@
              (basename pattern))
             ))
     (let ((result
-           (list (list lbl
-                       (cons :pkg (dirname tagged))
-                       ;; NB: :tgt for singleton, :tgts for globs
-                       (cons :tgts lbl))
-                 `,@expanded-deps)))
+           ;; could not figure out how to handle empty expanded-list
+           ;; without getting #<unspecified>, so hack alert:
+           (if (null? expanded-deps)
+               (list (list lbl
+                           (cons :pkg (dirname tagged))
+                           ;; NB: :tgt for singleton, :tgts for globs
+                           (cons :tgts lbl)))
+               (list (list lbl
+                           (cons :pkg (dirname tagged))
+                           ;; NB: :tgt for singleton, :tgts for globs
+                           (cons :tgts lbl))
+                     `,@expanded-deps))))
       (format #t "~A: ~A~%" (red "expanded-deps") expanded-deps)
       (format #t "~A: ~A~%" (red "GLOB RESULT") result)
       result)))

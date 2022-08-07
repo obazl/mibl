@@ -1,6 +1,6 @@
 ;; (display "dune/dune_stanza_rule.scm loading ...") (newline)
 
-(load "expanders.scm")
+(load "dune/expanders.scm")
 
 (define (normalize-action-rule ws pkg rule-alist targets deps)
   (format #t "~A: ~A\n" (blue "normalize-action-rule") rule-alist)
@@ -103,7 +103,7 @@
 
       (let* ((pkg-path (car (assoc-val :pkg-path pkg)))
              (rule-alist (cdr stanza))
-             ;; (_ (format #t "rule-alist: ~A\n" rule-alist))
+             (_ (format #t "rule-alist: ~A\n" rule-alist))
              ;; (_ (format #t "target: ~A\n" (assoc 'target rule-alist)))
              ;; (_ (format #t "Targets: ~A\n" (assoc-val 'targets rule-alist)))
 

@@ -7,16 +7,3 @@ pipe-stdout progn setenv system with-accepted-exit-codes
 with-outputs-to with-stderr-to with-stdin-from with-stdout-to
 write-file))
 
-(define shell-tools
-  '(cat cp copy)) ;; etc
-
-(define shell-tool-kws
-  '(::cat ::cp ::copy)) ;; etc
-
-(define shell-tool-map
-  '((cat ::cat)
-    (cp ::cp)
-    (copy ::cp)
-    ;; etc
-    ))
-

@@ -246,7 +246,7 @@
                             (cmd-list (apply (car cmd-fn)
                                              (list ws pkg
                                                    subaction
-                                                   (list subaction-alist)
+                                                   subaction-alist
                                                    targets deps))))
                         cmd-list)
                       (if-let ((cmd-fn (assoc-val subaction
