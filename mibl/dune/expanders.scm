@@ -588,38 +588,6 @@
                        (expand-cmd-args (cons arg-str (cdr args))
                                         pkg targets deps)))))
 
-                   ;; (begin
-                   ;;   ;; (format #t "ARGSYM: ~A\n" arg)
-                   ;;   (cond
-                   ;;    ((eq? '%{deps} arg)
-                   ;;     (let ((exp (expand-cmd-args (cdr args) pkg targets deps))
-                   ;;           ;; (xdeps (-deps->srcs-attr "fake" deps))
-                   ;;           )
-                   ;;       (append '(::deps) exp)))
-
-                   ;;    ((eq? '%{workspace_root} arg)
-                   ;;     (cons :WS-ROOT
-                   ;;           (expand-cmd-args (cdr args) pkg targets deps)))
-
-                   ;;    ((eq? '%{targets} arg)
-                   ;;     (let ((exp (expand-cmd-args (cdr args) pkg targets deps))
-                   ;;           ;; (xdeps (-deps->srcs-attr "fake" deps))
-                   ;;           )
-                   ;;       (append '(::targets) exp)))
-
-                   ;;    ((eq? '%{target} arg)
-                   ;;     ;; assumption: only one tgt in targets
-                   ;;     (cons :target ;; (caadr targets))
-                   ;;           (expand-cmd-args (cdr args) pkg targets deps)))
-
-                   ;;    ;; symbol else
-                   ;;    (else
-                   ;;     (let ((sarg (expand-string-arg (symbol->string arg)
-                   ;;                                    pkg targets deps)))
-                   ;;       (cons sarg
-                   ;;             (expand-cmd-args (cdr args) pkg targets deps))))))
-                   ;; )
-
                   ((string? arg)
                    (format #t "~A: ~A~%" (red "arg is string") arg)
                    (let ((sarg (expand-string-arg arg pkg targets deps)))
@@ -639,12 +607,12 @@
 (define expand-targets
   (lambda (ws paths targets deps)
     (format #t "~A: ~A\n" (blue "expand-targets") targets)
-    (let ((xtargets (expand-deps ws targets paths '())))
+    (let ((xtargets (expand-deps* ws targets paths '())))
       (format #t "Expanded targets ~A\n" xtargets)
       xtargets)))
 
-(define (expand-deps ws deplist paths expanded-deps)
-  (format #t "~A: ~A\n" (blue "expand-deps") deplist)
+(define (expand-deps* ws deplist paths expanded-deps)
+  (format #t "~A: ~A\n" (blue "expand-deps*") deplist)
   (format #t "paths: ~A\n" paths)
   (format #t "expanded-deps: ~A\n" expanded-deps)
   ;; (let ((pkg-path (car (assoc-val :pkg-path paths)))
@@ -654,9 +622,9 @@
         ;; (format #t "finished deplist: ~A\n" expanded-deps)
         expanded-deps)
       (if (pair? (car deplist))
-          (expand-deps ws (car deplist)
+          (expand-deps* ws (car deplist)
                           paths ;; stanza-alist
-                          (expand-deps ws
+                          (expand-deps* ws
                            (cdr deplist) paths expanded-deps))
           ;; car is atom
           (let* ((kw (car deplist)))
@@ -667,17 +635,15 @@
                       ;; (format #t "expanded-deps: ~A\n" expanded-deps)
                       ;; we're done, depfn consumed cdr
 
-                      ;; FIXME: merge all lists with :_ key
-                      ;; we get one such list for each glob_files
-                      ;; (if (pair? (car res)) ;; e.g. ((:_ "foo/bar/..."))
-                          ;; (if (equal? :_ (caar res))
-                          ;;     (format #t "TO MERGE ~A\n" res))
                       (append (if (pair? (car res)) res (list res))
                               expanded-deps))
 
                     ;; else car of deplist not a keyword
                     ;; must be either a ':' tagged dep or a filename literal
                     ;; or, if its a cmd arg, may be %{foo}
+                    ;; or (package ...) or etc.
+
+                    ;; convert to string and dispatch
                     (let ((dep (format #f "~A" (car deplist))))
                       (cond
                        ((char=? #\: (string-ref dep 0))
@@ -701,7 +667,7 @@
                              expanded-deps))))))
             ))))
 
-;; expand-deps: deps -> file-deps, vars, env-vars
+;; expand-deps*: deps -> file-deps, vars, env-vars
 (define (expand-rule-deps ws paths stanza-alist)
   ;; updates stanza-alist
   (format #t "~A: ~A\n" (blue "expand-rule-deps") stanza-alist)
@@ -709,7 +675,7 @@
   (if-let ((deps-assoc (assoc 'deps stanza-alist)))
           (let* ((deplist (assoc-val 'deps stanza-alist))
                  (_ (format #t "main deplist: ~A\n" deplist))
-                 (result (expand-deps ws deplist paths '())))
+                 (result (expand-deps* ws deplist paths '())))
             (format #t "DEPLIST EXPANDED: ~A\n" result)
             (cons :deps result))
           #f))
