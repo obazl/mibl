@@ -52,7 +52,7 @@
 ;; returns pair from :modules, :structures, or :signatures
 ;; e.g. (:ml foo.ml) or (Foo . foo.ml) or (Foo . foo.mli)
 (define (find-m-file-in-pkg arg pkg)
-  (format #t "~A: ~A~%" (blue "find-file-in-pkg-files") arg)
+  (format #t "~A: ~A~%" (ublue "find-m-file-in-pkg") arg)
   ;; (format #t "~A: ~A~%" (blue ":files") (assoc-val :files pkg))
   ;; (format #t "~A: ~A~%" (blue "deps") deps)
   ;; (format #t "~A: ~A~%" (red ":scripts") (assoc-val :scripts pkg))
@@ -84,7 +84,7 @@
 ;;FIXME: rename
 ;; may update deps
 (define (find-file-in-pkg-files!? arg deps pkg)
-  (format #t "~A: ~A~%" (blue "find-file-in-pkg-files") arg)
+  (format #t "~A: ~A~%" (ublue "find-file-in-pkg-files") arg)
   (format #t "~A: ~A~%" (blue ":files") (assoc-val :files pkg))
   (format #t "~A: ~A~%" (blue "deps") deps)
   ;; (format #t "~A: ~A~%" (red ":scripts") (assoc-val :scripts pkg))
@@ -123,10 +123,12 @@
                                 (lambda (ch) (equal? ch #\/)))
                   #f ;; skip if not in this pkg
                   (begin
+                    ;; (format #t "~A~%" (ured "XXXX"))
                     (set! pkg (update-pkg-files! pkg (list arg)))
                     #t)))))
       ;; else no :files field; add it
       (begin
+        ;; (format #t "~A~%" (ured "YYYYYYYYYYYYYYYY"))
         (set! pkg (update-pkg-files! pkg (list arg)))
         #t #|(string->keyword (format #f "~A" arg))|# )))
 

@@ -3,13 +3,13 @@
 (load "dune/expanders.scm")
 
 (define (normalize-action-rule ws pkg rule-alist targets deps)
-  (format #t "~A: ~A\n" (blue "normalize-action-rule") rule-alist)
+  (format #t "~A: ~A\n" (ublue "normalize-action-rule") rule-alist)
   (format #t "deps: ~A\n" deps)
   (format #t "targets: ~A\n" targets)
   (format #t "ws: ~A\n" ws)
   (let* ((nzaction (normalize-action ws pkg rule-alist targets deps))
          (_ (format #t "~A: ~A\n"
-                    (green "normalized action") nzaction))
+                    (blue "normalized action") nzaction))
          (package (if-let ((p (assoc-val 'package rule-alist))) (car p)))
          (mode (if-let ((m (assoc-val 'mode rule-alist))) (car m)))
          (fallback (if-let ((fb (assoc-val 'fallback rule-alist)))
@@ -82,15 +82,6 @@
         result
         (list result))))
 
-(define (-prune-mibl-rule mibl-rule)
-  (format #t "~A: ~A~%" (blue "-prune-mibl-rule") mibl-rule)
-  (let ((pruned (filter (lambda (fld)
-                       (format #t "~A: ~A~%" (magenta "fld") (cdr fld))
-                       (not (null? (cdr fld))))
-                     (cdr (car mibl-rule)))))
-    (format #t "~A: ~A~%" (red "pruned") pruned)
-    (list (cons :rule pruned))))
-
 (define dune-rule->mibl
   (let ((+documentation+ "INTERNAL. Updates pkg arg, returns normalized stanza. stanza: raw dune stanza (input); nstanza: miblized (output)"))
     (lambda (ws pkg stanza)
@@ -126,7 +117,7 @@
              (pkg (if (null? targets)
                       pkg
                       (set! pkg (update-pkg-files! pkg targets))))
-             (_ (format #t "rule: updated pkg: ~A\n" pkg))
+             (_ (format #t "~A: ~A\n" (yellow "updated pkg") pkg))
 
              ;; normalize
              (targets (cons :outputs (expand-targets ws pkg targets deps)))
@@ -137,32 +128,41 @@
         (format #t "~A: ~A~%" (yellow "iterating deps") deps)
         (if deps
             (for-each (lambda (dep)
-                        (format #t "~A: ~A~%" (red "filegroup dep?") dep)
-                        (let* ((lbl-tag (car dep))
-                               (lbl (cdr dep))
-                               (pkg (assoc-val :pkg lbl))
-                               (tgt-tag (caadr lbl))
-                               (_ (format #t "~A: ~A~%" (red "tgt-tag") tgt-tag))
-                               (tgt (case tgt-tag
-                                      ((:tgt)
-                                       (assoc-val :tgt lbl))
-                                      ((:tgts)
-                                       (assoc-val :tgts lbl))
-                                      ((:fg)
-                                       (assoc-val :fg lbl))
-                                      (else
-                                       (error 'fixme "label pair lacks :tgt and :tgts"))))
-                               (fg-tag (if (eq? tgt-tag :fg)
-                                           (format #f "*~A*" tgt)
-                                           tgt)))
-                          (format #t "~A: ~A~%" (red "pkg") pkg)
-                          (format #t "~A: ~A~%" (red "lbl-tag") lbl-tag)
-                          (format #t "~A: ~A~%" (red "tgt-tag") tgt-tag)
-                          (format #t "~A: ~A~%" (red "tgt") tgt)
-                          (format #t "~A: ~A~%" (red "pkg-path") pkg-path)
-                          (if (not (equal? (format #f "~A" pkg) pkg-path))
-                              (if (eq? tgt-tag :fg)
-                                  (update-filegroups-table! ws pkg (string->keyword fg-tag) tgt)))))
+                        ;; dep forms:
+                        ;; (:foo (:pkg a/b/c)(:tgt "foo.sh"))
+                        ;; (::pkg foo-bar-baz)
+                        ;; (tezos-protocol-demo-noops ::pkg)
+                        (format #t "~A: ~A~%" (ucyan "dep") dep)
+                        (case (cadr dep)
+                        ;; (if (eq? ::pkg (cadr dep))
+                          ((::pkg) (cdr dep))
+                          (else
+                              (format #t "~A: ~A~%" (red "filegroup dep?") dep)
+                              (let* ((lbl-tag (car dep))
+                                     (lbl (cdr dep))
+                                     (pkg (assoc-val :pkg lbl))
+                                     (tgt-tag (caadr lbl))
+                                     (_ (format #t "~A: ~A~%" (red "tgt-tag") tgt-tag))
+                                     (tgt (case tgt-tag
+                                            ((:tgt)
+                                             (assoc-val :tgt lbl))
+                                            ((:tgts)
+                                             (assoc-val :tgts lbl))
+                                            ((:fg)
+                                             (assoc-val :fg lbl))
+                                            (else
+                                             (error 'fixme "label pair lacks :tgt and :tgts"))))
+                                     (fg-tag (if (eq? tgt-tag :fg)
+                                                 (format #f "*~A*" tgt)
+                                                 tgt)))
+                                ;; (format #t "~A: ~A~%" (red "pkg") pkg)
+                                ;; (format #t "~A: ~A~%" (red "lbl-tag") lbl-tag)
+                                ;; (format #t "~A: ~A~%" (red "tgt-tag") tgt-tag)
+                                ;; (format #t "~A: ~A~%" (red "tgt") tgt)
+                                ;; (format #t "~A: ~A~%" (red "pkg-path") pkg-path)
+                                (if (not (equal? (format #f "~A" pkg) pkg-path))
+                                    (if (eq? tgt-tag :fg)
+                                        (update-filegroups-table! ws pkg (string->keyword fg-tag) tgt)))))))
                       (cdr deps)))
 
         (format #t "~%~A: ~A~%~%" (red "DISPATCHING  on action") rule-alist)
@@ -202,7 +202,7 @@
                           (normalize-action-rule ws pkg rule-alist targets
                                                  (if deps deps (list :deps))))
                         (error 'no-action (format #f "rule without action: ~A" rule-alist)))))))
-               (mibl-rule (-prune-mibl-rule mibl-rule)))
+               (mibl-rule (prune-mibl-rule mibl-rule)))
                 ;; ((assoc 'copy rule-alist)
                 ;;  (format #t "handling copy rule\n" )
                 ;;  (normalize-copy-rule ws pkg rule-alist targets deps))

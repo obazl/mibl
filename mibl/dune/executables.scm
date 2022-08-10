@@ -65,9 +65,9 @@
                              lf '()))
          ;; integrate flags into link-flags
          )
-         ;; (_ (format #t "exec flags: ~A\n" flags))
-         ;; (compile-flags '("-compile-flags"))
-         ;; (link-flags '("-link_flags")))
+    ;; (_ (format #t "exec flags: ~A\n" flags))
+    ;; (compile-flags '("-compile-flags"))
+    ;; (link-flags '("-link_flags")))
 
     (let-values (((standard opens options flags)
                   (flags->mibl (assoc 'flags stanza-alist))))
@@ -85,12 +85,12 @@
              (compile-flags (append cflags tcflags))
              (link-flags (if (null? flags) '()
                              (remove '()
-                                 (list standard options
-                                       (if (null? link-flags)
-                                           flags
-                                           (cons (car flags)
-                                                 (append (cdr link-flags)
-                                                         (cdr flags)))))))))
+                                     (list standard options
+                                           (if (null? link-flags)
+                                               flags
+                                               (cons (car flags)
+                                                     (append (cdr link-flags)
+                                                             (cdr flags)))))))))
 
         (values
          (if (null? compile-flags) '() (list (cons :opts compile-flags)))
@@ -194,7 +194,7 @@
 
 ;; returns (values <compile-flds> <link-flds>)
 (define (-exec-flds->mibl pkg stanza-alist)
-  (format #t "~A: ~A\n" (blue "-exec-flds->mibl") stanza-alist)
+  (format #t "~A: ~A\n" (ublue "-exec-flds->mibl") stanza-alist)
 
   ;; 'libraries' and 'modules' flds may return multiple flds
   ;; so excluded them from mapping, handle separately
@@ -212,7 +212,7 @@
 
          ;; copy the modules part so we can later set-cdr! on just :compile
          (compile-manifest (let ((modules (assoc-val :modules
-                                                    (cdr link-manifest))))
+                                                     (cdr link-manifest))))
                              (list :manifest (cons :modules
                                                    (copy modules)))))
          (_ (format #t "~A: ~A\n" (red "compile-manifest") compile-manifest))
@@ -262,15 +262,16 @@
       ;;   (format #t "compile-flds: ~A\n" compile-flds)
       ;;   (format #t "link-flds: ~A\n" link-flds)
       (values (cons :compile
-                    (remove '()
-                            (list compile-manifest compile-flds depslist)))
+                    (remove '(:deps)
+                            (remove '()
+                            (list compile-manifest compile-flds depslist))))
               ;; (remove '() (list compile-flds compile-manifest)))
               (cons :link (remove '() (append (list link-manifest)
-                                             link-flds)))))))
+                                              link-flds)))))))
 
-  ;; (let-values (((compile-modules link-modules)
-  ;;               ())))
-  ;; )
+;; (let-values (((compile-modules link-modules)
+;;               ())))
+;; )
 
 ;; (define (-compile-manifest compile-flds link-manifest deps pkg-modules)
 ;;   (format #t "~A: ~A, ~A~%"(blue "compile-manifest") compile-flds deps)
@@ -346,13 +347,13 @@
                 (-exec-flags->mibl stanza-alist))
 
                ((compile-flds link-flds)
-                 (-exec-flds->mibl pkg stanza-alist)))
+                (-exec-flds->mibl pkg stanza-alist)))
 
-    (format #t "compile-flags: ~A\n" compile-flags)
-    (format #t "compile-flds: ~A\n" compile-flds)
+    (format #t "~A: ~A\n" (uyellow "compile-flags") compile-flags)
+    (format #t "~A: ~A\n" (uyellow "compile-flds") compile-flds)
 
-    (format #t "link-flags: ~A\n" link-flags)
-    (format #t "link-flds: ~A\n" link-flds)
+    (format #t "~A: ~A\n" (uyellow "link-flags") link-flags)
+    (format #t "~A: ~A\n" (uyellow "link-flds") link-flds)
 
     ;; (format #t "manifest: ~A\n" manifest)
 
@@ -366,15 +367,15 @@
     ;;        ;;                    deps (assoc-val :modules pkg)))
     ;;        )
 
-      ;; (format #t "compile-manifest: ~A\n" compile-manifest)
-      (list kind
-            (cons :pubname pubname)
-            (cons :privname privname)
-            (append link-flds link-flags)
-            (append compile-flds compile-flags))
-                    ;; (list compile-manifest
-                          ;; (cons :deps deps)))
-      ))
+    ;; (format #t "compile-manifest: ~A\n" compile-manifest)
+    (list kind
+          (cons :pubname pubname)
+          (cons :privname privname)
+          (append link-flds link-flags)
+          (append compile-flds compile-flags))
+    ;; (list compile-manifest
+    ;; (cons :deps deps)))
+    ))
 
 ;;FIXME: it's not clear how "exe:..." and "bin:..." work, so we
 ;;register both, with and without sfx ".exe"
@@ -521,64 +522,64 @@
                              pkg privname pubname
                              filtered-stanza-alist))
     ))
-    ;; (list :executable  ;; (car stanza)
-    ;;       (remove '()
-    ;;       (map (lambda (fld-assoc)
-    ;;              ;; (format #t "exec fld-assoc: ~A\n" fld-assoc)
-    ;;              ;; (let ((fld (if (pair? fld-assoc)
-    ;;              ;;                fld-assoc
-    ;;              ;;                (list fld-assoc))))
-    ;;              (case (car fld-assoc)
-    ;;                ((name)
-    ;;                 (format #t "exec privname: ~A\n" (cadr privname))
-    ;;                 ;;(let ((result
-    ;;                 (let ((pubname (assoc 'public_name stanza-alist)))
-    ;;                   (if pubname
-    ;;                       (begin
-    ;;                         (update-public-exe-table pkg-path
-    ;;                                                  (cadr pubname)
-    ;;                                                  (cadr pubname))
-    ;;                         (update-public-exe-table pkg-path
-    ;;                                                  (cadr privname)
-    ;;                                                  (cadr pubname))
-    ;;                         `(:name ((:private ,(cadr privname))
-    ;;                                  (:public ,(cadr pubname)))))
-    ;;                       (begin
-    ;;                         (update-public-exe-table pkg-path (cadr privname)
-    ;;                                                  (cadr privname))
-    ;;                         `(:name ((:private ,(cadr privname))))))))
-    ;;                   ;;     ))
-    ;;                   ;; (format #t "XXXX ~A\n" result)
-    ;;                   ;; result)
-    ;;                 ;; )
+;; (list :executable  ;; (car stanza)
+;;       (remove '()
+;;       (map (lambda (fld-assoc)
+;;              ;; (format #t "exec fld-assoc: ~A\n" fld-assoc)
+;;              ;; (let ((fld (if (pair? fld-assoc)
+;;              ;;                fld-assoc
+;;              ;;                (list fld-assoc))))
+;;              (case (car fld-assoc)
+;;                ((name)
+;;                 (format #t "exec privname: ~A\n" (cadr privname))
+;;                 ;;(let ((result
+;;                 (let ((pubname (assoc 'public_name stanza-alist)))
+;;                   (if pubname
+;;                       (begin
+;;                         (update-public-exe-table pkg-path
+;;                                                  (cadr pubname)
+;;                                                  (cadr pubname))
+;;                         (update-public-exe-table pkg-path
+;;                                                  (cadr privname)
+;;                                                  (cadr pubname))
+;;                         `(:name ((:private ,(cadr privname))
+;;                                  (:public ,(cadr pubname)))))
+;;                       (begin
+;;                         (update-public-exe-table pkg-path (cadr privname)
+;;                                                  (cadr privname))
+;;                         `(:name ((:private ,(cadr privname))))))))
+;;                   ;;     ))
+;;                   ;; (format #t "XXXX ~A\n" result)
+;;                   ;; result)
+;;                 ;; )
 
-    ;;                ((public_name) '())
-    ;;                ((libraries) ;; => :deps
-    ;;                 (normalize-exe-libraries fld-assoc stanza-alist))
-    ;;                ((modules)  ;; => :modules
-    ;;                 (let-values (((direct indirect)
-    ;;                               (expand-modules-fld modules srcfiles)))
-    ;;                   ;; (format #t
-    ;;                   ;;         "    direct: ~A\n    indirect ~A\n"
-    ;;                   ;;         direct indirect)
-    ;;                   (let* ((raw `((:raw ,fld-assoc)))
-    ;;                          (direct (if (null? direct)
-    ;;                                      raw
-    ;;                                      (cons `(:direct ,@direct) raw)))
-    ;;                          (indirect (if (null? indirect)
-    ;;                                        direct
-    ;;                                        (cons `(:indirect
-    ;;                                                ,@(reverse indirect))
-    ;;                                              direct)))
-    ;;                          (result `(:modules ,indirect)))
-    ;;                     ;;(format #t "RESULT ~A: ~A\n" stanza-name result)
-    ;;                     result)))
-    ;;                ((flags) (normalize-stanza-fld-flags fld-assoc))
-    ;;                ((foreign_stubs)
-    ;;                 (normalize-stanza-fld-foreign_stubs (cdr fld-assoc)))
+;;                ((public_name) '())
+;;                ((libraries) ;; => :deps
+;;                 (normalize-exe-libraries fld-assoc stanza-alist))
+;;                ((modules)  ;; => :modules
+;;                 (let-values (((direct indirect)
+;;                               (expand-modules-fld modules srcfiles)))
+;;                   ;; (format #t
+;;                   ;;         "    direct: ~A\n    indirect ~A\n"
+;;                   ;;         direct indirect)
+;;                   (let* ((raw `((:raw ,fld-assoc)))
+;;                          (direct (if (null? direct)
+;;                                      raw
+;;                                      (cons `(:direct ,@direct) raw)))
+;;                          (indirect (if (null? indirect)
+;;                                        direct
+;;                                        (cons `(:indirect
+;;                                                ,@(reverse indirect))
+;;                                              direct)))
+;;                          (result `(:modules ,indirect)))
+;;                     ;;(format #t "RESULT ~A: ~A\n" stanza-name result)
+;;                     result)))
+;;                ((flags) (normalize-stanza-fld-flags fld-assoc))
+;;                ((foreign_stubs)
+;;                 (normalize-stanza-fld-foreign_stubs (cdr fld-assoc)))
 
-    ;;                (else fld-assoc)))
-    ;;            stanza-alist)))
+;;                (else fld-assoc)))
+;;            stanza-alist)))
 ;; ))
 
 ;; ((executables ((names test_clic) (libraries tezos-clic alcotest-lwt) (flags (:standard -open Tezos_stdlib -open Tezos_clic)))) (rule ((alias buildtest) (deps test_clic.exe) (action (progn)))) (rule ((alias runtest_clic) (action (run %{exe:test_clic.exe})))) (rule ((alias runtest) (package tezos-clic) (deps (alias runtest_clic)) (action (progn)))))
@@ -628,26 +629,29 @@
                ;; (format #t "privname ~A, pubname: ~A\n" privname pubname)
                ;; (update-public-exe-table pkg-path pubname privname)
                ;; (update-public-exe-table pkg-path privname privname)
-               (-executable->mibl :executable
-                                     pkg-path privname pubname
-                                     filtered-stanza-alist srcfiles)
-               ;; `(:executable ((:name ((:private ,privname)
-               ;;                        (:public ,pubname)))))
-               )
+               (let ((x (-executable->mibl :executable
+                                           pkg-path privname pubname
+                                           filtered-stanza-alist srcfiles)))
+                 (format #t "~A: ~A~%" (red "XXXXXXXXXXXXXXXX") x)
+                 (prune-mibl-rule x)
+               ))
              (cdr privnames) (cdr pubnames))
 
         ;; else no pubnames
         (map (lambda (privname)
                ;; (format #t "privname: ~A\n" privname)
                ;; (update-public-exe-table pkg-path privname privname)
-               (-executable->mibl kind
-                ;; (if (equal? kind :executable)
-                ;;     :executable
-                ;;     (if (equal? kind :test)
-                ;;         :test
-                ;;         #f))
-                pkg-path privname privname filtered-stanza-alist srcfiles)
+               (let ((x (-executable->mibl kind
+                                           ;; (if (equal? kind :executable)
+                                           ;;     :executable
+                                           ;;     (if (equal? kind :test)
+                                           ;;         :test
+                                           ;;         #f))
+                                           pkg-path
+                                           privname privname
+                                           filtered-stanza-alist srcfiles)))
                ;; `(:executable ((:name ((:private ,privname)))))
-                        ;; (:module ,(normalize-module-name name))))))
-               )
+               ;; (:module ,(normalize-module-name name))))))
+               (prune-mibl-rule x)
+               ))
              (cdr privnames)))))

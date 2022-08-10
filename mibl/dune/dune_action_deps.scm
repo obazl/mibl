@@ -127,7 +127,7 @@
     (format #t "new-expanded-deps : ~A\n" expanded-deps)
     ;; find it and resolve pkg path
     ;; if not found mark it as :dynamic
-    (expand-deps ws (cdr deplist)
+    (expand-deps* ws (cdr deplist)
                     paths
                     (if (null? expanded-deps)
                         (list (list
@@ -150,11 +150,14 @@
          (deps (cdr deps))
          (match (find-if (lambda (dep)
                            (format #t "~A: ~A~%" (cyan "dep") dep)
-                           (if (equal? (car dep) key)
-                               #t
-                               (let ((tgt (assoc-val :tgt (cdr dep))))
-                                 (format #t "~A: ~A~%" (cyan "tgt") tgt)
-                                 (equal? tgt arg))))
+                           (case (cadr dep)
+                             ((::import ::pkg) #f)
+                             (else
+                              (if (equal? (car dep) key)
+                                  #t
+                                  (let ((tgt (assoc-val :tgt (cdr dep))))
+                                    (format #t "~A: ~A~%" (cyan "tgt") tgt)
+                                    (equal? tgt arg))))))
                          deps)))
     (format #t "~A: ~A~%" (cyan "match") match)
     (if match (car match) #f)))
@@ -181,10 +184,10 @@
          (_ (format #t "~A: ~A~%" (yellow "tag is kw?") (keyword? tag)))
          ;; (lbl (string->keyword (format #f "~A"
          ;;                               (car deplist))))
-         (tagged (expand-deps ws (cdr deplist)
+         (tagged (expand-deps* ws (cdr deplist)
                               paths ;;stanza-alist
                               '()))
-         ;; expand-deps inserts tag derived from literal; remove it
+         ;; expand-deps* inserts tag derived from literal; remove it
          (tagged (cdar tagged))
          )
     (format #t "~A: ~A (kw? ~A)~%" (yellow "littag") tag (keyword? tag))
@@ -239,7 +242,7 @@
          ;;          #f)
          ;;      #f))
          ;; (tagged ;(if tagged tagged
-         ;;             (expand-deps ws (cdr deplist)
+         ;;             (expand-deps* ws (cdr deplist)
          ;;                          paths ;;stanza-alist
          ;;                          '()))
          ) ;;expanded-deps)))
@@ -434,9 +437,9 @@
   (error 'handle-universe-dep "FIXME: handle-universe-dep"))
 
 (define (handle-package-dep paths deplist)
-  (format #t "handle-package-dep: ~A\n" deplist)
+  (format #t "~A: ~A~%" (ublue "handle-package-dep") deplist)
 ;; (package <pkg>) depends on all files installed by <package>, as well as on the transitive package dependencies of <package>. This can be used to test a command against the files that will be installed.
-  (cons :pkg (cadr deplist)))
+  (list (cadr deplist) ::pkg))
 
 (define (handle-env-var-dep deplist)
   (format #t "handle-env-var-dep: ~A\n" deplist))
@@ -447,7 +450,7 @@
 (define (handle-include-dep deplist)
   (format #t "handle-include-dep: ~A\n" deplist))
 
-;; called by expanders::expand-deps
+;; called by expanders::expand-deps*
 (define dune-dep-handlers
   `((file ,handle-file-dep)
     (alias ,handle-alias-dep)

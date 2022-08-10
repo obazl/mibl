@@ -70,15 +70,17 @@
 
 
 (define (update-tagged-label-list! filename tllist pkg)
-  (format #t "~A: ~A ~A~%" (blue "update-tagged-label-list!")
+  (format #t "~A: ~A ~A~%" (ublue "update-tagged-label-list!")
           filename tllist)
   (let* ((fname (format #f "~A" filename))
          (key (string->keyword fname)))
+    (format #t "~A: ~A~%" (uwhite "tllist before") tllist)
     (set-cdr! tllist
               (cons (cons key
                           (list (cons :pkg (car (assoc-val :pkg-path pkg)))
                                 (cons :tgt fname)))
-                         (cdr tllist)))
+                    (cdr tllist)))
+    (format #t "~A: ~A~%" (uwhite "tllist after") tllist)
     key))
 
 (define (-update-pkg-files-with-struct pkg tgt)
@@ -209,36 +211,36 @@
              ;; (data    (if modules-assoc (assoc-val :data pkg) #f))
              (files-assoc (if (assoc :files pkg)
                               (assoc-val :files pkg) #f)))
-        (format #t "~A: ~A~%" (cyan "modules-assoc") modules-assoc)
+        ;; (format #t "~A: ~A~%" (cyan "modules-assoc") modules-assoc)
         ;; (format #t "~A: ~A~%" (cyan "data") data)
         ;; (format #t "~A: ~A~%" (cyan "scripts") scripts)
-        (format #t "~A: ~A~%" (cyan "files-assoc") files-assoc)
+        ;; (format #t "~A: ~A~%" (cyan "files-assoc") files-assoc)
         ;; for each tgt, decide its kind: ml/mli, or other
         ;; then update the pkg fld: :modules, :scripts, :files, :data
         ;; since we're updating pkg use for-each
         (for-each
          (lambda (tgt)
-           (format #t "~A: ~A~%" (red "tgt") tgt)
-           (format #t "~A: ~A~%" (red "tgt str") (format #f "~A" tgt))
+           ;; (format #t "~A: ~A~%" (red "tgt") tgt)
+           ;; (format #t "~A: ~A~%" (red "tgt str") (format #f "~A" tgt))
            (if (not (string-index (format #f "~A" tgt)
                                   (lambda (ch) (equal? ch #\/))))
                (let ((kind (filename->kind (format #f "~A" tgt))))
-                 (format #t "~A: ~A~%" (red "kind") kind)
+                 ;; (format #t "~A: ~A~%" (red "kind") kind)
                  (case kind
                    ((:struct)
-                    (format #t ":struct tgt: ~A\n" tgt)
+                    ;; (format #t ":struct tgt: ~A\n" tgt)
                     (-update-pkg-files-with-struct pkg tgt))
 
                    ((:sig)
-                    (format #t ":sig tgt: ~A\n" tgt)
+                    ;;(format #t ":sig tgt: ~A\n" tgt)
                     (-update-pkg-files-with-sig pkg tgt))
 
                    (else
-                    (format #t ":other: ~A\n" tgt)
+                    ;; (format #t ":other: ~A\n" tgt)
                     ;; (format #t "files-assoc: ~A\n" files-assoc)
                     (alist-update-in! pkg '(:files :dynamic)
                                       (lambda (old)
-                                        (format #t ":files :dynamic OLD: ~A\n" old)
+                                        ;; (format #t ":files :dynamic OLD: ~A\n" old)
                                         ;; (format #t "other tgt: ~A\n" tgt)
                                         (let ((fa (filename->file-assoc tgt))
                                               (tgtstr (if (symbol? tgt)
@@ -254,29 +256,6 @@
                                               ;;     (append fa old))
                                               )
                                           )))
-                    ;; (if-let (files-assoc (assoc-in '(:files :dynamic) pkg))
-                    ;;     (begin
-                    ;;       (format #t "files-assoc (before): ~A\n"
-                    ;;               files-assoc)
-                    ;;       (alist-update-in! pkg '(:files :dynamic)
-                    ;;                         (lambda (old)
-                    ;;                           (append
-                    ;;                            old (filename->file-assoc tgt))))
-                    ;;       ;; (set-cdr! files-assoc
-                    ;;       ;;           (cons (filename->file-assoc tgt)
-                    ;;       ;;                 (cdr files-assoc)))
-                    ;;       (format #t "files-assoc (after): ~A\n"
-                    ;;               files-assoc))
-                    ;;     ;; else
-                    ;;     (begin
-                    ;;       (format #t "initializing files-assoc of pkg ~A\n" pkg)
-                    ;;       (set! pkg
-                    ;;             (append pkg
-                    ;;                     (list
-                    ;;                      (list :files
-                    ;;                            (list :dynamic
-                    ;;                                  (filename->file-assoc tgt))))))
-                    ;;       ))
                     )) ;; case
                  )
                ;; else '/' found in tgt

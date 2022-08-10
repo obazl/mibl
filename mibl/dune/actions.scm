@@ -182,7 +182,7 @@
 ;; called for (action (run ...) ...)
 ;; just remove 'run' and recur on dune-action-cmds-...
 (define (normalize-action-run-dsl ws pkg run-list targets deps)
-  (format #t "~A: ~A\n" (blue "normalize-action-run-dsl") run-list)
+  (format #t "~A: ~A\n" (ublue "normalize-action-run-dsl") run-list)
   ;; run-list: ((run foo.sh arg1 arg2 ...))
   ;; but maybe: ((run (foo.sh arg1 arg2 ...)))
   (let* ((run-dsl (car run-list))
@@ -631,7 +631,9 @@
 
     (if-let ((cmd-fn (assoc-val action dune-action-cmds-no-dsl)))
             (let ((cmd-list (apply (car cmd-fn)
-                            (list ws pkg action action-alist targets deps))))
+                                   (list ws pkg action
+                                         action-alist
+                                         targets deps))))
               cmd-list)
             (if-let ((cmd-fn (assoc-val action dune-action-cmds-dsl)))
                     (let ((cmd-list (apply (car cmd-fn)
