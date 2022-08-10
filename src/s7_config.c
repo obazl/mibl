@@ -757,6 +757,7 @@ bazel run is similar, but not identical, to directly invoking the binary built b
 
 void libc_s7_init(s7_scheme *sc);
 
+/* FIXME: call into libs7 for this */
 LOCAL void s7_config_repl(s7_scheme *sc)
 {
     printf("mibl: s7_repl\n");
@@ -828,6 +829,9 @@ LOCAL void s7_config_repl(s7_scheme *sc)
 #endif
 }
 
+/* defined in s7.c, we need the prototype */
+void s7_config_libc_s7(s7_scheme *sc);
+
 EXPORT s7_scheme *s7_configure(void)
 {
     s7 = s7_init();
@@ -891,15 +895,20 @@ EXPORT s7_scheme *s7_configure(void)
 
     /* init_glob(s7); */
 
+    s7_config_libc_s7(s7);
+    /* libc stuff is in *libc*, which is an environment
+     * (i.e. (let? *libc*) => #t)
+     * import the stuff we're likely to use into the root env:
+     * (varlet (rootlet 'regcomp (*libc* 'regcomp) ...)
+     */
 
     /* s7_config_repl(s7); */
     /* s7_repl(s7); */
+
     s7_load(s7, "dune.scm");
 
     _init_scheme_fns(s7);       /* call _after_ loading dune.scm */
 
-
-    /* libc_s7_init(s7); */
     chdir(bws_root);            /* always run from base ws root */
 
     return s7;
