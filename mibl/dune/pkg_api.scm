@@ -111,3 +111,22 @@
   ;;             (recur (cdr srcfiles) modnames)
   ;;             (recur (cdr srcfiles) (cons m modnames)))))))
 
+(define (pkg->sigs pkg)
+  (let* ((statics (if-let ((structs (assoc-in
+                                     '(:signatures :static) pkg)))
+                          (cdr structs) '()))
+         (dynamics (if-let ((structs (assoc-in
+                                      '(:signatures :dynamic) pkg)))
+                           (cdr structs) '()))
+         (sigs (concatenate statics dynamics)))
+    sigs))
+
+(define (pkg->structs pkg)
+  (let* ((statics (if-let ((structs (assoc-in
+                                     '(:structures :static) pkg)))
+                          (cdr structs) '()))
+         (dynamics (if-let ((structs (assoc-in
+                                      '(:structures :dynamic) pkg)))
+                           (cdr structs) '()))
+         (structs (concatenate statics dynamics)))
+    structs))

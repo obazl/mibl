@@ -99,6 +99,7 @@
   (let-values (((sym pfx sfx) (parse-pct-var arg)))
     (format #t "~A: ~A, ~A: ~A~%"
             (uwhite "arg pfx") pfx (uwhite "sfx") sfx)
+
     (if pfx
         (if (equal? :dep pfx)
             (begin
@@ -278,7 +279,7 @@
                                 (format #t "~A: ~A~%" (uwhite "pkg-tgt") pkg-tgt)
                                 (format #t "~A: ~A~%" (uwhite "tgt") tgt)
                                 tgt))))
-                          deps))))
+                          (cdr deps)))))
           (if t
               (let ((tool-kw (string->keyword tool)))
                 (format #t "~A: ~A~%" (red "tool in deps") t)
@@ -609,18 +610,21 @@
 
                   ((symbol? arg)
                    (format #t "~A: ~A~%" (red "arg is symbol") arg)
-                   (let ((arg-str (format #f "~A" arg)))
-                     (cond
-                      ((string-prefix? "%{" arg-str)
-                       ;; %{foo} or %{foo}.suffix
-                       (let* ((pkg-path (car (assoc-val :pkg-path pkg)))
-                              (arg (-expand-pct-arg!? arg :arg pkg deps)))
-                         (format #t "~A: ~A~%" (uwhite "expanded arg") arg)
-                         (cons arg
-                               (expand-cmd-args* (cdr args) pkg targets deps))))
-                      ( ;; else
-                       (expand-cmd-args* (cons arg-str (cdr args))
-                                        pkg targets deps)))))
+                   (if (or (eq? arg '%{target}) (eq? arg '%{targets}))
+                       (cons :outputs
+                             (expand-cmd-args* (cdr args) pkg targets deps))
+                       (let ((arg-str (format #f "~A" arg)))
+                         (cond
+                          ((string-prefix? "%{" arg-str)
+                           ;; %{foo} or %{foo}.suffix
+                           (let* ((pkg-path (car (assoc-val :pkg-path pkg)))
+                                  (arg (-expand-pct-arg!? arg :arg pkg deps)))
+                             (format #t "~A: ~A~%" (uwhite "expanded arg") arg)
+                             (cons arg
+                                   (expand-cmd-args* (cdr args) pkg targets deps))))
+                          ( ;; else
+                           (expand-cmd-args* (cons arg-str (cdr args))
+                                             pkg targets deps))))))
 
                   ((string? arg)
                    (format #t "~A: ~A~%" (red "arg is string") arg)
@@ -645,26 +649,27 @@
       (format #t "Expanded targets ~A\n" xtargets)
       xtargets)))
 
-(define (expand-deps* ws deplist paths expanded-deps)
+(define (expand-deps* ws deplist pkg expanded-deps)
   (format #t "~A: ~A\n" (ublue "expand-deps*") deplist)
-  (format #t "paths: ~A\n" paths)
+  (format #t "pkg: ~A\n" pkg)
   (format #t "expanded-deps: ~A\n" expanded-deps)
-  ;; (let ((pkg-path (car (assoc-val :pkg-path paths)))
-  ;;       (ws-root (car (assoc-val :ws-path paths))))
+  ;; (let ((pkg-path (car (assoc-val :pkg-path pkg)))
+  ;;       (ws-root (car (assoc-val :ws-path pkg))))
   (if (null? deplist)
       (begin
         ;; (format #t "finished deplist: ~A\n" expanded-deps)
         expanded-deps)
       (if (pair? (car deplist))
           (expand-deps* ws (car deplist)
-                          paths ;; stanza-alist
+                          pkg ;; stanza-alist
                           (expand-deps* ws
-                           (cdr deplist) paths expanded-deps))
+                           (cdr deplist) pkg expanded-deps))
           ;; car is atom
           (let* ((kw (car deplist)))
             (if-let ((depfn (assoc-val kw dune-dep-handlers)))
-                    (let ((res (apply (car depfn) (list paths
-                                                        deplist))))
+                    (let ((res (apply (car depfn)
+                                      (list ws pkg
+                                            deplist))))
                       ;; (format #t "depfn res: ~A\n" res)
                       ;; (format #t "expanded-deps: ~A\n" expanded-deps)
                       ;; we're done, depfn consumed cdr
@@ -684,7 +689,7 @@
                           (begin
                             ;; (format #t "TAGGED DEP : ~A\n" deplist)
                             (handle-tagged-dep
-                             ws deplist paths expanded-deps)))
+                             ws deplist pkg expanded-deps)))
 
                        ;; ((char=? #\% (string-ref dep 0))
                        ;;  )
@@ -696,7 +701,7 @@
                           (begin
                             ;; (format #t "LIT DEP : ~A\n" deplist)
                             (handle-filename-literal-dep
-                             ws dep deplist paths
+                             ws dep deplist pkg
                              ;; stanza-alist
                              expanded-deps))))))
             ))))

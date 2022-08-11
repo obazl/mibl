@@ -144,18 +144,17 @@
 
             ;; ((tests) (normalize-stanza-tests pkg-path ocaml-srcs stanza))
 
-
             ((alias)
              (set-cdr! nstanzas
                        (append
                         (cdr nstanzas)
                         (dune-alias->mibl ws pkg stanza))))
 
-
-            ;; ((install) (normalize-stanza-install
-            ;;             pkg-path
-            ;;             ;;dune-project-stanzas
-            ;;             stanza))
+            ((install)
+             (set-cdr! nstanzas
+                       (append
+                        (cdr nstanzas)
+                        (dune-install->mibl ws pkg stanza))))
 
             ;; ((ocamllex) (normalize-stanza-ocamllex stanza))
 
@@ -199,7 +198,12 @@
                     normed))
                 ;; (cdr dune-stanzas))))
                 (assoc-val 'dune pkg+))))
+
           (format #t "~A: ~A\n" (red "NEW PKG") pkg+)
+          (let* ((@ws (assoc-val ws -mibl-ws-table))
+                 (exports (car (assoc-val :exports @ws))))
+            (format #t "~A: ~A~%" (red "exports table") exports))
+
           pkg+)
         (begin
           (format #t "~A: ~A\n"

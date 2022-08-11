@@ -218,9 +218,10 @@
 ;;   if depending stanza is namespaced, continue
 ;;   else ocamldep and update the pkg fld with :deps
 (define (resolve-pkg-file-deps ws)
-  (format #t "~A: ~A~%" (blue "resolve-pkg-file-deps") ws)
+  (format #t "~A: ~A~%" (ublue "resolve-pkg-file-deps") ws)
   (let* ((@ws (assoc-val ws -mibl-ws-table))
          (pkgs (car (assoc-val :pkgs @ws))))
+    (format #t "~A: ~A~%" (uwhite "pkgs") pkgs)
     (for-each (lambda (kv)
                 (let* ((pkg-path (car kv))
                        (pkg (cdr kv))

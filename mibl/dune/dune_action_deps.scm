@@ -436,10 +436,13 @@
   (format #t "handle-universe-dep: ~A\n" deplist)
   (error 'handle-universe-dep "FIXME: handle-universe-dep"))
 
-(define (handle-package-dep paths deplist)
+(define (handle-package-dep ws pkg deplist)
   (format #t "~A: ~A~%" (ublue "handle-package-dep") deplist)
+  (format #t "~A: ~A~%" (uwhite "pkg") pkg)
 ;; (package <pkg>) depends on all files installed by <package>, as well as on the transitive package dependencies of <package>. This can be used to test a command against the files that will be installed.
-  (list (cadr deplist) ::pkg))
+  ;; we will emit a filegroup for all files in the pkg
+  (let* ((key (symbol->keyword (cadr deplist))))
+    (list key ::pkg)))
 
 (define (handle-env-var-dep deplist)
   (format #t "handle-env-var-dep: ~A\n" deplist))

@@ -2,13 +2,16 @@
   (format #t "~A: ~A~%" (magenta "update-filegroups-table!") pkg-path)
   (format #t "~A: ~A~%" (green "tgt") tgt)
   (format #t "~A: ~A~%" (green "pattern") pattern)
+  (format #t "~A: ~A~%" (green "ws") ws)
+  (format #t "~A: ~A~%" (green "mibl tbl") -mibl-ws-table)
 
-  (let* ((filegroups (car (assoc-val :filegroups
-                                     (assoc-val ws -mibl-ws-table))))
+  (let* ((-ws (if (keyword? ws) (assoc-val ws -mibl-ws-table) ws))
+         (_ (format #t "~A: ~A~%" (uwhite "-ws") -ws))
+         (filegroups (car (assoc-val :filegroups -ws)))
+         (_ (format #t "hidden filegroups tbl: ~A\n" filegroups))
          (glob? (string-index pattern (lambda (ch)
                                               (equal? ch #\*)))))
 
-    (format #t "hidden filegroups tbl: ~A\n" filegroups)
     (format #t "adding ~A~A to filegroups tbl\n" pkg-path tgt)
 
     (let ((fgroups (hash-table-ref filegroups pkg-path)))
@@ -44,10 +47,20 @@
                   (format #t "~A: ~A~%" (yellow "pkg") fg-pkg)
                   ;; WARNING: fg-pkg will be #f if it is not in scope
                   ;; e.g. its a globbed super-dir
-                  (hash-table-set! pkgs fg-key
-                                  (append fg-pkg
-                                          (list
-                                           (cons :filegroups (cdr kv)))))
+                  (if fg-pkg
+                      (hash-table-set! pkgs fg-key
+                                       (append fg-pkg
+                                               (list
+                                                (cons :filegroups (cdr kv)))))
+                      (hash-table-set! pkgs fg-key
+                                       (list
+                                        `(:ws-path ,ws-path)
+                                        `(:pkg-path ,fg-path)
+                                        `(:realpath
+                                          ,(realpath (string-join (map (lambda (x) (format #f "~A" x))
+                                                                       (list  ws-path fg-path)) "/")
+                                                     '()))
+                                        (cons :filegroups (cdr kv)))))
                   ;; (for-each (lambda (fg)
                   ;;             (format #t "~A: ~A~%" (yellow "fg") fg))
                   ;;           (cdr kv))
@@ -271,27 +284,31 @@
 ;; rule action for example) will refer to it as 'bin:foo', so we can
 ;; just look it up to find its Bazel label.
 
-(define (update-exports-table! ws tag name pkg-path)
-  (format #t "~A: ~A -> ~A\n" (magenta "update-exports-table!") name pkg-path)
+(define (update-exports-table! ws tag tgt pkg-path)
+  (format #t "~A: ~A -> ~A\n" (ublue "update-exports-table!") tgt pkg-path)
+  (format #t "~A: ~A~%" (uwhite "tag") tag)
   (let* ((exports (car (assoc-val :exports
                                   (assoc-val ws -mibl-ws-table))))
          (key (case tag
-                ((:bin) (symbol (format #f "bin:~A" name)))
-                ((:lib) (symbol (format #f "lib:~A" name)))
-                ((:libexec) (symbol (format #f "libexec:~A" name)))
-                ((:test) (string->keyword (format #f "~A.exe" name)))
-                (else name)))
+                ((:bin) (symbol (format #f "bin:~A" tgt)))
+                ((:lib) (symbol (format #f "lib:~A" tgt)))
+                ((:libexec) (symbol (format #f "libexec:~A" tgt)))
+                ((:test) (string->keyword (format #f "~A.exe" tgt)))
+                (else tag)))
          (tag (case tag
                 ((:bin :lib :libexec :test) (list (cons tag #t)))
                 (else '())))
          (spec `(,@tag
-                 (:pkg ,pkg-path)
-                 (:tgt ,(format #f "~A" name)))))
+                 ,(cons :pkg pkg-path)
+                 ,(cons :tgt (format #f "~A" tgt)))))
     (format #t "hidden exports tbl: ~A\n" exports)
 
-    (format #t "adding ~A to exports tbl\n" name)
-    (hash-table-set! exports key spec)
-    (format #t "updated exports tbl: ~A\n" exports)))
+    (format #t "adding ~A to exports tbl\n" spec)
+    (hash-table-set! exports
+                     (if (keyword? key) key
+                         (symbol->keyword key))
+                     spec)
+    (format #t "~A: ~A\n" (uwhite "updated exports tbl") exports)))
 
 (define (update-exports-table-with-targets! ws targets pkg-path)
   (format #t "~A: ~A~%" (magenta "update-exports-table-with-targets!") targets)

@@ -94,11 +94,17 @@
 
             ((:structures)
              ;; (format #t "~A: ~A~%" (red ":STRUCTURES") (cdr modules-alist))
-             (let ((structs (if-let ((ms (assoc-val :static (cdr modules-alist))))
-                                    (begin
-                                      ;; (format #t "~A: ~A~%" (red "stuctstatic") ms)
-                                      (map car ms))
-                                    '())))
+             (let* ((statics (if-let ((ms (assoc-val :static (cdr modules-alist))))
+                                     (begin
+                                       ;; (format #t "~A: ~A~%" (red "stuctstatic") ms)
+                                       (map car ms))
+                                     '()))
+                    (dynamics (if-let ((ms (assoc-val :dynamic (cdr modules-alist))))
+                                      (begin
+                                        ;; (format #t "~A: ~A~%" (red "stuctdyn") ms)
+                                        (map car ms))
+                                      '()))
+                    (structs (flatten (concatenate statics dynamics))))
                ;; (format #t "structs: ~A~%" structs)
                structs))
 

@@ -443,7 +443,9 @@
 (define (is-test-executable? ws pkg stanza)
   (format #t "~A: ~A~%" (blue "is-test-executable?") stanza)
   (let ((libdeps (assoc :libraries (cdr stanza))))
-    #t))
+    ;;FIXME FIXME: if deps of executable contains ounit2 etc. then #t
+    (if (eq? 'executable (car stanza))
+        #f #t)))
 
 ;; this calls -executable-mibl
 (define (dune-executable->mibl ws pkg kind stanza)
@@ -492,14 +494,23 @@
                           (cadr pubname) privname))
          (modules (assoc 'modules stanza-alist))
          (filtered-stanza-alist (alist-delete '(names public_names) stanza-alist)))
-    (format #t " N: ~A\n" privname)
+    (format #t "~A: ~A\n" (uwhite "privname") privname)
+    (format #t "~A: ~A\n" (uwhite "pubname") pubname)
     (format #t " Ms: ~A\n" modules)
 
     (if pubname
         (update-exports-table! ws
                                (if (is-test-executable? ws pkg stanza)
-                                   :test :bin)
-                               pubname pkg-path))
+                                   (string->symbol (format #f ":test:~A" pubname))
+                                   (string->symbol (format #f ":bin:~A" pubname)))
+                               privname pkg-path))
+    (if privname
+        (update-exports-table! ws
+                               (if (is-test-executable? ws pkg stanza)
+                                   (string->symbol (format #f ":test:~A" privname))
+                                   (string->symbol (format #f ":bin:~A" privname)))
+                               privname pkg-path))
+    ;; (error 'fixme "STOP exe")
 
     ;; if has modules list, one must match 'name'
     (if modules

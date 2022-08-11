@@ -27,8 +27,8 @@
     (format #t "sym ~A\n" sym)
     (let ((splits (string-split vstr #\:)))
       (format #t "~A: ~A~%" (white "splits") splits)
-      (if (equal? vstr splits)
-          (values sym "" sym)
+      (if (equal? (list vstr) splits)
+          (values sym #f sym)
           (values sym (string->keyword (car splits))
                   (string->symbol (string-join (cdr splits) ":")))))))
 

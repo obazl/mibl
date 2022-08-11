@@ -125,7 +125,7 @@
 
 ;; replace e.g. :rule by :write-file
 (define (mibl-pkg->miblark pkg)
-  (format #t "~A: ~A~%" (blue "mibl-pkg->miblark") (assoc-val :pkg-path pkg))
+  (format #t "~A: ~A~%" (blue "mibl-pkg->miblark") pkg) ;;(assoc-val :pkg-path pkg))
 
   (if (assoc :dune pkg)
       (for-each
@@ -157,8 +157,9 @@
            (else
             ))
          ;; aliases
-         (if (assoc :alias (cdr stanza))
-             (-alias-args->miblark pkg stanza))
+         (if (alist? (cdr stanza))
+             (if (assoc :alias (cdr stanza))
+                 (-alias-args->miblark pkg stanza)))
          )
        (assoc-val :dune pkg))
       ;; else

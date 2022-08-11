@@ -152,55 +152,67 @@
   ;; else => :library
 
   ;; add lib names to exports table
-  (let ((exports (car (assoc-val :exports (assoc-val ws -mibl-ws-table)))))
+  (let ((pkg-path (car (assoc-val :pkg-path pkg)))
+        (exports (car (assoc-val :exports (assoc-val ws -mibl-ws-table))))
+        (privname (assoc-val 'name (cdr stanza)))
+        (pubname (assoc-val 'public_name (cdr stanza))))
     (format #t "hidden exports: ~A\n" exports)
 
-    (if-let ((privname (assoc-val 'name (cdr stanza))))
-            (begin
-              (format #t "adding privname ~A to exports tbl\n" (car privname))
-              (format #t "path: ~A\n" (assoc-val :pkg-path pkg))
-              (hash-table-set! exports (car privname)
-                               (car (assoc-val :pkg-path pkg)))
-              ))
+    ;; libs may be referenced w/o ns, e.g. mylib,
+    ;; or (in rule actions) w/ns, e.g. lib:mylib
+    ;; we register both pub and priv names just to make sure refs are resolved
 
-    (if-let ((pubname (assoc-val 'public_name (cdr stanza))))
-            (begin
-              (format #t "adding pubname ~A to exports tbl\n" (car pubname))
-              (hash-table-set! exports (car pubname)
-                               (car (assoc-val :pkg-path pkg)))
-              )))
+    (update-exports-table! ws
+                           (string->symbol (format #f "~A" (car privname))) ;; key
+                               (car privname) pkg-path)
+    (update-exports-table! ws
+                           (string->symbol (format #f "~A" (car pubname))) ;; key
+                               (car privname) pkg-path)
 
-  (let* ((stanza-alist (cdr stanza))
-         (stanza-alist (if-let ((mods (assoc 'modules stanza-alist)))
-                               stanza-alist
-                               (append stanza-alist
-                                       (list '(modules :standard)))))
-         (_ (format #t "STANZA ALIST: ~A\n" stanza-alist))
+    (if privname
+        (update-exports-table! ws
+                               (string->symbol (format #f "lib:~A" (car privname))) ;; key
+                               (car privname) pkg-path))
+    (if pubname
+        (update-exports-table! ws
+                               (string->symbol (format #f "lib:~A" (car pubname))) ;; key
+                               (car privname) pkg-path))
 
-         ;; (privname (assoc-val 'name stanza-alist))
-         (wrapped? (if-let ((wrapped (assoc-val 'wrapped stanza-alist)))
-                           (if (equal? 'false (car wrapped))
-                                  #f
-                                  #t)
-                           #t))
-         ;; (submods (lib-stanza-submodules stanza-alist))
-         ;; (stanza-alist (cons submods stanza-alist))
-         ;; (_ (format #t "STANZA ALIST + SUBMODS: ~A\n" stanza-alist))
+    (let* ((stanza-alist (cdr stanza))
+           (stanza-alist (if-let ((mods (assoc 'modules stanza-alist)))
+                                 stanza-alist
+                                 (append stanza-alist
+                                         (list '(modules :standard)))))
+           (_ (format #t "STANZA ALIST: ~A\n" stanza-alist))
 
-         ;; CONVERT THE STANZA:
-         (mibl-stanza (-lib-flds->mibl pkg stanza-alist wrapped?))
-         )
+           ;; (privname (assoc-val 'name stanza-alist))
+           (wrapped? (if-let ((wrapped (assoc-val 'wrapped stanza-alist)))
+                             (if (equal? 'false (car wrapped))
+                                 #f
+                                 #t)
+                             #t))
+           ;; (submods (lib-stanza-submodules stanza-alist))
+           ;; (stanza-alist (cons submods stanza-alist))
+           ;; (_ (format #t "STANZA ALIST + SUBMODS: ~A\n" stanza-alist))
 
-    ;; namespaced?
-    (let ((res (list (cons (if wrapped?
-                               (if *wrapped-libs-to-ns-archives*
-                                   :ns-archive :ns-library)
-                               (if *unwrapped-libs-to-archives*
-                                   :archive :library))
-                           mibl-stanza))))
-      res)
-    )
-  ) ;; end normalize-stanza-library
+           ;; CONVERT THE STANZA:
+           (mibl-stanza (-lib-flds->mibl pkg stanza-alist wrapped?))
+           (_ (format #t "~A: ~A~%" (uwhite "mibl-stanza") mibl-stanza))
+           (mibl-stanza (filter (lambda (fld)
+                                  ;; remove empties e.g. (:deps)
+                                  (not (null? (cdr fld))))
+                                mibl-stanza))
+           )
+
+      ;; namespaced?
+      (let ((res (list (cons (if wrapped?
+                                 (if *wrapped-libs-to-ns-archives*
+                                     :ns-archive :ns-library)
+                                 (if *unwrapped-libs-to-archives*
+                                     :archive :library))
+                             mibl-stanza))))
+        res)
+      )))
 
 ;; (display "loaded dune/dune_stanza_library.scm") (newline)
 

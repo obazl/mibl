@@ -1,5 +1,5 @@
 (define (-fixup-progn-cmd! ws c targets deps)
-  (format #t "~A: ~A\n" (blue "-fixup-progn-cmd!") c)
+  (format #t "~A: ~A\n" (ublue "-fixup-progn-cmd!") c)
   c)
 
 (define (-module->filename m pkg)
@@ -27,26 +27,11 @@
 
 ;; FIXME: rename
 (define (-fixup-stanza! ws pkg stanza)
-  (format #t "~A: ~A\n" (blue "-fixup-stanza!") stanza)
+  (format #t "~A: ~A\n" (ublue "-fixup-stanza!") stanza)
   (let* ((exports (car (assoc-val :exports ws)))
          (stanza-alist (cdr stanza)))
     (format #t "~A: ~A\n" (green "fixup hidden exports tbl") exports)
     (case (car stanza)
-      ((:ns-archive)
-       (format #t "~A~%" (magenta "fixup :ns-archive"))
-       (let ((deps (assoc-val :deps stanza-alist)))
-         (format #t "ns-archive deps: ~A~%" deps)))
-
-      ((:archive)
-       (format #t "~A~%" (magenta "fixup :archive"))
-       (let ((deps (assoc-val :deps stanza-alist)))
-         (format #t "archive deps: ~A~%" deps)))
-
-      ((:library)
-       (format #t "~A~%" (magenta "fixup :library"))
-       (let ((manifest (assoc-val :manifest stanza-alist))
-             (deps (assoc-val :deps stanza-alist)))
-         (format #t "library deps: ~A~%" deps)))
 
       ((:executable :test)
        (format #t "~A: ~A~%" (magenta "fixup") (car stanza))
@@ -57,7 +42,7 @@
          (format #t "test compile deps: ~A~%" deps)
          (if deps ;; (not (null? deps))
              (let ((new (map (lambda (dep)
-                               (format #t "dep: ~A\n" dep)
+                               (format #t "~A: ~A\n" (uyellow "dep") dep)
                                (let ((exp (hash-table-ref exports dep)))
                                  (format #t "val: ~A\n" exp)
                                  (if exp
@@ -82,8 +67,9 @@
        (format #t "~A: ~A~%" (magenta "fixup :rule") stanza-alist)
        (let* ((targets (assoc-val :outputs stanza-alist))
               (_ (format #t "targets: ~A~%" targets))
-              (deps (if-let ((deps (assoc-val :deps stanza-alist)))
-                            (if (null? deps) '() (car deps))
+              (deps (if-let ((deps (assoc :deps stanza-alist)))
+                            ;; (if (null? deps) '() (car deps))
+                            deps
                             '()))
               (_ (format #t "deps: ~A~%" deps))
               (action (if-let ((action (assoc-val :actions stanza-alist)))
@@ -97,6 +83,54 @@
          (format #t "Tool: ~A~%" tool)
          (format #t "Action: ~A~%" action)
          (format #t "stanza-alist: ~A~%" stanza-alist)
+
+         ;; fixup-deps
+         (if-let ((deps (if-let ((deps (assoc :deps stanza-alist)))
+                             ;; (if (null? deps) '() (car deps))
+                             deps #f)))
+                 (begin
+                   (format #t "~A: ~A~%" (ured "xxxxxxxxxxx deps") deps)
+                   (let ((exports (car (assoc-val :exports ws)))
+                         (fixdeps
+                          (map (lambda (dep)
+                                 (format #t "~A: ~A~%" (uwhite "fixup dep") dep)
+                                 (case (last dep)
+                                   ((::import)
+                                    ;; (if (eq? ::import (last dep))
+                                    (let ((exp (hash-table-ref exports
+                                                               (car dep))))
+                                      (format #t "~A: ~A~%" (ured "XP") exp)
+                                      (if exp
+                                          (let* ((pkg (assoc-val :pkg exp))
+                                                 (_ (format #t "~A: ~A~%" (ured "pkg") pkg))
+                                                 (tgt (assoc-val :tgt exp))
+                                                 (_ (format #t "~A: ~A~%" (ured "tgt") tgt)))
+                                            (cons (car dep) exp))
+                                          dep)))
+                                   ((::pkg)
+                                    ;; side-effect: update filegroups table
+                                    ;; FIXME: instead, add :fg dep?
+                                    (format #t "~A: ~A~%" (yellow "export keys")
+                                            (hash-table-keys exports))
+                                    (format #t "~A: ~A~%" (yellow "exports")
+                                            exports)
+                                    (let* ((exp (hash-table-ref exports
+                                                                (car dep)))
+                                           (_ (format #t "~A: ~A~%" (yellow "exp") exp))
+                                           (pkg (assoc-val :pkg exp))
+                                           )
+                                      (format #t "~A: ~A~%" (yellow "pkg") pkg)
+                                      (update-filegroups-table! ;; ws pkg-path tgt pattern
+                                       ws ;; (car (assoc-val :name ws))
+                                       pkg ::all "*")
+                                      (cons (car dep)
+                                            (list (car exp)
+                                                  (cons :tgt "__all__")))))
+                                   (else dep)))
+                               (cdr deps))))
+                     (format #t "~A: ~A~%" (ured "fixedup deps") fixdeps)
+                     (set-cdr! deps fixdeps))))
+                 ;; (format #t "~A: ~A~%" (ured "reset deps") deps)
 
          ;; :actions is always a list of cmd; for progn, more than one
          (if (assoc :actions stanza-alist)
@@ -123,17 +157,31 @@
                ;;         '())
                ))))
 
+      ;; ((:ns-archive)
+      ;;  (format #t "~A~%" (magenta "fixup :ns-archive"))
+      ;;  (let ((deps (assoc-val :deps stanza-alist)))
+      ;;    (format #t "ns-archive deps: ~A~%" deps)))
+
+      ;; ((:archive)
+      ;;  (format #t "~A~%" (magenta "fixup :archive"))
+      ;;  (let ((deps (assoc-val :deps stanza-alist)))
+      ;;    (format #t "archive deps: ~A~%" deps)))
+
+      ;; ((:library)
+      ;;  (format #t "~A~%" (magenta "fixup :library"))
+      ;;  (let ((manifest (assoc-val :manifest stanza-alist))
+      ;;        (deps (assoc-val :deps stanza-alist)))
+      ;;    (format #t "library deps: ~A~%" deps)))
+
       (else
-       (if (eq? :__ (car stanza))
-           stanza
-           (error 'fixme (format #f "-fixup-stanza! unhandled stanza: ~A\n" (car stanza))))))))
+       (begin)))))
 
 ;; updates stanzas
 (define resolve-labels!
   (let ((+documentation+ "Map dune target references to bazel labels using exports table.")
         (+signature+ '(resolve-labels! workspace)))
     (lambda (ws)
-      (format #t "~A for ws: ~A\n" (blue "resolve-labels!") ws)
+      (format #t "~A for ws: ~A\n" (blue "resolve-labels!") (assoc :name ws))
               ;; (assoc-val 'name ws))
       (let* ((pkgs (car (assoc-val :pkgs ws)))
              ;; (_ (format #t "PKGS: ~A\n" pkgs))

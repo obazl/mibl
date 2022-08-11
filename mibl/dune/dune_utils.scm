@@ -1,32 +1,10 @@
 ;; (display "dune/dune_utils.scm\n")
 
-;; (load "alist.scm")
-;; (load "dune_normalize.scm")
-;; (load "srfi.scm")
-
-;; dune-alist:
-;;     ((:nss nss-alist) ...)
-
-;; library stanza => ns-alist
-;; ns-alist:
-;;       ((:ns ns-namesym) (:path path)
-;;        (:submodule-index (m1 m2 ...))
-;;        (:submodules smtable)
-;;        (:flags (f1 f2 ...))
-;;        (:ppx ...)
-;;        (:rules ...)
-;;        ... one assoc per field ...)
-;; multiple library stanzas:
-;;  (:nss-alist ((ns-namesym ns-alist) ...))
-
-;; executable stanza =>
-;; 'action' stanza:
-;; smtable: module-name => module-alist
-;; module-alist:
-;; ((:mname module-name)
-;;  (:flags (f1 f1 ...))
-;;  (:files ((:ml  ((:file ml-file) (:deps ...)))
-;;           (:mli ((:file mli-file) (:deps ...))))))
+(define (label-list->label-string l)
+  (format #t "~A: ~A~%" (ublue "label-list->label-string") l)
+  (format #f "//~A:~A"
+          (assoc-val :pkg l)
+          (assoc-val :tgt l)))
 
 (define (pkg-namespaced? dune-pkg-tbl)
   (any (lambda (s)

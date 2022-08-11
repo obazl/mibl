@@ -40,5 +40,6 @@
 (load "dune/updaters.scm")
 (load "dune/tests.scm")
 (load "dune/pkg_files.scm")
+(load "dune/install.scm")
 
 ;; (format #t "loaded mibl/dune.scm") (newline)
