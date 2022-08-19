@@ -338,6 +338,7 @@ LOCAL bool _exclusions(FTSENT *ftsentry, char *ext)
 #define TAG_MLI 0
 #define TAG_ML  1
 #define TAG_MLL 2
+#define TAG_MLY 3
 
 /* char *_get_extension(char *filename) */
 /* { */
@@ -1380,7 +1381,7 @@ LOCAL void _update_mll(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
     char *pkg_name = dirname(ftsentry->fts_path);
     char *mname = _module_name(ftsentry, ext);
     if (trace) {
-        log_trace("_update_mli: %s; ", mname);
+        log_trace("_update_mll: %s; ", mname);
         log_trace("pkg name: %s; fname: %s", pkg_name, ftsentry->fts_name);
     }
     char *mll_name = strdup(ftsentry->fts_name);
@@ -1388,6 +1389,165 @@ LOCAL void _update_mll(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 
     _update_pkg_mll_files(pkg_tbl, pkg_name, mname,
                           ftsentry->fts_name, TAG_MLL);
+}
+
+LOCAL void _update_pkg_mly_files(s7_pointer pkg_tbl,
+                                 char *pkg_name, char *mname,
+                                 char *fname, int ftype)
+{
+    if (trace) {
+        log_trace(RED "_UPDATE_PKG_MLY_FILES" CRESET);
+    }
+    if (debug) {
+        log_debug("pkg_name: %s", pkg_name);
+        /* log_debug("pkg_tbl: %s", TO_STR(pkg_tbl)); */
+    }
+    s7_pointer pkg_key = s7_make_string(s7, pkg_name);
+    if (debug) log_debug("pkg_key: %s", TO_STR(pkg_key));
+
+    s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
+    /* if (debug) log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
+
+    if (pkg_alist == s7_f(s7)) {
+        if (debug)
+            log_debug("no dunefile in this directory");
+    } else {
+        s7_pointer mname_sym   = s7_make_symbol(s7, mname);
+
+        s7_pointer assoc_in = _load_assoc_in();
+        s7_pointer keypath = s7_list(s7, 2, mly_kw, static_kw);
+        s7_pointer ocamlyacc_alist = s7_call(s7, assoc_in,
+                                        s7_list(s7, 2,
+                                                keypath,
+                                                pkg_alist));
+        /* = s7_call(s7, assoc_in, */
+        /*           s7_list(s7, 2, modules_kw, pkg_alist)); */
+        if (debug) log_debug("ocamlyacc_alist %s", TO_STR(ocamlyacc_alist));
+
+        s7_pointer mly_file = s7_make_symbol(s7, fname);
+
+        /* s7_pointer mly_assoc = s7_list(s7, 2, mname_sym, mly_file); */
+        s7_pointer mly_assoc = s7_cons(s7, mname_sym, mly_file);
+        if (debug) log_debug("mly_assoc: %s", TO_STR(mly_assoc));
+
+        if (ocamlyacc_alist == s7_f(s7)) {
+            if (debug)
+                log_debug("INITIALIZING :ocamlyacc field");
+
+            s7_pointer statics_assoc =
+                s7_list(s7, 2, static_kw, mly_assoc);
+
+            s7_pointer ocamlyacc_assoc = s7_list(s7, 2,
+                                            mly_kw, statics_assoc);
+            if (debug) log_debug("ocamlyacc_assoc: %s", TO_STR(ocamlyacc_assoc));
+
+            s7_pointer new_pkg_alist = s7_append(s7, pkg_alist,
+                                                 s7_list(s7, 1,
+                                                         ocamlyacc_assoc));
+            /* if (debug) */
+            /*     log_debug("pkg_alist: %s", */
+            /*            TO_STR(new_pkg_alist)); */
+
+            s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg_alist);
+        } else {
+            if (debug) {
+                log_debug("UPDATING :signatures");
+                log_debug("ocamlyacc_alist: %s", TO_STR(ocamlyacc_alist));
+                log_debug("mname_sym: %s", TO_STR(mname_sym));
+            }
+
+            s7_pointer keypath = s7_list(s7, 3,
+                                         mly_kw,
+                                         static_kw,
+                                         mname_sym);
+            if (debug) {
+                /* log_debug("assoc-in: %s", TO_STR(assoc_in)); */
+                log_debug("keypath: %s", TO_STR(keypath));
+                /* log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
+            }
+
+            s7_pointer mly_alist = s7_call(s7, assoc_in,
+                                           s7_list(s7, 2,
+                                                   keypath,
+                                                   pkg_alist));
+
+            if (debug) {
+                log_debug("mly_alist: %s", TO_STR(mly_alist));
+            }
+            if (mly_alist == s7_f(s7)) {
+                /* new */
+                if (debug)
+                    log_debug(RED "ADDING" CRESET " sig %s to %s",
+                              TO_STR(mname_sym), TO_STR(ocamlyacc_alist));
+                if (debug) log_debug("ocamlyacc_alist: %s",
+                                     s7_object_to_c_string(s7,
+                                                           ocamlyacc_alist));
+
+                s7_pointer ocamlyacc_alist_cdr = s7_cdr(ocamlyacc_alist);
+                if (debug) {
+                    log_debug("ocamlyacc_alist_cdr: %s",
+                       TO_STR(ocamlyacc_alist_cdr));
+                }
+
+                /* s7_pointer mly_assoc = */
+                /*     s7_list(s7, 1, s7_list(s7, 2, mname_sym, mly_file)); //mly_assoc)); */
+                /* if (debug) log_debug("new mly_assoc: %s", */
+                /*                      TO_STR(mly_assoc)); */
+
+                s7_pointer new_ocamlyacc_alist_cdr =
+                    s7_append(s7, ocamlyacc_alist_cdr,
+                              s7_list(s7, 1, mly_assoc));
+
+                if (debug)
+                    log_debug("new_ocamlyacc_alist_cdr: %s",
+                       TO_STR(new_ocamlyacc_alist_cdr));
+
+                s7_pointer new_ocamlyacc_alist
+                    = s7_set_cdr(ocamlyacc_alist, new_ocamlyacc_alist_cdr);
+                if (debug) {
+                    log_debug("new_ocamlyacc_alist: %s",
+                              TO_STR(new_ocamlyacc_alist));
+                }
+            } else {
+                /* update */
+                if (debug) log_debug(RED "UPDATING" CRESET " mly_alist: %s",
+                                     TO_STR(mly_alist));
+
+                s7_pointer ocamlyacc_alist_cdr = s7_cdr(mly_alist);
+                if (debug)
+                    log_debug("ocamlyacc_alist_cdr: %s",
+                       TO_STR(ocamlyacc_alist_cdr));
+
+                s7_pointer msrcs = s7_append(s7,
+                                             ocamlyacc_alist_cdr,
+                                             s7_list(s7, 1, mly_file));
+
+                s7_pointer new_ocamlyacc_alist
+                    = s7_set_cdr(mly_alist, msrcs);
+                if (debug) {
+                    log_debug("new_ocamlyacc_alist: %s",
+                              TO_STR(new_ocamlyacc_alist));
+                    log_debug("new pkgs: %s", TO_STR(pkg_alist));
+                }
+            }
+        }
+    }
+}
+
+LOCAL void _update_mly(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
+{
+    printf("_update_mly: \n");
+    char *pkg_name = dirname(ftsentry->fts_path);
+    char *mname = _module_name(ftsentry, ext);
+    if (trace) {
+        log_trace("_update_mly: %s; ", mname);
+        log_trace("pkg name: %s; fname: %s", pkg_name, ftsentry->fts_name);
+    }
+    char *mly_name = strdup(ftsentry->fts_name);
+    mly_name[strlen(ftsentry->fts_name) - 1] = '\0';
+
+    _update_pkg_mly_files(pkg_tbl, pkg_name, mname,
+                          ftsentry->fts_name, TAG_MLY);
 }
 
 LOCAL void _update_mli(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
@@ -1488,13 +1648,11 @@ LOCAL void _handle_ml_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
     }
     else if ((strncmp(ext, ".mll", 4) == 0)
         && (strlen(ext) == 4)) {
-        /* log_warn("UNHANDLED: :%-6s %s", "mll", ftsentry->fts_name); */
         _update_mll(pkg_tbl, ftsentry, ext);
     }
     else if ((strncmp(ext, ".mly", 4) == 0)
         && (strlen(ext) == 4)) {
-        /* log_warn("UNHANDLED: :%-6s %s", "mly", ftsentry->fts_name); */
-        _update_pkg_files(pkg_tbl, ftsentry, ext);
+        _update_mly(pkg_tbl, ftsentry, ext);
     }
     else if ((strncmp(ext, ".mlh", 4) == 0)
         && (strlen(ext) == 4)) {
