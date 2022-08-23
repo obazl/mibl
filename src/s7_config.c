@@ -874,6 +874,12 @@ EXPORT s7_scheme *s7_configure(void)
     /* put ppx driver in same pkg as the ppx_executable */
     s7_define_variable(s7, "*local-ppx-driver*", s7_t(s7));
 
+    /* tmp dir */
+    char tplt[] = "/tmp/obazl.XXXXXXXXXX";
+    char *tmpdir = mkdtemp(tplt);
+    printf("tmpdir: %s\n", tmpdir);
+    s7_define_variable(s7, "*tmp-dir*", s7_make_string(s7, tmpdir));
+
     /* initialize s7 stuff */
     //FIXME: do this in config, no need to rerun for each load_dune
     dune_project_sym = s7_make_symbol(s7, "dune-project"),

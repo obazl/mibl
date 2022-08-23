@@ -96,8 +96,8 @@
     (format #t "~A: ~A~%" (uwhite "tllist after") tllist)
     key))
 
-(define (-update-pkg-files-with-struct pkg tgt)
-  (format #t "~A: ~A~%" (yellow "-update-pkg-files-with-struct") tgt)
+(define (update-pkg-files-with-struct! pkg tgt)
+  (format #t "~A: ~A~%" (yellow "update-pkg-files-with-struct!") tgt)
   ;; if we already have corresponding sig, move to :modules
   ;; else update :structures
   (let* ((m-assoc (filename->module-assoc tgt))
@@ -133,7 +133,7 @@
         (let* ((s-assoc (assoc-in '(:structures :dynamic) pkg))
                ;; (structures (if s-assoc (append (cadr s-assoc) '(Foo . bar)) '()))
                )
-          (format #t "~A: ~A~%" (yellow "UPDATING (:structures :dynamic) : ") s-assoc)
+          (format #t "~A: ~A~%" (bgyellow "UPDATING (:structures :dynamic) : ") s-assoc)
           (alist-update-in! pkg `(:structures :dynamic)
                             (lambda (old)
                               (format #t "structures OLD: ~A\n" old)
@@ -143,7 +143,7 @@
                                    (cons m-name (cdr pr)))
                                   ;; (list m-name (cdr pr))
                                   ;;(filename->module-assoc tgt)
-                                  (cons
+                                  (append
                                    old
                                    (list (cons m-name (cdr pr))) ;;)))
                                    ;; (list (cons m-name (cdr pr)))
@@ -201,12 +201,34 @@
                                   ;;(filename->module-assoc tgt)
                                   (append
                                    old
-                                   (list (cons m-name (cdr pr))) ;;)))
+                                   (list (cons m-name `,@(cdr pr))) ;;)))
                                    ;; (list (cons m-name (cdr pr)))
                                    ;; structures
                                    ;;(filename->module-assoc tgt)
                                    )))))))
-  pkg)
+  )
+
+;; principal-fname: fileame w/o extension
+;; updates :modules with generated files
+(define (update-pkg-modules-with-module! pkg principal-fname)
+  (format #t "~A: ~A~%" (ublue "update-pkg-modules-with-module") principal-fname)
+  (let* ((pkg-modules (assoc :modules pkg))
+         (_ (format #t "~A: ~A~%" (uyellow "pkg-modules") pkg-modules))
+         (m-assoc (list (list (normalize-module-name principal-fname)
+                              (cons :ml_ (string->symbol (format #f "~A.ml" principal-fname)))
+                              (cons :mli_ (string->symbol (format #f "~A.mli" principal-fname)))))))
+         (format #t "~A: ~A~%" (red "updating :modules") m-assoc)
+         ;; (alist-update-in! pkg `(:modules)
+         ;;                   (lambda (old)
+         ;;                     (format #t ":modules OLD: ~A\n" old)
+         ;;                     (format #t "adding: ~A\n" m-assoc)
+         ;;                     (if (null? old)
+         ;;                         m-assoc
+         ;;                         (append
+         ;;                          old m-assoc))))
+    (set-cdr! pkg-modules (append (cdr pkg-modules)
+                                  m-assoc))
+    ))
 
 (define update-pkg-files!
   (let ((+documentation+ "INTERNAL. Add tgts to :modules (or :files etc) fld of pkg."))
@@ -242,7 +264,7 @@
                  (case kind
                    ((:struct)
                     ;; (format #t ":struct tgt: ~A\n" tgt)
-                    (-update-pkg-files-with-struct pkg tgt))
+                    (update-pkg-files-with-struct! pkg tgt))
 
                    ((:sig)
                     ;;(format #t ":sig tgt: ~A\n" tgt)
@@ -284,9 +306,9 @@
 ;; rule action for example) will refer to it as 'bin:foo', so we can
 ;; just look it up to find its Bazel label.
 
-(define (update-exports-table! ws tag tgt pkg-path)
-  (format #t "~A: ~A -> ~A\n" (ublue "update-exports-table!") tgt pkg-path)
-  (format #t "~A: ~A~%" (uwhite "tag") tag)
+(define (update-exports-table! ws tag nm pkg-path tgt)
+  (format #t "~A: ~A , ~A\n" (ublue "update-exports-table!") tag nm)
+  (format #t "~A: ~A , ~A~%" (uwhite "spec") pkg-path tgt)
   (let* ((exports (car (assoc-val :exports
                                   (assoc-val ws -mibl-ws-table))))
          (key (case tag
@@ -294,20 +316,26 @@
                 ((:lib) (symbol (format #f "lib:~A" tgt)))
                 ((:libexec) (symbol (format #f "libexec:~A" tgt)))
                 ((:test) (string->keyword (format #f "~A.exe" tgt)))
+                ((#f) (string->symbol (format #f "~A" nm)))
                 (else tag)))
-         (tag (case tag
+         (tag-assoc (case tag
                 ((:bin :lib :libexec :test) (list (cons tag #t)))
                 (else '())))
-         (spec `(,@tag
+         (spec `(,@tag-assoc
                  ,(cons :pkg pkg-path)
                  ,(cons :tgt (format #f "~A" tgt)))))
     (format #t "hidden exports tbl: ~A\n" exports)
 
-    (format #t "adding ~A to exports tbl\n" spec)
+    (format #t "adding ~A => ~A to exports tbl\n" key spec)
     (hash-table-set! exports
                      (if (keyword? key) key
                          (symbol->keyword key))
                      spec)
+    (if (eq? tag :test)
+        (let ((key (string->symbol
+                    (format #f ":exe~A" key))))
+          (hash-table-set! exports key
+                           spec)))
     (format #t "~A: ~A\n" (uwhite "updated exports tbl") exports)))
 
 (define (update-exports-table-with-targets! ws targets pkg-path)
@@ -321,7 +349,7 @@
                 (format #t "~A: ~A~%" (magenta "pkg") pkg)
                 (format #t "~A: ~A~%" (magenta "tgt") tgt)
 
-                (update-exports-table! ws :_ tgt pkg)
+                (update-exports-table! ws :FIXME tgt pkg)
 
                ;; (case (car target)
                 ;;   ((::)

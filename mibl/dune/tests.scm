@@ -27,5 +27,4 @@
 (define (normalize-stanza-tests pkg-path ocaml-srcs stanza)
   ;; (display (format #f "dir: ~A" pfx)) (newline)
   ;; (display (format #f "normalize-stanza-tests: ~A" stanza)) (newline)
-  (dune-executables->mibl :tests
-                                pkg-path ocaml-srcs stanza))
+  (dune-executables->mibl :test pkg-path ocaml-srcs stanza))

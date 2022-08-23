@@ -3,7 +3,7 @@
 ;; mibl/dune/modules.scm
 
 (define (get-manifest pkg wrapped? stanza-alist) ;;  deps
-  (format #t "~A: ~A\n" (blue "get-manifest") stanza-alist)
+  (format #t "~A: ~A\n" (ublue "get-manifest") stanza-alist)
   (format #t "~A: ~A\n" "pkg" pkg)
   ;; (if deps
   (let* ((submods+sigs-list
@@ -22,7 +22,7 @@
                                      '(:modules))
                                 (cdr submods+sigs-list)
                                 submods+sigs-list)))
-    (format #t "submods+sigs-list: ~A\n" submods+sigs-list)
+    (format #t "~A: ~A\n" (uwhite "submods+sigs-list") submods+sigs-list)
     (if (null? submods+sigs-list)
         '()
         (cons :manifest (remove () submods+sigs-list)))))
@@ -261,123 +261,149 @@
         (+signature+ '(modules-fld->submodules-fld modules-spec pkg-modules pkg-sigs pkg-structs))) ;;  modules-deps
         ;; modules-ht)))
     (lambda (modules-spec pkg-modules pkg-sigs pkg-structs)
-      (format #t "~A\n" (blue "modules-fld->submodules-fld"))
+      (format #t "~A\n" (ublue "modules-fld->submodules-fld"))
       (format #t "modules-spec: ~A\n" modules-spec)
       (format #t "pkg-modules: ~A\n" pkg-modules)
       ;; (format #t "deps: ~A\n" deps)
       (format #t "pkg-sigs: ~A\n" pkg-sigs)
       (format #t "pkg-structs: ~A\n" pkg-structs)
-      (if (or pkg-modules pkg-structs)
-          (if modules-spec
-              (let* ((modules-spec (map normalize-module-name
-                                        (cdr modules-spec)))
-                     (pkg-module-names (if pkg-modules
-                                           (get-module-names
-                                            pkg-modules)
-                                           '()))
-                     (struct-module-names (get-module-names pkg-structs))
-                     (_ (format #t "struct-module-names:: ~A\n" struct-module-names))
-                     (pkg-module-names (if struct-module-names
-                                           (append struct-module-names
-                                                   pkg-module-names)
-                                           pkg-module-names))
-                     (_ (format #t "pkg-module-names:: ~A\n" pkg-module-names))
-                     (sig-module-names (get-module-names pkg-sigs))
-                     (_ (format #t "sig-module-names:: ~A\n" sig-module-names))
-                     (_ (format #t "modules-spec:: ~A\n" modules-spec))
-                     (tmp (let recur ((modules-spec modules-spec)
-                                      (submods '())
-                                      (subsigs '()))
-                            (format #t "RECUR modules-spec ~A\n" modules-spec)
-                            (format #t "  submods: ~A\n" submods)
-                            (format #t "  subsigs: ~A\n" subsigs)
+      (if (equal? modules-spec '(modules))
+          ;; exclude all modules
+          '((:modules) (:signatures))
+          (if (or pkg-modules pkg-structs)
+              (if modules-spec
+                  (let* ((modules-spec (map normalize-module-name
+                                            (cdr modules-spec)))
+                         (pkg-module-names (if pkg-modules
+                                               (get-module-names
+                                                pkg-modules)
+                                               '()))
+                         (struct-module-names (get-module-names pkg-structs))
+                         ;; (_ (format #t "struct-module-names:: ~A\n" struct-module-names))
+                         (pkg-module-names (if struct-module-names
+                                               (append struct-module-names
+                                                       pkg-module-names)
+                                               pkg-module-names))
+                         ;; (_ (format #t "pkg-module-names:: ~A\n" pkg-module-names))
+                         (sig-module-names (get-module-names pkg-sigs))
+                         ;; (_ (format #t "sig-module-names:: ~A\n" sig-module-names))
+                         ;; (_ (format #t "modules-spec:: ~A\n" modules-spec))
+                         (tmp (let recur ((modules-spec modules-spec)
+                                          (submods '())
+                                          (subsigs '()))
+                                ;; (format #t "RECUR modules-spec ~A\n" modules-spec)
+                                ;; (format #t "  submods: ~A\n" submods)
+                                ;; (format #t "  subsigs: ~A\n" subsigs)
 
-                            (cond
-                             ((null? modules-spec)
-                              (if (null? submods)
+                                (cond
+                                 ((null? modules-spec)
+                                  (if (null? submods)
+                                      (begin
+                                        ;; (format #t "null modules-spec\n")
+                                        '())
+                                      (begin
+                                        ;; (format #t "DONE\n")
+                                        (list
+                                         (cons :modules (reverse submods))
+                                         (if (null? subsigs)
+                                             '() (cons :signatures subsigs))))))
+                                 ;; (reverse submods)
+
+                                 ((pair? (car modules-spec))
                                   (begin
-                                    (format #t "null modules-spec\n")
-                                    '())
+                                    ;; (format #t "(pair? (car modules-spec))\n")
+                                    ;; e.g. ((:standard)) ?
+                                    ;; or (modules (:standard) \ foo)
+                                    ;; or (A B C)
+                                    ;; just unroll and recur
+                                    (if (equal? '(:standard) (car modules-spec))
+                                        (modules-fld->submodules-fld
+                                         (append
+                                          (list 'modules :standard) (cdr modules-spec))
+                                         pkg-modules
+                                         ;; deps
+                                         pkg-sigs pkg-structs)
+                                        (modules-fld->submodules-fld
+                                         (cons
+                                          'modules (car modules-spec))
+                                         pkg-modules
+                                         ;; deps
+                                         pkg-sigs
+                                         pkg-structs))))
+
+                                 ((equal? :standard (car modules-spec))
+                                  ;; e.g. (modules :standard ...)
                                   (begin
-                                    (format #t "DONE\n")
-                                    (list
-                                     (cons :modules (reverse submods))
-                                     (if (null? subsigs)
-                                         '() (cons :signatures subsigs))))))
-                             ;; (reverse submods)
+                                    ;; (format #t "modules-spec contains :standard\n")
+                                    (let-values (((mods-expanded sigs-expanded)
+                                                  (expand-std-modules
+                                                   modules-spec
+                                                   pkg-modules pkg-sigs pkg-structs)))
+                                      ;; (format #t "mods-expanded: ~A\n" mods-expanded)
+                                      ;; (format #t "sigs-expanded: ~A\n" sigs-expanded)
+                                      ;; (format #t "updated pkg: ~A\n" pkg)
+                                      ;; (error 'tmp "tmp")
 
-                             ((pair? (car modules-spec))
-                              (begin
-                                (format #t "(pair? (car modules-spec))\n")
-                                ;; e.g. ((:standard)) ?
-                                ;; or (modules (:standard) \ foo)
-                                ;; or (A B C)
-                                ;; just unroll and recur
-                                (if (equal? '(:standard) (car modules-spec))
-                                    (modules-fld->submodules-fld
-                                     (append
-                                      (list 'modules :standard) (cdr modules-spec))
-                                     pkg-modules
-                                     ;; deps
-                                     pkg-sigs pkg-structs)
-                                    (modules-fld->submodules-fld
-                                     (cons
-                                      'modules (car modules-spec))
-                                     pkg-modules
-                                     ;; deps
-                                     pkg-sigs
-                                     pkg-structs))))
+                                      (list
+                                       (cons :modules (reverse mods-expanded))
+                                       (if sigs-expanded
+                                           (cons :signatures
+                                                 (reverse sigs-expanded))
+                                           '())))))
 
-                             ((equal? :standard (car modules-spec))
-                              ;; e.g. (modules :standard ...)
-                              (begin
-                                (format #t "modules-spec contains :standard\n")
-                                (let-values (((mods-expanded sigs-expanded)
-                                              (expand-std-modules
-                                                      modules-spec
-                                                      pkg-modules pkg-sigs pkg-structs)))
-                                  (format #t "mods-expanded: ~A\n"
-                                          mods-expanded)
-                                  (format #t "sigs-expanded: ~A\n"
-                                          sigs-expanded)
-                                  ;; (format #t "updated pkg: ~A\n" pkg)
-                                  ;; (error 'tmp "tmp")
-
-                                  (list
-                                   (cons :modules (reverse mods-expanded))
-                                   (if sigs-expanded
-                                       (cons :signatures
-                                             (reverse sigs-expanded))
-                                       '())))))
-
-                             ;; inclusions, e.g. (modules a b c)
-                             (else
-                              (begin
-                                (format #t "inclusions: ~A\n" modules-spec)
-                                (format #t "pkg-modules: ~A\n" pkg-module-names)
-                                (format #t "sig-modules: ~A\n" sig-module-names)
-                                (if (member (car modules-spec) pkg-module-names)
-                                    (recur (cdr modules-spec)
-                                           (cons (car modules-spec) submods)
-                                           subsigs)
-                                    (if (member (car modules-spec) sig-module-names)
+                                 ;; inclusions, e.g. (modules a b c)
+                                 (else
+                                  (begin
+                                    ;; (format #t "inclusions: ~A\n" modules-spec)
+                                    ;; (format #t "pkg-modules: ~A\n" pkg-module-names)
+                                    ;; (format #t "sig-modules: ~A\n" sig-module-names)
+                                    (if (member (car modules-spec) pkg-module-names)
                                         (recur (cdr modules-spec)
-                                               submods
-                                               (cons (car modules-spec) subsigs))
-                                        (error 'bad-arg (format #f "included module not in list: ~A"
-                                                                (car modules-spec)))))))
-                             ) ;; cond
-                            ))) ;; recur
-                tmp) ;; let*
-              ;; no modules-spec - default is all
+                                               (cons (car modules-spec) submods)
+                                               subsigs)
+                                        (if (member (car modules-spec) sig-module-names)
+                                            (recur (cdr modules-spec)
+                                                   submods
+                                                   (cons (car modules-spec) subsigs))
+                                            (recur (cdr modules-spec)
+                                                   (cons :FOOBAR submods)
+                                                   subsigs)
+                                            ;; (error 'bad-arg (format #f "included module not in list: ~A"
+                                            ;;                         (car modules-spec)))
+                                            ))))
+                                 ) ;; cond
+                                ))) ;; recur
+                    tmp) ;; let*
+                  ;; no modules-spec - default is all
+                  (begin
+                    ;; (format #t "no modules-spec\n")
+                    ;; (get-module-names pkg-modules)
+                    (let* ((pkg-module-names (if pkg-modules
+                                                 (get-module-names
+                                                  pkg-modules)
+                                                 '()))
+                           ;; (_ (format #t "~A: ~A\n" (white "pkg-module-names") pkg-module-names))
+                           (struct-module-names (get-module-names pkg-structs))
+                           ;; (_ (format #t "struct-module-names:: ~A\n" struct-module-names))
+                           (all-module-names (if struct-module-names
+                                                 (append struct-module-names
+                                                         pkg-module-names)
+                                                 pkg-module-names))
+                           ;; (_ (format #t "all module-names:: ~A\n" all-module-names))
+                           (sig-module-names (get-module-names pkg-sigs))
+                           ;; (_ (format #t "sig-module-names:: ~A\n" sig-module-names))
+                           )
+
+                      (list
+                       (cons :modules all-module-names)
+                       (if (null? sig-module-names)
+                           '() (cons :signatures sig-module-names)))))
+                  ) ;; if modules-spec
+              ;; else no pkg-modules, pkg-structs
               (begin
-                (format #t "no modules-spec\n")
-                (get-module-names pkg-modules))
-              ) ;; if modules-spec
-          ;; else no modules in pkg
-          (begin
-            (format #t "no pkg-modules, pkg-structs\n")
-            '((:modules) (:signatures))))
+                (format #t "no pkg-modules, pkg-structs\n")
+                (error 'fixme "STOP pkg sigs")
+                '((:modules) (:signatures)))))
       ) ;; lamda
     ) ;; let
   ) ;; define

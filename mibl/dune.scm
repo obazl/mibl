@@ -14,14 +14,14 @@
 (load "dune/dune_utils.scm")
 (load "dune/dune_action_deps.scm")
 ;; (load "dune/dune_actions.scm")
-(load "dune/dune_ingest.scm")
+;; (load "dune/dune_ingest.scm")
 ;; (load "dune/dune_normalize.scm")
 ;; (load "dune/dune_stanza_executable.scm")
 (load "dune/dune_stanza_fields.scm")
 ;; (load "dune/dune_stanza_library.scm")
 (load "dune/rules.scm")
 (load "dune/dune_stanzas.scm")
-(load "dune/lookup_tables.scm")
+;; (load "dune/lookup_tables.scm")
 
 (load "dune/executables.scm")
 (load "dune/expanders.scm")
@@ -41,5 +41,6 @@
 (load "dune/tests.scm")
 (load "dune/pkg_files.scm")
 (load "dune/install.scm")
+(load "dune/lexyacc.scm")
 
 ;; (format #t "loaded mibl/dune.scm") (newline)

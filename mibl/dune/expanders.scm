@@ -32,9 +32,13 @@
           ((string-prefix? "%{" tool)
            (-expand-pct-tool!? tool :tool (car (assoc-val :pkg-path pkg))  deps))
 
-          (else (-expand-literal-tool!?
-                 (car (assoc-val :pkg-path pkg))
-                 tool deps))))))))
+          (else
+           (let ((tmp (-expand-literal-tool!?
+                       (car (assoc-val :pkg-path pkg))
+                       tool deps)))
+             (format #t "~A: ~A~%" (ured "TMP") tmp)
+             (format #t "~A: ~A~%" (ured "DEPS") deps)
+             tmp))))))))
 
 ;; may update :deps
 (define (-expand-dep-pct-var!? pfx sym deps pkg)
@@ -168,18 +172,19 @@
                                        (cons :tgt arg))|# ))
                      (alist-delete (list search-key #|arg-kw|# ) (cdr deps)))))
 
-        ;; else add it to (:deps ::tools)
-        ;; (let ((arg-kw (string->keyword arg)))
+        ;; else infer it must be imported from exports tbl
         (begin
-          (format #t "~A: ~A~%" (red "tool NOT in deps") search-key deps) ;; t)
+          (format #t "~A: ~A, ~A~%" (red "tool NOT in deps") search-key deps) ;; t)
           (set-cdr! deps
                     (append
                      (list (cons ::tools
                                  (list
                                   (cons search-key ;; arg-kw
-                                        (list (cons :pkg pkg-path)
-                                              (cons :tgt arg))))))
-                     deps))
+                                        ;; (list (cons :pkg pkg-path)
+                                        ;;       (cons :tgt arg))
+                                        ::import
+                                        ))))
+                     (cdr deps)))
           ;; return kw
           ))
     search-key))
@@ -247,38 +252,44 @@
     (if (null? (cdr deps))
         ;; infer dep for tool
         (let* ((tool-kw (string->keyword (format #f "~A" tool)))
-               (_
-                (format #t "~A: ~A~%" (white "inferring dep for tool") tool-kw))
+               (_ (format #t "~A: ~A~%" (white "inferring ::import for tool") tool-kw))
                )
           (set-cdr! deps
                     (list (cons ::tools
                                 (list
-                                 (cons tool-kw
-                                       (list (cons :pkg pkg-path)
-                                             (cons :tgt tool)))))))
+                                 (cons tool-kw ::import
+                                       ;; (list (cons :pkg pkg-path)
+                                       ;;       (cons :tgt tool))
+                                       )))))
           tool-kw)
-        ;; else
+        ;; else search existing deps
         (let ((tool (format #f "~A" tool))
               (t
                (begin
                  (format #t "~A: ~A~%" (green "searching deps") (cdr deps))
                  (find-if (lambda (dep)
                             (format #t "~A: ~A~%" (green "find test dep") dep)
-                            (case (cadr dep)
-                              ((::import ::pkg)
+                            ;; dep forms:  (:<kw> (:pkg ...) (:tgt ...))
+                            ;; or (foo ::import), (foo ::pkg)
+                            ;; or
+                            (cond
+                              ((member (cadr dep) '(::import ::pkg))
                                (format #t "~A: ~A~%" (ured "IMPORT") dep)
                                #f)
-                             (else
-                              (let* ((pkg-tgt (cdr dep))
-                                     (tgt (if-let ((tgt (assoc-val :tgt pkg-tgt)))
+                             ((alist? (cdr dep))
+                              (let* ((lbl-list (cdr dep))
+                                     (lbl-pkg (assoc-val :pkg lbl-list))
+                                     (lbl-tgt (if-let ((tgt (assoc-val :tgt lbl-list)))
                                                   (equal? tool tgt)
-                                                  (if-let ((tgts
-                                                            (assoc-val :tgts pkg-tgt)))
+                                                  (if-let ((tgts (assoc-val :tgts lbl-list)))
                                                           (equal? tool tgts)
                                                           (error 'fixme "missing :tgt and :tgts in dep")))))
-                                (format #t "~A: ~A~%" (uwhite "pkg-tgt") pkg-tgt)
-                                (format #t "~A: ~A~%" (uwhite "tgt") tgt)
-                                tgt))))
+                                (format #t "~A: ~A~%" (uwhite "lbl-list") lbl-list)
+                                (format #t "~A: ~A~%" (uwhite "tgt") lbl-tgt)
+                                lbl-tgt))
+                             (else
+                              (error 'fixme
+                                     (format #f "unexpected dep form: ~A" dep)))))
                           (cdr deps)))))
           (if t
               (let ((tool-kw (string->keyword tool)))
@@ -294,13 +305,14 @@
                 (car t))
               ;; else
               (let ((tool-kw (string->keyword tool)))
+                (format #t "~A: ~A~%" (red "tool NOT in deps") tool)
                 (set-cdr! deps
                           (append
                            (list (cons ::tools
                                       (list (cons tool-kw
                                                   `((:pkg ,pkg-path)))
                                             (cons :tgt tool))))
-                           deps)))))
+                           (cdr deps))))))
         )))
 
 ;; may update deps
@@ -509,7 +521,7 @@
   (format #t "~A: ~A~%" (red ":modules") (assoc-val :modules pkg))
   (format #t "~A: ~A~%" (red ":files") (assoc-val :files pkg))
 
-  (let ((arg (format #f "~A" (keyword->symbol arg))))
+  (let ((arg (format #f "~A" arg))) ;; (keyword->symbol arg))))
     (cond
      ((eq? 0 (fnmatch "*.ml" arg 0))
       (find-structfile-in-pkg-files!? arg deps pkg))
@@ -518,10 +530,13 @@
       (find-sigfile-in-pkg-files!? arg deps pkg))
 
      (else
-      ;; search :files
-      (let ((f (find-file-in-pkg-files!? arg deps pkg)))
-        (format #t "~A: ~A~%" (red "found file in pkg files?") f)
-        (if f (update-tagged-label-list! arg deps pkg)))))))
+      (if (string? arg)
+          ;; assume not a file to generate
+          #f
+          ;; else search :files
+          (let ((f (find-file-in-pkg-files!? arg deps pkg)))
+            (format #t "~A: ~A~%" (red "found file in pkg files?") f)
+            (if f (update-tagged-label-list! arg deps pkg) #f)))))))
 
 ;; string args may include suffixed vars, e.g. %{test}.corrected
 (define expand-string-arg
@@ -560,7 +575,7 @@
         (-expand-pct-arg!? arg :arg pkg deps)))
 
      (else
-      (format #t "~A: ~A~%" (white "string literal") arg)
+      (format #t "~A: ~A~%" (white "String literal") arg)
       ;; arg is string. check deps and targets, then pkg files
       (if-let ((tag (deps->tag-for-file deps arg)))
               tag

@@ -118,11 +118,12 @@
 ;; also:  (libraries (re_export foo))
 
 (define (analyze-libdeps libdeps)
-  (format #t "~A: ~A\n" (blue "analyze-libdeps") libdeps)
+  (format #t "~A: ~A\n" (ublue "analyze-libdeps") libdeps)
   (let recur ((raw libdeps) ;; 'libraries' fld
               (directs '()) ;; directs == public_name, listed in (libraries)
               (selects '())
               (modules '()))
+    (format #t "~A: ~A~%" (uwhite "recurring on") raw)
     (if (null? raw)
         (let* ((seldeps (map (lambda (s)
                             (format #t "S: ~A\n" s)
@@ -155,14 +156,29 @@
                     modules))
         (if (pair? (car raw))
             ;; e.g. (select ...)
-            (if (equal? (caar raw) 'select)
-                (let ((the-selects (analyze-select (car raw))))
-                  (recur (cdr raw)
-                         directs
-                         (append selects (list the-selects))
-                         ;; (cons (car raw) selects)
-                         (libdep->module-name modules)))
-                (error 'bad-lib-dep "embedded pair whose car is not 'select'"))
+            (case (caar raw)
+              ((select)
+            ;; (if (equal? (caar raw) 'select)
+               (let ((the-selects (analyze-select (car raw))))
+                 (recur (cdr raw)
+                        directs
+                        (append selects (list the-selects))
+                        ;; (cons (car raw) selects)
+                        (libdep->module-name modules))))
+              ((re_export)
+               (format #t "~A: ~A~%" (bgyellow "re_export") raw)
+               (recur (cdr raw)
+                      (cons (cadar raw) directs)
+                       selects
+                       (libdep->module-name modules)))
+              (else
+               (error 'bad-lib-dep
+                      (format #f "~A: ~A~%"
+                              (bgred
+                               "unrecognizde fld embedded as pair dep")
+                              raw)
+                      )))
+            ;; else (car raw) not a pair
             (if (equal? 'libraries (car raw))
                 ;; skip the initial fld name "libraries"
                 (recur (cdr raw)

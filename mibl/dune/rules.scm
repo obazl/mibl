@@ -221,8 +221,10 @@
                 ;;  (error 'unhandled-rule
                 ;;         (format #f "unhandled rule: ~A" rule-alist))))))
           (format #t "~A: ~A~%" (green "mibl-rule") mibl-rule)
-          (update-exports-table-with-targets!
-           ws (assoc-in '(:rule :outputs) mibl-rule) pkg-path)
+          ;; (update-exports-table-with-targets! ws
+          ;;                                     :FIXME ;; tag
+          ;;                                     (assoc-in '(:rule :outputs) mibl-rule) ;; name
+          ;;                                     pkg-path (assoc-in '(:rule :outputs) mibl-rule))
           mibl-rule)))))
 
     ;; (let ((result (map (lambda (fld-assoc)

@@ -93,11 +93,11 @@
 ;; of (:modules (A (:ml "a.ml")(:_mli "a.mli")))
 ;; e.g. prefix '_' means "dynamic"
 ;; then we can discard :static and :dynamic for (:modules)
-(define dune-library-deps-fld->mibl
+(define dune-libraries-fld->mibl
   (let ((+documentation+ "convert 'libraries' field of dune library stanza to mibl format. libdeps is a pair (fldname val)")
-        (+signature+ '(dune-library-deps-fld->mibl libdeps pkg)))
+        (+signature+ '(dune-libraries-fld->mibl libdeps pkg)))
     (lambda (libdeps pkg)
-      (format #t "~A: ~A\n" (blue "DUNE-library-deps-fld->MIBL") libdeps)
+      (format #t "~A: ~A\n" (ublue "dune-libraries-fld->mibl") libdeps)
       (let-values (((directs seldeps conditionals modules)
                     (analyze-libdeps libdeps)))
         (format #t "~A: ~A\n" (red "LIBDEPS DIRECTS") directs)

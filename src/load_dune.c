@@ -336,9 +336,11 @@ LOCAL bool _exclusions(FTSENT *ftsentry, char *ext)
 }
 
 #define TAG_MLI 0
-#define TAG_ML  1
-#define TAG_MLL 2
-#define TAG_MLY 3
+#define TAG_MLI_DYN 1
+#define TAG_ML  2
+#define TAG_ML_DYN  3
+#define TAG_MLL 4
+#define TAG_MLY 5
 
 /* char *_get_extension(char *filename) */
 /* { */
@@ -743,11 +745,13 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
                                char *fname, int ftype)
 {
     if (trace) {
-        log_trace("_UPDATE_PKG_MODULES");
+        log_trace(RED "_update_pkg_modules" CRESET);
+
     }
     if (debug) {
         log_debug("pkg_name: %s", pkg_name);
         log_debug("fname: %s", fname);
+        log_debug("tag: %d", ftype);
         /* log_debug("pkg_tbl: %s", TO_STR(pkg_tbl)); */
     }
     s7_pointer pkg_key = s7_make_string(s7, pkg_name);
@@ -782,10 +786,18 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
         /* s7_pointer ml_assoc = s7_list(s7, 2, */
         s7_pointer ml_assoc = s7_cons(s7,
                                       s7_make_keyword(s7,
-                                                      ftype == TAG_ML
+                                                      (ftype == TAG_ML)
                                                       ?"ml"
-                                                      :ftype == TAG_MLI
+                                                      :(ftype == TAG_ML_DYN)
+                                                      ?"ml_"
+                                                      :(ftype == TAG_MLI)
                                                       ?"mli"
+                                                      :(ftype == TAG_MLI_DYN)
+                                                      ?"mli_"
+                                                      :(ftype == TAG_MLL)
+                                                      ?"mll"
+                                                      :(ftype == TAG_MLY)
+                                                      ?"mly"
                                                       :"UNKNOWN"
                                                       ),
                                       s7_make_symbol(s7, fname));
@@ -849,7 +861,7 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
                                          /* static_kw, */
                                          mname_sym);
             if (debug) {
-                log_debug("assoc-in: %s", TO_STR(assoc_in));
+                /* log_debug("assoc-in: %s", TO_STR(assoc_in)); */
                 log_debug("keypath: %s", TO_STR(keypath));
                 /* log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
             }
@@ -936,7 +948,7 @@ LOCAL void _update_pkg_sigs(s7_pointer pkg_tbl,
                                char *fname, int ftype)
 {
     if (trace) {
-        log_trace(RED "_UPDATE_PKG_SIGS" CRESET);
+        log_trace(RED "_update_pkg_sigs" CRESET);
     }
     if (debug) {
         log_debug("pkg_name: %s", pkg_name);
@@ -1105,13 +1117,18 @@ LOCAL void _update_pkg_structs(s7_pointer pkg_tbl,
         s7_pointer mname_sym   = s7_make_symbol(s7, mname);
 
         s7_pointer assoc_in = _load_assoc_in();
-        s7_pointer keypath = s7_list(s7, 2, structs_kw, static_kw);
+        s7_pointer keypath = s7_list(s7, 2, structs_kw,
+                                     (ftype == TAG_ML)
+                                     ?static_kw
+                                     :dynamic_kw);
+
         s7_pointer structs_alist = s7_call(s7, assoc_in,
                                            s7_list(s7, 2,
                                                    keypath,
                                                    pkg_alist));
         /* = s7_call(s7, assoc_in, */
         /*           s7_list(s7, 2, modules_kw, pkg_alist)); */
+        if (debug) log_debug("structs_alist keypath %s", TO_STR(keypath));
         if (debug) log_debug("structs_alist %s", TO_STR(structs_alist));
 
         /* s7_pointer ml_assoc = s7_list(s7, 2, */
@@ -1127,25 +1144,59 @@ LOCAL void _update_pkg_structs(s7_pointer pkg_tbl,
 
         if (structs_alist == s7_f(s7)) {
             if (debug)
-                log_debug("INITIALIZING :structures field");
-            /* (:structures ((:Foo (:ml foo.ml)) */
-            /*               (:Bar (:ml bar.ml)))) */
+                log_debug("INITIALIZING %s field", TO_STR(keypath));
+            /* (:structures (:static (:Foo (:ml foo.ml)) */
+            /*               (:dynamic (:ml bar.ml)))) */
 
-            s7_pointer statics_assoc =
-                s7_list(s7, 2, static_kw, struct_assoc);
+            s7_pointer structures_alist = s7_call(s7, assoc,
+                                                  s7_list(s7, 2,
+                                                          structs_kw,
+                                                          pkg_alist));
+            log_debug("STRUCTURES alist: %s", TO_STR(structures_alist));
+            if (structures_alist == s7_f(s7)) {
+                log_debug("NEW");
+                s7_pointer statics_assoc =
+                    s7_list(s7, 2,
+                            // static_kw,
+                            (ftype == TAG_ML) ?static_kw :dynamic_kw,
+                            struct_assoc);
 
-            s7_pointer structs_assoc = s7_list(s7, 2,
-                                            structs_kw, statics_assoc);
-            if (debug) log_debug("structs_assoc: %s", TO_STR(structs_assoc));
+                s7_pointer structs_assoc = s7_list(s7, 2,
+                                                   structs_kw, statics_assoc);
+                if (debug) log_debug("structs_assoc: %s", TO_STR(structs_assoc));
 
-            s7_pointer new_pkg_alist = s7_append(s7, pkg_alist,
-                                                 s7_list(s7, 1,
-                                                         structs_assoc));
-            if (debug)
-                log_debug("updated pkg_alist: %s",
-                       TO_STR(new_pkg_alist));
+                s7_pointer new_pkg_alist = s7_append(s7, pkg_alist,
+                                                     s7_list(s7, 1,
+                                                             structs_assoc));
+                if (debug)
+                    log_debug("updated pkg_alist: %s",
+                              TO_STR(new_pkg_alist));
 
-            s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg_alist);
+                s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg_alist);
+            } else {
+                log_debug("OLD");
+
+                s7_pointer structures_alist_cdr = s7_cdr(structures_alist);
+                if (debug) {
+                    log_debug("structures_alist_cdr: %s",
+                       TO_STR(structures_alist_cdr));
+                }
+
+                s7_pointer new_struct_assoc = s7_list(s7, 2,
+                                                      // static_kw,
+                                                      (ftype == TAG_ML) ?static_kw :dynamic_kw,
+                                                      struct_assoc);
+
+                s7_pointer new_structures_alist_cdr =
+                    s7_append(s7, structures_alist_cdr,
+                              s7_list(s7, 1, new_struct_assoc));
+                if (debug)
+                    log_debug("new_structures_alist_cdr: %s",
+                       TO_STR(new_structures_alist_cdr));
+
+                s7_pointer new_structures_alist
+                    = s7_set_cdr(structures_alist, new_structures_alist_cdr);
+            }
         } else {
             if (debug) {
                 log_debug("UPDATING :structures");
@@ -1158,7 +1209,7 @@ LOCAL void _update_pkg_structs(s7_pointer pkg_tbl,
                                          static_kw,
                                          mname_sym);
             if (debug) {
-                log_debug("assoc-in: %s", TO_STR(assoc_in));
+                /* log_debug("assoc-in: %s", TO_STR(assoc_in)); */
                 log_debug("keypath: %s", TO_STR(keypath));
                 /* log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
             }
@@ -1237,7 +1288,7 @@ LOCAL void _update_pkg_mll_files(s7_pointer pkg_tbl,
                                  char *fname, int ftype)
 {
     if (trace) {
-        log_trace(RED "_UPDATE_PKG_MLL_FILES" CRESET);
+        log_trace(RED "_update_pkg_mll_files" CRESET);
     }
     if (debug) {
         log_debug("pkg_name: %s", pkg_name);
@@ -1377,24 +1428,71 @@ LOCAL void _update_pkg_mll_files(s7_pointer pkg_tbl,
 
 LOCAL void _update_mll(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 {
-    printf("_update_mll: \n");
+    if (trace) {
+        log_trace(RED "_update_mll", CRESET);
+    }
     char *pkg_name = dirname(ftsentry->fts_path);
     char *mname = _module_name(ftsentry, ext);
     if (trace) {
-        log_trace("_update_mll: %s; ", mname);
+        log_trace("module name: %s ", mname);
         log_trace("pkg name: %s; fname: %s", pkg_name, ftsentry->fts_name);
     }
-    char *mll_name = strdup(ftsentry->fts_name);
-    mll_name[strlen(ftsentry->fts_name) - 1] = '\0';
 
+    /* ocamllex emits .ml - if static .mli found, update :modules
+       else update :structures */
+
+    char *ml_name = strdup(ftsentry->fts_name);
+    ml_name[strlen(ftsentry->fts_name) - 1] = '\0';
+
+    char *mli_name = strdup(ftsentry->fts_name);
+    mli_name[strlen(ftsentry->fts_name) - 1] = 'i';
+
+    /* dirname may mutate its arg, use a copy */
+    char *dname = strdup(ftsentry->fts_path);
+    UT_string *mli_test;
+    utstring_new(mli_test);
+    /* add terminal 'i' with printf */
+    utstring_printf(mli_test, "%s/%s", dirname(dname), mli_name);
+    if (trace) {
+        log_debug("Checking for companion .mli: %s",
+                  utstring_body(mli_test));
+    }
+    int rc = access(utstring_body(mli_test), F_OK);
+    if (rc) {
+        /* companion mli file not found */
+        _update_pkg_structs(pkg_tbl, pkg_name, mname,
+                            ml_name, // ftsentry->fts_name,
+                            TAG_ML_DYN);
+    } else {
+        /* _update_pkg_modules(pkg_tbl, pkg_name, mname, */
+        /*                     ftsentry->fts_name, TAG_ML); */
+        _update_pkg_modules(pkg_tbl, pkg_name, mname,
+                            ftsentry->fts_name,
+                            TAG_MLL);
+        _update_pkg_modules(pkg_tbl, pkg_name, mname,
+                            mli_name, // ftsentry->fts_name,
+                            TAG_MLI);
+        _update_pkg_modules(pkg_tbl, pkg_name, mname,
+                            ml_name, // ftsentry->fts_name,
+                            TAG_ML_DYN);
+    }
+
+    /* update pkg fld :ocamllex */
     _update_pkg_mll_files(pkg_tbl, pkg_name, mname,
                           ftsentry->fts_name, TAG_MLL);
+
+    free(mli_name);
+    free(ml_name);
+    free(dname);
+    utstring_free(mli_test);
+    /* exit(0); */
 }
 
 LOCAL void _update_pkg_mly_files(s7_pointer pkg_tbl,
                                  char *pkg_name, char *mname,
                                  char *fname, int ftype)
 {
+    // mly entry structure: (Foo (:mly foo.mly) (:ml_ foo.ml) (:ml-deps ...) (:mli_ foo.mli) (:mli-deps ...))
     if (trace) {
         log_trace(RED "_UPDATE_PKG_MLY_FILES" CRESET);
     }
@@ -1411,6 +1509,7 @@ LOCAL void _update_pkg_mly_files(s7_pointer pkg_tbl,
     if (pkg_alist == s7_f(s7)) {
         if (debug)
             log_debug("no dunefile in this directory");
+        /* return ??? */
     } else {
         s7_pointer mname_sym   = s7_make_symbol(s7, mname);
 
@@ -1536,18 +1635,40 @@ LOCAL void _update_pkg_mly_files(s7_pointer pkg_tbl,
 
 LOCAL void _update_mly(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 {
-    printf("_update_mly: \n");
+    if (trace) {
+        log_trace(RED "_update_mly" CRESET);
+    }
     char *pkg_name = dirname(ftsentry->fts_path);
     char *mname = _module_name(ftsentry, ext);
     if (trace) {
         log_trace("_update_mly: %s; ", mname);
         log_trace("pkg name: %s; fname: %s", pkg_name, ftsentry->fts_name);
     }
-    char *mly_name = strdup(ftsentry->fts_name);
-    mly_name[strlen(ftsentry->fts_name) - 1] = '\0';
 
+    char *mli_name = strdup(ftsentry->fts_name);
+    mli_name[strlen(ftsentry->fts_name) - 1] = 'i';
+    log_trace(RED "mli_name: %s" CRESET, mli_name);
+
+    char *ml_name = strdup(ftsentry->fts_name);
+    ml_name[strlen(ftsentry->fts_name) - 1] = '\0';
+    log_trace(RED "ml_name: %s" CRESET, ml_name);
+
+   _update_pkg_modules(pkg_tbl, pkg_name, mname,
+                        ftsentry->fts_name,
+                        TAG_MLY);
+    _update_pkg_modules(pkg_tbl, pkg_name, mname,
+                        mli_name, // ftsentry->fts_name,
+                        TAG_MLI_DYN);
+    _update_pkg_modules(pkg_tbl, pkg_name, mname,
+                        ml_name, // ftsentry->fts_name,
+                        TAG_ML_DYN);
+
+    /* update pkg fld :ocamlyacc */
     _update_pkg_mly_files(pkg_tbl, pkg_name, mname,
                           ftsentry->fts_name, TAG_MLY);
+
+    free(mli_name);
+    free(ml_name);
 }
 
 LOCAL void _update_mli(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)

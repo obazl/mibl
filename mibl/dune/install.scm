@@ -38,8 +38,14 @@
                                          (let ((key (string-join (map symbol->string
                                                                       (list section pkg fdst))
                                                                  ":")))
-                                           (update-exports-table! ws (string->symbol key) fdst-str pkg-path)
-                                           (update-exports-table! ws (string->symbol key) fdst-str pkg-path))
+                                           (update-exports-table! ws
+                                                                  :FIXME ;; tag
+                                                                  fdst-str ;; name
+                                                                  pkg-path (string->symbol key))
+                                           (update-exports-table! ws
+                                                                  :FIXME ;; tag
+                                                                  fdst-str ;; name
+                                                                  pkg-path (string->symbol key)))
                                          )
                                      ;; if dest is different pkg do NOT map it here
                                      (format #t "~A: ~A~%" (uwhite "as-list") key)

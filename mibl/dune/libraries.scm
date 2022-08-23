@@ -72,6 +72,8 @@
        ((preprocessor_deps) ;; handled along with preprocess fld
         (values))
 
+       ((synopsis) (cons :docstring (cadr fld-assoc)))
+
        ((wrapped) (values))
        (else (error 'fixme (format #f "unhandled lib fld: ~A~%" fld-assoc)))
        ) ;; end case
@@ -88,7 +90,7 @@
   ;; 'libraries' fld may generate :directs, :seldeps and :conditionals
 
   (let* ((deps (if-let ((libdeps (assoc-val 'libraries stanza-alist)))
-                       (dune-library-deps-fld->mibl libdeps pkg)
+                       (dune-libraries-fld->mibl libdeps pkg)
                        '()))
          (_ (format #t "lib MIBLDEPS: ~A\n" deps))
          ;; (_ (error 'tmp "tmp"))
@@ -152,31 +154,37 @@
   ;; else => :library
 
   ;; add lib names to exports table
-  (let ((pkg-path (car (assoc-val :pkg-path pkg)))
+  (let* ((pkg-path (car (assoc-val :pkg-path pkg)))
         (exports (car (assoc-val :exports (assoc-val ws -mibl-ws-table))))
         (privname (assoc-val 'name (cdr stanza)))
-        (pubname (assoc-val 'public_name (cdr stanza))))
+        (pubname (if-let ((pubname (assoc-val 'public_name (cdr stanza))))
+                         (cdr pubname) privname))
+        )
     (format #t "hidden exports: ~A\n" exports)
 
     ;; libs may be referenced w/o ns, e.g. mylib,
     ;; or (in rule actions) w/ns, e.g. lib:mylib
     ;; we register both pub and priv names just to make sure refs are resolved
+    ;; and we register both with and without lib: tag
 
     (update-exports-table! ws
-                           (string->symbol (format #f "~A" (car privname))) ;; key
-                               (car privname) pkg-path)
+                           (string->symbol (format #f "~A" (car privname))) ;; tag
+                           (car privname) pkg-path (car privname))
     (update-exports-table! ws
-                           (string->symbol (format #f "~A" (car pubname))) ;; key
-                               (car privname) pkg-path)
+                           (string->symbol (format #f "~A" (car pubname))) ;; tag
+                           (car pubname)
+                           pkg-path (car privname))
 
     (if privname
-        (update-exports-table! ws
-                               (string->symbol (format #f "lib:~A" (car privname))) ;; key
-                               (car privname) pkg-path))
+        (update-exports-table! ws :lib
+                               ;; (string->symbol (format #f "lib:~A" (car privname))) ;; key
+                               (car privname)
+                               pkg-path (car privname)))
     (if pubname
-        (update-exports-table! ws
-                               (string->symbol (format #f "lib:~A" (car pubname))) ;; key
-                               (car privname) pkg-path))
+        (update-exports-table! ws :lib
+                               ;; (string->symbol (format #f "lib:~A" (car pubname))) ;; key
+                               (car pubname)
+                               pkg-path (car privname)))
 
     (let* ((stanza-alist (cdr stanza))
            (stanza-alist (if-let ((mods (assoc 'modules stanza-alist)))

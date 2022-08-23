@@ -5,7 +5,7 @@
 ;; apodoses in 'select' clauses are not pkg-level build targets
 ;; remove them from :structures, :signatures
 (define (-mark-apodoses! pkg)
-  ;; (format #t "-mark-apodoses! ~A\n" pkg)
+  (format #t "~A: ~A\n" (ublue "-mark-apodoses!") pkg)
   (if-let ((conditionals (assoc-in '(:dune :library :conditionals) pkg)))
          ;; conditionals val: list of alists
           (let* ((apodoses (apply append
@@ -35,10 +35,12 @@
                           (if (member (last (last s)) apodoses)
                               (set-car! s :_)))
                         (cdr structs-static))
-              ))))
+              ))
+          (format #t "~A: ~A~%" (uwhite "no conditionals") "foo")
+          ))
 
 (define (-trim-pkg! pkg)
-  ;; (format #t "~A: ~A~%" (blue "-trim-pkg!") pkg)
+  (format #t "~A: ~A~%" (blue "-trim-pkg!") pkg)
 
   ;; remove null lists from :dune alist
   (let ((dune (assoc :dune pkg)))
@@ -126,13 +128,20 @@
             ;; ((executable) (normalize-stanza-executable :executable
             ;;                pkg-path ocaml-srcs stanza))
             ((executable)
+             (let* ((mibl-stanza (dune-executable->mibl ws pkg :executable stanza))
+                    (x (append (cdr nstanzas) mibl-stanza)))
+               (format #t  "~A: ~A~%" (yellow "mibl-stanza") mibl-stanza)
+               (format #t  "~A: ~A~%" (yellow "x") x)
+               (set-cdr! nstanzas x)))
+
+            ((executables)
              (set-cdr! nstanzas
                        (append
                         (cdr nstanzas)
-                        (dune-executable->mibl ws pkg :executable stanza))))
-
-            ;; ((executables) (normalize-stanza-executables :executables
-            ;;                 pkg-path ocaml-srcs stanza))
+                        (dune-executables->mibl
+                         ws pkg :executable stanza))))
+             ;; (normalize-stanza-executables
+             ;;  :executables pkg-path ocaml-srcs stanza))
 
             ((test)
              (set-cdr! nstanzas
@@ -156,16 +165,24 @@
                         (cdr nstanzas)
                         (dune-install->mibl ws pkg stanza))))
 
-            ;; ((ocamllex) (normalize-stanza-ocamllex stanza))
+            ((ocamllex)
+             (set-cdr! nstanzas
+                       (append
+                        (cdr nstanzas)
+                        (normalize-stanza-lexyacc :ocamllex ws pkg stanza))))
 
-            ;; ((ocamlyacc) (normalize-stanza-ocamllex stanza))
+            ((ocamlyacc)
+             (set-cdr! nstanzas
+                       (append
+                        (cdr nstanzas)
+                        (normalize-stanza-lexyacc :ocamlyacc ws pkg stanza))))
 
             ;; ((:dune-project) stanza)
 
               (else
                ;; (format #t "~A: ~A\n" (red "unhandled") stanza)
                (error 'fixme (format #f "~A: ~A~%" (red "unhandled stanza") stanza))))))
-    ;; (format #t "normalized pkg: ~A\n" pkg)
+    (format #t "~A: ~A\n" (bgred "normalized pkg") pkg)
 
     (-mark-apodoses! pkg)
 
@@ -194,7 +211,7 @@
                     ;; ;; dune-project-stanzas
                     ;; srcfiles ;; s/b '() ??
                     ;; stanza)))
-                    ;; (format #t "NORMALIZED: ~A\n" normed)
+                    (format #t "NORMALIZED: ~A\n" normed)
                     normed))
                 ;; (cdr dune-stanzas))))
                 (assoc-val 'dune pkg+))))

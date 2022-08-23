@@ -10,7 +10,7 @@
 
 ;; split opts into boolean flags and (opt arg) pairs
 (define (split-opts opts)
-  (format #t "splitting opts: ~A\n" opts)
+  ;; (format #t "~A: ~A\n" (ublue "splitting opts") opts)
   ;; assumption: :standard has been removed
   ;; cases: arg is list or not: (flags (a b ...)) v. (flags a b ...)
   ;; case: embedded list, e.g. (flags a (b c) ...)
@@ -22,14 +22,14 @@
               (options '())
               (flags '())
               (orphans '()))
-    (format #t "opts: ~A\n" opts)
-    (format #t "ostack: ~A\n" ostack)
+    ;; (format #t "opts: ~A\n" opts)
+    ;; (format #t "ostack: ~A\n" ostack)
     (if (null? opts)
         (if (null? ostack)
             (values options flags)
             (values options (cons (symbol(car ostack)) flags)))
         (let* ((rawopt (car opts))
-               (_ (format #t "rawopt: ~A\n" rawopt))
+               ;; (_ (format #t "rawopt: ~A\n" rawopt))
                (opt (cond
                      ((string? rawopt) rawopt)
                      ((symbol? rawopt) (symbol->string rawopt))
@@ -57,14 +57,14 @@
                   (if (null? ostack)
                       (if (equal? (symbol "\\") rawopt)
                           (begin
-                            (format #t "Got slash\n")
+                            ;; (format #t "Got slash\n")
                             (recur (cdr opts) ostack options flags
                                    (cons opt orphans)))
                           (begin
                             (format #t
                                     "WARNING: value ~A without preceding -opt\n"
                                     opt)
-                            (format #t "type: ~A\n" (type-of opt))
+                            ;; (format #t "type: ~A\n" (type-of opt))
                             (recur (cdr opts) ostack options flags
                                    (cons opt orphans))))
                       ;; no '-' prefix, ostack contains prev '-' arg
@@ -73,7 +73,7 @@
                              flags orphans))))))))
 
 (define (split-opens flags)
-  (format #t "split-opens: ~A\n" flags)
+  ;; (format #t "~A: ~A\n" (uwhite "split-opens") flags)
   ;; WARNING: preserve order of '-open' args!
   (let recur ((flags flags)
               (opens '())
@@ -117,7 +117,7 @@
 
 ;; returns: (values std flags)
 (define (link-flags->mibl stanza)
-  (format #t "~A: ~A\n" (blue "executable-flags->mibl") stanza)
+  ;; (format #t "~A: ~A\n" (ublue "executable-flags->mibl") stanza)
   (let* ((stanza-alist (cdr stanza))
          (link-flags (assoc-in '(:link :link-flags) stanza-alist))
          (link-opts  (assoc-in '(:link :opts :flags) stanza-alist))
@@ -129,7 +129,7 @@
     (values link-std flags)))
 
 (define (normalize-stanza-fld-flags flags kind)
-  (format #t "~A: ~A\n" (blue "normalize-stanza-fld-flags") flags)
+  ;; (format #t "~A: ~A\n" (ublue "normalize-stanza-fld-flags") flags)
   (if flags
       ;; (let* ((flags (if (list? (cadr flags))
       ;;                   (cadr flags)
@@ -151,8 +151,8 @@
             ;; (format #t "OPENS: ~A\n" (reverse opens))
             ;; (format #t "OPTS: ~A\n" (reverse opts))
             ;; (format #t "STD: ~A\n" std)
-            (format #t "OPTIONS: ~A\n" options)
-            (format #t "FLAGS: ~A\n" bools)
+            ;; (format #t "OPTIONS: ~A\n" options)
+            ;; (format #t "FLAGS: ~A\n" bools)
             (cons (if (eq? kind :mod) :opts
                       (if (eq? kind :lib) :archive-opts
                           (if (eq? kind :exec) :exec-opts
@@ -173,7 +173,7 @@
 
 ;; returns (values <standard> <opens> <options> <flags>)
 (define (flags->mibl flags)
-  (format #t "~A: ~A\n" (blue "flags->mibl") flags)
+  ;; (format #t "~A: ~A\n" (ublue "flags->mibl") flags)
   (if flags
       ;; (let* ((flags (if (list? (cadr flags))
       ;;                   (cadr flags)
@@ -195,8 +195,8 @@
             ;; (format #t "OPENS: ~A\n" (reverse opens))
             ;; (format #t "OPTS: ~A\n" (reverse opts))
             ;; (format #t "STD: ~A\n" std)
-            (format #t "OPTIONS: ~A\n" options)
-            (format #t "FLAGS: ~A\n" bools)
+            ;; (format #t "OPTIONS: ~A\n" options)
+            ;; (format #t "FLAGS: ~A\n" bools)
             ;; FIXME: expand :standard flags
             (values
              (if (or top-std std) '(:standard) '())

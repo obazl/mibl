@@ -373,7 +373,7 @@
     libdep))
 
 (define (normalize-module-name mname)
-  (format #t "normalize-module-name: ~A\n" mname)
+  ;;(format #t "normalize-module-name: ~A\n" mname)
   (if (equal? '(:standard) mname)
       :standard
       (let ((s (if (symbol? mname)

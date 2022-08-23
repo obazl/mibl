@@ -15,10 +15,17 @@
                  (_ (format #t "~A: ~A~%" (uwhite "deps") deps))
                  (outputs (if-let ((outputs (assoc :outputs stanza-alist)))
                                (cdr outputs) '()))
-                 (tool (format #f "~A" (keyword->symbol (car args))))
+                 (_ (format #t "~A: ~A~%" (uwhite "outputs") outputs))
+
+                 ;; (tool (format #f "~A" (keyword->symbol (car args))))
+                 ;; (_ (format #t "~A: ~A~%" (uwhite "tool") tool))
+
+                 ;;FIXME: handle progn (multiple cmds)
+                 (tool (assoc-in '(:actions :cmd :tool) stanza-alist))
                  (_ (format #t "~A: ~A~%" (uwhite "tool") tool))
+
                  )
-            (-expand-literal-tool!? (car (assoc-val :pkg-path pkg)) tool deps)
+            ;; (-expand-literal-tool!? (car (assoc-val :pkg-path pkg)) tool deps)
             (set-car! stanza :sh-test)
 
             ;; if :args contains executable, mark as :test
@@ -124,6 +131,7 @@
             #| nop |#)))
 
 ;; replace e.g. :rule by :write-file
+;; :executable by :test if deps include unit test pkg
 (define (mibl-pkg->miblark pkg)
   (format #t "~A: ~A~%" (blue "mibl-pkg->miblark") pkg) ;;(assoc-val :pkg-path pkg))
 
@@ -154,6 +162,17 @@
                           (else ;; nop
                            '())))
                       ))))
+           ((:executable)
+            (format #t "~A: ~A~%" (uwhite "miblarkizing executable") stanza)
+            (let* ((stanza-alist (cdr stanza))
+                   (compile-deps (assoc-in '(:compile :deps :resolved) stanza-alist)))
+              (format #t "~A: ~A~%" (uwhite "compile-deps") compile-deps)
+              (if compile-deps
+                  (let ((test? (find-if (lambda (dep)
+                                          (member dep unit-test-pkgs))
+                                        (cdr compile-deps))))
+                    (if test? (set-car! stanza :test) #f))
+                  #f)))
            (else
             ))
          ;; aliases
