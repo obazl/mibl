@@ -369,7 +369,9 @@
           (assoc-val :pkg-path pkg))
   (let* ((ws-path (car (assoc-val :ws-path pkg)))
          (pkg-path (car (assoc-val :pkg-path pkg)))
-         (pkg-modules (assoc-val :modules pkg))
+         (pkg-modules (if-let ((modules (assoc-val :modules pkg)))
+                              modules '()))
+         (_ (format #t "~A: ~A~%" (blue "pkg-modules") pkg-modules))
 
          (pkg-static-mll (if-let ((mll-static
                                    (assoc-in '(:ocamllex :static) pkg)))

@@ -52,7 +52,7 @@
   (format #t "normalize-inline_tests: ~A\n" fld-assoc))
 
 (define (-map-lib-flds->mibl stanza-alist)
-  (format #t "~A: ~A~%" (blue "-lib-flds->mibl") stanza-alist)
+  (format #t "~A: ~A~%" (blue "-map-lib-flds->mibl") stanza-alist)
   (map
    (lambda (fld-assoc)
      (format #t "lib fld-assoc: ~A\n" fld-assoc)
@@ -60,9 +60,11 @@
        ((name) (cons :privname (cadr fld-assoc)))
        ((public_name) (cons :pubname (cadr fld-assoc)))
 
-       ((flags) (normalize-stanza-fld-flags fld-assoc :mod))
-       ((library_flags) (normalize-stanza-fld-flags fld-assoc :lib))
-       ;; (values) returns "nothing"
+       ((flags) (normalize-stanza-fld-flags fld-assoc :compile))
+       ((library_flags) (normalize-stanza-fld-flags fld-assoc :archive))
+       ((ocamlc_flags) (normalize-stanza-fld-flags fld-assoc :ocamlc))
+       ((ocamlopt_flags) (normalize-stanza-fld-flags fld-assoc :ocamlopt))
+
        ((libraries) (values)) ;; handled separately
        ((modules) (values)) ;; handled separately
        ((modules_without_implementation)
@@ -156,35 +158,36 @@
   ;; add lib names to exports table
   (let* ((pkg-path (car (assoc-val :pkg-path pkg)))
         (exports (car (assoc-val :exports (assoc-val ws -mibl-ws-table))))
-        (privname (assoc-val 'name (cdr stanza)))
+        (privname (if-let ((privname (assoc-val 'name (cdr stanza))))
+                          (car privname) #f))
+        (_ (format #t "~A: ~A~%" (uwhite "privname") privname))
         (pubname (if-let ((pubname (assoc-val 'public_name (cdr stanza))))
-                         (cdr pubname) privname))
+                         (car pubname) privname))
+        (_ (format #t "~A: ~A~%" (uwhite "pubname") pubname))
         )
-    (format #t "hidden exports: ~A\n" exports)
-
     ;; libs may be referenced w/o ns, e.g. mylib,
     ;; or (in rule actions) w/ns, e.g. lib:mylib
     ;; we register both pub and priv names just to make sure refs are resolved
     ;; and we register both with and without lib: tag
 
     (update-exports-table! ws
-                           (string->symbol (format #f "~A" (car privname))) ;; tag
-                           (car privname) pkg-path (car privname))
+                           (string->symbol (format #f "~A" privname)) ;; tag
+                           privname pkg-path privname)
     (update-exports-table! ws
-                           (string->symbol (format #f "~A" (car pubname))) ;; tag
-                           (car pubname)
-                           pkg-path (car privname))
+                           (string->symbol (format #f "~A" pubname)) ;; tag
+                           pubname
+                           pkg-path privname)
 
     (if privname
         (update-exports-table! ws :lib
                                ;; (string->symbol (format #f "lib:~A" (car privname))) ;; key
-                               (car privname)
-                               pkg-path (car privname)))
+                               privname
+                               pkg-path privname))
     (if pubname
         (update-exports-table! ws :lib
                                ;; (string->symbol (format #f "lib:~A" (car pubname))) ;; key
-                               (car pubname)
-                               pkg-path (car privname)))
+                               pubname
+                               pkg-path privname))
 
     (let* ((stanza-alist (cdr stanza))
            (stanza-alist (if-let ((mods (assoc 'modules stanza-alist)))

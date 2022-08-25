@@ -189,17 +189,12 @@
                ;;         '())
                ))))
 
-      ;; ((:ns-archive)
-      ;;  (format #t "~A~%" (magenta "fixup :ns-archive"))
-      ;;  (let ((deps (assoc-val :deps stanza-alist)))
-      ;;    (format #t "ns-archive deps: ~A~%" deps)))
-
-      ((:archive)
-       (format #t "~A~%" (magenta "fixup :archive"))
+      ((:archive :ns-archive)
+       (format #t "~A~%" (magenta "fixup :archive, :ns-archive"))
        ;; (let ((deps (assoc-val :deps stanza-alist)))
        ;;   (format #t "archive deps: ~A~%" deps)))
        (let* ((deps (if-let ((deps (assoc-in '(:deps :fixed) stanza-alist)))
-                            deps '()))
+                            deps #f))
               (_ (format #t "deps: ~A~%" deps))
               )
          (if deps

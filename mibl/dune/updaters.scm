@@ -8,7 +8,7 @@
   (let* ((-ws (if (keyword? ws) (assoc-val ws -mibl-ws-table) ws))
          (_ (format #t "~A: ~A~%" (uwhite "-ws") -ws))
          (filegroups (car (assoc-val :filegroups -ws)))
-         (_ (format #t "hidden filegroups tbl: ~A\n" filegroups))
+         (_ (format #t "filegroups tbl: ~A\n" filegroups))
          (glob? (string-index pattern (lambda (ch)
                                               (equal? ch #\*)))))
 
@@ -324,7 +324,7 @@
          (spec `(,@tag-assoc
                  ,(cons :pkg pkg-path)
                  ,(cons :tgt (format #f "~A" tgt)))))
-    (format #t "hidden exports tbl: ~A\n" exports)
+    (format #t "exports tbl: ~A\n" exports)
 
     (format #t "adding ~A => ~A to exports tbl\n" key spec)
     (hash-table-set! exports

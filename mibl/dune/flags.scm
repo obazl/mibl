@@ -129,7 +129,7 @@
     (values link-std flags)))
 
 (define (normalize-stanza-fld-flags flags kind)
-  ;; (format #t "~A: ~A\n" (ublue "normalize-stanza-fld-flags") flags)
+  (format #t "~A: ~A\n" (ublue "normalize-stanza-fld-flags") flags)
   (if flags
       ;; (let* ((flags (if (list? (cadr flags))
       ;;                   (cadr flags)
@@ -141,7 +141,7 @@
              (top-std (any (lambda (flag) (equal? flag :standard))
                            flags-val))
              (clean-flags (if top-std
-                              (remove :item :standard flags-val)
+                              (remove #|:item|# :standard flags-val)
                               flags-val)))
         ;; (format #t "DIRTY: ~A\n" flags-val)
         ;; (format #t "STD: ~A\n" std)
@@ -153,10 +153,18 @@
             ;; (format #t "STD: ~A\n" std)
             ;; (format #t "OPTIONS: ~A\n" options)
             ;; (format #t "FLAGS: ~A\n" bools)
-            (cons (if (eq? kind :mod) :opts
-                      (if (eq? kind :lib) :archive-opts
-                          (if (eq? kind :exec) :exec-opts
-                              :unknown-opts)))
+            (cons
+             (case kind
+               ((:compile) :compile-opts)
+               ((:ocamlc) :ocamlc-opts)
+               ((:ocamlopt) :ocamlopt-opts)
+               ((:archive) :archive-opts)
+               ((:exec) :exec-opts)
+               (else :unknown-opts))
+            ;; (cons (if (eq? kind :compile) :opts
+            ;;           (if (eq? kind :archive) :archive-opts
+            ;;               (if (eq? kind :exec) :exec-opts
+            ;;                   :unknown-opts)))
                   (remove
                    '() (list
                         (if (or top-std std)
