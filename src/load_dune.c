@@ -86,13 +86,14 @@ LOCAL s7_pointer _read_dunefile(char *path) //, char *fname)
 
         if ((errmsg) && (*errmsg)) {
             if (debug)
-                log_error("[%s\n]", errmsg);
+                log_error(RED "[%s]" CRESET, errmsg);
             s7_gc_unprotect_at(s7, dune_gc_loc);
             s7_close_input_port(s7, port);
             //if ".)", read file into buffer, convert to "\.)", then
             // read with the scheme reader
             if (strstr(errmsg, "BADDOT") != NULL) {
-                log_info("fixing baddot in %s", utstring_body(dunefile_name));
+                log_info(RED "fixing baddot in %s" CRESET,
+                         utstring_body(dunefile_name));
                 s7_gc_unprotect_at(s7, dune_gc_loc);
                 s7_close_input_port(s7, port);
                 /* clear out old error */

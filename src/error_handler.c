@@ -21,21 +21,21 @@ s7_pointer _s7_error_handler(s7_scheme *sc, s7_pointer args)
     if (strstr(s7_string(s7_car(args)), "unexpected close paren:") != NULL) {
         if (debug)
             printf(RED "Error: BAD DOT" CRESET "\n");
-        /* s7_write(s7, s7_make_string(s7, "BADDOT"), */
-        /*          s7_current_error_port(s7)); */
-
-        fprintf(stdout, RED "[begin error context]\n");
-        s7_eval_c_string(s7, ERRSEXP);
-        char *sexp = "(do ((e (outlet (owlet)) (outlet e))) "
-            "((eq? e (rootlet))) "
-            "(format () \"~{~A ~}~%\" e)) ";
-        s7_eval_c_string(s7, sexp);
-        s7_write(s7,
-                 s7_make_string(s7, s7_car(args)),
-                 // s7_string(s7_car(args)),
+        s7_write(s7, s7_make_string(s7, "BADDOT"),
                  s7_current_error_port(s7));
-        fprintf(stdout, "[end error context]" CRESET "\n");
-        exit(EXIT_FAILURE);
+
+        /* fprintf(stdout, RED "[begin error context]\n"); */
+        /* s7_eval_c_string(s7, ERRSEXP); */
+        /* char *sexp = "(do ((e (outlet (owlet)) (outlet e))) " */
+        /*     "((eq? e (rootlet))) " */
+        /*     "(format () \"~{~A ~}~%\" e)) "; */
+        /* s7_eval_c_string(s7, sexp); */
+        /* s7_write(s7, */
+        /*          s7_make_string(s7, s7_car(args)), */
+        /*          // s7_string(s7_car(args)), */
+        /*          s7_current_error_port(s7)); */
+        /* fprintf(stdout, "[end error context]" CRESET "\n"); */
+        /* exit(EXIT_FAILURE); */
         return s7_f(s7);
     } else {
         //TODO: write to error port
