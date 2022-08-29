@@ -14,9 +14,82 @@ s7_int gc_loc = -1;
 #define ERRSEXP "(with-let (owlet) " \
     "(format #t \"file: ~A, line ~A\n\" error-file error-line))"
 
-s7_pointer _s7_error_handler(s7_scheme *sc, s7_pointer args)
+s7_pointer _s7_read_thunk_catcher(s7_scheme *s7, s7_pointer args)
 {
-    /* log_error("_s7_error_handler\n"); */
+    /* log_info("s7_read_thunk_catcher args: %s", */
+    /*          TO_STR(args)); */
+    /* log_info("s7_read_thunk_catcher arg0: %s", TO_STR(s7_car(args))); */
+    /* log_info("s7_read_thunk_catcher arg1: %s", TO_STR(s7_cadr(args))); */
+    /* s7_show_stack(s7); */
+
+    /* if arg0 == 'read-error and */
+    if (strstr(TO_STR(s7_cadr(args)),
+               "(\"unexpected close paren:") != NULL) {
+        /* printf("XXXXXXXXXXXXXXXX\n"); */
+        /* if (strstr(errmsg, "BADDOT") != NULL) { */
+        log_info(RED "fixing baddot in %s" CRESET,
+                 utstring_body(dunefile_name));
+        s7_close_input_port(s7, dunefile_port);
+        s7_gc_unprotect_at(s7, dune_gc_loc);
+
+        /* s7_show_stack(s7); */
+        /* clear out old error */
+        /* s7_flush_output_port(s7, s7_current_error_port(s7)); */
+        /* close_error_config(); */
+        /* error_config(); */
+        /* init_error_handlers(); */
+
+        // FIXME: test case: 'include' after baddot
+        s7_pointer fixed = fix_baddot(dunefile_name);
+        /* s7_pointer fixed = s7_eval_c_string(s7, "'(foob)"); */
+        if (debug) log_debug(RED "FIXED:" CRESET " %s",
+                             TO_STR(fixed));
+        /* s7_show_stack(s7); */
+        print_backtrace(s7);
+
+        /* close_error_config(); */
+        /* error_config(); */
+        // FIXING baddot always re-reads entire dunefile
+        /* stanzas = fixed; */
+        /* if (s7_is_null(s7,stanzas)) { */
+        /*     // fixed is a list of stanzas */
+        /*     stanzas = fixed; */
+        /* } else{ */
+        /*     stanzas = s7_append(s7, stanzas, fixed); */
+        /* } */
+        /* } */
+
+        return fixed;
+    } else {
+        fprintf(stdout, RED "Error:" CRESET " %s\n",
+                TO_STR(s7_cadr(args)));
+        fprintf(stdout, RED "[begin error context]\n");
+        s7_eval_c_string(s7, ERRSEXP);
+        char *sexp = "(do ((e (outlet (owlet)) (outlet e))) "
+            "((eq? e (rootlet))) "
+            "(format () \"~{~A ~}~%\" e)) ";
+        s7_eval_c_string(s7, sexp);
+        s7_write(s7,
+                 /* s7_make_string(s7, s7_car(args)), */
+                 // s7_string(s7_car(args)),
+                 TO_STR(s7_car(args)),
+                 s7_current_error_port(s7));
+        fprintf(stdout, "[end error context]" CRESET "\n");
+
+        close_error_config();
+        error_config();
+        /* init_error_handlers(); */
+        s7_quit(s7);
+        exit(EXIT_FAILURE);
+    }
+}
+
+s7_pointer s7_read_thunk_catcher;
+
+s7_pointer _s7_error_handler(s7_scheme *s7, s7_pointer args)
+{
+   /* log_error("_s7_error_handler\n"); */
+    /* log_info("err: %s", TO_STR(args)); */
 
     if (strstr(s7_string(s7_car(args)), "unexpected close paren:") != NULL) {
         if (debug)
@@ -36,7 +109,7 @@ s7_pointer _s7_error_handler(s7_scheme *sc, s7_pointer args)
         /*          s7_current_error_port(s7)); */
         /* fprintf(stdout, "[end error context]" CRESET "\n"); */
         /* exit(EXIT_FAILURE); */
-        return s7_f(s7);
+        return s7_t(s7);
     } else {
         //TODO: write to error port
         fprintf(stdout, RED "Error:" CRESET " %s\n",
@@ -48,8 +121,9 @@ s7_pointer _s7_error_handler(s7_scheme *sc, s7_pointer args)
             "(format () \"~{~A ~}~%\" e)) ";
         s7_eval_c_string(s7, sexp);
         s7_write(s7,
-                 s7_make_string(s7, s7_car(args)),
+                 /* s7_make_string(s7, s7_car(args)), */
                  // s7_string(s7_car(args)),
+                 TO_STR(s7_car(args)),
                  s7_current_error_port(s7));
         fprintf(stdout, "[end error context]" CRESET "\n");
 
@@ -73,7 +147,7 @@ s7_pointer _s7_error_handler(s7_scheme *sc, s7_pointer args)
     }
 }
 
-s7_pointer _s7_read_error_handler(s7_scheme *sc, s7_pointer args)
+s7_pointer _s7_read_error_handler(s7_scheme *s7, s7_pointer args)
 {
     fprintf(stderr, RED "READ ERROR:" CRESET " %s\n",
             s7_string(s7_car(args)));
@@ -81,9 +155,13 @@ s7_pointer _s7_read_error_handler(s7_scheme *sc, s7_pointer args)
     return(s7_f(s7));
 }
 
-void init_error_handling(void)
+void init_error_handlers(void)
 {
-    s7_define_function(s7, "error-handler",
+    s7_read_thunk_catcher = s7_make_function(s7, "s7-read-thunk-catcher",
+                                             _s7_read_thunk_catcher,
+                                             2, 0, false, "");
+
+   s7_define_function(s7, "error-handler",
                        _s7_error_handler, 1, 0, false,
                        "our error handler");
 
@@ -99,11 +177,13 @@ void init_error_handling(void)
                        _s7_read_error_handler, 1, 0, false,
                        "our read error handler");
 
-    s7_eval_c_string(s7, "(set! (hook-functions *read-error-hook*) \n\
-                            (list (lambda (hook) \n\
-                                    (read-error-handler \n\
-                                      (apply format #f (hook 'data))) \n \
-                                    (set! (hook 'result) 'read-error))))");
+    /* s7_eval_c_string(s7, "(set! (hook-functions *read-error-hook*) \n\ */
+    /*                         (list (lambda (hook) \n\ */
+    /*                                 (read-error-handler \n\ */
+    /*                                   (apply format #f (hook 'data))) \n \ */
+    /*                                 (set! (hook 'result) 'READ-error))))"); */
+
+
 }
 
 void error_config(void)
@@ -270,12 +350,16 @@ s7_pointer fix_baddot(UT_string *dunefile_name)
     /* now s7_read using string port */
 
     /* first config err handling. clears out prev. error */
+    close_error_config();
     error_config();
+    /* init_error_handling(); */
 
     /* stanza accumulator */
     s7_pointer stanzas = s7_list(s7, 0);
 
     s7_pointer sport = s7_open_input_string(s7, dunestring);
+    /* s7_int baddot_gc_loc = s7_gc_protect(s7, sport); */
+
     errmsg = s7_get_output_string(s7, s7_current_error_port(s7));
     if (!s7_is_input_port(s7, sport)) {
         errmsg = s7_get_output_string(s7, s7_current_error_port(s7));
@@ -310,6 +394,9 @@ s7_pointer fix_baddot(UT_string *dunefile_name)
         }
     }
     s7_close_input_port(s7, sport);
+    /* s7_gc_unprotect_at(s7, baddot_gc_loc); */
+    close_error_config();
+
     /* leave error config as-is */
     free(dunestring);
     return stanzas;

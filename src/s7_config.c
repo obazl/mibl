@@ -839,8 +839,9 @@ EXPORT s7_scheme *s7_configure(void)
     s7 = s7_init();
 
     /* trap error messages */
-    init_error_handling();
+    /* close_error_config(); */
     error_config();
+    init_error_handlers();
 
     if (bws_root) {
         s7_define_variable(s7, "ws-root", s7_make_string(s7, bws_root));
