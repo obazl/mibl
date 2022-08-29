@@ -159,6 +159,7 @@
                ((:ocamlc) :ocamlc-opts)
                ((:ocamlopt) :ocamlopt-opts)
                ((:archive) :archive-opts)
+               ((:link) :link-opts)
                ((:exec) :exec-opts)
                (else :unknown-opts))
             ;; (cons (if (eq? kind :compile) :opts

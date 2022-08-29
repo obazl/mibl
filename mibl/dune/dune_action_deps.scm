@@ -127,7 +127,7 @@
     (format #t "new-expanded-deps : ~A\n" expanded-deps)
     ;; find it and resolve pkg path
     ;; if not found mark it as :dynamic
-    (expand-deps* ws (cdr deplist)
+    (expand-args* ws (cdr deplist)
                     paths
                     (if (null? expanded-deps)
                         (list (list
@@ -184,10 +184,10 @@
          (_ (format #t "~A: ~A~%" (yellow "tag is kw?") (keyword? tag)))
          ;; (lbl (string->keyword (format #f "~A"
          ;;                               (car deplist))))
-         (tagged (expand-deps* ws (cdr deplist)
+         (tagged (expand-args* ws (cdr deplist)
                               paths ;;stanza-alist
                               '()))
-         ;; expand-deps* inserts tag derived from literal; remove it
+         ;; expand-args* inserts tag derived from literal; remove it
          (tagged (cdar tagged))
          )
     (format #t "~A: ~A (kw? ~A)~%" (yellow "littag") tag (keyword? tag))
@@ -242,7 +242,7 @@
          ;;          #f)
          ;;      #f))
          ;; (tagged ;(if tagged tagged
-         ;;             (expand-deps* ws (cdr deplist)
+         ;;             (expand-args* ws (cdr deplist)
          ;;                          paths ;;stanza-alist
          ;;                          '()))
          ) ;;expanded-deps)))
@@ -453,7 +453,7 @@
 (define (handle-include-dep deplist)
   (format #t "handle-include-dep: ~A\n" deplist))
 
-;; called by expanders::expand-deps*
+;; called by expanders::expand-args*
 (define dune-dep-handlers
   `((file ,handle-file-dep)
     (alias ,handle-alias-dep)

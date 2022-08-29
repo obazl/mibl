@@ -97,7 +97,7 @@
     key))
 
 (define (update-pkg-files-with-struct! pkg tgt)
-  (format #t "~A: ~A~%" (yellow "update-pkg-files-with-struct!") tgt)
+  (format #t "~A: ~A~%" (ublue "update-pkg-files-with-struct!") tgt)
   ;; if we already have corresponding sig, move to :modules
   ;; else update :structures
   (let* ((m-assoc (filename->module-assoc tgt))
@@ -108,7 +108,7 @@
          (sigs (assoc :signatures pkg))
          (_ (format #t "~A: ~A~%" (cyan "sigs") sigs))
          ;; removes matching sig from :signatures
-         (matching-sig (-find-module-in-singletons!? m-name tgt sigs))
+         (matching-sig (find-module-in-rsrc-list!? m-name tgt sigs))
          (_ (format #t "~A: ~A~%" (cyan "found sig?") matching-sig))
          )
     (if matching-sig
@@ -129,27 +129,31 @@
                                    ;; (list pr)
                                    ;;(filename->module-assoc tgt)
                                    )))))
+
         ;; else no sig, so update :structures
-        (let* ((s-assoc (assoc-in '(:structures :dynamic) pkg))
-               ;; (structures (if s-assoc (append (cadr s-assoc) '(Foo . bar)) '()))
+        (let* ((_ (format #t "~A: ~A~%" (yellow "updating :structures")
+                          m-name))
+               (dynamics (assoc-in '(:structures :dynamic) pkg))
                )
-          (format #t "~A: ~A~%" (bgyellow "UPDATING (:structures :dynamic) : ") s-assoc)
+          (format #t "~A: ~A~%" (white "(:structures :dynamic) : ") dynamics)
           (alist-update-in! pkg `(:structures :dynamic)
-                            (lambda (old)
-                              (format #t "structures OLD: ~A\n" old)
-                              (format #t "adding: ~A\n" pr)
-                              (if (null? old)
-                                  (list
-                                   (cons m-name (cdr pr)))
-                                  ;; (list m-name (cdr pr))
-                                  ;;(filename->module-assoc tgt)
-                                  (append
-                                   old
-                                   (list (cons m-name (cdr pr))) ;;)))
-                                   ;; (list (cons m-name (cdr pr)))
-                                   ;; structures
-                                   ;;(filename->module-assoc tgt)
-                                   )))))))
+                                (lambda (old)
+                                  (format #t "structures OLD: ~A\n" old)
+                                  (format #t "adding: ~A\n" pr)
+                                  (if (null? old)
+                                      (list
+                                       (cons m-name (cdr pr)))
+                                      ;; (list m-name (cdr pr))
+                                      ;;(filename->module-assoc tgt)
+                                      (append
+                                       old
+                                       (list (cons m-name (cdr pr))) ;;)))
+                                       ;; (list (cons m-name (cdr pr)))
+                                       ;; structures
+                                       ;;(filename->module-assoc tgt)
+                                       ))))
+          )))
+  (format #t "~A: ~A~%" (bgblue "pkg w/updated structs") pkg)
   pkg)
 
 (define (-update-pkg-files-with-sig pkg tgt)
@@ -164,7 +168,7 @@
          (structs (assoc :structures pkg))
          (_ (format #t "~A: ~A~%" (cyan "structs") structs))
          ;; removes matching struct from :structnatures
-         (matching-struct (-find-module-in-singletons!? m-name tgt structs))
+         (matching-struct (find-module-in-rsrc-list!? m-name tgt structs))
          (_ (format #t "~A: ~A~%" (cyan "found struct?") matching-struct))
          )
     (if matching-struct
@@ -217,87 +221,190 @@
          (m-assoc (list (list (normalize-module-name principal-fname)
                               (cons :ml_ (string->symbol (format #f "~A.ml" principal-fname)))
                               (cons :mli_ (string->symbol (format #f "~A.mli" principal-fname)))))))
-         (format #t "~A: ~A~%" (red "updating :modules") m-assoc)
-         ;; (alist-update-in! pkg `(:modules)
-         ;;                   (lambda (old)
-         ;;                     (format #t ":modules OLD: ~A\n" old)
-         ;;                     (format #t "adding: ~A\n" m-assoc)
-         ;;                     (if (null? old)
-         ;;                         m-assoc
-         ;;                         (append
-         ;;                          old m-assoc))))
-    (set-cdr! pkg-modules (append (cdr pkg-modules)
-                                  m-assoc))
-    ))
+    (format #t "~A: ~A~%" (red "updating :modules") m-assoc)
+    (if pkg-modules
+        (set-cdr! pkg-modules (append (cdr pkg-modules) m-assoc))
+        (alist-update-in! pkg `(:modules)
+                          (lambda (old)
+                            (format #t ":modules OLD: ~A\n" old)
+                            (format #t "adding: ~A\n" m-assoc)
+                            (if (null? old)
+                                m-assoc
+                                (append
+                                 old m-assoc)))))))
+        ;; (set! pkg (append pkg (cons :modules m-assoc))))))
+
+(define (-partition-tgts tgts)
+  (format #t "~A: ~A~%" (ublue "-partition-tgts") tgts)
+  (let recur ((tgts tgts)
+              (module-tgts '())
+              (sig-tgts    '())
+              (struct-tgts '())
+              (file-tgts   '()))
+    (if (null? tgts)
+        (values module-tgts sig-tgts struct-tgts file-tgts)
+        (let* ((tgt (car tgts))
+               (principal (principal-name tgt))
+               (ext (filename-extension tgt)))
+          ;; (format #t "~A: ~A~%" (blue "principal") principal)
+          ;; (format #t "~A: ~A (~A)~%" (blue "ext") ext (type-of ext))
+          (if ext
+              (cond
+               ((string=? ext ".mli")
+                (let ((ml (string->symbol
+                           (string-append principal ".ml"))))
+                  (if (member ml struct-tgts)
+                      (recur (cdr tgts)
+                             ;; (cons
+                             ;;  (cons (normalize-module-name principal)
+                             ;;        (list (cons :ml_ ml)
+                             ;;              (cons :mli_ tgt)))
+                             ;;  module-tgts)
+                             (cons principal module-tgts)
+                             sig-tgts
+                             (remove ml struct-tgts) file-tgts)
+                      (recur (cdr tgts)
+                             module-tgts (cons tgt sig-tgts)
+                             struct-tgts file-tgts)
+                      )))
+               ((string=? ext ".ml")
+                (let ((mli (string->symbol
+                            (string-append principal ".mli"))))
+                  (if (member mli sig-tgts)
+                      (recur (cdr tgts)
+                             ;; (cons
+                             ;;  (cons (normalize-module-name principal)
+                             ;;        (list (cons :ml_ tgt)
+                             ;;              (cons :mli_ mli)))
+                             ;;  module-tgts)
+                             (cons principal module-tgts)
+                             sig-tgts struct-tgts file-tgts)
+                      (recur (cdr tgts)
+                             module-tgts sig-tgts
+                             (cons tgt struct-tgts) file-tgts)
+                      )))
+                (else (recur (cdr tgts)
+                                  module-tgts sig-tgts
+                                  struct-tgts (cons tgt file-tgts))))
+              (recur (cdr tgts)
+                                  module-tgts sig-tgts
+                                  struct-tgts (cons tgt file-tgts)))))))
 
 (define update-pkg-files!
   (let ((+documentation+ "INTERNAL. Add tgts to :modules (or :files etc) fld of pkg."))
 
     (lambda (pkg tgts)
-      (format #t "~%~A: ~A~%" (yellow "UPDATE-PKG-FILES!") tgts)
+      (format #t "~%~A: ~A~%" (bgblue "update-pkg-files!") tgts)
       (format #t "  package: ~A\n" pkg)
       ;; (format #t "  targets: ~A\n" tgts)
 
-      ;; get the alists we might update
-      (let* (;;(pkg (car pkg*))
-             (modules-assoc (assoc :modules pkg))
-             ;; (modules (if modules-assoc (cdr modules-assoc) #f))
-             ;; (scripts (if modules-assoc (assoc-val :scripts pkg) #f))
-             ;; (data    (if modules-assoc (assoc-val :data pkg) #f))
-             (files-assoc (if (assoc :files pkg)
-                              (assoc-val :files pkg) #f)))
-        ;; (format #t "~A: ~A~%" (cyan "modules-assoc") modules-assoc)
-        ;; (format #t "~A: ~A~%" (cyan "data") data)
-        ;; (format #t "~A: ~A~%" (cyan "scripts") scripts)
-        ;; (format #t "~A: ~A~%" (cyan "files-assoc") files-assoc)
-        ;; for each tgt, decide its kind: ml/mli, or other
-        ;; then update the pkg fld: :modules, :scripts, :files, :data
-        ;; since we're updating pkg use for-each
-        (for-each
-         (lambda (tgt)
-           ;; (format #t "~A: ~A~%" (red "tgt") tgt)
-           ;; (format #t "~A: ~A~%" (red "tgt str") (format #f "~A" tgt))
-           (if (not (string-index (format #f "~A" tgt)
-                                  (lambda (ch) (equal? ch #\/))))
-               (let ((kind (filename->kind (format #f "~A" tgt))))
-                 ;; (format #t "~A: ~A~%" (red "kind") kind)
-                 (case kind
-                   ((:struct)
-                    ;; (format #t ":struct tgt: ~A\n" tgt)
-                    (update-pkg-files-with-struct! pkg tgt))
+      ;; tgts may contain ml/mli pairs, so
+      ;; step 1: partition tgts into module-tgts, struct-tgts, sig-tgts
+      ;; and other-tgts
+      (let-values (((module-tgts sig-tgts struct-tgts file-tgts)
+                    (-partition-tgts tgts)))
+        (format #t "~A: ~A~%" (blue "module-tgts") module-tgts)
+        (format #t "~A: ~A~%" (blue "sig-tgts")    sig-tgts)
+        (format #t "~A: ~A~%" (blue "struct-tgts") struct-tgts)
+        (format #t "~A: ~A~%" (blue "file-tgts")   file-tgts)
 
-                   ((:sig)
-                    ;;(format #t ":sig tgt: ~A\n" tgt)
-                    (-update-pkg-files-with-sig pkg tgt))
+        (if (not (null? module-tgts))
+            (for-each (lambda (tgt)
+                        (update-pkg-modules-with-module! pkg tgt))
+                        module-tgts))
 
-                   (else
-                    ;; (format #t ":other: ~A\n" tgt)
-                    ;; (format #t "files-assoc: ~A\n" files-assoc)
-                    (alist-update-in! pkg '(:files :dynamic)
-                                      (lambda (old)
-                                        ;; (format #t ":files :dynamic OLD: ~A\n" old)
-                                        ;; (format #t "other tgt: ~A\n" tgt)
-                                        (let ((fa (filename->file-assoc tgt))
-                                              (tgtstr (if (symbol? tgt)
-                                                          (symbol->string tgt)
-                                                          tgt)))
-                                          ;; (format #t "fa: ~A\n" fa)
-                                          ;; (format #t "fa2: ~A\n"old)
-                                          (if (null? old)
-                                              (list tgtstr)
-                                              (append old (list tgtstr))
-                                              ;; (if (pair? fa)
-                                              ;;     (cons fa old)
-                                              ;;     (append fa old))
-                                              )
-                                          )))
-                    )) ;; case
-                 )
-               ;; else '/' found in tgt
-               )) ;; lambda
-         tgts) ;; for-each
-        ;; (format #t "pkg (after): ~A\n" pkg)
-        pkg))))
+        (if (not (null? sig-tgts))
+            (for-each (lambda (tgt)
+                        (update-pkg-files-with-sig! pkg tgt))
+                      sig-tgts))
+
+        (if (not (null? struct-tgts))
+            (for-each (lambda (tgt)
+                        (update-pkg-files-with-struct! pkg tgt))
+                      struct-tgts))
+
+        (if (not (null? file-tgts))
+            (for-each (lambda (tgt)
+                        (alist-update-in! pkg '(:files :dynamic)
+                                          (lambda (old)
+                                            ;; (format #t ":files :dynamic OLD: ~A\n" old)
+                                            ;; (format #t "other tgt: ~A\n" tgt)
+                                            (let ((fa (filename->file-assoc tgt))
+                                                  (tgtstr (if (symbol? tgt)
+                                                              (symbol->string tgt)
+                                                              tgt)))
+                                              ;; (format #t "fa: ~A\n" fa)
+                                              ;; (format #t "fa2: ~A\n"old)
+                                              (if (null? old)
+                                                  (list tgtstr)
+                                                  (append old (list tgtstr))
+                                                  ;; (if (pair? fa)
+                                                  ;;     (cons fa old)
+                                                  ;;     (append fa old))
+                                                  )
+                                              ))))
+                      file-tgts))))))
+
+      ;; ;; get the alists we might update
+      ;; (let* (;;(pkg (car pkg*))
+      ;;        (modules-assoc (assoc :modules pkg))
+      ;;        ;; (modules (if modules-assoc (cdr modules-assoc) #f))
+      ;;        ;; (scripts (if modules-assoc (assoc-val :scripts pkg) #f))
+      ;;        ;; (data    (if modules-assoc (assoc-val :data pkg) #f))
+      ;;        (files-assoc (if (assoc :files pkg)
+      ;;                         (assoc-val :files pkg) #f)))
+      ;;   ;; (format #t "~A: ~A~%" (cyan "modules-assoc") modules-assoc)
+      ;;   ;; (format #t "~A: ~A~%" (cyan "data") data)
+      ;;   ;; (format #t "~A: ~A~%" (cyan "scripts") scripts)
+      ;;   ;; (format #t "~A: ~A~%" (cyan "files-assoc") files-assoc)
+      ;;   ;; for each tgt, decide its kind: ml/mli, or other
+      ;;   ;; then update the pkg fld: :modules, :scripts, :files, :data
+      ;;   ;; since we're updating pkg use for-each
+      ;;   (for-each
+      ;;    (lambda (tgt)
+      ;;      ;; (format #t "~A: ~A~%" (red "tgt") tgt)
+      ;;      ;; (format #t "~A: ~A~%" (red "tgt str") (format #f "~A" tgt))
+      ;;      (if (not (string-index (format #f "~A" tgt)
+      ;;                             (lambda (ch) (equal? ch #\/))))
+      ;;          (let ((kind (filename->kind (format #f "~A" tgt))))
+      ;;            ;; (format #t "~A: ~A~%" (red "kind") kind)
+      ;;            (case kind
+      ;;              ((:struct)
+      ;;               ;; (format #t ":struct tgt: ~A\n" tgt)
+      ;;               (update-pkg-files-with-struct! pkg tgt))
+
+      ;;              ((:sig)
+      ;;               ;;(format #t ":sig tgt: ~A\n" tgt)
+      ;;               (-update-pkg-files-with-sig pkg tgt))
+
+      ;;              (else
+      ;;               ;; (format #t ":other: ~A\n" tgt)
+      ;;               ;; (format #t "files-assoc: ~A\n" files-assoc)
+      ;;               (alist-update-in! pkg '(:files :dynamic)
+      ;;                                 (lambda (old)
+      ;;                                   ;; (format #t ":files :dynamic OLD: ~A\n" old)
+      ;;                                   ;; (format #t "other tgt: ~A\n" tgt)
+      ;;                                   (let ((fa (filename->file-assoc tgt))
+      ;;                                         (tgtstr (if (symbol? tgt)
+      ;;                                                     (symbol->string tgt)
+      ;;                                                     tgt)))
+      ;;                                     ;; (format #t "fa: ~A\n" fa)
+      ;;                                     ;; (format #t "fa2: ~A\n"old)
+      ;;                                     (if (null? old)
+      ;;                                         (list tgtstr)
+      ;;                                         (append old (list tgtstr))
+      ;;                                         ;; (if (pair? fa)
+      ;;                                         ;;     (cons fa old)
+      ;;                                         ;;     (append fa old))
+      ;;                                         )
+      ;;                                     )))
+      ;;               )) ;; case
+      ;;            )
+      ;;          ;; else '/' found in tgt
+      ;;          )) ;; lambda
+      ;;    tgts) ;; for-each
+      ;;   ;; (format #t "pkg (after): ~A\n" pkg)
+      ;;   pkg))))
 
 ;; %{bin:foo} etc. Dune uses those prefixes to reference installation
 ;; locations. Since we do not do any installation, they're just labels
@@ -312,31 +419,49 @@
   (let* ((exports (car (assoc-val :exports
                                   (assoc-val ws -mibl-ws-table))))
          (key (case tag
-                ((:bin) (symbol (format #f "bin:~A" tgt)))
+                ((:exe) (symbol (format #f "bin:~A.exe" tgt)))
+                ((:bin) (symbol (format #f "bin:~A.exe" tgt)))
                 ((:lib) (symbol (format #f "lib:~A" tgt)))
                 ((:libexec) (symbol (format #f "libexec:~A" tgt)))
                 ((:test) (string->keyword (format #f "~A.exe" tgt)))
                 ((#f) (string->symbol (format #f "~A" nm)))
                 (else tag)))
+         (exe (case tag
+                ((:bin :exe) #t)
+                (else #f)))
          (tag-assoc (case tag
-                ((:bin :lib :libexec :test) (list (cons tag #t)))
+                ((:bin :exe :lib :libexec :test) (list (cons tag #t)))
                 (else '())))
          (spec `(,@tag-assoc
                  ,(cons :pkg pkg-path)
-                 ,(cons :tgt (format #f "~A" tgt)))))
+                 ,(cons :tgt (if exe
+                                 (format #f "~A.exe" tgt)
+                                 (format #f "~A" tgt))))))
     (format #t "exports tbl: ~A\n" exports)
 
     (format #t "adding ~A => ~A to exports tbl\n" key spec)
-    (hash-table-set! exports
-                     (if (keyword? key) key
-                         (symbol->keyword key))
-                     spec)
+    (if exe
+        (begin
+          (hash-table-set! exports tgt spec)
+          (hash-table-set! exports (symbol->keyword tgt) spec)
+          (hash-table-set! exports
+                           (if (keyword? key) key
+                               (symbol->keyword key))
+                           spec)
+          )
+        (begin
+          (hash-table-set! exports
+                           (if (keyword? key) key
+                               (symbol->keyword key))
+                           spec)))
     (if (eq? tag :test)
         (let ((key (string->symbol
                     (format #f ":exe~A" key))))
           (hash-table-set! exports key
                            spec)))
-    (format #t "~A: ~A\n" (uwhite "updated exports tbl") exports)))
+    (format #t "~A: ~A\n" (uwhite "updated exports tbl") exports)
+    ;; (error 'STOP "STOP exports")
+    ))
 
 (define (update-exports-table-with-targets! ws targets pkg-path)
   (format #t "~A: ~A~%" (magenta "update-exports-table-with-targets!") targets)

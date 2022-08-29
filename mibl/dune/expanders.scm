@@ -91,56 +91,68 @@
 
 ;; may update deps
 ;; case:
+;; %{deps} => ::deps
 ;; (%{dep:rejections.sh} => (:deps (:rejections.sh (:pkg...)(:tgt...)))
 ;;  %{bin:tezos-protocol-compiler} => (:deps (::bin tezos...))
 ;;  %{lib:tezos-protocol-demo-noops:raw/TEZOS_PROTOCOL})
 ;;      =>(:deps (::lib tezos...))
 (define (-expand-pct-arg!? arg kind pkg deps)
-  (format #t "~A: ~A (~A)~%" (ublue "-expand-pct-arg!?")
+  (format #t "~A: ~A (type: ~A)~%" (ublue "-expand-pct-arg!?")
           arg (type-of arg))
   (format #t "deps: ~A~%" deps)
 
-  (let-values (((sym pfx sfx) (parse-pct-var arg)))
-    (format #t "~A: ~A, ~A: ~A~%"
-            (uwhite "arg pfx") pfx (uwhite "sfx") sfx)
+  (case arg
+    ((%{deps})
+      ;; special case
+     ::deps)
 
-    (if pfx
-        (if (equal? :dep pfx)
-            (begin
-              (format #t "~A: ~A~%" (uwhite ":dep pfx") arg)
-              (let ((x (-expand-dep-pct-var!? pfx sfx deps pkg)))
-                (format #t "~A: ~A~%" (uwhite "dep pctarg") x)
-                ;; (set-cdr! deps
-                ;;           (append
-                ;;            (cdr deps)))
-                x))
-            (begin
-              ;; prefixed pctvars will never be already in :deps?
-              ;; e.g. lib:foo, bin:foo, etc.
-              (format #t "~A: ~A~%" (ured "deps before") deps)
-              (set-cdr! deps
-                        (append
-                         (list (list (symbol->keyword sym)
-                                     ;;(symbol->keyword pfx)
-                                     ::import))
-                         (cdr deps)))
-              (format #t "~A: ~A~%" (ured "deps after") deps)
-              (symbol->keyword sym)))
-        (let* ((search-key (pct-var->keyword arg))
-               (_ (format #t "~A: ~A~%" (yellow "search-key") search-key))
-               (match
-                ;; find arg in deps
-                (find-if (lambda (dep)
-                           (format #t "~A: ~A~%" (yellow "checking dep") dep)
-                           ;; if dep == (::pkgs ...) ?
-                           (equal? (car dep) search-key))
-                         (cdr deps))))
-          (format #t "~A: ~A~%" (yellow "match?") match)
-          (if match
-              search-key
-              ;; else not in :deps
-              (error 'fixme "arg not in deps")
-              )))))
+    (else
+     (let-values (((sym pfx sfx) (parse-pct-var arg)))
+       (format #t "~A: ~A, ~A: ~A~%"
+               (uwhite "arg pfx") pfx (uwhite "sfx") sfx)
+
+       (if pfx
+           (if (equal? :dep pfx)
+               (begin
+                 (format #t "~A: ~A~%" (uwhite ":dep pfx") arg)
+                 (let ((x (-expand-dep-pct-var!? pfx sfx deps pkg)))
+                   (format #t "~A: ~A~%" (uwhite "dep pctarg") x)
+                   ;; (set-cdr! deps
+                   ;;           (append
+                   ;;            (cdr deps)))
+                   x))
+               (begin
+                 ;; prefixed pctvars will never be already in :deps?
+                 ;; e.g. lib:foo, bin:foo, etc.
+                 (format #t "~A: ~A~%" (ured "deps before") deps)
+                 (set-cdr! deps
+                           (append
+                            (list (list (symbol->keyword sym)
+                                        ;;(symbol->keyword pfx)
+                                        ::import))
+                            (cdr deps)))
+                 (format #t "~A: ~A~%" (ured "deps after") deps)
+                 (symbol->keyword sym)))
+           ;; else no pfx
+           (let* ((search-key (pct-var->keyword arg))
+                  (_ (format #t "~A: ~A~%" (yellow "search-key") search-key))
+
+                  ;; special case: %{deps}
+
+                  (match
+                   ;; find arg in deps
+                   (find-if (lambda (dep)
+                              (format #t "~A: ~A~%" (yellow "checking dep") dep)
+                              ;; if dep == (::pkgs ...) ?
+                              (equal? (car dep) search-key))
+                            (cdr deps))))
+             (format #t "~A: ~A~%" (yellow "match?") match)
+             (if match
+                 search-key
+                 ;; else not in :deps
+                 (error 'fixme
+                        (format #f "arg not in deps: ~A" search-key))
+                 )))))))
 
 ;; may update deps
 (define (-expand-pct-tool!? arg kind pkg-path deps)
@@ -658,33 +670,34 @@
       result)))
 
 (define expand-targets
-  (lambda (ws paths targets deps)
+  (lambda (ws pkg targets deps)
     (format #t "~A: ~A\n" (blue "expand-targets") targets)
-    (let ((xtargets (expand-deps* ws targets paths '())))
+    (let ((xtargets (expand-args* ws targets pkg '())))
       (format #t "Expanded targets ~A\n" xtargets)
       xtargets)))
 
-(define (expand-deps* ws deplist pkg expanded-deps)
-  (format #t "~A: ~A\n" (ublue "expand-deps*") deplist)
+;; expands items, e.g. pct-vars like %{deps}
+(define (expand-args* ws arglist pkg expanded-deps)
+  (format #t "~A: ~A\n" (ublue "expand-args*") arglist)
   (format #t "pkg: ~A\n" pkg)
   (format #t "expanded-deps: ~A\n" expanded-deps)
   ;; (let ((pkg-path (car (assoc-val :pkg-path pkg)))
   ;;       (ws-root (car (assoc-val :ws-path pkg))))
-  (if (null? deplist)
+  (if (null? arglist)
       (begin
-        ;; (format #t "finished deplist: ~A\n" expanded-deps)
+        ;; (format #t "finished arglist: ~A\n" expanded-deps)
         expanded-deps)
-      (if (pair? (car deplist))
-          (expand-deps* ws (car deplist)
+      (if (pair? (car arglist))
+          (expand-args* ws (car arglist)
                           pkg ;; stanza-alist
-                          (expand-deps* ws
-                           (cdr deplist) pkg expanded-deps))
+                          (expand-args* ws
+                           (cdr arglist) pkg expanded-deps))
           ;; car is atom
-          (let* ((kw (car deplist)))
+          (let* ((kw (car arglist)))
             (if-let ((depfn (assoc-val kw dune-dep-handlers)))
                     (let ((res (apply (car depfn)
                                       (list ws pkg
-                                            deplist))))
+                                            arglist))))
                       ;; (format #t "depfn res: ~A\n" res)
                       ;; (format #t "expanded-deps: ~A\n" expanded-deps)
                       ;; we're done, depfn consumed cdr
@@ -692,19 +705,19 @@
                       (append (if (pair? (car res)) res (list res))
                               expanded-deps))
 
-                    ;; else car of deplist not a keyword
+                    ;; else car of arglist not a keyword
                     ;; must be either a ':' tagged dep or a filename literal
                     ;; or, if its a cmd arg, may be %{foo}
                     ;; or (package ...) or etc.
 
                     ;; convert to string and dispatch
-                    (let ((dep (format #f "~A" (car deplist))))
+                    (let ((dep (format #f "~A" (car arglist))))
                       (cond
                        ((char=? #\: (string-ref dep 0))
                           (begin
-                            ;; (format #t "TAGGED DEP : ~A\n" deplist)
+                            ;; (format #t "TAGGED DEP : ~A\n" arglist)
                             (handle-tagged-dep
-                             ws deplist pkg expanded-deps)))
+                             ws arglist pkg expanded-deps)))
 
                        ;; ((char=? #\% (string-ref dep 0))
                        ;;  )
@@ -714,14 +727,13 @@
                           ;; return (:static <path> <fname>)
                           ;; or (:dynamic <path> <fname>)
                           (begin
-                            ;; (format #t "LIT DEP : ~A\n" deplist)
+                            ;; (format #t "LIT DEP : ~A\n" arglist)
                             (handle-filename-literal-dep
-                             ws dep deplist pkg
+                             ws dep arglist pkg
                              ;; stanza-alist
                              expanded-deps))))))
             ))))
 
-;; expand-deps*: deps -> file-deps, vars, env-vars
 (define (expand-rule-deps ws paths stanza-alist)
   ;; updates stanza-alist
   (format #t "~A: ~A\n" (blue "expand-rule-deps") stanza-alist)
@@ -729,7 +741,7 @@
   (if-let ((deps-assoc (assoc 'deps stanza-alist)))
           (let* ((deplist (assoc-val 'deps stanza-alist))
                  (_ (format #t "main deplist: ~A\n" deplist))
-                 (result (expand-deps* ws deplist paths '())))
+                 (result (expand-args* ws deplist paths '())))
             (format #t "DEPLIST EXPANDED: ~A\n" result)
             (cons :deps result))
           #f))

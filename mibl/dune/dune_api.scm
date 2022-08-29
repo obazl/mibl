@@ -5,7 +5,7 @@
 ;; apodoses in 'select' clauses are not pkg-level build targets
 ;; remove them from :structures, :signatures
 (define (-mark-apodoses! pkg)
-  (format #t "~A: ~A\n" (ublue "-mark-apodoses!") pkg)
+  (format #t "~A: ~A\n" (ublue "-mark-apodoses!") (assoc-val :pkg-path pkg))
   (if-let ((conditionals (assoc-in '(:dune :library :conditionals) pkg)))
          ;; conditionals val: list of alists
           (let* ((apodoses (apply append
@@ -40,7 +40,7 @@
           ))
 
 (define (-trim-pkg! pkg)
-  (format #t "~A: ~A~%" (blue "-trim-pkg!") pkg)
+  (format #t "~A: ~A~%" (blue "-trim-pkg!") (assoc-val :pkg-path pkg))
 
   ;; remove null lists from :dune alist
   (let ((dune (assoc :dune pkg)))
@@ -95,6 +95,53 @@
           (if (null? (cdr structs))
                 (dissoc! '(:structures) pkg))))
 
+(define (dune-env->mibl ws pkg stanza)
+  (format #t "~A: ~A~%" (ublue "dune-env->mibl") stanza)
+  ;; (env
+  ;;  (<profile1> <settings1>)
+  ;;  (<profile2> <settings2>)
+  ;;  ...
+  ;;  (<profilen> <settingsn>))
+  (let* ((stanza-alist (cdr stanza))
+         (res
+          (map
+           (lambda (profile)
+             (format #t "~A: ~A~%" (uwhite "env profile") profile)
+             (cons (symbol->keyword (car profile))
+                   (map (lambda (fld-assoc)
+                          (case (car fld-assoc)
+                            ;; ((name) (cons :privname (cadr fld-assoc)))
+                            ;; ((public_name) (cons :pubname (cadr fld-assoc)))
+
+                            ((flags) (normalize-stanza-fld-flags fld-assoc :compile))
+                            ((ocamlc_flags) (normalize-stanza-fld-flags fld-assoc :ocamlc))
+                            ((ocamlopt_flags) (normalize-stanza-fld-flags fld-assoc :ocamlopt))
+                            ((link_flags) (normalize-stanza-fld-flags fld-assoc :link))
+
+                            ;; ((c_flags) (normalize-stanza-fld-flags fld-assoc :archive))
+                            ;; ((cxx_flags) (normalize-stanza-fld-flags fld-assoc :archive))
+
+                            ;; ((env-vars) (values))
+                            ;; ((menhir_flags) (values))
+
+                            ;; ((js_of_ocaml) (values))
+
+                            ;; ((binaries) (values))
+                            ;; ((inline_tests) (values))
+                            ;; ((odoc) (values))
+                            ;; ((coq) (values))
+                            ;; ((formatting) (values))
+
+                            (else
+                             (error 'fixme (format #f "unhandled env fld: ~A~%" fld-assoc)))
+                            ) ;; end case
+                          ) ;; end lambda
+                        (cdr profile)) ;; end map
+                   )) ;; end lamda
+           stanza-alist)))
+    (list (cons :env
+                res))))
+
 (define (dune-stanza->mibl ws pkg stanza nstanzas)
   (format #t "~A: ~A\n" (blue "dune-stanza->mibl") stanza)
   (format #t "pkg: ~A\n" pkg)
@@ -140,18 +187,18 @@
                         (cdr nstanzas)
                         (dune-executables->mibl
                          ws pkg :executable stanza))))
-             ;; (normalize-stanza-executables
-             ;;  :executables pkg-path ocaml-srcs stanza))
+
+            ((tests)
+             (set-cdr! nstanzas
+                       (append
+                        (cdr nstanzas)
+                        (dune-executables->mibl ws pkg :test stanza))))
 
             ((test)
              (set-cdr! nstanzas
                        (append
                         (cdr nstanzas)
                         (dune-executable->mibl ws pkg :test stanza))))
-                        ;; (dune-test->mibl ws pkg stanza))))
-            ;; (normalize-stanza-test pkg-path ocaml-srcs stanza))
-
-            ;; ((tests) (normalize-stanza-tests pkg-path ocaml-srcs stanza))
 
             ((alias)
              (set-cdr! nstanzas
@@ -177,12 +224,18 @@
                         (cdr nstanzas)
                         (normalize-stanza-lexyacc :ocamlyacc ws pkg stanza))))
 
+            ((env)
+             (set-cdr! nstanzas
+                       (append
+                        (cdr nstanzas)
+                        (dune-env->mibl ws pkg stanza))))
+
             ;; ((:dune-project) stanza)
 
               (else
                ;; (format #t "~A: ~A\n" (red "unhandled") stanza)
                (error 'fixme (format #f "~A: ~A~%" (red "unhandled stanza") stanza))))))
-    (format #t "~A: ~A\n" (bgred "normalized pkg") pkg)
+    (format #t "~A: ~A\n" (uwhite "normalized pkg") pkg)
 
     (-mark-apodoses! pkg)
 

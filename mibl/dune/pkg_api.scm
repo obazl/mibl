@@ -49,15 +49,16 @@
         #<undefined>)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; may remove item from singletons fld (:structures or :signatures)
-(define (-find-module-in-singletons!? m-name tgt sigs)
-  (format #t "~A: ~A~%" (blue "-find-module-in-singletons!?") m-name)
+;; rsrc-list: :signatures or :structures
+;; may remove item from list
+(define (find-module-in-rsrc-list!? m-name tgt rsrc-list)
+  (format #t "~A: ~A~%" (blue "find-module-in-rsrc-list!?") m-name)
   (format #t "~A: ~A~%" (white "tgt") tgt)
-  (format #t "~A: ~A~%" (white "sigs") sigs)
-  (if sigs
-      (let* ((sig-alists (cdr sigs))
-             (statics (assoc :static sig-alists))
-             (dynamics (assoc :dynamic sig-alists))
+  (format #t "~A: ~A~%" (white "singletons") rsrc-list)
+  (if rsrc-list
+      (let* ((rsrc-alists (cdr rsrc-list))
+             (statics (assoc :static rsrc-alists))
+             (dynamics (assoc :dynamic rsrc-alists))
              (fileset (if statics statics
                           (if dynamics dynamics
                               '()))))

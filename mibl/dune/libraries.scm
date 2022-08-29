@@ -103,6 +103,7 @@
 
          (lib-flds (-map-lib-flds->mibl stanza-alist))
          (_ (format #t "lib-flds (mibl): ~A~%" lib-flds))
+
          (lib-flds (if wrapped?
                        (append (list (cons :ns
                                            (if-let ((pn
@@ -213,15 +214,41 @@
                                   ;; remove empties e.g. (:deps)
                                   (not (null? (cdr fld))))
                                 mibl-stanza))
+
+           (kind (if wrapped?
+                     (if *wrapped-libs-to-ns-archives*
+                         :ns-archive :ns-library)
+                     (if *unwrapped-libs-to-archives*
+                         :archive :library)))
            )
 
-      ;; namespaced?
-      (let ((res (list (cons (if wrapped?
-                                 (if *wrapped-libs-to-ns-archives*
-                                     :ns-archive :ns-library)
-                                 (if *unwrapped-libs-to-archives*
-                                     :archive :library))
-                             mibl-stanza))))
+      ;; SPECIAL CASE: if there is only one submodule and it has the
+      ;; same name as the ns, then convert to non-namespaced :library
+      ;; (ocaml_library) and remove (:ns . <nsname>) assoc.
+      (let ((res
+             (if-let ((ns (assoc-val :ns mibl-stanza)))
+                     (begin
+                       (format #t "~A: ~A~%" (uwhite "ns") ns)
+                       (let ((submods (assoc-in '(:manifest :modules) mibl-stanza)))
+                         (if (= 1 (length (cdr submods)))
+                             (let ((submod (cadr submods))
+                                   (ns-mod (normalize-module-name ns)))
+                               (format #t "~A: ~A~%" (bgred "1 submod") submod)
+                               (format #t "~A: ~A~%" (uwhite "ns mod") ns-mod)
+                               (if (equal? ns-mod submod)
+                                   (begin
+                                     (format #t "~A: ~A~%" (bgred "converting to lib") mibl-stanza)
+                                     (list (cons :library
+                                                 (dissoc '(:ns) mibl-stanza))))
+                                   ;; else 1 submodule w/diff name from ns name
+                                   (list (cons kind mibl-stanza))))
+                             ;; else multiple submodules
+                             (list (cons kind mibl-stanza)))
+                         ))
+                     ;; else no nos
+                     (list (cons kind mibl-stanza)))))
+        (format #t "~A: ~A~%" (uwhite "lib result") res)
+        ;; (error 'STOP "STOP libs")
         res)
       )))
 

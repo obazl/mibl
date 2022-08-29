@@ -116,7 +116,11 @@
              ;; add targets to pkg fields
              (pkg (if (null? targets)
                       pkg
-                      (set! pkg (update-pkg-files! pkg targets))))
+                      (begin
+                        ;; (set! pkg
+                              (update-pkg-files! pkg targets)
+                              ;; )
+                        pkg)))
              (_ (format #t "~A: ~A\n" (yellow "updated pkg") pkg))
 
              ;; normalize
