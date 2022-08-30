@@ -41,7 +41,7 @@ UT_string *dunefile_name;
 
 s7_int dune_gc_loc = -1;
 
-s7_pointer dunefile_port;
+s7_pointer g_dunefile_port;
 
 void s7_show_stack(s7_scheme *sc);
 
@@ -49,7 +49,7 @@ void s7_show_stack(s7_scheme *sc);
 /* s7 defined in s7_config.c */
 LOCAL s7_pointer _s7_read_thunk(s7_scheme *s7, s7_pointer args) {
     /* printf("_s7_read_thunk\n"); */
-    return s7_read(s7, dunefile_port);
+    return s7_read(s7, g_dunefile_port);
 }
 
 LOCAL s7_pointer s7_read_thunk;
@@ -94,7 +94,7 @@ LOCAL s7_pointer _read_dunefile(char *path) //, char *fname)
     utstring_printf(dunefile_name, "%s", path); //, fname);
     /* log_debug("reading dunefile: %s", utstring_body(dunefile_name)); */
 
-    dunefile_port = s7_open_input_file(s7,
+    s7_pointer dunefile_port = s7_open_input_file(s7,
                                          utstring_body(dunefile_name),
                                          "r");
     if (!s7_is_input_port(s7, dunefile_port)) {
@@ -109,6 +109,8 @@ LOCAL s7_pointer _read_dunefile(char *path) //, char *fname)
             log_trace("opened input dunefile_port for %s",
                       utstring_body(dunefile_name));
     }
+    g_dunefile_port = dunefile_port;
+
     s7_read_thunk = s7_make_function(s7, "s7-read-thunk",
                                      _s7_read_thunk,
                                      0, 0, false, "");
@@ -116,7 +118,7 @@ LOCAL s7_pointer _read_dunefile(char *path) //, char *fname)
                                        _read_thunk,
                                        0, 0, false, "");
 
-    dune_gc_loc = s7_gc_protect(s7, dunefile_port);
+    dune_gc_loc = s7_gc_protect(s7, g_dunefile_port);
 
     s7_pointer stanzas = s7_list(s7, 0); // s7_nil(s7));
     /* s7_int stanzas_gc_loc = s7_gc_protect(s7, stanzas); */
@@ -227,8 +229,9 @@ LOCAL s7_pointer _read_dunefile(char *path) //, char *fname)
                                 //FIXME: dirname may mutate its arg
                                 dirname(path), TO_STR(inc_file));
                 s7_pointer nested = _read_dunefile(utstring_body(dunepath));
-                /* s7_pointer nested = _read_dunefile(path, TO_STR(inc_file)); */
+                g_dunefile_port = dunefile_port;
                 log_debug("nested:", TO_STR(nested));
+                log_debug("stanzas:", TO_STR(stanzas));
                 stanzas = s7_append(s7,stanzas, nested);
                 /* alt: (:include "(include dune.inc)" (included ...)) */
             } else {
@@ -250,6 +253,7 @@ LOCAL s7_pointer _read_dunefile(char *path) //, char *fname)
 
     if (debug)
         log_debug("finished reading dunefile");
+    if (trace) log_debug("readed stanzas: %s", TO_STR(stanzas));
 
     return stanzas;
     /* s7_close_input_port(s7, dunefile_port); */

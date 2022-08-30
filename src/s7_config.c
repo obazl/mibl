@@ -771,7 +771,7 @@ LOCAL void s7_config_repl(s7_scheme *sc)
 #else
   log_debug("XXXXXXXXXXXXXXXX");
   s7_pointer old_e, e, val;
-  s7_int gc_loc;
+  /* s7_int gc_loc; */
   bool repl_loaded = false;
   /* try to get lib_s7.so from the repl's directory, and set *libc*.
    *   otherwise repl.scm will try to load libc.scm which will try to build libc_s7.so locally, but that requires s7.h

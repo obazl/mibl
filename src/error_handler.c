@@ -29,7 +29,7 @@ s7_pointer _s7_read_thunk_catcher(s7_scheme *s7, s7_pointer args)
         /* if (strstr(errmsg, "BADDOT") != NULL) { */
         log_info(RED "fixing baddot in %s" CRESET,
                  utstring_body(dunefile_name));
-        s7_close_input_port(s7, dunefile_port);
+        s7_close_input_port(s7, g_dunefile_port);
         s7_gc_unprotect_at(s7, dune_gc_loc);
 
         /* s7_show_stack(s7); */
