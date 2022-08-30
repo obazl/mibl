@@ -104,12 +104,37 @@
                     (string->symbol
                      (format #f "@~A//:~A" dep dep)))))))))
 
+(define (-fixup-conditionals! ws pkg stanza)
+  (format #t "~A: ~A\n" (bgblue "-fixup-conditionals!") stanza)
+  (if-let ((conditionals (if-let ((dc
+                                   (assoc-in '(:deps :conditionals)
+                                             (cdr stanza))))
+                                 dc #f)))
+          (for-each (lambda (conditional)
+                      (format #t "~A: ~A~%" (bgblue "conditional")
+                              conditional)
+                      (for-each (lambda (selector)
+                                  (format #t "~A: ~A~%" (bgblue "selector")
+                                          selector)
+                                  (set-cdr! selector
+                                            (list
+                                             (cdr selector)
+                                             (format #f "@~A//:~A"
+                                                     (car selector) (car selector))))
+                                  (set-car! selector (format #f "//bzl/import:~A" (car selector))))
+                                (assoc-val :selectors conditional)))
+                    (cdr conditionals))
+           ))
+
 ;; FIXME: rename
 (define (-fixup-stanza! ws pkg stanza)
   (format #t "~A: ~A\n" (bgblue "-fixup-stanza!") stanza)
   (let* ((exports (car (assoc-val :exports ws)))
          (stanza-alist (cdr stanza)))
     (format #t "~A: ~A\n" (green "exports tbl") exports)
+
+    (-fixup-conditionals! ws pkg stanza)
+
     (case (car stanza)
 
       ((:executable :test)
