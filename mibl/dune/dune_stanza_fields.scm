@@ -51,7 +51,6 @@
 ;;            (select ledger.ml from
 ;;              (ledgerwallet-tezos -> ledger.available.ml)
 ;;              (-> ledger.none.ml)))
-
 ;;  Why is a .ml file in a 'libraries' field? Why not in the 'modules'
 ;;  field? In this example, srcs include ledger.mli but not ledger.ml,
 ;;  and (modules :standard). Evidently the modules list would not
@@ -60,6 +59,18 @@
 ;;  implicitly, before the 'modules' field is resolved, the
 ;;  dependencies are resolved, resulting in generation (by copy) of
 ;;  ledger.ml, so the Ledger will be included in the 'modules' roster.
+;;  Furthermore, the protasis in (foo -> bar.ml) _is_ a library,
+;;  so (evidently) if it is found ("installed"?) then it is included
+;;  in the libdeps list.
+
+;; js_of_ocaml/compiler/lib/dune:
+ ;; (libraries
+ ;;  ...
+ ;;  (select
+ ;;   source_map_io.ml
+ ;;   from
+ ;;   (yojson -> source_map_io.yojson.ml)
+ ;;   (-> source_map_io.unsupported.ml)))
 
 ;;  As a side-effect, evaluating each (a -> b) clause makes a a
 ;;  dependency; but a fake dependency, whose only purpose is to
@@ -74,7 +85,7 @@
 ;; starlark they will be 'select' for a source attibute.
 
 (define (analyze-select select) ;; directs selects)
-  (format #t "~A: ~A\n" (blue "analyze-select") select)
+  (format #t "~A: ~A\n" (ublue "analyze-select") select)
   ;; e.g. (select foo.ml from (bar -> baz.ml) (-> default.ml))
   ;; see normalize-lib-select in dune_stanzas.scm
   ;; FIXME: extract module dep from select sexp and add to directs
@@ -126,7 +137,7 @@
     (format #t "~A: ~A~%" (uwhite "recurring on") raw)
     (if (null? raw)
         (let* ((seldeps (map (lambda (s)
-                            (format #t "S: ~A\n" s)
+                            (format #t "select: ~A\n" s)
                             (let ((seldeps (assoc-val :deps s))) seldeps))
                           selects))
                (seldeps (fold (lambda (x accum)
@@ -141,9 +152,9 @@
                                                          '(:deps) s)))
                                       conditionals))
                                   selects)))
-          (format #t "SELECT SELDEPS: ~A\n" seldeps)
-          (format #t "SELECT CONDITIONALS: ~A\n" conditionals)
-          (format #t " DIRECTS: ~A\n" directs)
+          (format #t "~A: ~A~%" (blue "select seldeps") seldeps)
+          (format #t "~A: ~A\n" (blue "select conditionals") conditionals)
+          (format #t "~A: ~A\n" (blue "directs") directs)
           ;; (let* ((dirdeps (if (null? directs) '()
           ;;                     (list (cons :fixed directs))))
           ;;        (dirdeps (if (null? seldeps) dirdeps
