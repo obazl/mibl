@@ -28,7 +28,7 @@ def mkhdr_srcs():
         "//bzl/host:linux": linux_srcs(),
         "//conditions:default": ""
     }) + select({
-        "//bzl/compilation_mode:dbg": " $(location debug.c)",
+        ":dbg_mode": " $(location debug.c)",
         "//conditions:default": ""
     })
     return args

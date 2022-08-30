@@ -113,3 +113,8 @@ genrule(
     tools = ["@makeheaders//:makeheaders"],
     visibility = ["//visibility:public"]
 )
+
+config_setting(
+    name = "dbg_mode",
+    values = {"compilation_mode": "dbg"},
+)
