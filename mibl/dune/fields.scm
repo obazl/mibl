@@ -89,7 +89,7 @@
             (set-cdr! structs (dissoc! match (cdr structs))))
           ))
     (format #t "~A: ~A\n" (magenta "pkg (updated)") pkg)
-    ))
+    pkg))
 
 
 ;;FIXME: UPDATE FILE FIELDS (structs or sigs) with conditional targets
