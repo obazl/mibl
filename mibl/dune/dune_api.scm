@@ -36,7 +36,7 @@
                               (set-car! s :_)))
                         (cdr structs-static))
               ))
-          (format #t "~A: ~A~%" (uwhite "no conditionals") "foo")
+          (format #t "~A~%" (uwhite "no conditionals"))
           ))
 
 (define (-trim-pkg! pkg)
@@ -142,9 +142,14 @@
     (list (cons :env
                 res))))
 
+(define (dune-tuareg->mibl ws pkg stanza)
+  (format #t "~A: ~A~%" (ublue "dune-tuareg->mibl") stanza)
+  (list (list :tuareg
+               (list 'FIXME))))
+
 (define (dune-stanza->mibl ws pkg stanza nstanzas)
   (format #t "~A: ~A\n" (blue "dune-stanza->mibl") stanza)
-  (format #t "pkg: ~A\n" pkg)
+  ;; (format #t "pkg: ~A\n" pkg)
   ;; (format #t "  nstanzas: ~A\n" nstanzas)
   (let* ((stanza-alist (cdr stanza))
          ;; (_ (format #t "stanza-alist ~A\n" stanza-alist))
@@ -216,13 +221,20 @@
              (set-cdr! nstanzas
                        (append
                         (cdr nstanzas)
-                        (normalize-stanza-lexyacc :ocamllex ws pkg stanza))))
+                        (lexyacc->mibl :ocamllex ws pkg stanza))))
 
             ((ocamlyacc)
              (set-cdr! nstanzas
                        (append
                         (cdr nstanzas)
-                        (normalize-stanza-lexyacc :ocamlyacc ws pkg stanza))))
+                        (lexyacc->mibl :ocamlyacc
+                                                  ws pkg stanza))))
+
+            ((menhir)
+             (set-cdr! nstanzas
+                       (append
+                        (cdr nstanzas)
+                        (menhir->mibl ws pkg stanza))))
 
             ((env)
              (set-cdr! nstanzas
@@ -232,10 +244,20 @@
 
             ;; ((:dune-project) stanza)
 
-              (else
+            ((tuareg)
+             (set-cdr! nstanzas
+                       (append
+                        (cdr nstanzas)
+                        (dune-tuareg->mibl ws pkg stanza))))
+
+            ((data_only_dirs) (values)) ;;FIXME
+
+            (else
                ;; (format #t "~A: ~A\n" (red "unhandled") stanza)
                (error 'fixme (format #f "~A: ~A~%" (red "unhandled stanza") stanza))))))
-    (format #t "~A: ~A\n" (uwhite "normalized pkg") pkg)
+    ;; (format #t "~A: ~A\n" (uwhite "normalized pkg") pkg)
+    ;; (format #t "~A~%" (bgred "UPKG-MODULES"))
+    ;; (for-each (lambda (m) (format #t "\t~A~%" m)) (assoc-val :modules pkg))
 
     (-mark-apodoses! pkg)
 
@@ -245,13 +267,14 @@
     pkg))
 
 (define (dune-pkg->mibl ws pkg)
-  (format #t "~A: ~A\n" (blue "dune-pkg->mibl") pkg)
-  (format #t "~A: ~A\n" (green "ws") ws)
+  (format #t "~A: ~A\n" (blue "dune-pkg->mibl")
+          (assoc-val :pkg-path pkg))
+  ;; (format #t "~A: ~A\n" (green "ws") ws)
   (let* ((nstanzas (list :dune )) ;; hack to make sure pkg is always an alist
          (pkg+ (append pkg (list nstanzas)))
          ;;(pkg+ pkg)
          )
-    (format #t "pkg+: ~A\n" pkg+) ;; (assoc 'dune pkg+))
+    ;; (format #t "pkg+: ~A\n" pkg+) ;; (assoc 'dune pkg+))
     ;; (set-car! dune-stanzas :dune-stanzas)
     (if (assoc 'dune pkg+)
         (let ((new-pkg
@@ -264,12 +287,12 @@
                     ;; ;; dune-project-stanzas
                     ;; srcfiles ;; s/b '() ??
                     ;; stanza)))
-                    (format #t "NORMALIZED: ~A\n" normed)
+                    ;; (format #t "NORMALIZED: ~A\n" normed)
                     normed))
                 ;; (cdr dune-stanzas))))
                 (assoc-val 'dune pkg+))))
 
-          (format #t "~A: ~A\n" (red "NEW PKG") pkg+)
+          ;; (format #t "~A: ~A\n" (red "NEW PKG") pkg+)
           (let* ((@ws (assoc-val ws -mibl-ws-table))
                  (exports (car (assoc-val :exports @ws))))
             (format #t "~A: ~A~%" (red "exports table") exports))

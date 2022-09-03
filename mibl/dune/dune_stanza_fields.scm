@@ -42,92 +42,6 @@
   ;; (format #t "normalize-stanza-fld-public_name ~A\n" fld)
   (list :public_name fld))
 
-;; SELECT in 'libraries' field of lib stanzas:
-;; alternative deps:
-;; https://dune.readthedocs.io/en/stable/concepts.html#alternative-dependencies
-;; e.g. tezos/src/lib_signer_backends/unix:
-;; (libraries ocplib-endian.bigstring
-;;            ... etc. ...
-;;            (select ledger.ml from
-;;              (ledgerwallet-tezos -> ledger.available.ml)
-;;              (-> ledger.none.ml)))
-;;  Why is a .ml file in a 'libraries' field? Why not in the 'modules'
-;;  field? In this example, srcs include ledger.mli but not ledger.ml,
-;;  and (modules :standard). Evidently the modules list would not
-;;  include Ledger, since it lacks ledger.ml. But the 'libraries'
-;;  field indicates a dependency on _some_ ledger.ml file. So
-;;  implicitly, before the 'modules' field is resolved, the
-;;  dependencies are resolved, resulting in generation (by copy) of
-;;  ledger.ml, so the Ledger will be included in the 'modules' roster.
-;;  Furthermore, the protasis in (foo -> bar.ml) _is_ a library,
-;;  so (evidently) if it is found ("installed"?) then it is included
-;;  in the libdeps list.
-
-;; js_of_ocaml/compiler/lib/dune:
- ;; (libraries
- ;;  ...
- ;;  (select
- ;;   source_map_io.ml
- ;;   from
- ;;   (yojson -> source_map_io.yojson.ml)
- ;;   (-> source_map_io.unsupported.ml)))
-
-;;  As a side-effect, evaluating each (a -> b) clause makes a a
-;;  dependency; but a fake dependency, whose only purpose is to
-;;  trigger a file copy to induce a module src dep.
-
-;; In other words, these select clauses do NOT express a lib
-;; dependency on a lib/archive/module; rather they express a (sub)
-;; modules dependency on a source file (and as a side effect, a lib
-;; dep on the protasis of the winning clause).
-
-;; translation to mibl: such selects do not belong in :deps. In
-;; starlark they will be 'select' for a source attibute.
-
-(define (analyze-select select) ;; directs selects)
-  (format #t "~A: ~A\n" (ublue "analyze-select") select)
-  ;; e.g. (select foo.ml from (bar -> baz.ml) (-> default.ml))
-  ;; see normalize-lib-select in dune_stanzas.scm
-  ;; FIXME: extract module dep from select sexp and add to directs
-  (let* ((target (cadr select))
-         (selectors (cdddr select))
-         (default (cadr (last selectors)))
-         (selectors (but-last selectors)))
-    (format #t "select target: ~A\n" target)
-    (format #t "selectors : ~A\n" selectors)
-    (format #t "default : ~A\n" default)
-    (let ((clauses (map (lambda (selector)
-                          (format #t "selector: ~A\n" selector)
-                          (let ((protasis (car selector))
-                                (apodosis (caddr selector)))
-                            (list
-                             `(:dep ,protasis)
-                             `(:clause ,(cons protasis apodosis)))))
-                        selectors)))
-      (format #t "clauses: ~A\n" clauses)
-      `((:target ,target)
-        ,(cons ':deps (map (lambda (c) (cadar c)) clauses))
-        ,(cons ':selectors (apply
-                            append
-                            (map (lambda (c) (assoc-val :clause c))
-                                 clauses)))
-        (:default ,default)))))
-
-;; (libraries a b c.d a.b.c ...)
-;; uncommon: "alternative deps"
-;; see https://dune.readthedocs.io/en/stable/concepts.html#alternative-deps
-;; example from tezos:
-;; (libraries a b c
-;;            (select void_for_linking-genesis from
-;;              (tezos-client-genesis -> void_for_linking-genesis.empty)
-;;              (-> void_for_linking-genesis.empty))
-;;              ...
-;;            (select void_for_linking-demo-counter from
-;;              (tezos-client-demo-counter -> void_for_linking-demo-counter.empty)
-;;              (-> void_for_linking-demo-counter.empty)))
-
-;; also:  (libraries (re_export foo))
-
 (define (analyze-libdeps libdeps)
   (format #t "~A: ~A\n" (ublue "analyze-libdeps") libdeps)
   (let recur ((raw libdeps) ;; 'libraries' fld
@@ -171,6 +85,8 @@
               ((select)
             ;; (if (equal? (caar raw) 'select)
                (let ((the-selects (analyze-select (car raw))))
+                 (format #t "~A: ~A~%" (cyan "the-selects") the-selects)
+                 (update-selects-list! the-selects)
                  (recur (cdr raw)
                         directs
                         (append selects (list the-selects))

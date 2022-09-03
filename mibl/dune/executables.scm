@@ -167,10 +167,20 @@
            ((ocamlopt_flags) (values))
 
            ((root_module) (values))
-           ((preprocess) (error 'fixme "unhandled: preprocess"))
-           ((preprocess_deps) (error 'fixme "unhandled: preprocess_deps"))
 
-           (else (error 'fixme (format #f "~A" fld-assoc)))))
+           ((preprocess) (values))
+            ;; (error 'fixme
+            ;;        (format #f "unhandled link fld: ~A" fld-assoc)))
+
+            ((preprocess_deps) (values))
+             ;; (error 'fixme
+             ;;        (format #f "unhandled link fld: ~A" fld-assoc)))
+
+           ((modes)
+            (format #t "~A: ~A~%" (bgred "FIXME:") "(modes) fld"))
+
+           (else (error 'fixme
+                        (format #f "unhandled link fld: ~A" fld-assoc)))))
        stanza-alist))
 
 (define (-map-compile-flds->mibl stanza-alist)
@@ -188,9 +198,17 @@
            ((ocamlc_flags) (values)) ;; handled separately
            ((ocamlopt_flags) (values)) ;; handled separately
 
-           ((root_module) (error 'fixme "root_module"))
-           ((preprocess) (error 'fixme "preprocess"))
-           ((preprocess_deps) (error 'fixme "preprocess_deps"))
+           ((root_module)
+            (error 'fixme
+                   (format #f "unhandled compile fld: ~A" fld-assoc)))
+
+           ((preprocess) (values))
+            ;; (error 'fixme
+            ;;        (format #f "unhandled compile fld: ~A" fld-assoc)))
+
+           ((preprocess_deps) (values))
+            ;; (error 'fixme
+            ;;        (format #f "unhandled compile fld: ~A" fld-assoc)))
 
            ;; ignore the rest
            (else (values))))

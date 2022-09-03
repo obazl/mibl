@@ -6,6 +6,7 @@
 (load "string.scm")
 ;; (load "utils.scm")
 
+(load "dune/conditionals.scm")
 (load "dune/constants.scm")
 (load "dune/dune_api.scm")
 (load "dune/actions.scm")
@@ -42,5 +43,6 @@
 (load "dune/pkg_files.scm")
 (load "dune/install.scm")
 (load "dune/lexyacc.scm")
+(load "dune/menhir.scm")
 
 ;; (format #t "loaded mibl/dune.scm") (newline)

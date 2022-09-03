@@ -3,10 +3,10 @@
   (format #t "~A: ~A~%" (green "tgt") tgt)
   (format #t "~A: ~A~%" (green "pattern") pattern)
   (format #t "~A: ~A~%" (green "ws") ws)
-  (format #t "~A: ~A~%" (green "mibl tbl") -mibl-ws-table)
+  ;; (format #t "~A: ~A~%" (green "mibl tbl") -mibl-ws-table)
 
   (let* ((-ws (if (keyword? ws) (assoc-val ws -mibl-ws-table) ws))
-         (_ (format #t "~A: ~A~%" (uwhite "-ws") -ws))
+         ;; (_ (format #t "~A: ~A~%" (uwhite "-ws") -ws))
          (filegroups (car (assoc-val :filegroups -ws)))
          (_ (format #t "filegroups tbl: ~A\n" filegroups))
          (glob? (string-index pattern (lambda (ch)
@@ -292,12 +292,10 @@
 
 (define update-pkg-files!
   (let ((+documentation+ "INTERNAL. Add tgts to :modules (or :files etc) fld of pkg."))
-
     (lambda (pkg tgts)
       (format #t "~%~A: ~A~%" (bgblue "update-pkg-files!") tgts)
       (format #t "  package: ~A\n" pkg)
       ;; (format #t "  targets: ~A\n" tgts)
-
       ;; tgts may contain ml/mli pairs, so
       ;; step 1: partition tgts into module-tgts, struct-tgts, sig-tgts
       ;; and other-tgts
@@ -413,33 +411,33 @@
 ;; rule action for example) will refer to it as 'bin:foo', so we can
 ;; just look it up to find its Bazel label.
 
-(define (update-exports-table! ws tag nm pkg-path tgt)
-  (format #t "~A: ~A , ~A\n" (ublue "update-exports-table!") tag nm)
+(define (update-exports-table! ws pfx nm pkg-path tgt)
+  (format #t "~A: ~A , ~A\n" (ublue "update-exports-table!") pfx nm)
   (format #t "~A: ~A , ~A~%" (uwhite "spec") pkg-path tgt)
   (let* ((exports (car (assoc-val :exports
                                   (assoc-val ws -mibl-ws-table))))
-         (key (case tag
-                ((:exe) (symbol (format #f "bin:~A.exe" tgt)))
-                ((:bin) (symbol (format #f "bin:~A.exe" tgt)))
-                ((:lib) (symbol (format #f "lib:~A" tgt)))
-                ((:libexec) (symbol (format #f "libexec:~A" tgt)))
-                ((:test) (string->keyword (format #f "~A.exe" tgt)))
+         (key (case pfx
+                ((:exe) (symbol (format #f "bin:~A.exe" nm)))
+                ((:bin) (symbol (format #f "bin:~A.exe" nm)))
+                ((:lib) (symbol (format #f "lib:~A" nm)))
+                ((:libexec) (symbol (format #f "libexec:~A" nm)))
+                ((:test) (string->keyword (format #f "~A.exe" nm)))
                 ((#f) (string->symbol (format #f "~A" nm)))
-                (else tag)))
-         (exe (case tag
+                (else nm)))
+         (exe (case pfx
                 ((:bin :exe) #t)
                 (else #f)))
-         (tag-assoc (case tag
-                ((:bin :exe :lib :libexec :test) (list (cons tag #t)))
+         (pfx-assoc (case pfx
+                ((:bin :exe :lib :libexec :test) (list (cons pfx #t)))
                 (else '())))
-         (spec `(,@tag-assoc
+         (spec `(,@pfx-assoc
                  ,(cons :pkg pkg-path)
                  ,(cons :tgt (if exe
                                  (format #f "~A.exe" tgt)
                                  (format #f "~A" tgt))))))
     (format #t "exports tbl: ~A\n" exports)
 
-    (format #t "adding ~A => ~A to exports tbl\n" key spec)
+    (format #t "~A ~A => ~A~%" (bgred "adding to exports") key spec)
     (if exe
         (begin
           (hash-table-set! exports tgt spec)
@@ -450,11 +448,11 @@
                            spec)
           )
         (begin
-          (hash-table-set! exports
+          (hash-table-set! exports ;; key
                            (if (keyword? key) key
                                (symbol->keyword key))
                            spec)))
-    (if (eq? tag :test)
+    (if (eq? pfx :test)
         (let ((key (string->symbol
                     (format #f ":exe~A" key))))
           (hash-table-set! exports key

@@ -96,14 +96,16 @@
 
          ;; (expanded-path (if local? path canonical-path))
          (expanded-path canonical-path)
+         (_ (format #t "~A: ~A~%" (bgred "expanded-path") expanded-path))
 
          (tgt (if (equal? pkg-path (dirname expanded-path))
                      (basename expanded-path)
                      (basename expanded-path)))
                      ;;(string->keyword (format #f "fg_~A" (basename expanded-path)))))
+         (_ (format #t "~A: ~A~%" (bgred "TGT") tgt))
 
          (tgt-tag (if (equal? pkg-path (dirname expanded-path))
-                      :tgt :fg))
+                      :tgt :tgt)) ;; :fg))
 
          ;; (tgt (if (eq? tgt-tag :fg)
          ;;          (format #f "__~A__" tgt)
@@ -144,22 +146,21 @@
                     )))
 
 (define (deps->tag-for-file deps arg)
-  (format #t "~A: ~A~%" (blue "deps->tag-for-file") arg)
-  (format #t "~A: ~A~%" (white "deps") deps)
+  (format #t "~A: ~A~%" (ublue "deps->tag-for-file") arg)
+  (format #t "~A: ~A~%" (uwhite "deps") deps)
   (let* ((key (string->keyword (format #f "~A" arg)))
-         (deps (cdr deps))
          (match (find-if (lambda (dep)
-                           (format #t "~A: ~A~%" (cyan "dep") dep)
+                           (format #t "~A: ~A~%" (uwhite "dep") dep)
                            (case (cadr dep)
                              ((::import ::pkg) #f)
                              (else
                               (if (equal? (car dep) key)
                                   #t
                                   (let ((tgt (assoc-val :tgt (cdr dep))))
-                                    (format #t "~A: ~A~%" (cyan "tgt") tgt)
+                                    (format #t "~A: ~A~%" (uwhite "tgt") tgt)
                                     (equal? tgt arg))))))
-                         deps)))
-    (format #t "~A: ~A~%" (cyan "match") match)
+                         (cdr deps))))
+    (format #t "~A: ~A~%" (blue "match") match)
     (if match (car match) #f)))
 
 (define (targets->tag-for-file targets arg)
@@ -208,98 +209,6 @@
             ;;         (append (list (cons tag (cdar tagged))) expanded-deps)
             `(,(cons tag tagged) ,@expanded-deps)
             (list (list tag tagged) expanded-deps)))))
-
-(define (handle-tagged-glob-dep ws deplist paths expanded-deps)
-  (format #t "~A: ~A\n" (blue "handle-tagged-glob-dep") deplist)
-  (format #t "expanded-deps: ~A\n" expanded-deps)
-  (format #t "cadr deplist: ~A\n" (cadr deplist))
-  ;; kw :_ is reserved for non-tagged symlist
-  ;; to avoid name clash, convert user keywords to double-colon, e.g.
-  ;; :foo => ::foo
-  (let* ((lbl (string->keyword (format #f "~A" (keyword->symbol (car deplist)))))
-         (pattern (cadr deplist))
-         (_ (format #t "~A: ~A~%" (green "pattern") pattern))
-         (pattern (format #f "~A" (cadr pattern)))
-         (_ (format #t "~A: ~A~%" (green "pattern") pattern))
-         ;; working dir is always ws root, so we prepend the pkg-path
-         ;; (pattern-str (string-append pkg-path "/" pattern))
-
-         (pkg-path (car (assoc-val :pkg-path paths)))
-         (dep-path (format #f "~A/~A" pkg-path pattern))
-         (_ (format #t "dep-path: ~A~%" dep-path))
-
-         (canonical-path (->canonical-path dep-path))
-         (_ (format #t "canonical-path: ~A~%" canonical-path))
-
-         (tagged canonical-path)
-
-         ;; (tagged
-         ;;  (if (list? (cadr deplist))
-         ;;      ;; do not process globs here, just create the target kw
-         ;;      (if (eq? 'glob_files (car (cadr deplist)))
-         ;;          (string->keyword (format #f "*~A"
-         ;;                                   (keyword->symbol (car deplist))))
-         ;;          #f)
-         ;;      #f))
-         ;; (tagged ;(if tagged tagged
-         ;;             (expand-args* ws (cdr deplist)
-         ;;                          paths ;;stanza-alist
-         ;;                          '()))
-         ) ;;expanded-deps)))
-    (format #t "tagged dep lbl: ~A\n" lbl)
-    (format #t "tagged dep: ~A\n" tagged)
-
-    ;; if tagged val is glob_files, update pkg with filegroup
-    (if (list? (cadr deplist))
-        (if (eq? 'glob_files (car (cadr deplist)))
-            (update-filegroups-table!
-             ws (dirname canonical-path)
-             lbl ;; (keyword->symbol lbl)
-             (basename pattern))
-            ))
-    (let ((result
-           ;; could not figure out how to handle empty expanded-list
-           ;; without getting #<unspecified>, so hack alert:
-           (if (null? expanded-deps)
-               (list (list lbl
-                           (cons :pkg (dirname tagged))
-                           ;; NB: :tgt for singleton, :tgts for globs
-                           (cons :tgts lbl)))
-               (list (list lbl
-                           (cons :pkg (dirname tagged))
-                           ;; NB: :tgt for singleton, :tgts for globs
-                           (cons :tgts lbl))
-                     `,@expanded-deps))))
-      (format #t "~A: ~A~%" (red "expanded-deps") expanded-deps)
-      (format #t "~A: ~A~%" (red "GLOB RESULT") result)
-      result)))
-
-;; tagged deps: (:foo foo.sh), (:css (glob_files *.css)), what else?
-(define (handle-tagged-dep ws deplist paths expanded-deps)
-  (format #t "~A: ~A\n" (blue "handle-tagged-dep") deplist)
-  ;; kw :_ is reserved for non-tagged symlist
-  ;; to avoid name clash, convert user keywords to double-colon, e.g.
-  ;; :foo => ::foo
-  (let ((tag (car deplist))
-        (val (cdr deplist)))
-    (if (list? (car val))
-        (if (eq? 'glob_files (caar val))
-            ;; e.g. (:css (glob_files *.css)
-            (handle-tagged-glob-dep ws deplist paths expanded-deps)
-            (error 'fixme "unhandled: non-glob tagged list var"))
-        (handle-tagged-literal-dep ws deplist paths expanded-deps))))
-
-(define (handle-file-dep deplist)
-  (format #t "handle-file-dep: ~A\n" deplist)
-  deplist)
-
-(define (handle-alias-dep paths deplist)
-  (format #t "handle-alias-dep: ~A\n" deplist)
-  (set-car! deplist :alias)
-  deplist)
-
-(define (handle-alias-rec-dep deplist)
-  (format #t "handle-alias-rec-dep: ~A\n" deplist))
 
 ;; Globbing.
 ;; Dune: "Note that globs will match files that exist in the source
@@ -370,17 +279,21 @@
 ;;                   (cons :_ depfiles)
 ;;                    `(:: ,@depfiles)))))))
 
-;; this impl defers globbing to a file_group target
-(define (handle-glob-files-dep paths globber)
-  (format #t "~A: ~A\n" (blue "handle-glob-files-dep") globber)
+(define (handle-glob-files-rec-dep deplist)
+  (format #t "handle-glob-files-rec-dep: ~A\n" deplist))
+
+(define (handle-glob-files-dep ws paths _pattern)
+  (format #t "~A: ~A\n" (blue "handle-glob-files-dep") _pattern)
+  ;; _pattern form: (glob_files ../../runtime/*.js)
   (format #t "  paths: ~A\n" paths)
-  ;; (car globber) == glob_files
+  ;; (car _pattern) == glob_files
   (let* ((pkg-path (car (assoc-val :pkg-path paths)))
          (ws-root (car (assoc-val :ws-path paths)))
-         ;; (pattern (cadr globber))
-         (pattern (format #f "~A" (cadr globber)))
-         ;; working dir is always ws root, so we prepend the pkg-path
-         (pattern-str (string-append pkg-path "/" pattern))
+         ;; (pattern (cadr _pattern))
+         (pattern (normalize-glob-pattern _pattern))
+         ;; (pattern (format #f "~A" (cadr _pattern)))
+         ;; ;; working dir is always ws root, so we prepend the pkg-path
+         ;; (pattern-str (string-append pkg-path "/" pattern))
          (g (glob.make))
          (_effective-ws-root (effective-ws-root)))
     (format #t "pkg-path: ~A\n" pkg-path)
@@ -422,8 +335,127 @@
                   (cons :_ depfiles)
                    `(:: ,@depfiles)))))))
 
-(define (handle-glob-files-rec-dep deplist)
-  (format #t "handle-glob-files-rec-dep: ~A\n" deplist))
+(define (handle-tagged-glob-dep ws tagged-pattern paths expanded-deps)
+  (format #t "~A: ~A\n" (ublue "handle-tagged-glob-dep") tagged-pattern)
+  (format #t "expanded-deps: ~A\n" expanded-deps)
+  ;; tagged-pattern form: (:css (glob_files ../css/*.css))
+  (format #t "cadr tagged-pattern: ~A\n" (cadr tagged-pattern))
+  ;; kw :_ is reserved for non-tagged symlist
+  ;; to avoid name clash, convert user keywords to double-colon, e.g.
+  ;; :foo => ::foo
+  (let* ((lbl (string->keyword (format #f "~A" (keyword->symbol (car tagged-pattern)))))
+         (pattern (cadr tagged-pattern))
+         (_ (format #t "~A: ~A~%" (green "pattern") pattern))
+         (pattern (format #f "~A" (cadr pattern)))
+         (_ (format #t "~A: ~A~%" (green "pattern") pattern))
+         ;; working dir is always ws root, so we prepend the pkg-path
+         ;; (pattern-str (string-append pkg-path "/" pattern))
+
+         (pkg-path (car (assoc-val :pkg-path paths)))
+         (dep-path (format #f "~A/~A" pkg-path pattern))
+         (_ (format #t "dep-path: ~A~%" dep-path))
+
+         (canonical-path (->canonical-path dep-path))
+         (_ (format #t "canonical-path: ~A~%" canonical-path))
+
+         (tagged canonical-path)
+
+         ;; (tagged
+         ;;  (if (list? (cadr tagged-pattern))
+         ;;      ;; do not process globs here, just create the target kw
+         ;;      (if (eq? 'glob_files (car (cadr tagged-pattern)))
+         ;;          (string->keyword (format #f "*~A"
+         ;;                                   (keyword->symbol (car tagged-pattern))))
+         ;;          #f)
+         ;;      #f))
+         ;; (tagged ;(if tagged tagged
+         ;;             (expand-args* ws (cdr tagged-pattern)
+         ;;                          paths ;;stanza-alist
+         ;;                          '()))
+         ) ;;expanded-deps)))
+    (format #t "tagged dep lbl: ~A\n" lbl)
+    (format #t "tagged dep: ~A\n" tagged)
+
+    ;; if tagged val is glob_files, update pkg with filegroup
+    (if (list? (cadr tagged-pattern))
+        (if (eq? 'glob_files (car (cadr tagged-pattern)))
+            (update-filegroups-table!
+             ws (dirname canonical-path)
+             lbl ;; (keyword->symbol lbl)
+             (basename pattern))
+            ))
+    (let ((result
+           ;; could not figure out how to handle empty expanded-list
+           ;; without getting #<unspecified>, so hack alert:
+           (if (null? expanded-deps)
+               (list (list lbl
+                           (cons :pkg (dirname tagged))
+                           ;; NB: :tgt for singleton, :tgts for globs
+                           (cons :glob lbl)))
+               (list (list lbl
+                           (cons :pkg (dirname tagged))
+                           ;; NB: :tgt for singleton, :tgts for globs
+                           (cons :glob lbl))
+                     `,@expanded-deps))))
+      (format #t "~A: ~A~%" (red "expanded-deps") expanded-deps)
+      (format #t "~A: ~A~%" (red "GLOB RESULT") result)
+      result)))
+
+(define (handle-untagged-glob-dep ws paths _pattern)
+  (format #t "~A: ~A\n" (ublue "handle-untagged-glob-dep") _pattern)
+  ;; kw :_ is reserved for non-tagged symlist
+  ;; to avoid name clash, convert user keywords to double-colon, e.g.
+  ;; :foo => ::foo
+  (let* ((pattern (cadr _pattern))
+         (pkg-path (car (assoc-val :pkg-path paths)))
+         (dep-path (format #f "~A/~A" pkg-path pattern))
+         (_ (format #t "~A: ~A~%" (uwhite "dep-path") dep-path))
+
+         (_ (format #t "~A: ~A~%" (bgred "cwd") (pwd)))
+         (canonical-path (->canonical-path dep-path))
+         (_ (format #t "~A: ~A~%" (uwhite "canonical-path") canonical-path))
+         (lbl :glob)  ;;FIXME: derive tagname
+         )
+
+    (update-filegroups-table!
+             ws (dirname canonical-path)
+             lbl
+             (basename pattern))
+
+    (let ((result
+           (list (list :glob
+                           (cons :pkg (dirname canonical-path))
+                           (cons :glob lbl)))))
+      (format #t "~A: ~A~%" (red "GLOB RESULT") result)
+      result)))
+
+;; tagged deps: (:foo foo.sh), (:css (glob_files *.css)), what else?
+;; called from expanders.scm::expand-args*
+(define (handle-tagged-dep ws deplist paths expanded-deps)
+  (format #t "~A: ~A\n" (ublue "handle-tagged-dep") deplist)
+  ;; obsolete: kw :_ is reserved for non-tagged symlist
+  ;; to avoid name clash, convert user keywords to double-colon, e.g.
+  ;; :foo => ::foo
+  (let ((tag (car deplist))
+        (val (cdr deplist)))
+    (if (list? (car val))
+        (if (eq? 'glob_files (caar val))
+            ;; e.g. (:css (glob_files *.css)
+            (handle-tagged-glob-dep ws deplist paths expanded-deps)
+            (error 'fixme "unhandled: non-glob tagged list var"))
+        (handle-tagged-literal-dep ws deplist paths expanded-deps))))
+
+(define (handle-file-dep deplist)
+  (format #t "handle-file-dep: ~A\n" deplist)
+  deplist)
+
+(define (handle-alias-dep paths deplist)
+  (format #t "handle-alias-dep: ~A\n" deplist)
+  (set-car! deplist :alias)
+  deplist)
+
+(define (handle-alias-rec-dep deplist)
+  (format #t "handle-alias-rec-dep: ~A\n" deplist))
 
 (define (handle-source-tree-dep paths deplist)
   ;; (format #t "handle-source-tree-dep: ~A\n" deplist)
@@ -458,7 +490,7 @@
   `((file ,handle-file-dep)
     (alias ,handle-alias-dep)
     (alias_rec ,handle-alias-rec-dep)
-    (glob_files ,handle-glob-files-dep)
+    (glob_files ,handle-untagged-glob-dep) ;; ,handle-glob-files-dep)
     (glob_files_rec ,handle-glob-files-rec-dep)
     (source_tree ,handle-source-tree-dep)
     (universe ,handle-universe-dep)

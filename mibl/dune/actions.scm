@@ -4,7 +4,7 @@
 (load "dune/shell_actions.scm")
 
 (define (normalize-action-chdir-dsl ws pkg action-alist targets deps)
-  (format #t "~A: ~A\n" (blue "normalize-action-chdir-dsl") action-alist)
+  (format #t "~A: ~A\n" (ublue "normalize-action-chdir-dsl") action-alist)
   (let* ((action-assoc (car action-alist))
          (_ (format #t "action-assoc: ~A\n" action-assoc))
          (ctx (cadr action-assoc))
@@ -27,7 +27,7 @@
 
 ;; cat, cmp, copy, copy#, diff, diff?
 (define (normalize-action-file-op ws pkg action action-alist targets deps)
-  (format #t "~A: ~A\n" (blue "normalize-action-file-op") pkg)
+  (format #t "~A: ~A\n" (ublue "normalize-action-file-op") pkg)
   (format #t "~A: ~A\n" (green "ws") ws)
   (format #t "  action: ~A\n" action)
   (format #t "  action-alist: ~A\n" action-alist)
@@ -120,7 +120,7 @@
     (car cmd)))
 
 (define (normalize-action-progn-dsl ws pkg action-alist targets deps)
-  (format #t "~A: ~A\n" (blue "normalize-action-progn-dsl") action-alist)
+  (format #t "~A: ~A\n" (ublue "normalize-action-progn-dsl") action-alist)
   (format #t "~A: ~A~%" (green "pkg") pkg)
   (format #t "~A: ~A~%" (green "targets") targets)
   (format #t "~A: ~A~%" (green "deps") deps)
@@ -228,7 +228,7 @@
   )
 
 (define (normalize-action-with-outputs-to-dsl ws pkg action-alist targets deps)
-  (format #t "~A: ~A\n" (blue "normalize-action-with-outputs-to-dsl")
+  (format #t "~A: ~A\n" (ublue "normalize-action-with-outputs-to-dsl")
           action-alist)
   (let* ((action-assoc (car action-alist))
          (_ (format #t "action-assoc: ~A\n" action-assoc))
@@ -291,7 +291,7 @@
     (if lbl (car lbl) #f)))
 
 (define (normalize-action-write-file ws pkg action action-alist targets deps)
-  (format #t "~A: ~A\n" (blue "normalize-action-write-file") action)
+  (format #t "~A: ~A\n" (ublue "normalize-action-write-file") action)
   (format #t "~A: ~A\n" (green "action-alist") action-alist)
   (format #t "targets: ~A\n" targets)
   (format #t "deps: ~A\n" deps)
@@ -368,7 +368,7 @@
 ;;                  (:other_var ...))))
 
 (define (normalize-cmd-dsl-universe pkg-path dsl filedeps vars)
-  (format #t "~A: ~A\n" (blue "NORMALIZE-CMD-DSL-UNIVERSE") dsl)
+  (format #t "~A: ~A\n" (ublue "NORMALIZE-CMD-DSL-UNIVERSE") dsl)
   ;; special case: using 'universe' dep and passing e.g. unix.cma
   ;; e.g.
   ;; (rule
@@ -391,7 +391,7 @@
 (define resolve-string-arg
   ;; to resolve argstrings with multiple %{} vars we need to loop/recur
   (lambda (pkg-path arg vars)
-    (format #t "RESOLVE-STRING-ARG: ~A\n" arg)
+    (format #t "~A: ~A\n" (ublue "resolve-string-arg")arg)
     (format #t " vars: ~A\n" vars)
     (if (or (equal? 'bash arg) (equal? "bash" arg))
         'bash
@@ -618,7 +618,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; called by normalize-action-rule
 (define (normalize-action ws pkg stanza-alist targets deps) ;; rule stanza
-  (format #t "~A: ~A\n" (blue "normalize-action") stanza-alist)
+  (format #t "~A: ~A\n" (ublue "normalize-action") stanza-alist)
   (format #t "~A: ~A~%" (white "targets") targets)
   (format #t "~A: ~A~%" (white "deps") deps)
   (let* ((action-assoc (assoc 'action stanza-alist))

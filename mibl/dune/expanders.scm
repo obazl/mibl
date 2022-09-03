@@ -22,15 +22,26 @@
     (format #t "~A: ~A (~A)~%" (ublue "expand-run-tool") tool (type-of tool))
     (format #t "~A: ~A~%" (green "deps") deps)
 
-    ;; (let ((x (rassoc tool
-
     (case tool
       ((cp) ::copy) ;;FIXME: use lookup table from constants.scm
+      ((%{deps}) ::deps)
+       ;; (set-cdr! deps
+       ;;           (append
+       ;;            (list (cons ::tools
+       ;;                        (list
+       ;;                         (cons search-key ;; arg-kw
+       ;;                               ;; (list (cons :pkg pkg-path)
+       ;;                               ;;       (cons :tgt arg))
+       ;;                               ::import
+       ;;                               ))))
+       ;;            (cdr deps)))
+       ;; :FOO)
+
       (else
        (let ((tool (format #f "~A" tool)))
          (cond
           ((string-prefix? "%{" tool)
-           (-expand-pct-tool!? tool :tool (car (assoc-val :pkg-path pkg))  deps))
+           (-expand-pct-tool!? tool :tool pkg deps))
 
           (else
            (let ((tmp (-expand-literal-tool!?
@@ -40,24 +51,37 @@
              (format #t "~A: ~A~%" (ured "DEPS") deps)
              tmp))))))))
 
+(define (-match-dep pfx key dep)
+  (format #t "~A: ~A/~A ? ~A~%" (ublue "-match-dep") pfx key dep)
+  (cond
+   ((equal? (car dep) key)
+    (format #t "~A: ~A~%" (uwhite "matched?") dep)
+    #t)
+   ((member (cadr dep) '(::import ::pkg)) #f)
+   (else #f)))
+
 ;; may update :deps
 (define (-expand-dep-pct-var!? pfx sym deps pkg)
-  (format #t "~A: ~A :: ~A~%" (ublue "-expand-dep-pct-var!?") pfx sym)
+  (format #t "~A: pfx: ~A; sym: ~A~%"
+          (ublue "-expand-dep-pct-var!?") pfx sym)
   ;; arg form:  dep:<path>
   ;; search deps for <path>
   ;; if not found, search pkg files? no need?
   ;; add it to pkg files as :dynamic?
   ;; add it to :deps
   (let* ((search-key (symbol->keyword sym))
+         (_ (format #t "~A: ~A~%" (yellow "searching deps") deps))
          (d (find-if (lambda (dep)
-                       (format #t "~A: ~A~%" (yellow "checking dep") dep)
-                       ;; if dep == (::pkgs ...) ?
-                       (equal? (car dep) search-key))
+                       ;;FIXME: special tags ::tools, ::pkgs, ::import, etc.
+                       (-match-dep pfx search-key dep))
+                       ;; (equal? (car dep) search-key))
                      (cdr deps))))
+    (format #t "~A: ~A~%" (yellow "found?") d)
     (if d
         search-key
-        ;; not in :deps; search pkg files and add it
+        ;; not in :deps; search pkg files and add it to :deps if found
         (let ((v (format #f "~A" sym))
+              (_ (format #t "~A: ~A~%" (yellow "searching pkg files") deps))
               (expanded
                (if-let ((tag (deps->tag-for-file deps search-key)))
                        tag
@@ -66,7 +90,19 @@
                        (if-let ((inferred-dep
                                  (-infer-dep! search-key deps pkg)))
                                inferred-dep
-                               arg)))
+                               (begin
+                                 (format #t "~A: ~A~%"
+                                         (red "unresolved") search-key)
+                                 (let* ((path (dirname sym))
+                                        (dep-path (if (string=? "./" path)
+                                                      (car (assoc-val :pkg-path pkg))
+                                                      path)))
+                                 (set-cdr! deps
+                                           (append (cdr deps)
+                                                   `((,search-key
+                                                      (:pkg . ,dep-path)
+                                                      (:tgt . ,(basename sym)))))))
+                                 ))))
 
               (dep (list (symbol->keyword sym))))
           (symbol->keyword sym)
@@ -155,51 +191,56 @@
                  )))))))
 
 ;; may update deps
-(define (-expand-pct-tool!? arg kind pkg-path deps)
-  (format #t "~A: ~A (~A)~%" (blue "-expand-pct-tool!?")
+(define (-expand-pct-tool!? arg kind pkg deps)
+  (format #t "~A: ~A (~A)~%" (ublue "-expand-pct-tool!?")
           arg (type-of arg))
   (format #t "deps: ~A~%" deps)
 
-  ;; find arg in deps
-  (let* ((search-key (pct-var->keyword arg))
-         (_ (format #t "~A: ~A (kw? ~A)~%" (yellow "search-key")
-                    search-key (keyword? search-key)))
-         (match (find-if (lambda (dep)
-                           (format #t "~A: ~A (~A)~%" (yellow "finding tool") dep (type-of (car dep)))
-                           ;; (format #t "~A: ~A~%" (yellow "kw?") (keyword?
-                           ;;                                       (car dep)))
-                           (equal? (car dep) search-key))
-                         (cdr deps))))
-    (format #t "~A: ~A~%" (yellow "match?") match)
-    (if match
-        ;;(let ((arg-kw (string->keyword arg)))
-        ;; move it from (:deps) to (:deps ::tools)
-        (begin
-          (format #t "~A: ~A~%" (red "tool in deps") match)
-          (set-cdr! deps
-                    (append
-                     (list (list ::tools match
-                                 #| (list search-key ;; arg-kw
-                                       (cons :pkg pkg-path)
-                                       (cons :tgt arg))|# ))
-                     (alist-delete (list search-key #|arg-kw|# ) (cdr deps)))))
+  (let-values (((sym pfx sfx) (parse-pct-var arg)))
+    (format #t "~A: ~A, ~A: ~A~%"
+            (uwhite "arg pfx") pfx (uwhite "sfx") sfx)
 
-        ;; else infer it must be imported from exports tbl
-        (begin
-          (format #t "~A: ~A, ~A~%" (red "tool NOT in deps") search-key deps) ;; t)
-          (set-cdr! deps
-                    (append
-                     (list (cons ::tools
-                                 (list
-                                  (cons search-key ;; arg-kw
-                                        ;; (list (cons :pkg pkg-path)
-                                        ;;       (cons :tgt arg))
-                                        ::import
-                                        ))))
-                     (cdr deps)))
-          ;; return kw
-          ))
-    search-key))
+    ;; find arg in deps
+    (let* ((search-key  (symbol->keyword sfx)) ;; (pct-var->keyword arg))
+           (_ (format #t "~A: ~A (kw? ~A)~%" (yellow "search-key")
+                      search-key (keyword? search-key)))
+           (match (find-if (lambda (dep)
+                             (format #t "~A: ~A (~A)~%"
+                                     (yellow "testing dep") dep (type-of (car dep)))
+                             ;; (format #t "~A: ~A~%" (yellow "kw?") (keyword?
+                             ;;                                       (car dep)))
+                             (equal? (car dep) search-key))
+                           (cdr deps))))
+      (format #t "~A: ~A~%" (yellow "match?") match)
+      (if match
+          ;;(let ((arg-kw (string->keyword arg)))
+          ;; move it from (:deps) to (:deps ::tools)
+          (begin
+            (format #t "~A: ~A~%" (red "tool in deps") match)
+            (set-cdr! deps
+                      (append
+                       (list (list ::tools match
+                                   #| (list search-key ;; arg-kw
+                                   (cons :pkg pkg-path)
+                                   (cons :tgt arg))|# ))
+                       (alist-delete (list search-key #|arg-kw|# ) (cdr deps)))))
+
+          ;; else infer it must be imported from exports tbl
+          (begin
+            (format #t "~A: ~A, ~A~%" (red "tool NOT in deps") search-key deps) ;; t)
+            (set-cdr! deps
+                      (append
+                       (list (cons ::tools
+                                   (list
+                                    (cons search-key ;; arg-kw
+                                          ;; (list (cons :pkg pkg-path)
+                                          ;;       (cons :tgt arg))
+                                          ::import
+                                          ))))
+                       (cdr deps)))
+            ;; return kw
+            ))
+      search-key)))
 
     ;; (if (null? (cdr deps))
     ;;     ;; infer dep for arg
@@ -293,7 +334,7 @@
                                      (lbl-pkg (assoc-val :pkg lbl-list))
                                      (lbl-tgt (if-let ((tgt (assoc-val :tgt lbl-list)))
                                                   (equal? tool tgt)
-                                                  (if-let ((tgts (assoc-val :tgts lbl-list)))
+                                                  (if-let ((tgts (assoc-val #|:tgts|# :globs lbl-list)))
                                                           (equal? tool tgts)
                                                           (error 'fixme "missing :tgt and :tgts in dep")))))
                                 (format #t "~A: ~A~%" (uwhite "lbl-list") lbl-list)
@@ -522,16 +563,15 @@
       (if f
           (update-tagged-label-list! arg targets pkg))))))
 
-;; search pkg files for arg
-;; if found update deps
+;; search pkg files for arg, if found update deps
 (define (-infer-dep! arg deps pkg)
-  (format #t "~A: ~A (~A)~%" (blue "-infer-dep!") arg (type-of arg))
-  (format #t "~A: ~A~%" (red "pkg") pkg)
-  (format #t "~A: ~A~%" (red "deps") deps)
-  (format #t "~A: ~A~%" (red ":signatures") (assoc-val :signatures pkg))
-  (format #t "~A: ~A~%" (red ":structures") (assoc-val :structures pkg))
-  (format #t "~A: ~A~%" (red ":modules") (assoc-val :modules pkg))
-  (format #t "~A: ~A~%" (red ":files") (assoc-val :files pkg))
+  (format #t "~A: ~A (~A)~%" (ublue "-infer-dep!") arg (type-of arg))
+  ;; (format #t "~A: ~A~%" (uwhite "pkg") pkg)
+  (format #t "~A: ~A~%" (uwhite "deps") deps)
+  (format #t "~A: ~A~%" (uwhite "pkg-signatures") (assoc-val :signatures pkg))
+  (format #t "~A: ~A~%" (uwhite "pkg-structures") (assoc-val :structures pkg))
+  (format #t "~A: ~A~%" (uwhite "pkg-modules") (assoc-val :modules pkg))
+  (format #t "~A: ~A~%" (uwhite "pkg-files") (assoc-val :files pkg))
 
   (let ((arg (format #f "~A" arg))) ;; (keyword->symbol arg))))
     (cond
@@ -548,7 +588,9 @@
           ;; else search :files
           (let ((f (find-file-in-pkg-files!? arg deps pkg)))
             (format #t "~A: ~A~%" (red "found file in pkg files?") f)
-            (if f (update-tagged-label-list! arg deps pkg) #f)))))))
+            (if f
+                (update-tagged-label-list! arg deps pkg)
+                #f)))))))
 
 ;; string args may include suffixed vars, e.g. %{test}.corrected
 (define expand-string-arg
@@ -679,7 +721,7 @@
 ;; expands items, e.g. pct-vars like %{deps}
 (define (expand-args* ws arglist pkg expanded-deps)
   (format #t "~A: ~A\n" (ublue "expand-args*") arglist)
-  (format #t "pkg: ~A\n" pkg)
+  ;; (format #t "pkg: ~A\n" pkg)
   (format #t "expanded-deps: ~A\n" expanded-deps)
   ;; (let ((pkg-path (car (assoc-val :pkg-path pkg)))
   ;;       (ws-root (car (assoc-val :ws-path pkg))))
@@ -702,8 +744,9 @@
                       ;; (format #t "expanded-deps: ~A\n" expanded-deps)
                       ;; we're done, depfn consumed cdr
 
-                      (append (if (pair? (car res)) res (list res))
-                              expanded-deps))
+                      (append expanded-deps
+                              (if (pair? (car res)) res (list res))
+                              ))
 
                     ;; else car of arglist not a keyword
                     ;; must be either a ':' tagged dep or a filename literal

@@ -48,8 +48,27 @@
 ;; yes, 'backend' means build/run testrunner.
 ;; see https://dune.readthedocs.io/en/stable/tests.html?highlight=generate_runner#defining-your-own-inline-test-backend
 
-(define (normalize-inline_tests fld-assoc stanza-alist)
-  (format #t "normalize-inline_tests: ~A\n" fld-assoc))
+(define (-inline-tests->mibl fld-assoc)
+  (format #t "~A: ~A\n" (ublue "-inline-tests->mibl") fld-assoc)
+  (let ((result
+         (map (lambda (fld)
+                (format #t "~A: ~A~%" (uwhite "fld") fld)
+                (case (car fld)
+                  ((flags)
+                   ;; FIXME: modes. if (modes native),
+                   ;; treat flags as ocamlopt-flags.
+                   (normalize-stanza-fld-flags fld :compile))
+                  ((modes) (cons :modes (cdr fld)))
+                  (else
+                   fld)))
+              (cdr fld-assoc))))
+    (format #t "~A: ~A~%" (bgred "result") result)
+    result))
+
+(define (fld-error stanza-sym fld-assoc)
+  (stacktrace)
+  (error 'FIXME (format #f "~A ~A: ~A~%"
+                        (ured "unhandled stanza fld") stanza-sym fld-assoc)))
 
 (define (-map-lib-flds->mibl stanza-alist)
   (format #t "~A: ~A~%" (blue "-map-lib-flds->mibl") stanza-alist)
@@ -65,19 +84,48 @@
        ((ocamlc_flags) (normalize-stanza-fld-flags fld-assoc :ocamlc))
        ((ocamlopt_flags) (normalize-stanza-fld-flags fld-assoc :ocamlopt))
 
+       ((inline_tests) (cons :inline-tests
+                             (-inline-tests->mibl fld-assoc)))
+
        ((libraries) (values)) ;; handled separately
        ((modules) (values)) ;; handled separately
        ((modules_without_implementation)
         (cons :sigs (cdr fld-assoc)))
+       ((empty_module_interface_if_absent) (fld-error 'library fld-assoc))
+       ((private_modules) (fld-error 'library fld-assoc))
+       ((root_module) (fld-error 'library fld-assoc))
+       ((allow_overlapping_dependencies) (fld-error 'library fld-assoc))
 
+       ((optional) (cons :optional #t))
        ((preprocess) (preprocess-fld->mibl fld-assoc stanza-alist))
-       ((preprocessor_deps) ;; handled along with preprocess fld
-        (values))
+       ((preprocessor_deps) (fld-error 'library fld-assoc))
 
        ((synopsis) (cons :docstring (cadr fld-assoc)))
 
+       ((virtual_deps) (fld-error 'library fld-assoc))
+
        ((wrapped) (values))
-       (else (error 'fixme (format #f "unhandled lib fld: ~A~%" fld-assoc)))
+
+       ((js_of_ocaml) (fld-error 'library fld-assoc))
+
+       ;; cc
+       ((c_flags) (fld-error stanza-kind fld-assoc))
+       ((cxx_flags) (fld-error stanza-kind fld-assoc))
+       ((c_library_flags) (fld-error 'library fld-assoc))
+       ((c_types) (fld-error 'library fld-assoc))
+       ((install_c_headers) (fld-error 'library fld-assoc))
+       ((foreign_archives) (fld-error 'library fld-assoc))
+       ((foreign_stubs) (fld-error 'library fld-assoc))
+       ;; ppx
+       ((kind) ;; ignore, not meaningful for obazl?
+        (values))
+       ((ppx_runtime_libraries) (fld-error 'library fld-assoc))
+
+       ;; other
+       ((enabled_if) (fld-error 'library fld-assoc))
+
+       (else (error 'FIXME
+                    (format #f "unhandled lib fld: ~A" fld-assoc)))
        ) ;; end case
      ) ;; end lamda
    stanza-alist))
@@ -171,24 +219,24 @@
     ;; we register both pub and priv names just to make sure refs are resolved
     ;; and we register both with and without lib: tag
 
-    (update-exports-table! ws
-                           (string->symbol (format #f "~A" privname)) ;; tag
-                           privname pkg-path privname)
-    (update-exports-table! ws
-                           (string->symbol (format #f "~A" pubname)) ;; tag
-                           pubname
-                           pkg-path privname)
-
     (if privname
-        (update-exports-table! ws :lib
-                               ;; (string->symbol (format #f "lib:~A" (car privname))) ;; key
-                               privname
-                               pkg-path privname))
+        (begin
+          (update-exports-table! ws #f
+                                 ;; (string->symbol (format #f "~A" privname))
+                                 privname
+                                 pkg-path privname)
+          ;; (update-exports-table! ws :lib privname
+          ;;                        pkg-path privname)
+          ))
+
     (if pubname
-        (update-exports-table! ws :lib
-                               ;; (string->symbol (format #f "lib:~A" (car pubname))) ;; key
-                               pubname
-                               pkg-path privname))
+        (begin
+          (update-exports-table! ws #f
+                                 ;; (string->symbol (format #f "~A" pubname))
+                                 pubname
+                                 pkg-path privname)
+          (update-exports-table! ws :lib pubname
+                                 pkg-path privname)))
 
     (let* ((stanza-alist (cdr stanza))
            (stanza-alist (if-let ((mods (assoc 'modules stanza-alist)))

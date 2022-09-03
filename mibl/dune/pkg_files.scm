@@ -396,8 +396,8 @@
 
 ;; handle :ocamllex, :ocamlyacc, etc.
 (define (-ocamldep-pkg-dynamic-file-deps! pkg)
-  (format #t "~A: ~A~%" (bgblue "-ocamldep-pkg-dynamic-file-deps")
-          (assoc-val :pkg-path pkg))
+  (format #t "~A: ~A~%" (bgblue "-ocamldep-pkg-dynamic-file-deps") pkg)
+          ;; (assoc-val :pkg-path pkg))
   (let* ((ws-path (car (assoc-val :ws-path pkg)))
          (pkg-path (car (assoc-val :pkg-path pkg)))
          (pkg-modules (if-let ((modules (assoc-val :modules pkg)))
@@ -484,9 +484,9 @@
   (format #t "~A: ~A~%" (bgred "resolve-pkg-file-deps") ws)
   (let* ((@ws (assoc-val ws -mibl-ws-table))
          (pkgs (car (assoc-val :pkgs @ws))))
-    ;; (format #t "~A: ~A~%" (uwhite "pkgs") pkgs)
+    (format #t "~A: ~A~%" (uwhite "pkgs") pkgs)
     (for-each (lambda (kv)
-                (format #t "~A: ~A~%" (uwhite "pkg") kv)
+                (format #t "~A: ~A~%" (uwhite "for pkg") kv)
                 (let* ((pkg-path (car kv))
                        (_ (format #t "~A: ~A~%" (green "pkg-path") pkg-path))
                        (pkg (cdr kv))
@@ -508,7 +508,9 @@
                   (if pkg
                       (begin
                         (-ocamldep-pkg-static-file-deps! pkg)
-                        (-ocamldep-pkg-dynamic-file-deps! pkg))
+                        (format #t "~A: ~A~%" (bgred "pkg after sfd") pkg)
+                        (-ocamldep-pkg-dynamic-file-deps! pkg)
+                        (format #t "~A: ~A~%" (bgred "pkg after dfd") pkg))
                       (error 'STOP
                              (format #f "STOP ~A" pkgs)))
                   ))

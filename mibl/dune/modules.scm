@@ -402,7 +402,7 @@
               ;; else no pkg-modules, pkg-structs
               (begin
                 (format #t "no pkg-modules, pkg-structs\n")
-                (error 'fixme "STOP pkg sigs")
+                ;;(error 'fixme "STOP pkg sigs")
                 '((:modules) (:signatures)))))
       ) ;; lamda
     ) ;; let

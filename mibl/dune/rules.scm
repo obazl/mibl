@@ -111,17 +111,17 @@
                                         (assoc-val 'targets rule-alist)))
                                       tgts
                                       '())))
-             (_ (format #t "~A: ~A~%" (red "targets") targets))
+             (_ (format #t "~A: ~A~%" (red "Targets") targets))
 
              ;; add targets to pkg fields
              (pkg (if (null? targets)
                       pkg
                       (begin
                         ;; (set! pkg
-                              (update-pkg-files! pkg targets)
+                        (update-pkg-files! pkg targets)
                               ;; )
                         pkg)))
-             (_ (format #t "~A: ~A\n" (yellow "updated pkg") pkg))
+             ;; (_ (format #t "~A: ~A\n" (yellow "updated pkg") pkg))
 
              ;; normalize
              (targets (cons :outputs (expand-targets ws pkg targets deps)))
@@ -152,6 +152,8 @@
                                              (assoc-val :tgt lbl))
                                             ((:tgts)
                                              (assoc-val :tgts lbl))
+                                            ((:glob)
+                                             (assoc-val :glob lbl))
                                             ((:fg)
                                              (assoc-val :fg lbl))
                                             (else
