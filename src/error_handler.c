@@ -3,9 +3,11 @@
 
 #include "s7.h"
 #include "log.h"
-#include "utstring.h"
 
 #include "error_handler.h"
+
+#include "utarray.h"
+#include "utstring.h"
 
 s7_pointer old_err_port;
 const char *errmsg = NULL;

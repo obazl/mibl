@@ -25,7 +25,11 @@ cc_library(
     # }) + select({
     #     "//bzl/compilation_mode:dbg": ["debug.c", "debug.h"],
     #     "//conditions:default": []
-    }) + ["@uthash//:include"],
+    }) + [
+        "log.c", "log.h",
+        "uthash.h", "utarray.h", "utstring.h"
+        ## "@uthash//:include"
+    ],
     hdrs = ["mibl.h"],
     data = [
         "//mibl:srcs",
@@ -58,18 +62,22 @@ cc_library(
         "-Wpedantic",
         "-Wno-unused-function",
 
+        "-Isrc",
+        "-Iexternal/src",
+        "-Iexternal/mibl/src",
+
         "-I$(GENDIR)/src",
         "-I$(GENDIR)/external/mibl/src",
 
         "-Iexternal/libs7/src",
 
         "-Iexternal/libinih",
-        "-Iexternal/logc/src",
-        "-Iexternal/uthash/include",
+        # "-Iexternal/logc/src",
+        # "-Iexternal/uthash/include",
     ],
     deps = [
         "//external/libinih:inih",
-        "@logc//:logc",
+        # "@logc//:logc",
         "@libs7//src:s7",
         "@libs7//vendored/linenoise",
     ],
@@ -82,18 +90,29 @@ CMD_HDR = "\n".join([
     "SRCDIR1=`dirname $$SRC1`;",
 ])
 
+cc_binary(
+    name  = "makeheaders",
+    srcs  = ["makeheaders.c"],
+    copts = ["-O3"],
+    linkstatic=1,
+)
+
 ########
 genrule(
     name = "mkhdrs",
-    srcs = SRCS + ["ansi_colors.h"],
+    srcs = SRCS + [
+        "ansi_colors.h",
+        # "uthash.h", "utarray.h", "utstring.h"
+    ],
     # srcs = SRCS + select({
     #     "//bzl/compilation_mode:dbg": ["debug.c"],
     #     "//conditions:default": []
     # }) + ["ansi_colors.h"],
     outs = HDRS, # + ["debug.h"], #FIXME outs is not configurable
-    cmd = CMD_HDR + "$(location @makeheaders//:makeheaders) "
-    + mkhdr_srcs() + "; cp $${SRCDIR1}/*.h $(@D)",
-    tools = ["@makeheaders//:makeheaders"],
+    cmd = CMD_HDR + "$(location :makeheaders) "
+    + "$(SRCS); cp $${SRCDIR1}/*.h $(@D)",
+    # + mkhdr_srcs() + "; cp $${SRCDIR1}/*.h $(@D)",
+    tools = [":makeheaders"],
     visibility = ["//visibility:public"]
 )
 
@@ -104,13 +123,17 @@ genrule(
     #     "//bzl/compilation_mode:dbg": ["debug.c"],
     #     "//conditions:default": []
     # }) + ["ansi_colors.h"],
-    srcs = SRCS + ["ansi_colors.h"],
+    srcs = SRCS + [
+        "ansi_colors.h",
+        # "uthash.h", "utarray.h", "utstring.h"
+    ],
     outs = ["mibl.h"],
     cmd = CMD_HDR
-    + "$(location @makeheaders//:makeheaders) -H "
-    + mkhdr_srcs()
+    + "$(location :makeheaders) -H "
+    + "$(SRCS)"
+    # + mkhdr_srcs()
     + " > $@",
-    tools = ["@makeheaders//:makeheaders"],
+    tools = [":makeheaders"],
     visibility = ["//visibility:public"]
 )
 

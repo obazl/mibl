@@ -8,7 +8,9 @@
 #include "s7.h"
 
 #include "log.h"
+/* #if EXPORT */
 #include "utarray.h"
+/* #endif */
 
 #include "debug.h"
 

@@ -2,8 +2,6 @@
 
 #include <stdbool.h>
 
-#include "mibl_config.h"
-
 bool debug = false;
 bool dev_mode = false;
 bool trace = false;
@@ -12,13 +10,15 @@ int  verbosity = 0;
 
 #include <unistd.h>
 
-#if EXPORT_INTERFACE
+/* #if EXPORT_INTERFACE */
 #include "utarray.h"
 #include "utstring.h"
 #include "log.h"
-#endif
+/* #endif */
 
 #include "ini.h"
+
+#include "mibl_config.h"
 
 #if INTERFACE
 #define HOME_MIBL ".mibl"
