@@ -71,8 +71,8 @@
     (threads . threads)
     (unix . unix)))
 
-(define (-fixup-dep-sym dep exports)
-  (format #t "~A: ~A~%" (ublue "-fixup-dep-sym") dep)
+(define (-fixup-dep-sym dep pkg-path exports)
+  (format #t "~A: ~A~%" (bgblue "-fixup-dep-sym") dep)
   ;; possible keys for dep 'foo:
   ;; 'foo, :foo, :lib:foo, :exe:foo, etc.
   ;; assume ref is to lib, so search for :lib:foo
@@ -91,22 +91,28 @@
                        (tgt (assoc-val :tgt resolved))
                        (_ (format #t "~A: ~A~%" (ured "tgt") tgt)))
                   ;;(cons dep resolved)
-                  (string->symbol (format #f "//~A:~A" pkg tgt)))
+                  ;;(string->symbol (format #f "BBBB//~A:~A" pkg tgt)))
+                  (if (equal? pkg pkg-path)
+                      (string->symbol (format #f ":~A" tgt))
+                      (string->symbol (format #f "//~A:~A" pkg tgt))))
                 ;; else :foo
                 (let* ((key (string->keyword
                              (format #f "~A" dep)))
-                       (_ (format #t "~A: ~A~%" (uwhite "trying") key))
+                       (_ (format #t "~A: ~A~%" (uwhite "trying2") key))
+                       (_ (format #t "~A: ~A~%" (bgblue "exports") exports))
                        (resolved (hash-table-ref exports key)))
                   (if resolved
                       (let* ((pkg (assoc-val :pkg resolved))
                              (_ (format #t "~A: ~A~%" (ured "pkg") pkg))
                              (tgt (assoc-val :tgt resolved))
                              (_ (format #t "~A: ~A~%" (ured "tgt") tgt)))
-                        (cons dep resolved))
+                        (if (equal? pkg pkg-path)
+                            (string->symbol (format #f ":~A" tgt))
+                            (string->symbol (format #f "//~A:~A" pkg tgt))))
                       ;; else 'foo
                       (let* ((key (string->symbol
                                    (format #f "~A" dep)))
-                             (_ (format #t "~A: ~A~%" (uwhite "trying") key))
+                             (_ (format #t "~A: ~A~%" (uwhite "trying3") key))
                              (resolved (hash-table-ref exports key)))
                         (if resolved
                             (let* ((pkg (assoc-val :pkg resolved))
@@ -116,7 +122,7 @@
                               (cons dep resolved))
                             ;; else assume opam lbl
                             (string->symbol
-                             (format #f "@~A//:~A" dep dep))))))))))
+                             (format #f "@~A//~A" dep dep))))))))))
 
 (define (-fixup-conditionals! ws pkg stanza)
   (format #t "~A: ~A\n" (bgblue "-fixup-conditionals!") stanza)
@@ -147,6 +153,7 @@
   (case (car stanza)
     ((:exports-files) (values))
     (else (let* ((exports (car (assoc-val :exports ws)))
+                 (pkg-path (car (assoc-val :pkg-path pkg)))
                  (stanza-alist (cdr stanza)))
             (format #t "~A: ~A\n" (green "exports tbl") exports)
 
@@ -173,7 +180,7 @@
                                        ;; std dep form: (:foo (:pkg...)(:tgt...))
                                        (-fixup-std-dep-form dep exports))
                                       ((symbol? dep)
-                                       (-fixup-dep-sym dep exports))
+                                       (-fixup-dep-sym dep pkg-path exports))
                                       (else (error 'fixme
                                                    (format #f "~A: ~A~%" (bgred "unrecognized :archive dep type") dep)))))
                                    (cdr deps))))
@@ -266,8 +273,7 @@
                                                               `(::tools
                                                                 (,kw
                                                                  ,(cons :pkg (if (string=? "./" path)
-                                                                                 (assoc-val :pkg-path pkg)
-                                                                                 path))
+                                                                                 pkg-path path))
                                                                  ,(cons :tgt (basename t))))
                                                               ))))
                                                 ;; else treat it just like a std dep
@@ -324,7 +330,7 @@
                                        ;; std dep form: (:foo (:pkg...)(:tgt...))
                                        (-fixup-std-dep-form dep exports))
                                       ((symbol? dep)
-                                       (-fixup-dep-sym dep exports))
+                                       (-fixup-dep-sym dep pkg-path exports))
                                       (else (error 'fixme
                                                    (format #f "~A: ~A~%" (bgred "unrecognized :archive dep type") dep)))))
                                    (cdr deps))))
@@ -350,7 +356,7 @@
                                        ;; std dep form: (:foo (:pkg...)(:tgt...))
                                        (-fixup-std-dep-form dep exports))
                                       ((symbol? dep)
-                                       (-fixup-dep-sym dep exports))
+                                       (-fixup-dep-sym dep pkg-path exports))
                                       (else (error 'fixme
                                                    (format #f "~A: ~A~%" (bgred "unrecognized :archive dep type") dep)))))
                                    (cdr deps))))

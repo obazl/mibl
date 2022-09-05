@@ -2,6 +2,34 @@
 
 ;; mibl/dune/modules.scm
 
+(define (x-get-manifest pkg wrapped? stanza-alist spec) ;;  deps
+  (format #t "~A: ~A\n" (ublue "x-get-manifest") stanza-alist)
+  (format #t "~A: ~A\n" (uwhite "pkg") pkg)
+  (format #t "~A: ~A\n" (blue "spec") spec)
+  ;; (if deps
+  (let* ((submods+sigs-list
+          (modules-fld->submodules-fld
+           ;; (assoc 'modules stanza-alist)
+           spec
+           ;; files
+           (assoc :modules pkg)
+           ;; deps
+           (assoc :signatures pkg)
+           (assoc :structures pkg)))
+         (submods+sigs-list (if (equal? (cadr submods+sigs-list)
+                                     '(:signatures))
+                                (list (car submods+sigs-list))
+                                submods+sigs-list))
+         (submods+sigs-list (if (equal? (cdr submods+sigs-list)
+                                     '(:modules))
+                                (cdr submods+sigs-list)
+                                submods+sigs-list)))
+    (format #t "~A: ~A\n" (uwhite "submods+sigs-list") submods+sigs-list)
+    (if (null? submods+sigs-list)
+        '()
+        (cons :manifest
+              (remove () submods+sigs-list)))))
+
 (define (get-manifest pkg wrapped? stanza-alist) ;;  deps
   (format #t "~A: ~A\n" (ublue "get-manifest") stanza-alist)
   (format #t "~A: ~A\n" "pkg" pkg)
@@ -25,7 +53,8 @@
     (format #t "~A: ~A\n" (uwhite "submods+sigs-list") submods+sigs-list)
     (if (null? submods+sigs-list)
         '()
-        (cons :manifest (remove () submods+sigs-list)))))
+        (cons :manifest
+              (remove () submods+sigs-list)))))
             ;; (let ((submods (reverse (car submods+sigs-list)))
             ;;       (subsigs (reverse (cdr submods+sigs-list))))
             ;;   (cons :manifest (remove '()
@@ -33,7 +62,7 @@
 
 ;; only used for generated files, so returns :ml_, :mli_
 (define (filename->module-assoc filename)
-  ;; (format #t "filename->module-assoc ~A\n" filename)
+  (format #t "~A: ~A\n" (ublue "filename->module-assoc") filename)
   (let* ((ext (filename-extension filename))
          (pname (principal-name filename))
          (mname (normalize-module-name pname)))
@@ -395,7 +424,7 @@
                            )
 
                       (list
-                       (cons :modules all-module-names)
+                       (cons :modules (sort! all-module-names sym<?))
                        (if (null? sig-module-names)
                            '() (cons :signatures sig-module-names)))))
                   ) ;; if modules-spec

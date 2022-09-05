@@ -30,6 +30,192 @@
                                                (list (cons :file pattern)))))))
       (format #t "updated filegroups tbl: ~A\n" filegroups))))
 
+(define (-module-in-modules? m modules)
+  (format #t "~A: ~A~%" (ublue "-module-in-modules?") m)
+  (find-if (lambda (mod)
+             (string=? (format #f "~A" m)
+                     (format #f "~A" (car mod))))
+           modules))
+
+(define (-normalize-pkg-files pkg)
+  (format #t "~A: ~A~%" (ublue "-normalize-pkg-files") (assoc-val :pkg-path pkg))
+  (let ((pkg-modules (assoc-val :modules pkg))
+        (pkg-structs (assoc :structures pkg))
+        (pkg-sigs (assoc :signatures pkg)))
+    (if pkg-modules
+        (begin
+          (format #t "~A:~%" (cyan "pkg-modules"))
+          (for-each (lambda (m)
+                      (format #t "  ~A~%" m))
+                    pkg-modules))
+          (format #t "~A: ~A~%" (cyan "pkg-modules") pkg-modules))
+
+    (if pkg-structs
+        (let* ((statics (if-let ((statics (assoc-in '(:structures :static) pkg)))
+                                statics '()))
+               (dynamics (if-let ((dynamics (assoc-in '(:structures :static) pkg)))
+                                 dynamics '())))
+          (format #t "~A: ~A~%" (cyan "pstructs, static") statics)
+          (format #t "~A: ~A~%" (cyan "pstructs, dynamic") dynamics)
+          (if pkg-modules
+              (begin ;; twice, once for statics, once for dynamics
+                (let ((remainder
+                       (filter (lambda (struct)
+                                 (format #t "~A: ~A~%" (uwhite "struct") struct)
+                                 (if-let ((x (-module-in-modules? (car struct) pkg-modules)))
+                                         (begin
+                                           (format #t "~A: ~A~%"
+                                                   (uwhite "in modules?") x)
+                                           #f)
+                                         #t))
+                               (cdr statics))))
+                  (format #t "~A: ~A~%" (ured "static remainder") remainder)
+                  (if (null? remainder)
+                      (dissoc! '(:structures) pkg)
+                      (set-cdr! statics remainder)))
+
+                (let ((remainder
+                     (filter (lambda (struct)
+                               (format #t "~A: ~A~%" (uwhite "struct") struct)
+                               (if-let ((x (-module-in-modules? (car struct) pkg-modules)))
+                                       (begin
+                                         (format #t "~A: ~A~%"
+                                                 (uwhite "in modules?") x)
+                                         #f)
+                                       #t))
+                             (cdr dynamics))))
+                (format #t "~A: ~A~%" (ured "dyn remainder") remainder)
+                (if (null? remainder)
+                    (dissoc! '(:structures) pkg)
+                    (set-cdr! dynamics remainder))))
+              )))
+
+    (if pkg-sigs
+        (let* ((_ (format #t "~A: ~A~%" (red "pkg-sigs") pkg-sigs))
+               (psigs (cdr pkg-sigs))
+               (statics (if-let ((statics (assoc-val :static psigs)))
+                                statics '()))
+               (dynamics (if-let ((dynamics (assoc-val :dynamic psigs)))
+                                 dynamics '())))
+          (format #t "~A: ~A~%" (cyan "psigs, static") statics)
+          (format #t "~A: ~A~%" (cyan "psigs, dynamic") dynamics)
+          (if pkg-modules
+              (begin ;; twice, once for statics, once for dynamics
+                (let ((remainder
+                       (filter (lambda (sig)
+                                 (format #t "~A: ~A~%" (uwhite "sig") sig)
+                                 (if-let ((x (-module-in-modules? (car sig) pkg-modules)))
+                                         (begin
+                                           (format #t "~A: ~A~%"
+                                                   (uwhite "in modules?") x)
+                                           #f)
+                                         #t))
+                               (concatenate statics dynamics))))
+                  (format #t "~A: ~A~%" (ured "remainder") remainder)
+                  (if (null? remainder)
+                      (dissoc! '(:structures) pkg)
+                      (set-cdr! pkg-sigs remainer)))))))
+    ))
+
+;; normalize-manifests: one for each aggregate, plus pkg files (:modules,
+;; :signatures, :structures) are manifests.
+
+;; task 1: remove items from pkg-structs and pkg-sigs if they are also
+;; in pkg-modules. this can happen with lex and yacc files.
+
+;; task 2: re-populate the (:manifest :modules) of aggregates.
+
+;; Stage 1 processing of aggregates resolves module deps with what's
+;; avaiable in pkg modules and structs. but some dynamic files could
+;; be adeed by a later stanza. So we need to repeat the process after
+;; all dynamic files have been added to the pkg file fields.
+(define (normalize-manifests! ws)
+  (format #t "~A: ~A~%" (bgblue "update-aggregates") ws)
+  (let* ((@ws (assoc-val ws -mibl-ws-table))
+         (pkgs (car (assoc-val :pkgs @ws))))
+    (for-each (lambda (kv)
+                (let* ((pkg-key (car kv))
+                       (pkg (cdr kv))
+                       (stanzas (assoc-val :dune (cdr kv))))
+                  (format #t "~%~A: ~A~%" (bgcyan "pkg key") pkg-key)
+
+                  ;; task 1.
+                  (-normalize-pkg-files (cdr kv))
+
+                  ;; for each aggregate stanza, resolve the (modules) fld
+                  (if stanzas
+                      (for-each (lambda (stanza)
+                                  (format #t "~A: ~A~%" (blue "stanza") stanza)
+                                  (case (car stanza)
+                                    ((:ns-archive
+                                      :archive
+                                      :ns-library
+                                      :library)
+                                     (format #t "~A: ~A~%" (ured "aggregate")
+                                             (assoc-val :privname (cdr stanza)))
+                                     (let* ((stanza-alist (cdr stanza))
+                                            (_ (format #t "~A: ~A~%" (ured "stanza-alist") stanza-alist))
+                                            (old-manifest (assoc ':manifest stanza-alist))
+                                            (mmods (assoc-in '(:manifest :raw) stanza-alist))
+                                            (manifest (x-get-manifest pkg #t stanza-alist (cadr mmods))))
+                                       (format #t "~A: ~A~%" (uyellow "mmods") mmods)
+                                       (format #t "~A: ~A~%" (uyellow "old manifest") old-manifest)
+                                       (format #t "~A: ~A~%" (uyellow "manifest") manifest)
+                                       (set-cdr! old-manifest (cdr manifest))
+                                       ))
+
+                                    ;; rule outputs should already be in pkg files
+                                    ;; ((:rule)
+                                    ;;  (format #t "~A~%" (ured "rule"))
+                                    ;;  (for-each (lambda (o)
+                                    ;;              (format #t "~A: ~A~%" (red "OUT") o)
+                                    ;;              (let ((tgt (assoc-val :tgt (cdr o))))
+                                    ;;                (format #t "~A: ~A~%" (red "tgt") tgt)
+                                    ;;                (if (= (fnmatch "*.ml" tgt 0) 0)
+                                    ;;                    (update-pkg-files-with-struct! pkg tgt))
+                                    ;;                ))
+                                    ;;            (assoc-val :outputs (cdr stanza))))
+                                    (else)))
+                                stanzas)
+                          )))
+              pkgs)))
+
+  ;; (let* ((@ws (assoc-val ws -mibl-ws-table))
+  ;;        (ws-path (car (assoc-val :path @ws)))
+  ;;        (_ (format #t "~A: ~A~%" (blue "ws-path") ws-path))
+  ;;        (pkgs (car (assoc-val :pkgs @ws)))
+  ;;        (filegroups (car (assoc-val :filegroups @ws))))
+  ;;   (format #t "~A: ~A~%" (yellow "fg-table") filegroups)
+  ;;   (for-each (lambda (kv)
+  ;;               (let* ((fg-path (car kv))
+  ;;                      (fg-key (car kv))
+  ;;                      (fg-pkg (hash-table-ref pkgs fg-key)))
+  ;;                 (format #t "\n~A: ~A~%" (yellow "fg-path") fg-path)
+  ;;                 (format #t "~A: ~A~%" (yellow "fg-key") fg-key)
+  ;;                 (format #t "~A: ~A~%" (yellow "pkg") fg-pkg)
+  ;;                 ;; WARNING: fg-pkg will be #f if it is not in scope
+  ;;                 ;; e.g. its a globbed super-dir
+  ;;                 (if fg-pkg
+  ;;                     (hash-table-set! pkgs fg-key
+  ;;                                      (append fg-pkg
+  ;;                                              (list
+  ;;                                               (cons :filegroups (cdr kv)))))
+  ;;                     (hash-table-set! pkgs fg-key
+  ;;                                      (list
+  ;;                                       `(:ws-path ,ws-path)
+  ;;                                       `(:pkg-path ,fg-path)
+  ;;                                       `(:realpath
+  ;;                                         ,(realpath (string-join (map (lambda (x) (format #f "~A" x))
+  ;;                                                                      (list  ws-path fg-path)) "/")
+  ;;                                                    '()))
+  ;;                                       (cons :filegroups (cdr kv)))))
+  ;;                 ;; (for-each (lambda (fg)
+  ;;                 ;;             (format #t "~A: ~A~%" (yellow "fg") fg))
+  ;;                 ;;           (cdr kv))
+  ;;                 )
+  ;;               )
+  ;;             filegroups)))
+
 (define (add-filegroups-to-pkgs ws)
   (format #t "~A: ~A~%" (blue "-add-filegroups-to-pkgs") ws)
   (let* ((@ws (assoc-val ws -mibl-ws-table))
@@ -98,6 +284,8 @@
 
 (define (update-pkg-files-with-struct! pkg tgt)
   (format #t "~A: ~A~%" (ublue "update-pkg-files-with-struct!") tgt)
+  (format #t "~A: ~A~%" (blue "pkg") pkg)
+  (flush-output-port)
   ;; if we already have corresponding sig, move to :modules
   ;; else update :structures
   (let* ((m-assoc (filename->module-assoc tgt))
@@ -105,12 +293,16 @@
          (m-name (car m-assoc))
          (pr (cadr m-assoc))
          (_ (format #t "~A: ~A\n" (red "PR") pr))
+         ;; (sigs (assoc-val :signatures pkg))
+         ;; (_ (format #t "~A: ~A~%" (cyan "sigs2") sigs))
          (sigs (assoc :signatures pkg))
          (_ (format #t "~A: ~A~%" (cyan "sigs") sigs))
          ;; removes matching sig from :signatures
-         (matching-sig (find-module-in-rsrc-list!? m-name tgt sigs))
+         (matching-sig (if (cdr sigs) (find-module-in-rsrc-list!? m-name tgt sigs) #f))
          (_ (format #t "~A: ~A~%" (cyan "found sig?") matching-sig))
          )
+
+    ;; FIXME: check to see if already in pkg-modules
     (if matching-sig
         (begin ;; we know this file is not in :modules since it was in sigs
           (format #t "~A: ~A~%" (red "updating :modules") m-name)

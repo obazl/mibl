@@ -190,7 +190,11 @@
       ;; (format #t "SUBMODS:: ~A\n" submods)
       ;; (format #t "SUBSIGS:: ~A\n" subsigs)
       (append lib-flds (remove '() (list depslist
-                                         modules
+                                         (cons
+                                          (car modules)
+                                          (append (cdr modules)
+                                                  `((:raw
+                                                     ,(assoc 'modules stanza-alist)))))
                                          ;;submods
                                          ;;subsigs
                                          ))))
