@@ -52,9 +52,9 @@
 
     (if pkg-structs
         (let* ((statics (if-let ((statics (assoc-in '(:structures :static) pkg)))
-                                statics '()))
-               (dynamics (if-let ((dynamics (assoc-in '(:structures :static) pkg)))
-                                 dynamics '())))
+                                statics '(:static)))
+               (dynamics (if-let ((dynamics (assoc-in '(:structures :dynamic) pkg)))
+                                 dynamics '(:dynamic))))
           (format #t "~A: ~A~%" (cyan "pstructs, static") statics)
           (format #t "~A: ~A~%" (cyan "pstructs, dynamic") dynamics)
           (if pkg-modules
@@ -71,24 +71,31 @@
                                (cdr statics))))
                   (format #t "~A: ~A~%" (ured "static remainder") remainder)
                   (if (null? remainder)
-                      (dissoc! '(:structures) pkg)
-                      (set-cdr! statics remainder)))
-
+                      (dissoc! '(:structures :static) pkg)
+                      (set-cdr! statics remainder))
+                  )
+                ;; (format #t "~A~%" (bgmagenta "dynstructs"))
                 (let ((remainder
-                     (filter (lambda (struct)
-                               (format #t "~A: ~A~%" (uwhite "struct") struct)
-                               (if-let ((x (-module-in-modules? (car struct) pkg-modules)))
-                                       (begin
-                                         (format #t "~A: ~A~%"
-                                                 (uwhite "in modules?") x)
-                                         #f)
-                                       #t))
-                             (cdr dynamics))))
+                       (filter (lambda (struct)
+                                 (format #t "~A: ~A~%" (uwhite "struct") struct)
+                                 (if-let ((x (-module-in-modules? (car struct) pkg-modules)))
+                                         (begin
+                                           (format #t "~A: ~A~%"
+                                                   (uwhite "in modules?") x)
+                                           #f)
+                                         #t))
+                               (cdr dynamics))))
                 (format #t "~A: ~A~%" (ured "dyn remainder") remainder)
                 (if (null? remainder)
-                    (dissoc! '(:structures) pkg)
-                    (set-cdr! dynamics remainder))))
+                    (begin
+                      ;; (dissoc! '(:structures :dynamic) pkg)
+                      )
+                    (set-cdr! dynamics remainder))
+                ))
               )))
+    ;; (format #t "~A: ~A~%" (bgmagenta "updated structs") (assoc :structures pkg))
+    ;; (if (equal? "compiler/lib" (car (assoc-val :pkg-path pkg)))
+    ;;     (error 'STOP "nmani"))
 
     (if pkg-sigs
         (let* ((_ (format #t "~A: ~A~%" (red "pkg-sigs") pkg-sigs))
@@ -113,9 +120,9 @@
                                (concatenate statics dynamics))))
                   (format #t "~A: ~A~%" (ured "remainder") remainder)
                   (if (null? remainder)
-                      (dissoc! '(:structures) pkg)
+                      (dissoc! '(:signatures) pkg)
                       (set-cdr! pkg-sigs remainer)))))))
-    ))
+    pkg))
 
 ;; normalize-manifests: one for each aggregate, plus pkg files (:modules,
 ;; :signatures, :structures) are manifests.
@@ -139,8 +146,14 @@
                        (stanzas (assoc-val :dune (cdr kv))))
                   (format #t "~%~A: ~A~%" (bgcyan "pkg key") pkg-key)
 
+                  (format #t "~A: ~A~%" (bgmagenta "before") (assoc :structures pkg))
                   ;; task 1.
-                  (-normalize-pkg-files (cdr kv))
+                  (-normalize-pkg-files pkg)
+                  (format #t "~A: ~A~%" (bgmagenta "after") (assoc :structures pkg))
+                  ;; (set! pkg (-normalize-pkg-files pkg))
+                  ;; (format #t "~A: ~A~%" (bgred "normed pkg") pkg)
+                  ;; (if (equal? "compiler/lib" (car (assoc-val :pkg-path (cdr kv))))
+                  ;;     (error 'STOP "nmani"))
 
                   ;; for each aggregate stanza, resolve the (modules) fld
                   (if stanzas
@@ -158,6 +171,7 @@
                                             (old-manifest (assoc ':manifest stanza-alist))
                                             (mmods (assoc-in '(:manifest :raw) stanza-alist))
                                             (manifest (x-get-manifest pkg #t stanza-alist (cadr mmods))))
+                                       (format #t "~A: ~A~%" (ured "structures") (assoc :structures stanza-alist))
                                        (format #t "~A: ~A~%" (uyellow "mmods") mmods)
                                        (format #t "~A: ~A~%" (uyellow "old manifest") old-manifest)
                                        (format #t "~A: ~A~%" (uyellow "manifest") manifest)

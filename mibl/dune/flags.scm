@@ -10,15 +10,15 @@
 
 ;; split opts into boolean flags and (opt arg) pairs
 (define (split-opts opts)
-  ;; (format #t "~A: ~A\n" (ublue "splitting opts") opts)
+  (format #t "~A: ~A\n" (ublue "split-opts") opts)
   ;; assumption: :standard has been removed
   ;; cases: arg is list or not: (flags (a b ...)) v. (flags a b ...)
   ;; case: embedded list, e.g. (flags a (b c) ...)
 
   ;; logic: if arg with leading '-' is followed by another with '-',
-  ;; then its a boolean flag
+  ;; then its a boolean flag EXCEPT warning options e.g. -w -7-37
   (let recur ((opts opts)
-              (ostack '()) ;; option stack
+              (ostack '()) ;; option stack - at most one elt?
               (options '())
               (flags '())
               (orphans '()))
@@ -50,9 +50,21 @@
                       (recur (cdr opts)
                              (cons opt ostack) options flags orphans)
                       ;; prev must be a flag, new goes on ostack
-                      (recur (cdr opts)
-                             (list opt) options
-                             (cons (symbol (car ostack)) flags) orphans))
+                      (begin
+                        (format #t "~A: opt ~A prev ~A~%"
+                                (bgred "hypen prev") opt (car ostack))
+                        (if (equal? (car ostack) "-w")
+                            ;; current is arg to prev -w
+                            (recur (cdr opts)
+                                   (cdr ostack) ;; pop ostack
+                                   (cons (cons (car ostack) opt) options)
+                                   flags orphans)
+                            ;; else prev is flag, push current to ostack
+                            (recur (cdr opts)
+                                   (list opt) ;; ostack
+                                   options
+                                   (cons (symbol (car ostack)) flags)
+                                   orphans))))
                   ;; no '-', must be an opt val
                   (if (null? ostack)
                       (if (equal? (symbol "\\") rawopt)
@@ -196,16 +208,16 @@
              (clean-flags (if top-std
                               (remove :item :standard flags-val)
                               flags-val)))
-        ;; (format #t "DIRTY: ~A\n" flags-val)
-        ;; (format #t "STD: ~A\n" std)
-        ;; (format #t "CLEAN: ~A\n" clean-flags)
+        (format #t "DIRTY: ~A\n" flags-val)
+        (format #t "STD: ~A\n" std)
+        (format #t "CLEAN: ~A\n" clean-flags)
         (let-values (((opens opts std) (split-opens clean-flags)))
           (let-values (((options bools) (split-opts (reverse opts))))
-            ;; (format #t "OPENS: ~A\n" (reverse opens))
-            ;; (format #t "OPTS: ~A\n" (reverse opts))
-            ;; (format #t "STD: ~A\n" std)
-            ;; (format #t "OPTIONS: ~A\n" options)
-            ;; (format #t "FLAGS: ~A\n" bools)
+            (format #t "OPENS: ~A\n" (reverse opens))
+            (format #t "OPTS: ~A\n" (reverse opts))
+            (format #t "STD: ~A\n" std)
+            (format #t "OPTIONS: ~A\n" options)
+            (format #t "FLAGS: ~A\n" bools)
             ;; FIXME: expand :standard flags
             (values
              (if (or top-std std) '(:standard) '())
