@@ -23,6 +23,7 @@
          (submods+sigs-list (if (equal? (cdr submods+sigs-list)
                                      '(:modules))
                                 (cdr submods+sigs-list)
+                                ;; (sort! (cdr submods+sigs-list) sym<?)
                                 submods+sigs-list)))
     (format #t "~A: ~A\n" (uwhite "submods+sigs-list") submods+sigs-list)
     (if (null? submods+sigs-list)
@@ -49,6 +50,7 @@
          (submods+sigs-list (if (equal? (cdr submods+sigs-list)
                                      '(:modules))
                                 (cdr submods+sigs-list)
+                                ;; (cdr submods+sigs-list)
                                 submods+sigs-list)))
     (format #t "~A: ~A\n" (uwhite "submods+sigs-list") submods+sigs-list)
     (if (null? submods+sigs-list)
@@ -424,7 +426,7 @@
                            )
 
                       (list
-                       (cons :modules (sort! all-module-names sym<?))
+                       (cons :modules all-module-names)
                        (if (null? sig-module-names)
                            '() (cons :signatures sig-module-names)))))
                   ) ;; if modules-spec

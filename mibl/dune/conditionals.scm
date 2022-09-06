@@ -84,9 +84,14 @@
 
     ;; remove apodoses from :structures, :signatures
     (format #t "~A: ~A~%" (red "removing apodoses from pkg-structs") structs)
-    (let ((apodoses (cons
-                     (car (assoc-val :default conditional))
-                     (map cdr (assoc-val :selectors conditional)))))
+    ;; NB: a dune trick is to use an empty file as apodosis of one
+    ;; conditional and as the default. This serves to select the
+    ;; dependency (the protatis) when it's available, without adding
+    ;; a module to the ns.  So we need to uniquify the apodoses.
+    (let* ((apodoses (cons
+                      (car (assoc-val :default conditional))
+                      (map cdr (assoc-val :selectors conditional))))
+           (apodoses (remove-duplicates apodoses)))
       (format #t "~A: ~A\n" (uwhite "collected apodoses") apodoses)
       ;; first structs
       (for-each (lambda (apo)
@@ -101,36 +106,40 @@
                 apodoses)
       (format #t "~A: ~A~%" (cyan "updated pkg-structs") structs)
       (format #t "~A: ~A~%" (red "removing apodoses from pkg-sigs") sigs)
-      (for-each (lambda (apo)
-                  (format #t "~A: ~A~%" (uwhite "testing sigs") apo)
-                  (let ((match (find-if (lambda (e) (eq? apo (cdr e)))
-                                        (cdr sigs))))
-                    (format #t "matched? ~A~%" match)
-                    (if match
-                        (set-cdr! sigs (dissoc! (list (car match))
-                                                (cdr sigs))))
-                    ))
-                apodoses)
+      (if sigs
+          (for-each (lambda (apo)
+                      (format #t "~A: ~A~%" (uwhite "testing sigs") apo)
+                      (let ((match (find-if (lambda (e) (eq? apo (cdr e)))
+                                            (cdr sigs))))
+                        (format #t "matched? ~A~%" match)
+                        (if match
+                            (set-cdr! sigs (dissoc! (list (car match))
+                                                    (cdr sigs))))
+                        ))
+                    apodoses))
       (format #t "~A: ~A~%" (cyan "updated pkg-sigs") sigs)
       )
 
-    (format #t "~A: ~A~%" (red "updating :modules for select tgt") ctarget)
-    (if (structfile? ctarget)
+    (format #t "~A: ~A~%" (red "maybe updating :modules for select tgt") ctarget)
+    (format #t "~A: ~A~%" (red "sigs") sigs)
+    (if (and (structfile? ctarget) sigs)
         (let* ((sigtarget (string->symbol (format #f "~Ai" ctarget)))
                (match (find-if (lambda (e)
                                  ;; (format #t "e: ~A\n" e)
                                  (eq? sigtarget (cdr e)))
                                (cdr sigs))))
-          ;; fixme: (if match ...
-          (let ((newmod (cons (car match)
-                              (list (cons :ml_ ctarget)
-                                    (cons :mli (cdr match))))))
-            (format #t "matching sig: ~A\n" newmod)
-            (set-cdr! modules (append (cdr modules) (list newmod)))
-            (set-cdr! sigs (dissoc! match (cdr sigs))))
+          (if match
+              (let ((newmod (cons (car match)
+                                  (list (cons :ml_ ctarget)
+                                        (cons :mli (cdr match))))))
+                (format #t "matching sig: ~A\n" newmod)
+                (set-cdr! modules (append (cdr modules) (list newmod)))
+                (set-cdr! sigs (dissoc! match (cdr sigs)))))
           (format #t "~A: ~A\n" (uwhite "upd pkg modules") modules)
           ))
 
+    (format #t "~A: ~A~%" (red "maybe updating :modules for select tgt") ctarget)
+    (format #t "~A: ~A~%" (red "structs") structs)
     (if (sigfile? ctarget)
         (let* ((structtarget (string->symbol
                               (string-drop-right (format #f "~A" ctarget)
@@ -140,13 +149,13 @@
                                  (format #t "e: ~A\n" e)
                                  (eq? structtarget (cdr e)))
                                (cdr structs))))
-          ;; (format #t "match: ~A\n" match)
-          (let ((newmod (cons (car match)
-                              (list (cons :ml (cdr match))
-                                    (cons :mli_ ctarget)))))
-            (format #t "matching struct: ~A\n" newmod)
-            (set-cdr! modules (append (cdr modules) (list newmod)))
-            (set-cdr! structs (dissoc! match (cdr structs))))
+          (if match
+              (let ((newmod (cons (car match)
+                                  (list (cons :ml (cdr match))
+                                        (cons :mli_ ctarget)))))
+                (format #t "matching struct: ~A\n" newmod)
+                (set-cdr! modules (append (cdr modules) (list newmod)))
+                (set-cdr! structs (dissoc! match (cdr structs)))))
           ))
     ;; (format #t "~A~%" (cyan "updated pkg-modules"))
     ;; (for-each (lambda (m) (format #t "\t~A~%" m)) modules)

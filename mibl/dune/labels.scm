@@ -126,26 +126,27 @@
 
 (define (-fixup-conditionals! ws pkg stanza)
   (format #t "~A: ~A\n" (bgblue "-fixup-conditionals!") stanza)
-  (if-let ((conditionals (if-let ((dc
-                                   (assoc-in '(:deps :conditionals)
-                                             (cdr stanza))))
-                                 dc #f)))
-          (for-each (lambda (conditional)
-                      (format #t "~A: ~A~%" (bgblue "conditional")
-                              conditional)
-                      (for-each (lambda (selector)
-                                  (format #t "~A: ~A~%" (bgblue "selector")
-                                          selector)
-                                  (set-cdr! selector
-                                            (list
-                                             (cdr selector)
-                                             (format #f "@~A//:~A"
-                                                     (car selector) (car selector))))
-                                  ;; (set-car! selector (format #f "//bzl/import:~A" (car selector)))
-                                  )
-                                (assoc-val :selectors conditional)))
-                    (cdr conditionals))
-           ))
+  (if (not (eq? :menhir (car stanza)))
+      (if-let ((conditionals (if-let ((dc
+                                       (assoc-in '(:deps :conditionals)
+                                                 (cdr stanza))))
+                                     dc #f)))
+              (for-each (lambda (conditional)
+                          (format #t "~A: ~A~%" (bgblue "conditional")
+                                  conditional)
+                          (for-each (lambda (selector)
+                                      (format #t "~A: ~A~%" (bgblue "selector")
+                                              selector)
+                                      (set-cdr! selector
+                                                (list
+                                                 (cdr selector)
+                                                 (format #f "@~A//:~A"
+                                                         (car selector) (car selector))))
+                                      ;; (set-car! selector (format #f "//bzl/import:~A" (car selector)))
+                                      )
+                                    (assoc-val :selectors conditional)))
+                        (cdr conditionals))
+              )))
 
 ;; FIXME: rename
 (define (-fixup-stanza! ws pkg stanza)
@@ -316,7 +317,10 @@
                ;;   (format #t "archive deps: ~A~%" deps)))
                (let* ((deps (if-let ((deps (assoc-in '(:deps :fixed) stanza-alist)))
                                     deps #f))
-                      (_ (format #t "deps: ~A~%" deps))
+                      (_ (format #t "~A: ~A~%" (blue "deps") deps))
+                      (ppx (if-let ((ppx (assoc-val :ppx stanza-alist)))
+                                   ppx #f))
+                      (_ (format #t "~A: ~A~%" (ublue "ppx") ppx))
                       )
                  (if deps
                      (begin
@@ -336,7 +340,30 @@
                                    (cdr deps))))
                          (format #t "~A: ~A~%" (ured "fixed-up deps") fixdeps)
                          (set-cdr! deps fixdeps)
-                         (set-car! deps :resolved))))))
+                         (set-car! deps :resolved))))
+                 (if ppx
+                     (begin
+                       (format #t "~A: ~A~%" (ured "resolving ppx") ppx)
+                       (let* ((exports (car (assoc-val :exports ws)))
+                              (ppx-deps (assoc :manifest ppx))
+                              (_ (format #t "~A: ~A~%" (bgred "ppx-deps") ppx-deps))
+                              (fixppx
+                               (map (lambda (dep)
+                                      (format #t "~A: ~A~%" (uwhite "fixup ppx-dep") dep)
+                                      (cond
+                                       ((list? dep)
+                                        ;; std dep form: (:foo (:pkg...)(:tgt...))
+                                        (-fixup-std-dep-form dep exports))
+                                       ((symbol? dep)
+                                        (-fixup-dep-sym dep pkg-path exports))
+                                       (else (error 'fixme
+                                                    (format #f "~A: ~A~%" (bgred "unrecognized ppx-dep type") dep)))))
+                                    (cdr ppx-deps))))
+                         (format #t "~A: ~A~%" (ured "fixed-up ppx-deps") fixppx)
+                         (set-cdr! ppx-deps fixppx)
+                         ;; (set-car! ppx-deps :resolved)
+                         ;; (error 'STOP "stop ppx")
+                         )))))
 
               ((:library)
                (format #t "~A~%" (ublue "fixup :library"))

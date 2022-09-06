@@ -63,23 +63,127 @@
   (let* ((stanza-alist (cdr stanza))
          (parsers (assoc-val 'modules stanza-alist)))
     (format #t "~A: ~A~%" (uwhite "menir parsers") parsers)
-    (list (cons :menhir
-                (map (lambda (fld)
-                       (format #t "~A: ~A~%" (uwhite "menhir fld") fld)
-                       (case (car fld)
-                         ((modules)
-                          (cons :parsers (cdr fld)))
-                         ((flags)
-                          (-normalize-menhir-fld-flags (cdr fld)))
-                          ;; (cons :flags (cdr fld)))
-                         ((merge_into)
-                          (cons :base-name (cdr fld)))
-                         ((infer)
-                          (cons :type-inference (cdr fld)))
-                         (else
-                          (error 'MENHIR
-                                 (format #f "unrecognized menhir fld: ~A" fld)))))
-                     (cdr stanza))))))
+    (let ((spec
+           (map (lambda (fld)
+                  (format #t "~A: ~A~%" (uwhite "menhir fld") fld)
+                  (case (car fld)
+                    ((modules)
+                     (cons :grammars (cdr fld)))
+                    ((flags)
+                     (-normalize-menhir-fld-flags (cdr fld)))
+                    ;; (cons :flags (cdr fld)))
+                    ((merge_into)
+                     (cons :base (cdr fld)))
+                    ((infer)
+                     (cons :type-inference (cdr fld)))
+                    (else
+                     (error 'MENHIR
+                            (format #f "unrecognized menhir fld: ~A" fld)))))
+                (cdr stanza))))
+      (let* ((cmd-unused (if-let ((unused (assoc-val :unused-tokens spec)))
+                                 (format #f "~{--unused-token ~A~^ ~}" unused)
+                                 ""))
+             (cmd-flags (if-let ((flags (assoc-val :flags spec)))
+                                (format #f "~{~A~^ ~}" flags) ""))
+             (cmd-options (if-let ((opts (assoc-val :options spec)))
+                                  (format #f "~{~A~^ ~}" opts) ""))
+             (pkg-path (car (assoc-val :pkg-path pkg)))
+             (cmd (format #f
+                          (string-join
+                           '("menhir"
+                             "--unused-tokens" ;; ignore warnings
+                             "~A" ;; cmd-options
+                             "~A" ;; cmd-flags
+                             "--depend"
+                             "--ocamldep"
+                             "\"ocamldep -modules\""
+                             "~{~A/~A.mly~}"
+                             "2> /dev/null"))
+                          cmd-options cmd-flags
+                          (flatten (map (lambda (g)
+                                 (cons pkg-path g))
+                                        (assoc-val :grammars spec))))))
+             (format #t "~A: ~A~%" (ublue "cmd-unused") cmd-unused)
+             (format #t "~A: ~A~%" (ublue "cmd-options") cmd-options)
+             (format #t "~A: ~A~%" (ublue "cmd-flags") cmd-flags)
+             (format #t "~A: ~A~%" (ublue "cmd") cmd)
+             ;; (let ((result (system cmd #t)))
+             ;;   (format #t "~A: ~A~%" (bgred "result") result))
+             (let* ((deps (string-trim '(#\newline) (system cmd #t)))
+                    (deps (string-split deps #\newline)))
+               (for-each (lambda (dep)
+                           (format #t "~A: ~A~%" (bgyellow "processing ocamldep") dep)
+                           (let ((segs (string-split dep #\:)))
+                             ;; (format #t "~A: ~A~%" (yellow "segs") segs)
+                             (if (null? (cdr segs))
+                                 (begin)
+                                 (let* ((fpath (car segs))
+                                        (fname (basename fpath))
+                                        (kind (filename->kind fname))
+                                        (mdeps (string-trim '(#\space) (cadr segs)))
+                                        (mdeps (string-split mdeps #\space))
+                                        (mdeps (map string->symbol mdeps))
+                                        (_ (format #t "~A: ~A~%" (red "mdeps") mdeps))
+                                        ;; eliminate mdeps not in this pkg
+                                        (mdeps (filter (lambda (d) (is-module-in-pkg d pkg)) mdeps))
+                                        (_ (format #t "~A: ~A~%" (red "filtered mdeps") mdeps))
+                                        )
+
+                                   (if (not (null? mdeps))
+                                       (begin
+                                         (format #t "~A ~A to ~A~%" (bgyellow "adding mdeps") mdeps fname)
+                                         (format #t "~A: ~A~%" (uyellow "in pkg") pkg)
+                                         (set! spec (alist-update-in! spec '(:deps)
+                                                                      (lambda (old)
+                                                                        (remove-duplicates (append mdeps old))
+                                                                        ;;(append spec `((:deps ,@mdeps)))
+                                                                        )
+                                                                      ))
+                                         (-update-stanza-deps pkg fname mdeps)
+                                         ))
+
+                                   ;; mdeps is list of ocamldeps of fname with corresponding files in this pkg
+                                   ;; we retrieve the pkg-dep for fname and add the mdeps to it
+                                   (format #t "~A: ~A~%" (yellow "ocamldep fname") fname)
+                                   (format #t "~A: ~A~%" (yellow "ocamldep kind") kind)
+                                   (format #t "~A: ~A~%" (yellow "ocamldep mdeps") mdeps)
+                                   (if (not (null? mdeps))
+                                       (if-let ((m-assoc (find-m-file-in-pkg fname pkg)))
+                                               (begin
+                                                 (format #t "~A: ~A~%" (red "m-assoc in pkg") m-assoc)
+                                                 (if (proper-list? m-assoc)
+                                                     ;; its a module entry, (A (:ml a.ml) (:mli a.mli))
+                                                     (begin ;; if mdeps not empty
+                                                       (set-cdr! m-assoc
+                                                                 (append (cdr m-assoc)
+                                                                         (list (cons
+                                                                                (if (eq? kind :struct)
+                                                                                    :ml-deps :mli-deps)
+                                                                                mdeps))))
+                                                       ;; (format #t "~A: ~A~%" (bgred "m-assoc after") m-assoc)
+                                                       )
+                                                     ;; else its a struct entry, (A a.ml)
+                                                     (begin
+                                                       (format #t "~A: ~A~%" (bgred "STRUCT ENTRY") m-assoc)
+                                                       (format #t "~A: ~A~%" (bgred "adding mdeps") mdeps)
+                                                       (if (not (null? mdeps))
+                                                           (set-cdr! m-assoc
+                                                                     (cons (cdr m-assoc)
+                                                                           mdeps))))))
+                                               ;;else
+                                               (format #t "~A: ~A~%" (blue "not found") m-assoc))
+                                       ;; else mdeps is null
+                                       )))))
+                         deps))
+             (let ((tok (if-let ((tok (assoc-val :external-tokens spec)))
+                                (car tok) #f)))
+               (if tok
+                   (begin
+                     (format #t "~A: ~A~%" (bgred "tok") tok)
+                     (alist-update-in! spec '(:deps) (lambda (old) (remove tok old))))))
+             (format #t "~A: ~A~%" (ured "menhir spec") spec)
+             ;; (error 'STOP "STOP menhir")
+             (list (cons :menhir spec))))))
 
   ;; tasks:
   ;; a) verify srcfile exists?
