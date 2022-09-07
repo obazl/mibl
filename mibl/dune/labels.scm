@@ -120,9 +120,11 @@
                                    (tgt (assoc-val :tgt resolved))
                                    (_ (format #t "~A: ~A~%" (ured "tgt") tgt)))
                               (cons dep resolved))
-                            ;; else assume opam lbl
-                            (string->symbol
-                             (format #f "@~A//~A" dep dep))))))))))
+                            (let ((segs (string-split (format #f "~A" key) ".")))
+                              (format #t "~A: ~A~%" (ured "unresolved; assume opam") key)
+                              (if (= 1 (length segs))
+                                  (format #f "@~A//lib/~A" dep dep)
+                                  (format #f "@~A//lib/~{~A~^/~}" (car segs) (cdr segs))))))))))))
 
 (define (-fixup-conditionals! ws pkg stanza)
   (format #t "~A: ~A\n" (bgblue "-fixup-conditionals!") stanza)

@@ -2124,23 +2124,112 @@ LOCAL void _handle_dune_project_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
     }
 }
 
+LOCAL void _update_opam_files(s7_pointer pkg_tbl, FTSENT *ftsentry) //, char *ext)
+{
+    if (debug)
+        log_debug("_update_opam_files: %s", //, ext: %s",
+                  ftsentry->fts_name); //, ext);
+
+    /* if (_exclusions(ftsentry, ext)) { */
+    /*     if (debug) */
+    /*         log_warn("excluding %s", ftsentry->fts_name); */
+    /*     return; */
+    /* } */
+
+    /* s7_pointer pkg_tbl = s7_name_to_value(s7, "pkg-tbl"); */
+    /* if (debug) */
+    /*     log_debug("pkg_tbl: %s", TO_STR(pkg_tbl)); */
+
+    char *pkg_name = dirname(ftsentry->fts_path);
+
+    s7_pointer pkg_key = make_pkg_key(pkg_name);
+    //s7_make_string(s7, pkg_name);
+    s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
+    /* if (debug) */
+    /*     log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
+
+    if (pkg_alist == s7_f(s7)) {
+        // FIXME: should not happen, we always add a pkg entry first
+        if (debug)
+            log_debug("no entry for this pkg");
+    } else {
+
+        s7_pointer assoc = _load_assoc();
+        s7_pointer opam_list
+            = s7_call(s7, assoc, s7_list(s7, 2, opam_kw, pkg_alist));
+        if (debug) log_debug("opam_list %s", TO_STR(opam_list));
+
+        if (opam_list == s7_f(s7)) {
+            if (debug)
+                log_debug("adding :opam list to pkg");
+
+            s7_pointer file_list =
+                s7_list(s7, 1,
+                        s7_list(s7, 2,
+                                opam_kw,
+                                s7_make_string(s7, ftsentry->fts_name)));
+            if (debug)
+                log_debug("file_list: %s", TO_STR(file_list));
+
+            s7_pointer new_pkg = s7_append(s7,
+                                           pkg_alist,
+                                           file_list);
+            if (debug)
+                log_debug("new pkg: %s", TO_STR(new_pkg));
+
+            s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg);
+
+        } else {
+            if (debug) {
+                log_debug("updating :opam");
+                /* log_debug("srcs_alist: %s", */
+                /*        TO_STR(srcs_alist)); */
+                log_debug("opam_list: %s",
+                       TO_STR(opam_list));
+            }
+            s7_pointer new_opam_list =
+                s7_cons(s7,
+                        s7_make_string(s7, ftsentry->fts_name),
+                        s7_cdr(opam_list));
+            log_debug("new opam_list: %s",
+                       TO_STR(new_opam_list));
+
+            s7_pointer sort = s7_name_to_value(s7, "sort!");
+            s7_pointer lt = s7_name_to_value(s7, "string<?");
+            s7_pointer sorted
+                = s7_call(s7, sort, s7_list(s7, 2,
+                                            new_opam_list,
+                                            lt));
+
+            /* log_debug("new opam_list sorted: %s", */
+            /*           TO_STR(sorted)); */
+
+            s7_set_cdr(opam_list, sorted);
+            log_debug("opam_list: %s",
+                      TO_STR(opam_list));
+
+            /* s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg); */
+        }
+    }
+}
+
 LOCAL void _handle_opam_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
 {
     if (trace) {
         log_trace("_handle_opam_file %s", ftsentry->fts_name);
-        log_trace(RED "Ignoring opam files for now" CRESET "\n");
+        /* log_trace(RED "Ignoring opam files for now" CRESET "\n"); */
     }
     /* printf("    pkg: %s\n", dirname(ftsentry->fts_path)); */
 
     /* char *ext = strrchr(ftsentry->fts_name, '.'); */
     /* _indent(ftsentry->fts_level); */
 
-    /* printf("%d. " MAG  ":%-6s" CRESET " %s\n", */
-    /*        ftsentry->fts_level, */
-    /*        "opam", */
-    /*        ftsentry->fts_name); */
+    printf("%d. " MAG  ":%-6s" CRESET " %s\n",
+           ftsentry->fts_level,
+           "opam",
+           ftsentry->fts_name);
 
-    /* _update_ml(ftsentry, ext); */
+    _update_opam_files(pkg_tbl, ftsentry);
 }
 
 LOCAL void _handle_opam_template_file(s7_pointer pkg_tbl, FTSENT *ftsentry)

@@ -55,6 +55,8 @@ s7_pointer scripts_kw;
 s7_pointer static_kw;
 s7_pointer dynamic_kw;
 
+s7_pointer opam_kw;
+
 s7_pointer _s7_result;          /* for use with s7_call */
 s7_pointer assoc;
 s7_pointer assoc_in;
@@ -898,6 +900,8 @@ EXPORT s7_scheme *s7_configure(void)
     files_kw   = s7_make_keyword(s7, "files");
     static_kw  = s7_make_keyword(s7, "static");
     dynamic_kw = s7_make_keyword(s7, "dynamic");
+
+    opam_kw  = s7_make_keyword(s7, "opam");
 
     scripts_kw = s7_make_keyword(s7, "scripts");
     /* srcs_kw    = s7_make_keyword(s7, "srcs"); */
