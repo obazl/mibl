@@ -55,7 +55,7 @@
          (_ (format #t "~A: ~A~%" (white "tool") tool))
          (action-args (cdr action-list))
          (_ (format #t "~A: ~A~%" (white "action-args") action-args))
-         (expanded-args (expand-cmd-args* action-args pkg targets deps))
+         (expanded-args (expand-cmd-args* ws action-args pkg targets deps))
          )
     (format #t "~A: ~A~%" (uwhite "expanded-args") expanded-args)
     `((:cmd

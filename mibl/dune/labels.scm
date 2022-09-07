@@ -175,6 +175,9 @@
                      (begin
                        (format #t "~A: ~A~%" (ured "resolving dep labels") deps)
                        (let ((exports (car (assoc-val :exports ws)))
+                             (ppx (if-let ((ppx (assoc-val :ppx stanza-alist)))
+                                          ppx #f))
+                             (_ (format #t "~A: ~A~%" (ublue "ppx") ppx))
                              (fixdeps
                               (map (lambda (dep)
                                      (format #t "~A: ~A~%" (uwhite "fixup dep") dep)
@@ -313,8 +316,8 @@
                        ;;         '())
                        ))))
 
-              ((:archive :ns-archive)
-               (format #t "~A~%" (ublue "fixup :archive, :ns-archive"))
+              ((:archive :ns-archive :library :ns-library)
+               (format #t "~A: ~A~%" (blue "fixup") (car stanza))
                ;; (let ((deps (assoc-val :deps stanza-alist)))
                ;;   (format #t "archive deps: ~A~%" deps)))
                (let* ((deps (if-let ((deps (assoc-in '(:deps :fixed) stanza-alist)))
@@ -367,31 +370,31 @@
                          ;; (error 'STOP "stop ppx")
                          )))))
 
-              ((:library)
-               (format #t "~A~%" (ublue "fixup :library"))
-               (let* ((deps (if-let ((deps (assoc-in '(:deps :fixed) stanza-alist)))
-                                    deps #f))
-                      (_ (format #t "deps: ~A~%" deps))
-                      )
-                 (if deps
-                     (begin
-                       (format #t "~A: ~A~%" (ured "resolving dep labels") deps)
-                       (let ((exports (car (assoc-val :exports ws)))
-                             (fixdeps
-                              (map (lambda (dep)
-                                     (format #t "~A: ~A~%" (uwhite "fixup dep") dep)
-                                     (cond
-                                      ((list? dep)
-                                       ;; std dep form: (:foo (:pkg...)(:tgt...))
-                                       (-fixup-std-dep-form dep exports))
-                                      ((symbol? dep)
-                                       (-fixup-dep-sym dep pkg-path exports))
-                                      (else (error 'fixme
-                                                   (format #f "~A: ~A~%" (bgred "unrecognized :archive dep type") dep)))))
-                                   (cdr deps))))
-                         (format #t "~A: ~A~%" (ured "fixed-up deps") fixdeps)
-                         (set-cdr! deps fixdeps)
-                         (set-car! deps :resolved))))))
+              ;; ((:library)
+              ;;  (format #t "~A~%" (ublue "fixup :library"))
+              ;;  (let* ((deps (if-let ((deps (assoc-in '(:deps :fixed) stanza-alist)))
+              ;;                       deps #f))
+              ;;         (_ (format #t "deps: ~A~%" deps))
+              ;;         )
+              ;;    (if deps
+              ;;        (begin
+              ;;          (format #t "~A: ~A~%" (ured "resolving dep labels") deps)
+              ;;          (let ((exports (car (assoc-val :exports ws)))
+              ;;                (fixdeps
+              ;;                 (map (lambda (dep)
+              ;;                        (format #t "~A: ~A~%" (uwhite "fixup dep") dep)
+              ;;                        (cond
+              ;;                         ((list? dep)
+              ;;                          ;; std dep form: (:foo (:pkg...)(:tgt...))
+              ;;                          (-fixup-std-dep-form dep exports))
+              ;;                         ((symbol? dep)
+              ;;                          (-fixup-dep-sym dep pkg-path exports))
+              ;;                         (else (error 'fixme
+              ;;                                      (format #f "~A: ~A~%" (bgred "unrecognized :archive dep type") dep)))))
+              ;;                      (cdr deps))))
+              ;;            (format #t "~A: ~A~%" (ured "fixed-up deps") fixdeps)
+              ;;            (set-cdr! deps fixdeps)
+              ;;            (set-car! deps :resolved))))))
 
               ;;  (format #t "~A~%" (magenta "fixup :library"))
               ;;  (let ((manifest (assoc-val :manifest stanza-alist))

@@ -18,7 +18,7 @@
 ;; (run %{<} %{targets})
 ;; (action (run %{deps} --test))
 (define expand-run-tool
-  (lambda (tool pkg targets deps)
+  (lambda (ws tool pkg targets deps)
     (format #t "~A: ~A (~A)~%" (ublue "expand-run-tool") tool (type-of tool))
     (format #t "~A: ~A~%" (green "deps") deps)
 
@@ -41,10 +41,10 @@
        (let ((tool (format #f "~A" tool)))
          (cond
           ((string-prefix? "%{" tool)
-           (-expand-pct-tool!? tool :tool pkg deps))
+           (-expand-pct-tool!? ws tool :tool pkg deps))
 
           (else
-           (let ((tmp (-expand-literal-tool!?
+           (let ((tmp (-expand-literal-tool!? ws
                        (car (assoc-val :pkg-path pkg))
                        tool deps)))
              (format #t "~A: ~A~%" (ured "TMP") tmp)
@@ -61,7 +61,7 @@
    (else #f)))
 
 ;; may update :deps
-(define (-expand-dep-pct-var!? pfx sym deps pkg)
+(define (-expand-dep-pct-var!? ws pfx sym deps pkg)
   (format #t "~A: pfx: ~A; sym: ~A~%"
           (ublue "-expand-dep-pct-var!?") pfx sym)
   ;; arg form:  dep:<path>
@@ -69,7 +69,8 @@
   ;; if not found, search pkg files? no need?
   ;; add it to pkg files as :dynamic?
   ;; add it to :deps
-  (let* ((search-key (symbol->keyword sym))
+  (let* ((pkg-path (car (assoc-val :pkg-path pkg)))
+         (search-key (symbol->keyword sym))
          (_ (format #t "~A: ~A~%" (yellow "searching deps") deps))
          (d (find-if (lambda (dep)
                        ;;FIXME: special tags ::tools, ::pkgs, ::import, etc.
@@ -88,20 +89,27 @@
                        ;; else search pkg files for file not listed in :deps
                        ;; if found, -infer-dep! adds to :deps
                        (if-let ((inferred-dep
-                                 (-infer-dep! search-key deps pkg)))
+                                 (-infer-dep! sym #|search-key|# deps pkg)))
                                inferred-dep
                                (begin
                                  (format #t "~A: ~A~%"
                                          (red "unresolved") search-key)
-                                 (let* ((path (dirname sym))
-                                        (dep-path (if (string=? "./" path)
-                                                      (car (assoc-val :pkg-path pkg))
-                                                      path)))
-                                 (set-cdr! deps
-                                           (append (cdr deps)
-                                                   `((,search-key
-                                                      (:pkg . ,dep-path)
-                                                      (:tgt . ,(basename sym)))))))
+
+                                 (let ((x (handle-filename-literal-arg ws sym pkg)))
+                                   (format #t "~A: ~A~%" (bgred "RESOLVED") x)
+                                   (format #t "~A: ~A~%" (red "deps") deps)
+                                   (set-cdr! deps (append (cdr deps) x))
+                                   x)
+
+                                 ;; (let* ((path (dirname sym))
+                                 ;;        (dep-path (if (string=? "./" path)
+                                 ;;                      pkg-path
+                                 ;;                      path)))
+                                 ;; (set-cdr! deps
+                                 ;;           (append (cdr deps)
+                                 ;;                   `((,search-key
+                                 ;;                      (:pkg . ,dep-path)
+                                 ;;                      (:tgt . ,(basename sym)))))))
                                  ))))
 
               (dep (list (symbol->keyword sym))))
@@ -132,7 +140,7 @@
 ;;  %{bin:tezos-protocol-compiler} => (:deps (::bin tezos...))
 ;;  %{lib:tezos-protocol-demo-noops:raw/TEZOS_PROTOCOL})
 ;;      =>(:deps (::lib tezos...))
-(define (-expand-pct-arg!? arg kind pkg deps)
+(define (-expand-pct-arg!? ws arg kind pkg deps)
   (format #t "~A: ~A (type: ~A)~%" (ublue "-expand-pct-arg!?")
           arg (type-of arg))
   (format #t "deps: ~A~%" deps)
@@ -151,8 +159,8 @@
            (if (equal? :dep pfx)
                (begin
                  (format #t "~A: ~A~%" (uwhite ":dep pfx") arg)
-                 (let ((x (-expand-dep-pct-var!? pfx sfx deps pkg)))
-                   (format #t "~A: ~A~%" (uwhite "dep pctarg") x)
+                 (let ((x (-expand-dep-pct-var!? ws pfx sfx deps pkg)))
+                   (format #t "~A: ~A~%" (uwhite "dep pctvar") x)
                    ;; (set-cdr! deps
                    ;;           (append
                    ;;            (cdr deps)))
@@ -191,7 +199,7 @@
                  )))))))
 
 ;; may update deps
-(define (-expand-pct-tool!? arg kind pkg deps)
+(define (-expand-pct-tool!? ws arg kind pkg deps)
   (format #t "~A: ~A (~A)~%" (ublue "-expand-pct-tool!?")
           arg (type-of arg))
   (format #t "deps: ~A~%" deps)
@@ -295,7 +303,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; may update deps
-(define (-expand-literal-tool!? pkg-path tool deps)
+(define (-expand-literal-tool!? ws pkg-path tool deps)
   (format #t "~A: ~A (~A)~%" (ublue "-expand-literal-tool!?")
           tool (type-of tool))
   (format #t "deps: ~A~%" deps)
@@ -426,13 +434,14 @@
 
   (let* ((struct-files (if-let ((files (assoc :structures pkg)))
                                (cdr files) '()))
-         (_ (format #t "~A: ~A~%" (magenta "struct-files") struct-files))
+         (_ (format #t "~A: ~A~%" (magenta "pkg struct-files") struct-files))
          (struct-files (append
                         (if-let ((sfiles (assoc-val :static struct-files)))
                                 sfiles '())
                         (if-let ((dfiles (assoc-val :dynamic struct-files)))
                                 dfiles '())))
-         (_ (format #t "~A: ~A~%" (cyan "struct-files") struct-files))
+         (_ (format #t "~A: ~A~%" (cyan "combined struct-files") struct-files))
+         (_ (format #t "~A~%" (uwhite "searching struct-files")))
          (struct
           (find-if (lambda (f-assoc)
                     (format #t "~A: ~A~%" (white "f-assoc") f-assoc)
@@ -452,7 +461,8 @@
                                (cdr deps)))
           key)
         ;; else search :modules
-        (let ((struct
+        (let ((_ (format #t "~A~%" (uwhite "searching modules")))
+              (struct
                (find-if (lambda (m-assoc)
                           (format #t "~A: ~A~%" (white "m-assoc") m-assoc)
                           (find-if (lambda (m)
@@ -473,7 +483,9 @@
                                                  (cons :tgt arg)))
                                      (cdr deps)))
                 key)
-              #f)))))
+              (begin
+                (format #t "~A: ~A~%" (ublue "not found in pkg files") arg)
+                #f))))))
 
 ;; updates :outputs. called by normalize-action-write-file if no (targets)
 ;; targets should be (:outputs)
@@ -594,7 +606,7 @@
 
 ;; string args may include suffixed vars, e.g. %{test}.corrected
 (define expand-string-arg
-  (lambda (arg pkg targets deps)
+  (lambda (ws arg pkg targets deps)
     (format #t "~A: ~A\n" (blue "expand-string-arg") arg)
     (format #t "  targets: ~A\n" targets)
     (format #t "  deps: ~A\n" deps)
@@ -626,7 +638,7 @@
       (format #t "VAR: ~A\n" arg)
       (format #t "deps: ~A\n" deps)
       (let ((pkg-path (car (assoc-val :pkg-path pkg))))
-        (-expand-pct-arg!? arg :arg pkg deps)))
+        (-expand-pct-arg!? ws arg :arg pkg deps)))
 
      (else
       (format #t "~A: ~A~%" (white "String literal") arg)
@@ -647,7 +659,7 @@
      )))
 
 (define expand-cmd-args*
-  (lambda (args pkg targets deps)
+  (lambda (ws args pkg targets deps)
     (format #t "~A: ~A\n" (ublue "expand-cmd-args*") args)
     (format #t "  targets: ~A\n" targets)
     (format #t "  deps: ~A\n" deps)
@@ -664,9 +676,9 @@
                (let ((arg (car args)))
                  (cond
                   ((pair? arg) ;; e.g. (:_string "struct")
-                   (let ((subarg (expand-cmd-args* (car args) pkg targets deps)))
+                   (let ((subarg (expand-cmd-args* ws (car args) pkg targets deps)))
                      (cons subarg
-                           (expand-cmd-args* (cdr args) pkg targets deps))))
+                           (expand-cmd-args* ws (cdr args) pkg targets deps))))
                    ;; (expand-cmd-args* pkg-path
                          ;;                  target targets
                          ;;                  (cdr args) filedeps vars)))
@@ -681,25 +693,25 @@
                    (format #t "~A: ~A~%" (red "arg is symbol") arg)
                    (if (or (eq? arg '%{target}) (eq? arg '%{targets}))
                        (cons :outputs
-                             (expand-cmd-args* (cdr args) pkg targets deps))
+                             (expand-cmd-args* ws (cdr args) pkg targets deps))
                        (let ((arg-str (format #f "~A" arg)))
                          (cond
                           ((string-prefix? "%{" arg-str)
                            ;; %{foo} or %{foo}.suffix
                            (let* ((pkg-path (car (assoc-val :pkg-path pkg)))
-                                  (arg (-expand-pct-arg!? arg :arg pkg deps)))
+                                  (arg (-expand-pct-arg!? ws arg :arg pkg deps)))
                              (format #t "~A: ~A~%" (uwhite "expanded arg") arg)
                              (cons arg
-                                   (expand-cmd-args* (cdr args) pkg targets deps))))
+                                   (expand-cmd-args* ws (cdr args) pkg targets deps))))
                           ( ;; else
-                           (expand-cmd-args* (cons arg-str (cdr args))
+                           (expand-cmd-args* ws (cons arg-str (cdr args))
                                              pkg targets deps))))))
 
                   ((string? arg)
                    (format #t "~A: ~A~%" (red "arg is string") arg)
-                   (let ((sarg (expand-string-arg arg pkg targets deps)))
+                   (let ((sarg (expand-string-arg ws arg pkg targets deps)))
                      (append (list sarg)
-                           (expand-cmd-args* (cdr args) pkg targets deps))))
+                           (expand-cmd-args* ws (cdr args) pkg targets deps))))
                             ;; pkg-path target targets
                             ;; (cdr args) filedeps vars)))))
 
@@ -789,7 +801,7 @@
             (cons :deps result))
           #f))
 
-(define (expand-cmd-list pkg -raw-cmds targets deps)
+(define (expand-cmd-list ws pkg -raw-cmds targets deps)
   (format #t "~A: ~A\n" (ublue "expand-cmd-list") -raw-cmds)
   (format #t "~A: ~A~%" (green "deps") deps)
 
@@ -815,26 +827,26 @@
                   `(((:Tool (string->symbol
                              (format #f ":~A" ,kw)))
                      (:args
-                      ,@(expand-cmd-args* (cdr raw-cmds) pkg targets deps))))
+                      ,@(expand-cmd-args* ws (cdr raw-cmds) pkg targets deps))))
 
                   (if (equal? kw 'run)
                       ;; skip 'run'
                       (recur (cdr raw-cmds) tool expanded-cmds
-                             (expand-cmd-args* args pkg targets deps))
+                             (expand-cmd-args* ws args pkg targets deps))
 
                       ;; atom or list following 'run'
                       (if (pair? kw)
                           ;; e.g. (run (cmd ...))
                           (recur kw tool expanded-cmds
-                                   (expand-cmd-args* args pkg targets deps))
+                                   (expand-cmd-args* ws args pkg targets deps))
 
                           ;; kw in in list of dune std tools, must be
                           ;; (run %{bin:foo} ...), (run ../foo/bar.exe) etc.
                           (list
                            (list (list :tool
-                                       (expand-run-tool kw pkg targets deps))
+                                       (expand-run-tool ws kw pkg targets deps))
                                 `(:args
-                                  ,@(expand-cmd-args* (cdr raw-cmds)
+                                  ,@(expand-cmd-args* ws (cdr raw-cmds)
                                                      pkg targets deps))))))))))))
                   ;; ;; else must be an arg
                   ;; (expand-cmd-args* (cdr raw-cmds) pkg targets deps)))

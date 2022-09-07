@@ -38,7 +38,7 @@
          ;; build-in cmds get double-colon kw, e.g. ::cat
          (action-args (assoc-val action action-alist))
          (_ (format #t "action-args: ~A\n" action-args))
-         (args (expand-cmd-args* action-args pkg targets deps))
+         (args (expand-cmd-args* ws action-args pkg targets deps))
                                ;; ;; action-alist
                                ;; '()))
          (_ (format #t "expanded args: ~A\n" args)))
@@ -203,7 +203,7 @@
                                                  action-list targets deps))))
                       cmd-list)
                     (let* ((_ (format #t "~A: ~A~%" (yellow "adhoc action") action))
-                           (args (expand-cmd-list pkg run-dsl targets deps))
+                           (args (expand-cmd-list ws pkg run-dsl targets deps))
                            ;; (args (expand-cmd-args* action-args pkg targets deps))
                            (_ (format #t "~A: ~A\n" (yellow "expanded args") args)))
                       ;; `((:cmd (:tool ,action)

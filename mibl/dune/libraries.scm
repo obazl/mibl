@@ -119,7 +119,7 @@
        ;; ppx
        ((kind) ;; ignore, not meaningful for obazl?
         (values))
-       ((ppx_runtime_libraries) (fld-error 'library fld-assoc))
+       ((ppx_runtime_libraries) `(:ppx-codeps ,(cdr fld-assoc)))
 
        ;; other
        ((enabled_if) (fld-error 'library fld-assoc))
@@ -153,11 +153,12 @@
          (_ (format #t "lib-flds (mibl): ~A~%" lib-flds))
 
          (lib-flds (if wrapped?
-                       (append (list (cons :ns
-                                           (if-let ((pn
-                                                     (assoc-val :pubname lib-flds)))
-                                                   pn
-                                                   (assoc-val :privname lib-flds))))
+                       (append (list (cons :ns (assoc-val :privname lib-flds)))
+                                           ;; (if-let ((pn
+                                           ;;           (assoc-val :pubname lib-flds)))
+                                           ;;         pn
+                                           ;;         (assoc-val :privname lib-flds))
+                                           ;; ))
                                lib-flds)
                        lib-flds))
          ) ;; end let bindings

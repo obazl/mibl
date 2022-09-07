@@ -54,13 +54,12 @@
   ;;                         expanded))))
 
 ;; if file is not in this pkg, add it to filegroups table
-(define (handle-filename-literal-dep ws dep deplist paths expanded-deps)
-  (format #t "~A: ~A\n" (blue "handle-filename-literal-dep") dep)
-  (format #t "deplist: ~A\n" deplist)
+(define (handle-filename-literal-arg ws dep paths)
+  (format #t "~A: ~A\n" (ublue "handle-filename-literal-arg") dep)
   (format #t "paths: ~A\n" paths)
-  (format #t "expanded-deps: ~A\n" expanded-deps)
   (let* (;; (_ (format #t "dep: ~A\n" dep))
          (pkg-path (car (assoc-val :pkg-path paths)))
+         (_ (format #t "pkg-path: ~A~%" pkg-path))
          (ws-path (car (assoc-val :ws-path paths)))
          ;; dep always relative: prepend pkg dir, may give path with .. segs
          ;; etc. then normalize
@@ -82,7 +81,104 @@
 
          (_ (format #t "(dirname canonical-path) ~A~%"
                     (dirname canonical-path)))
-         (_ (format #t "pkg-path: ~A~%" (car (assoc :pkg-path paths))))
+
+         (local? (equal? (dirname canonical-path)
+                         (car (assoc-val :pkg-path paths))))
+         (_ (format #t "local? ~A~%" local?))
+
+         (path (if local?
+                   dep
+                   canonical-path))
+                   ;; (string-append pkg-path "/" canonical-path)))
+         (_ (format #t "path: ~A~%" path))
+
+         ;; (expanded-path (if local? path canonical-path))
+         (expanded-path canonical-path)
+         (_ (format #t "~A: ~A~%" (bgred "expanded-path") expanded-path))
+
+         (tgt (if (equal? pkg-path (dirname expanded-path))
+                     (basename expanded-path)
+                     (basename expanded-path)))
+                     ;;(string->keyword (format #f "fg_~A" (basename expanded-path)))))
+         (_ (format #t "~A: ~A~%" (bgred "TGT") tgt))
+
+         (tgt-tag (if (equal? pkg-path (dirname expanded-path))
+                      :tgt :tgt)) ;; :fg))
+
+         ;; (tgt (if (eq? tgt-tag :fg)
+         ;;          (format #f "__~A__" tgt)
+         ;;          tgt))
+
+         ;; (new-expanded-deps (alist-update-in! expanded-deps `(,kind)
+         ;;                                      (lambda (p)
+         ;;                                        (format #t "update fn here\n")
+         ;;                                    (cons (list kind expanded-path)
+         ;;                                          p))))
+
+         ;; (expanded-path
+         ;;  (if (equal? pkg-path (dirname expanded-path))
+         ;;      (basename expanded-path)
+         ;;      expanded-path))
+         )
+    (format #t "FILENAME LITERAL : ~A (~A)\n" dep (type-of dep))
+    (format #t "expanded-path: ~A\n" expanded-path)
+    (format #t "tgt: ~A\n" tgt)
+    (format #t "kind : ~A\n" kind)
+    (list (list
+           (string->keyword (format #f "~A" dep))
+           (cons :pkg (dirname expanded-path))
+           (cons tgt-tag tgt #|(basename expanded-path)|# )))))
+
+    ;; find it and resolve pkg path
+    ;; if not found mark it as :dynamic
+    ;; (expand-args* ws (cdr deplist)
+    ;;                 paths
+    ;;                 (if (null? expanded-deps)
+    ;;                     (list (list
+    ;;                            (string->keyword (format #f "~A" dep))
+    ;;                            (cons :pkg (dirname expanded-path))
+    ;;                            (cons tgt-tag tgt #|(basename expanded-path)|# )))
+    ;;                     (add-literal-to-expanded-deps
+    ;;                      local?
+    ;;                      (list
+    ;;                       (string->keyword (format #f "~A" dep))
+    ;;                       (cons :pkg (dirname expanded-path))
+    ;;                       (cons tgt-tag tgt #|(basename expanded-path)|# ))
+    ;;                      expanded-deps))
+    ;;                 )
+    ;; ))
+
+;; WARNING: this does more than handle the dep, it 'recurs' over
+;; deplist to produce expanded-deps. FIXME
+(define (handle-filename-literal-dep ws dep deplist paths expanded-deps)
+  (format #t "~A: ~A\n" (blue "handle-filename-literal-dep") dep)
+  (format #t "deplist: ~A\n" deplist)
+  (format #t "paths: ~A\n" paths)
+  (format #t "expanded-deps: ~A\n" expanded-deps)
+  (let* (;; (_ (format #t "dep: ~A\n" dep))
+         (pkg-path (car (assoc-val :pkg-path paths)))
+         (_ (format #t "pkg-path: ~A~%" pkg-path))
+         (ws-path (car (assoc-val :ws-path paths)))
+         ;; dep always relative: prepend pkg dir, may give path with .. segs
+         ;; etc. then normalize
+
+         (dep (format #f "~A" dep))
+
+         ;; dep should always be relative to cwd, never absolute, so
+         ;; we can prepend cwd and normalize
+
+         (dep-path (format #f "~A/~A" pkg-path dep))
+         (_ (format #t "dep-path: ~A~%" dep-path))
+
+         (canonical-path (->canonical-path dep-path))
+         (_ (format #t "canonical-path: ~A~%" canonical-path))
+
+         (kind (if (file-exists? canonical-path)
+                   :static :dynamic))
+         (_ (format #t "~A: ~A~%" "kind" kind))
+
+         (_ (format #t "(dirname canonical-path) ~A~%"
+                    (dirname canonical-path)))
 
          (local? (equal? (dirname canonical-path)
                          (car (assoc-val :pkg-path paths))))
@@ -442,7 +538,8 @@
         (if (eq? 'glob_files (caar val))
             ;; e.g. (:css (glob_files *.css)
             (handle-tagged-glob-dep ws deplist paths expanded-deps)
-            (error 'fixme "unhandled: non-glob tagged list var"))
+            ;;(error 'fixme "unhandled: non-glob tagged list var")
+            )
         (handle-tagged-literal-dep ws deplist paths expanded-deps))))
 
 (define (handle-file-dep deplist)
