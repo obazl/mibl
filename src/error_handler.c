@@ -81,8 +81,8 @@ s7_pointer _s7_read_thunk_catcher(s7_scheme *s7, s7_pointer args)
         close_error_config();
         error_config();
         /* init_error_handlers(); */
-        s7_quit(s7);
-        exit(EXIT_FAILURE);
+        /* s7_quit(s7); */
+        /* exit(EXIT_FAILURE); */
     }
 }
 

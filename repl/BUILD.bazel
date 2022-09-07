@@ -36,7 +36,9 @@ cc_binary(
         "-I$(GENDIR)/repl",
         "-I$(GENDIR)/external/mibl/repl",
 
-        "-Iexternal/uthash/include",
+        "-Ivendored/uthash",
+        "-Iexternal/vendored/uthash",
+
         # "-Iexternal/libinih",
         "-Iexternal/logc/src",
 
@@ -56,6 +58,7 @@ cc_binary(
     deps = [
         "//src:mibl",
         # "//external/libinih:inih",
+        "//vendored/uthash",
         "@logc//:logc",
         "@libs7//src:s7",
         "@libs7//src:c_s7",

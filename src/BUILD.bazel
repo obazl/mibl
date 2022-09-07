@@ -125,7 +125,7 @@ genrule(
     # }) + ["ansi_colors.h"],
     srcs = SRCS + [
         "ansi_colors.h",
-        # "uthash.h", "utarray.h", "utstring.h"
+        "uthash.h", "utarray.h", "utstring.h"
     ],
     outs = ["mibl.h"],
     cmd = CMD_HDR
