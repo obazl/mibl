@@ -168,7 +168,8 @@
                                 ;; (format #t "~A: ~A~%" (red "pkg-path") pkg-path)
                                 (if (not (equal? (format #f "~A" pkg) pkg-path))
                                     (if (eq? tgt-tag :fg)
-                                        (update-filegroups-table! ws pkg (string->keyword fg-tag) tgt)))))))
+                                        (update-filegroups-table!
+                                         ws pkg-path pkg (string->keyword fg-tag) tgt)))))))
                       (cdr deps)))
 
         (format #t "~%~A: ~A~%~%" (red "DISPATCHING  on action") rule-alist)

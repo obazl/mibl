@@ -139,7 +139,7 @@
                                                                         ;;(append spec `((:deps ,@mdeps)))
                                                                         )
                                                                       ))
-                                         (-update-stanza-deps pkg fname mdeps)
+                                         (update-stanza-deps pkg fname mdeps)
                                          ))
 
                                    ;; mdeps is list of ocamldeps of fname with corresponding files in this pkg

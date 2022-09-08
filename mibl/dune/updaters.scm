@@ -1,5 +1,6 @@
-(define (update-filegroups-table! ws pkg-path tgt pattern)
-  (format #t "~A: ~A~%" (magenta "update-filegroups-table!") pkg-path)
+(define (update-filegroups-table! ws client-path pkg-path tgt pattern)
+  (format #t "~A path: ~A~%" (magenta "update-filegroups-table!") pkg-path)
+  (format #t "~A: ~A~%" (green "client") client-path)
   (format #t "~A: ~A~%" (green "tgt") tgt)
   (format #t "~A: ~A~%" (green "pattern") pattern)
   (format #t "~A: ~A~%" (green "ws") ws)
@@ -9,7 +10,7 @@
          ;; (_ (format #t "~A: ~A~%" (uwhite "-ws") -ws))
          (filegroups (car (assoc-val :filegroups -ws)))
          (_ (format #t "filegroups tbl: ~A\n" filegroups))
-         (glob? (string-index pattern (lambda (ch)
+         (glob? (string-index (format #f "~A" pattern) (lambda (ch)
                                               (equal? ch #\*)))))
 
     (format #t "adding ~A~A to filegroups tbl\n" pkg-path tgt)
@@ -21,13 +22,15 @@
                            (append
                             fgroups
                             (list (cons tgt (if glob?
-                                                (list (cons :glob pattern))
-                                                (list (cons :file pattern)))))))
+                                                `((:glob ,pattern)
+                                                  `(:client ,client-path))
+                                                `((:file ,pattern)))))))
           ;; else new
           (hash-table-set! filegroups pkg-path
                            (list (cons tgt (if glob?
-                                               (list (cons :glob pattern))
-                                               (list (cons :file pattern)))))))
+                                               `((:glob ,pattern)
+                                                 (:client ,client-path))
+                                               `((:file ,pattern)))))))
       (format #t "updated filegroups tbl: ~A\n" filegroups))))
 
 (define (-module-in-modules? m modules)
@@ -704,3 +707,22 @@
                 ;;   )
                 ))
             (cdr targets))))
+
+(define (update-stanza-deps pkg fname mdeps)
+  (format #t "~A: ~A~%" (ublue "update-stanza-deps") (assoc-val :dune pkg))
+  (format #t "~A: ~A~%" (blue "mdeps") mdeps)
+  (let ((mname (filename->module-name fname)))
+    (format #t "~A: ~A~%" (blue "mname") mname)
+    (for-each (lambda (stanza)
+                (case (car stanza)
+                  ((:exports-files))
+                  (else
+                   (format #t "~A: ~A~%" (blue "stanza") stanza)
+                   (let ((compile-deps (assoc-in '(:compile :manifest :modules) (cdr stanza))))
+                     (format #t "~A: ~A~%" (blue "compile-deps") compile-deps)
+                     (if compile-deps
+                         (if (member mname (cdr compile-deps))
+                             (set-cdr! compile-deps
+                                       (append (cdr compile-deps)
+                                               mdeps))))))))
+              (assoc-val :dune pkg))))

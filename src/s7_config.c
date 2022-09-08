@@ -177,6 +177,7 @@ void initialize_mibl_data_model(s7_scheme *s7)
     utstring_printf(init_sexp, "(define -mibl-ws-table "
                     "`((:@ (:name \"@\") (:path %s) "
                     "(:exports ,(make-hash-table)) "
+                    "(:opam ,(make-hash-table)) "
                     "(:filegroups ,(make-hash-table)) "
                     "(:pkgs ,(make-hash-table)))))",
                     bws_root);

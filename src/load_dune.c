@@ -329,7 +329,8 @@ LOCAL s7_pointer make_pkg_key(char *path)
 LOCAL void _handle_dir(s7_pointer pkg_tbl, FTS* tree, FTSENT *ftsentry)
 {
     if (debug) {
-        log_debug(BLU "_handle_dir:" CRESET " %s (%s)",
+        log_debug("");
+        log_debug(BLUB "_handle_dir:" CRESET " %s (%s)",
                   ftsentry->fts_name, ftsentry->fts_path);
         log_info("%-20s%s", "base ws:", bws_root);
         log_info("%-20s%s", "effective ws:",ews_root);

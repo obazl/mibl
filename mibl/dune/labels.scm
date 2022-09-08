@@ -53,7 +53,7 @@
             )
        (format #t "~A: ~A~%" (yellow "pkg") pkg)
        (update-filegroups-table! ;; ws pkg-path tgt pattern
-        ws ;; (car (assoc-val :name ws))
+        ws pkg-path ;; (car (assoc-val :name ws))
         pkg ::all "*")
        (cons (car dep)
              (list (car exp)
@@ -154,7 +154,7 @@
 (define (-fixup-stanza! ws pkg stanza)
   (format #t "~A: ~A\n" (bgblue "-fixup-stanza!") stanza)
   (case (car stanza)
-    ((:exports-files) (values))
+    ((:install) (values))
     (else (let* ((exports (car (assoc-val :exports ws)))
                  (pkg-path (car (assoc-val :pkg-path pkg)))
                  (stanza-alist (cdr stanza)))
@@ -173,23 +173,23 @@
                  (format #t "x compile deps: ~A~%" deps)
                  (if deps ;; (not (null? deps))
                      (begin
-                       (format #t "~A: ~A~%" (ured "resolving dep labels") deps)
-                       (let ((exports (car (assoc-val :exports ws)))
-                             (ppx (if-let ((ppx (assoc-val :ppx stanza-alist)))
-                                          ppx #f))
-                             (_ (format #t "~A: ~A~%" (ublue "ppx") ppx))
-                             (fixdeps
-                              (map (lambda (dep)
-                                     (format #t "~A: ~A~%" (uwhite "fixup dep") dep)
-                                     (cond
-                                      ((list? dep)
-                                       ;; std dep form: (:foo (:pkg...)(:tgt...))
-                                       (-fixup-std-dep-form dep exports))
-                                      ((symbol? dep)
-                                       (-fixup-dep-sym dep pkg-path exports))
-                                      (else (error 'fixme
-                                                   (format #f "~A: ~A~%" (bgred "unrecognized :archive dep type") dep)))))
-                                   (cdr deps))))
+                       (format #t "~A: ~A~%" (ured "resolving dep labels 1") deps)
+                       (let* ((exports (car (assoc-val :exports ws)))
+                              (ppx (if-let ((ppx (assoc-val :ppx stanza-alist)))
+                                           ppx #f))
+                              (_ (format #t "~A: ~A~%" (ublue "ppx") ppx))
+                              (fixdeps
+                               (map (lambda (dep)
+                                      (format #t "~A: ~A~%" (uwhite "fixup dep") dep)
+                                      (cond
+                                       ((list? dep)
+                                        ;; std dep form: (:foo (:pkg...)(:tgt...))
+                                        (-fixup-std-dep-form dep exports))
+                                       ((symbol? dep)
+                                        (-fixup-dep-sym dep pkg-path exports))
+                                       (else (error 'fixme
+                                                    (format #f "~A: ~A~%" (bgred "unrecognized :archive dep type") dep)))))
+                                    (cdr deps))))
                          (format #t "~A: ~A~%" (ured "fixed-up deps") fixdeps)
                          (set-cdr! deps fixdeps)
                          (set-car! deps :resolved)))
@@ -227,7 +227,7 @@
                       (deps (if-let ((deps (assoc :deps stanza-alist)))
                                     ;; (if (null? deps) '() (car deps))
                                     deps
-                                    '()))
+                                    #f))
                       (_ (format #t "deps: ~A~%" deps))
                       (action (if-let ((action (assoc-val :actions stanza-alist)))
                                       action
@@ -247,7 +247,7 @@
                  ;;                     deps #f)))
                  (if deps
                      (begin
-                       (format #t "~A: ~A~%" (ured "resolving dep labels") deps)
+                       (format #t "~A: ~A~%" (ured "resolving dep labels 2") deps)
                        (let ((exports (car (assoc-val :exports ws)))
                              (fixdeps
                               (map (lambda (dep)
@@ -329,7 +329,7 @@
                       )
                  (if deps
                      (begin
-                       (format #t "~A: ~A~%" (ured "resolving dep labels") deps)
+                       (format #t "~A: ~A~%" (ured "resolving dep labels 3") deps)
                        (let ((exports (car (assoc-val :exports ws)))
                              (fixdeps
                               (map (lambda (dep)

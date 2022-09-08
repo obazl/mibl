@@ -114,8 +114,8 @@
        ((c_library_flags) (fld-error 'library fld-assoc))
        ((c_types) (fld-error 'library fld-assoc))
        ((install_c_headers) (fld-error 'library fld-assoc))
-       ((foreign_archives) (fld-error 'library fld-assoc))
-       ((foreign_stubs) (fld-error 'library fld-assoc))
+       ((foreign_archives) (foreign-archives->mibl fld-assoc))
+       ((foreign_stubs) (foreign-stubs->mibl fld-assoc))
        ;; ppx
        ((kind) ;; ignore, not meaningful for obazl?
         (values))
@@ -216,7 +216,7 @@
                           (car privname) #f))
         (_ (format #t "~A: ~A~%" (uwhite "privname") privname))
         (pubname (if-let ((pubname (assoc-val 'public_name (cdr stanza))))
-                         (car pubname) privname))
+                         (car pubname) #f))
         (_ (format #t "~A: ~A~%" (uwhite "pubname") pubname))
         )
     ;; libs may be referenced w/o ns, e.g. mylib,
@@ -241,7 +241,36 @@
                                  pubname
                                  pkg-path privname)
           (update-exports-table! ws :lib pubname
-                                 pkg-path privname)))
+                                 pkg-path privname)
+
+          ;; opam table entry
+          ;; Key: 'js_of_ocaml-compiler
+          ;; val: ((:lib (compiler/lib priv js_of_ocaml_compiler)
+          ;;               ((:files
+          ;;                 ;;(dir file file ...)
+          ;;                 (compiler/bin-js_of_ocaml runtime.js)
+          ;;                 (runtime bigarray.js ...))))
+          ;;         (:bin (compiler/bin-js_of_ocaml js_of_ocaml)
+          ;;               (compiler/bin-jsoo_minify jsoo_minify))
+          ;;         (:man ...)
+          ;;         (:sub (runtime-files ;; the pkg/lib public name
+          ;;                (compiler/lib-runtime-files
+          ;;                 js_of_ocaml_compiler_runtime_files))
+          ;;               (findlib-support
+          ;;                (compiler/lib-findlib-support
+          ;;                 jsoo_findlib_support))
+          ;;               ;; two levels
+          ;;               (foo (path/to liba)
+          ;;                    (:sub (path/b/to libb)))))
+
+          (update-opam-table! ws :lib
+                              pubname ;; opam pkg name
+                              pubname ;; lib name
+                              pkg-path
+                              privname ;; lib name
+                              )))
+
+
 
     (let* ((stanza-alist (cdr stanza))
            (stanza-alist (if-let ((mods (assoc 'modules stanza-alist)))
@@ -277,33 +306,35 @@
 
       ;; SPECIAL CASE: if there is only one submodule and it has the
       ;; same name as the ns, then convert to non-namespaced :library
-      ;; (ocaml_library) and remove (:ns . <nsname>) assoc.
-      (let ((res
-             (if-let ((ns (assoc-val :ns mibl-stanza)))
-                     (begin
-                       (format #t "~A: ~A~%" (uwhite "ns") ns)
-                       (let ((submods (assoc-in '(:manifest :modules) mibl-stanza)))
-                         (if (= 1 (length (cdr submods)))
-                             (let ((submod (cadr submods))
-                                   (ns-mod (normalize-module-name ns)))
-                               (format #t "~A: ~A~%" (bgred "1 submod") submod)
-                               (format #t "~A: ~A~%" (uwhite "ns mod") ns-mod)
-                               (if (equal? ns-mod submod)
-                                   (begin
-                                     (format #t "~A: ~A~%" (bgred "converting to lib") mibl-stanza)
-                                     (list (cons :library
-                                                 (dissoc '(:ns) mibl-stanza))))
-                                   ;; else 1 submodule w/diff name from ns name
-                                   (list (cons kind mibl-stanza))))
-                             ;; else multiple submodules
-                             (list (cons kind mibl-stanza)))
-                         ))
-                     ;; else no nos
-                     (list (cons kind mibl-stanza)))))
-        (format #t "~A: ~A~%" (uwhite "lib result") res)
-        ;; (error 'STOP "STOP libs")
-        res)
-      )))
+      ;; (ocaml_library) and remove (:ns . <nsname>) assoc. OOPS! This
+      ;; does not work since at this stage we may miss generated
+      ;; files. So this case must be handled during emit stage.
+      ;; (let ((res
+      ;;        (if-let ((ns (assoc-val :ns mibl-stanza)))
+      ;;                (begin
+      ;;                  (format #t "~A: ~A~%" (uwhite "ns") ns)
+      ;;                  (let ((submods (assoc-in '(:manifest :modules) mibl-stanza)))
+      ;;                    (if (= 1 (length (cdr submods)))
+      ;;                        (let ((submod (cadr submods))
+      ;;                              (ns-mod (normalize-module-name ns)))
+      ;;                          (format #t "~A: ~A~%" (bgred "1 submod") submod)
+      ;;                          (format #t "~A: ~A~%" (uwhite "ns mod") ns-mod)
+      ;;                          (if (equal? ns-mod submod)
+      ;;                              (begin
+      ;;                                (format #t "~A: ~A~%" (bgred "converting to lib") mibl-stanza)
+      ;;                                (list (cons :library
+      ;;                                            (dissoc '(:ns) mibl-stanza))))
+      ;;                              ;; else 1 submodule w/diff name from ns name
+      ;;                              (list (cons kind mibl-stanza))))
+      ;;                        ;; else multiple submodules
+      ;;                        (list (cons kind mibl-stanza)))
+      ;;                    ))
+      ;;                ;; else no nos
+      ;;                (list (cons kind mibl-stanza)))))
+      ;;   (format #t "~A: ~A~%" (uwhite "lib result") res)
+      ;;   ;; (error 'STOP "STOP libs")
+      ;;   res)
+      (list (cons kind mibl-stanza)))))
 
 ;; (display "loaded dune/dune_stanza_library.scm") (newline)
 

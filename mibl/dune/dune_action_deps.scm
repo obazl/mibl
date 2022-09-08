@@ -82,8 +82,11 @@
          (_ (format #t "(dirname canonical-path) ~A~%"
                     (dirname canonical-path)))
 
-         (local? (equal? (dirname canonical-path)
-                         (car (assoc-val :pkg-path paths))))
+         ;; (dirname X) => "./", not "."
+         (local? (if (and (equal? (dirname canonical-path) "./")
+                          (equal? pkg-path "."))
+                     #t
+                     (equal? (dirname canonical-path) pkg-path)))
          (_ (format #t "local? ~A~%" local?))
 
          (path (if local?
@@ -96,14 +99,17 @@
          (expanded-path canonical-path)
          (_ (format #t "~A: ~A~%" (bgred "expanded-path") expanded-path))
 
-         (tgt (if (equal? pkg-path (dirname expanded-path))
+         (parent (let ((parent (dirname expanded-path)))
+                   (if (string=? "./" parent) "." parent)))
+
+         (tgt (if (equal? pkg-path parent)
                      (basename expanded-path)
                      (basename expanded-path)))
                      ;;(string->keyword (format #f "fg_~A" (basename expanded-path)))))
          (_ (format #t "~A: ~A~%" (bgred "TGT") tgt))
 
-         (tgt-tag (if (equal? pkg-path (dirname expanded-path))
-                      :tgt :tgt)) ;; :fg))
+         (tgt-tag (if (equal? pkg-path parent)
+                      :tgt :tgt))
 
          ;; (tgt (if (eq? tgt-tag :fg)
          ;;          (format #f "__~A__" tgt)
@@ -126,12 +132,12 @@
     (format #t "kind : ~A\n" kind)
     (list (list
            (string->keyword (format #f "~A" dep))
-           (cons :pkg (dirname expanded-path))
+           (cons :pkg parent)
            (cons tgt-tag tgt #|(basename expanded-path)|# )))))
 
     ;; find it and resolve pkg path
     ;; if not found mark it as :dynamic
-    ;; (expand-args* ws (cdr deplist)
+    ;; (expand-terms* ws (cdr deplist)
     ;;                 paths
     ;;                 (if (null? expanded-deps)
     ;;                     (list (list
@@ -225,7 +231,7 @@
     (format #t "new-expanded-deps : ~A\n" expanded-deps)
     ;; find it and resolve pkg path
     ;; if not found mark it as :dynamic
-    (expand-args* ws (cdr deplist)
+    (expand-terms* ws (cdr deplist)
                     paths
                     (if (null? expanded-deps)
                         (list (list
@@ -281,10 +287,10 @@
          (_ (format #t "~A: ~A~%" (yellow "tag is kw?") (keyword? tag)))
          ;; (lbl (string->keyword (format #f "~A"
          ;;                               (car deplist))))
-         (tagged (expand-args* ws (cdr deplist)
+         (tagged (expand-terms* ws (cdr deplist)
                               paths ;;stanza-alist
                               '()))
-         ;; expand-args* inserts tag derived from literal; remove it
+         ;; expand-terms* inserts tag derived from literal; remove it
          (tagged (cdar tagged))
          )
     (format #t "~A: ~A (kw? ~A)~%" (yellow "littag") tag (keyword? tag))
@@ -294,7 +300,8 @@
     (if (list? (cadr deplist))
         (if (eq? 'glob_files (car (cadr deplist)))
             (update-filegroups-table!
-             ws (dirname canonical-path) tag pattern)))
+             ws (car (assoc :pkg-path paths))
+             (dirname canonical-path) tag pattern)))
 
     (if (symbol? tagged)
         (list (list tag tagged) `,@expanded-deps)
@@ -465,7 +472,7 @@
          ;;          #f)
          ;;      #f))
          ;; (tagged ;(if tagged tagged
-         ;;             (expand-args* ws (cdr tagged-pattern)
+         ;;             (expand-terms* ws (cdr tagged-pattern)
          ;;                          paths ;;stanza-alist
          ;;                          '()))
          ) ;;expanded-deps)))
@@ -476,7 +483,7 @@
     (if (list? (cadr tagged-pattern))
         (if (eq? 'glob_files (car (cadr tagged-pattern)))
             (update-filegroups-table!
-             ws (dirname canonical-path)
+             ws pkg-path (dirname canonical-path)
              lbl ;; (keyword->symbol lbl)
              (basename pattern))
             ))
@@ -491,7 +498,7 @@
                (list (list lbl
                            (cons :pkg (dirname tagged))
                            ;; NB: :tgt for singleton, :tgts for globs
-                           (cons :glob lbl))
+                           (cons :glOB lbl))
                      `,@expanded-deps))))
       (format #t "~A: ~A~%" (red "expanded-deps") expanded-deps)
       (format #t "~A: ~A~%" (red "GLOB RESULT") result)
@@ -514,7 +521,7 @@
          )
 
     (update-filegroups-table!
-             ws (dirname canonical-path)
+             ws pkg-path (dirname canonical-path)
              lbl
              (basename pattern))
 
@@ -526,7 +533,7 @@
       result)))
 
 ;; tagged deps: (:foo foo.sh), (:css (glob_files *.css)), what else?
-;; called from expanders.scm::expand-args*
+;; called from expanders.scm::expand-terms*
 (define (handle-tagged-dep ws deplist paths expanded-deps)
   (format #t "~A: ~A\n" (ublue "handle-tagged-dep") deplist)
   ;; obsolete: kw :_ is reserved for non-tagged symlist
@@ -582,7 +589,7 @@
 (define (handle-include-dep deplist)
   (format #t "handle-include-dep: ~A\n" deplist))
 
-;; called by expanders::expand-args*
+;; called by expanders::expand-terms*
 (define dune-dep-handlers
   `((file ,handle-file-dep)
     (alias ,handle-alias-dep)

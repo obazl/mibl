@@ -24,6 +24,7 @@
 (load "dune/dune_stanzas.scm")
 ;; (load "dune/lookup_tables.scm")
 
+(load "dune/cc.scm")
 (load "dune/executables.scm")
 (load "dune/expanders.scm")
 (load "dune/fields.scm")
@@ -31,6 +32,7 @@
 (load "dune/labels.scm")
 (load "dune/libraries.scm")
 (load "dune/modules.scm")
+(load "dune/opam.scm")
 (load "dune/pkg_api.scm")
 (load "dune/predicates.scm")
 (load "dune/ppx.scm")

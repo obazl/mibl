@@ -342,7 +342,7 @@
                                      (lbl-pkg (assoc-val :pkg lbl-list))
                                      (lbl-tgt (if-let ((tgt (assoc-val :tgt lbl-list)))
                                                   (equal? tool tgt)
-                                                  (if-let ((tgts (assoc-val #|:tgts|# :globs lbl-list)))
+                                                  (if-let ((tgts (assoc-val #|:tgts|# :glob lbl-list)))
                                                           (equal? tool tgts)
                                                           (error 'fixme "missing :tgt and :tgts in dep")))))
                                 (format #t "~A: ~A~%" (uwhite "lbl-list") lbl-list)
@@ -726,39 +726,40 @@
 (define expand-targets
   (lambda (ws pkg targets deps)
     (format #t "~A: ~A\n" (blue "expand-targets") targets)
-    (let ((xtargets (expand-args* ws targets pkg '())))
+    (let ((xtargets (expand-terms* ws targets pkg '())))
       (format #t "Expanded targets ~A\n" xtargets)
       xtargets)))
 
 ;; expands items, e.g. pct-vars like %{deps}
-(define (expand-args* ws arglist pkg expanded-deps)
-  (format #t "~A: ~A\n" (ublue "expand-args*") arglist)
+(define (expand-terms* ws arglist pkg expanded-deps)
+  (format #t "~A: ~A\n" (ublue "expand-terms*") arglist)
   ;; (format #t "pkg: ~A\n" pkg)
   (format #t "expanded-deps: ~A\n" expanded-deps)
   ;; (let ((pkg-path (car (assoc-val :pkg-path pkg)))
   ;;       (ws-root (car (assoc-val :ws-path pkg))))
   (if (null? arglist)
       (begin
-        ;; (format #t "finished arglist: ~A\n" expanded-deps)
+        (format #t "~A: ~A\n" (bgred "finished term-list") expanded-deps)
         expanded-deps)
       (if (pair? (car arglist))
-          (expand-args* ws (car arglist)
-                          pkg ;; stanza-alist
-                          (expand-args* ws
-                           (cdr arglist) pkg expanded-deps))
+          (let ((front (expand-terms* ws (car arglist) pkg '())))
+            (format #t "~A: ~A~%" (ured "expanded front") front)
+            (format #t "~A: ~A~%" (ured "now expanding") (cdr arglist))
+            (expand-terms* ws (cdr arglist) pkg (append expanded-deps  front))
+                    )
           ;; car is atom
           (let* ((kw (car arglist)))
             (if-let ((depfn (assoc-val kw dune-dep-handlers)))
                     (let ((res (apply (car depfn)
                                       (list ws pkg
                                             arglist))))
-                      ;; (format #t "depfn res: ~A\n" res)
-                      ;; (format #t "expanded-deps: ~A\n" expanded-deps)
+                      (format #t "depfn res: ~A\n" res)
+                      (format #t "expanded-deps: ~A\n" expanded-deps)
                       ;; we're done, depfn consumed cdr
-
-                      (append expanded-deps
-                              (if (pair? (car res)) res (list res))
-                              ))
+                      ;; return expanded-deps
+                      ;; (if (null? expanded-deps)
+                      ;;     (if (pair? (car res)) res (list res))
+                      (append (if (pair? (car res)) res (list res)) expanded-deps))
 
                     ;; else car of arglist not a keyword
                     ;; must be either a ':' tagged dep or a filename literal
@@ -767,6 +768,7 @@
 
                     ;; convert to string and dispatch
                     (let ((dep (format #f "~A" (car arglist))))
+                      (format #t "~A: ~A~%" (bgred "XXXXXXXXXXXXXXXX") "Y")
                       (cond
                        ((char=? #\: (string-ref dep 0))
                           (begin
@@ -791,12 +793,12 @@
 
 (define (expand-rule-deps ws paths stanza-alist)
   ;; updates stanza-alist
-  (format #t "~A: ~A\n" (blue "expand-rule-deps") stanza-alist)
+  (format #t "~A: ~A\n" (ublue "expand-rule-deps") stanza-alist)
   ;; (let ((stanza-alist (cdr stanza)))
   (if-let ((deps-assoc (assoc 'deps stanza-alist)))
           (let* ((deplist (assoc-val 'deps stanza-alist))
                  (_ (format #t "main deplist: ~A\n" deplist))
-                 (result (expand-args* ws deplist paths '())))
+                 (result (expand-terms* ws deplist paths '())))
             (format #t "DEPLIST EXPANDED: ~A\n" result)
             (cons :deps result))
           #f))

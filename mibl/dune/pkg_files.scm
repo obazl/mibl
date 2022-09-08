@@ -157,22 +157,6 @@
   ;;(set-cdr! struct (cdr struct))
     ))
 
-(define (-update-stanza-deps pkg fname mdeps)
-  (format #t "~A: ~A~%" (ublue "-update-stanza-deps") (assoc-val :dune pkg))
-  (format #t "~A: ~A~%" (blue "mdeps") mdeps)
-  (let ((mname (filename->module-name fname)))
-    (format #t "~A: ~A~%" (blue "mname") mname)
-    (for-each (lambda (stanza)
-                (format #t "~A: ~A~%" (blue "stanza") stanza)
-                (let ((compile-deps (assoc-in '(:compile :manifest :modules) (cdr stanza))))
-                  (format #t "~A: ~A~%" (blue "compile-deps") compile-deps)
-                  (if compile-deps
-                      (if (member mname (cdr compile-deps))
-                          (set-cdr! compile-deps
-                                    (append (cdr compile-deps)
-                                            mdeps))))))
-              (assoc-val :dune pkg))))
-
 ;; run ocamldep against all static src files in pkg
 ;; iterate over output, updating :pkg-modules, :pkg-structures
 ;; this handles only static srcs, dynamics (ocamllex, ocamlyacc)
@@ -208,7 +192,7 @@
                               (begin
                                 (format #t "~A ~A to ~A~%" (bgyellow "adding mdeps") mdeps fname)
                                 (format #t "~A: ~A~%" (uyellow "in pkg") pkg)
-                                (-update-stanza-deps pkg fname mdeps)
+                                (update-stanza-deps pkg fname mdeps)
                                 ))
 
                           ;; mdeps is list of ocamldeps of fname with corresponding files in this pkg
