@@ -239,7 +239,7 @@
             (format #t "~A: ~A, ~A~%" (red "tool NOT in deps") search-key deps) ;; t)
             (set-cdr! deps
                       (append
-                       (list (cons ::tOOLS
+                       (list (cons ::tools
                                    (list
                                     (cons search-key ;; arg-kw
                                           ;; (list (cons :pkg pkg-path)

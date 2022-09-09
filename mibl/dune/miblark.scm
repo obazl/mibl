@@ -23,7 +23,7 @@
                  ;;FIXME: handle progn (multiple cmds)
                  (tool (assoc-in '(:actions :cmd :tool) stanza-alist))
                  (_ (format #t "~A: ~A~%" (uwhite "tool") tool))
-                 (error 'X "STOP miblark tool")
+                 ;; (error 'X "STOP miblark tool")
 
                  )
             ;; (-expand-literal-tool!? (car (assoc-val :pkg-path pkg)) tool deps)
