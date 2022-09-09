@@ -451,6 +451,7 @@
          (_ (format #t "~A: ~A~%" (green "pattern") pattern))
          (pattern (format #f "~A" (cadr pattern)))
          (_ (format #t "~A: ~A~%" (green "pattern") pattern))
+
          ;; working dir is always ws root, so we prepend the pkg-path
          ;; (pattern-str (string-append pkg-path "/" pattern))
 
@@ -460,6 +461,15 @@
 
          (canonical-path (->canonical-path dep-path))
          (_ (format #t "canonical-path: ~A~%" canonical-path))
+
+         ;; normalize pathed globs like ../foo/*.ml
+         (canonical-pattern (basename canonical-path))
+         ;;FIXME: what about embedded globs like ../*/foo.ml
+
+         (glob? (string-index canonical-pattern (lambda (ch) (equal? ch #\*))))
+         (fg-name (format #f "glob_~A" (string-replace canonical-pattern "STAR" glob? (+ 1 glob?))))
+         (_ (format #t "~A: ~A~%" (ublue "fg-name") fg-name))
+         ;; (_ (error 'X "STOP fg-name"))
 
          (tagged canonical-path)
 
@@ -491,15 +501,17 @@
            ;; could not figure out how to handle empty expanded-list
            ;; without getting #<unspecified>, so hack alert:
            (if (null? expanded-deps)
-               (list (list lbl
-                           (cons :pkg (dirname tagged))
+               `((,lbl
+               ;; (list (list lbl
+                  (:pkg . ,(dirname tagged))
                            ;; NB: :tgt for singleton, :tgts for globs
-                           (cons :glob lbl)))
-               (list (list lbl
-                           (cons :pkg (dirname tagged))
-                           ;; NB: :tgt for singleton, :tgts for globs
-                           (cons :glOB lbl))
-                     `,@expanded-deps))))
+                  (:glob . ,fg-name)))
+               `((,lbl
+               ;; (list (list lbl
+                  (:pkg . ,(dirname tagged))
+                  ;; NB: :tgt for singleton, :tgts for globs
+                  (:glOB . ,fg-name)
+                  expanded-deps)))))
       (format #t "~A: ~A~%" (red "expanded-deps") expanded-deps)
       (format #t "~A: ~A~%" (red "GLOB RESULT") result)
       result)))
@@ -517,6 +529,13 @@
          (_ (format #t "~A: ~A~%" (bgred "cwd") (pwd)))
          (canonical-path (->canonical-path dep-path))
          (_ (format #t "~A: ~A~%" (uwhite "canonical-path") canonical-path))
+         ;; (_ (error 'X "STOP untagged glob"))
+
+         (canonical-pattern (basename canonical-path))
+         (glob? (string-index canonical-pattern (lambda (ch) (equal? ch #\*))))
+         (fg-name (format #f "glob_~A" (string-replace canonical-pattern "STAR" glob? (+ 1 glob?))))
+         (_ (format #t "~A: ~A~%" (ublue "fg-name") fg-name))
+
          (lbl :glob)  ;;FIXME: derive tagname
          )
 
@@ -526,9 +545,9 @@
              (basename pattern))
 
     (let ((result
-           (list (list :glob
-                           (cons :pkg (dirname canonical-path))
-                           (cons :glob lbl)))))
+           `((:glob
+              (:pkg . ,(dirname canonical-path))
+              (:glob . ,fg-name)))))
       (format #t "~A: ~A~%" (red "GLOB RESULT") result)
       result)))
 

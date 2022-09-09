@@ -2,7 +2,7 @@
   (format #t "~A: ~A~%" (bgblue "foreign-archives->mibl") fld)
   `(:cc-archives ,fld))
 
-(define (foreign-stubs->mibl fld)
+(define (foreign-stubs->mibl name fld)
   (format #t "~A: ~A~%" (bgblue "foreign-stubs->mibl") fld)
   (let ((lang (car (assoc 'language (cdr fld))))
         (res (map (lambda (fld)
@@ -28,5 +28,5 @@
                                #f "unrecognize foreign-stubs fld" fld)))))
                   (cdr fld))))
     (if (assoc :cc res)
-        `(:cc-stubs ,@(dissoc '(:cc) res))
-        `(:foreign-stubs ,res))))
+        `(:cc-stubs (:name . ,name) ,@(dissoc '(:cc) res))
+        `(:foreign-stubs (:name . ,name) ,res))))

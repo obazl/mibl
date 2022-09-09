@@ -10,6 +10,7 @@
   (let* ((nzaction (normalize-action ws pkg rule-alist targets deps))
          (_ (format #t "~A: ~A\n"
                     (blue "normalized action") nzaction))
+         ;; (_ (error 'X "STOP normalize-action"))
          (package (if-let ((p (assoc-val 'package rule-alist))) (car p)))
          (mode (if-let ((m (assoc-val 'mode rule-alist))) (car m)))
          (fallback (if-let ((fb (assoc-val 'fallback rule-alist)))
@@ -228,6 +229,8 @@
                 ;;  (error 'unhandled-rule
                 ;;         (format #f "unhandled rule: ~A" rule-alist))))))
           (format #t "~A: ~A~%" (green "mibl-rule") mibl-rule)
+         ;; (_ (error 'X "STOP prune"))
+
           ;; (update-exports-table-with-targets! ws
           ;;                                     :FIXME ;; tag
           ;;                                     (assoc-in '(:rule :outputs) mibl-rule) ;; name

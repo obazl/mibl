@@ -1,5 +1,5 @@
 (define (update-filegroups-table! ws client-path pkg-path tgt pattern)
-  (format #t "~A path: ~A~%" (magenta "update-filegroups-table!") pkg-path)
+  (format #t "~A path: ~A~%" (umagenta "update-filegroups-table!") pkg-path)
   (format #t "~A: ~A~%" (green "client") client-path)
   (format #t "~A: ~A~%" (green "tgt") tgt)
   (format #t "~A: ~A~%" (green "pattern") pattern)
@@ -10,28 +10,54 @@
          ;; (_ (format #t "~A: ~A~%" (uwhite "-ws") -ws))
          (filegroups (car (assoc-val :filegroups -ws)))
          (_ (format #t "filegroups tbl: ~A\n" filegroups))
-         (glob? (string-index (format #f "~A" pattern) (lambda (ch)
-                                              (equal? ch #\*)))))
+         (patt-str (format #f "~A" pattern))
+         (glob? (string-index patt-str (lambda (ch) (equal? ch #\*))))
+         (fg-name (format #f "glob_~A" (string-replace patt-str "STAR" glob? (+ 1 glob?))))
+         )
+    (format #t "~A: ~A~%" (bgcyan "fg-name") fg-name)
 
     (format #t "adding ~A~A to filegroups tbl\n" pkg-path tgt)
 
     (let ((fgroups (hash-table-ref filegroups pkg-path)))
       (format #t "~A: ~A~%" (red "fgroups") fgroups)
       (if fgroups
+          (if-let ((same (assoc fg-name fgroups)))
+                  (begin
+                    (format #t "~A: ~A~%" (bgred "same") same)
+                    (alist-update-in! fgroups (list fg-name :clients)
+                                      (lambda (old) (append old (list client-path))))
+                    (format #t "~A: ~A~%" (bgblue "updated") filegroups)
+                    ;; (error 'STOP "update-fgs")
+                    ;; (hash-table-set! filegroups pkg-path
+                    ;;                  (append
+                    ;;                   fgroups
+                    ;;                   (list (cons fg-name
+                    ;;                               ;;tgt
+                    ;;                               (if glob?
+                    ;;                                   `((:glob . ,pattern)
+                    ;;                                     (:clients ,client-path))
+                    ;;                                   `((:file . ,pattern)))))))
+                    )
+                  ;; else new entry in existing fg list
+                  (hash-table-set! filegroups pkg-path
+                                   (append
+                                    fgroups
+                                    (list (cons fg-name
+                                                ;;tgt
+                                                (if glob?
+                                                    `((:glob . ,pattern)
+                                                      (:clients ,client-path))
+                                                    `((:file . ,pattern))))))))
+          ;; else new fg list for pkg
           (hash-table-set! filegroups pkg-path
-                           (append
-                            fgroups
-                            (list (cons tgt (if glob?
-                                                `((:glob ,pattern)
-                                                  `(:client ,client-path))
-                                                `((:file ,pattern)))))))
-          ;; else new
-          (hash-table-set! filegroups pkg-path
-                           (list (cons tgt (if glob?
-                                               `((:glob ,pattern)
-                                                 (:client ,client-path))
-                                               `((:file ,pattern)))))))
-      (format #t "updated filegroups tbl: ~A\n" filegroups))))
+                           (list (cons fg-name
+                                       ;; tgt
+                                       (if glob?
+                                               `((:glob . ,pattern)
+                                                 (:clients ,client-path))
+                                               `((:file . ,pattern)))))))
+      (format #t "updated filegroups tbl: ~A\n" filegroups)
+      )))
 
 (define (-module-in-modules? m modules)
   (format #t "~A: ~A~%" (ublue "-module-in-modules?") m)

@@ -49,6 +49,7 @@
                        tool deps)))
              (format #t "~A: ~A~%" (ured "TMP") tmp)
              (format #t "~A: ~A~%" (ured "DEPS") deps)
+             ;; (error 'X "STOP expand-run-tool")
              tmp))))))))
 
 (define (-match-dep pfx key dep)
@@ -227,7 +228,7 @@
             (format #t "~A: ~A~%" (red "tool in deps") match)
             (set-cdr! deps
                       (append
-                       (list (list ::tools match
+                       (list (list ::tooLS match
                                    #| (list search-key ;; arg-kw
                                    (cons :pkg pkg-path)
                                    (cons :tgt arg))|# ))
@@ -238,7 +239,7 @@
             (format #t "~A: ~A, ~A~%" (red "tool NOT in deps") search-key deps) ;; t)
             (set-cdr! deps
                       (append
-                       (list (cons ::tools
+                       (list (cons ::tOOLS
                                    (list
                                     (cons search-key ;; arg-kw
                                           ;; (list (cons :pkg pkg-path)
@@ -316,7 +317,7 @@
                (_ (format #t "~A: ~A~%" (white "inferring ::import for tool") tool-kw))
                )
           (set-cdr! deps
-                    (list (cons ::tools
+                    (list (cons ::toolsX
                                 (list
                                  (cons tool-kw ::import
                                        ;; (list (cons :pkg pkg-path)
@@ -358,22 +359,42 @@
                 ;; move it from (:deps) to (deps ::tools)
                 (set-cdr! deps
                           (append
-                           (list (list ::tools
+                           (list (list ::Tools
                                        (list tool-kw
                                              (cons :pkg pkg-path)
                                              (cons :tgt tool))))
                            (alist-delete (list tool-kw) (cdr deps))))
                 (car t))
-              ;; else
-              (let ((tool-kw (string->keyword tool)))
-                (format #t "~A: ~A~%" (red "tool NOT in deps") tool)
-                (set-cdr! deps
-                          (append
-                           (list (cons ::tools
-                                      (list (cons tool-kw
-                                                  `((:pkg ,pkg-path)))
-                                            (cons :tgt tool))))
-                           (cdr deps))))))
+              ;; else did not find t in deps.
+              (begin
+               (format #t "~A: ~A~%" (blue "tool NOT in deps") tool)
+               ;; inference: must(?) be a path ref to sth in another pkg
+               ;; e.g. ../gen_stubs/gen_stubs.exe
+               ;; task: normalize path, split into pkg and tgt for label
+               (if (string-index (format #f "~A" tool) (lambda (ch) (char=? ch #\/)))
+                   ;; relative path like gen/gen.exe or ../gen_stubs/gen_stubs.exe
+                   (begin
+                     (let* ((tool-kw (string->keyword tool))
+                            (full-path (format #f "~A/~A" pkg-path tool))
+                            (canonical-path (->canonical-path full-path))
+                            (pkg (dirname canonical-path))
+                            (tgt (basename canonical-path)))
+                       (format #t "~A: ~A~%" (blue "pkg-path") pkg-path)
+                       (format #t "~A: ~A~%" (blue "full-path") full-path)
+                       (format #t "~A: ~A~%" (blue "canonical-path") canonical-path)
+                       ;; (error 'X "STOP expand-literal-tool")
+                       (set-cdr! deps
+                                 (append
+                                  `((,tool-kw
+                                     (:pkg . ,pkg)
+                                     (:tgt . ,tgt)
+                                     (:lbl . ,(format #f "//~A:~A" pkg tgt))))
+                                  (cdr deps)))
+                       tool-kw))
+                   ;; else must be in cwd, but was not listed as a dep yet?
+                   (begin
+                     (error 'FIXME
+                            (format #f "tool not listed in deps: ~A" tool)))))))
         )))
 
 ;; may update deps
@@ -444,12 +465,12 @@
          (_ (format #t "~A~%" (uwhite "searching struct-files")))
          (struct
           (find-if (lambda (f-assoc)
-                    (format #t "~A: ~A~%" (white "f-assoc") f-assoc)
-                    (equal? (format #f "~A" arg) (format #f "~A" (cdr f-assoc))))
+                     (format #t "~A: ~A~%" (white "f-assoc") f-assoc)
+                     (equal? (format #f "~A" arg) (format #f "~A" (cdr f-assoc))))
                    struct-files)))
-                  ;; (if-let ((structs (assoc-val :structures pkg)))
-                  ;;         structs
-                  ;;         '()))))
+    ;; (if-let ((structs (assoc-val :structures pkg)))
+    ;;         structs
+    ;;         '()))))
 
     (format #t "~A: ~A~%" (white "struct") struct)
     (if struct
@@ -508,56 +529,56 @@
    ((eq? (fnmatch "*.ml" (format #f "~A" arg) 0) 0)
     (format #t "~A: ~A~%" (red "Matched *.ml") arg)
     (let ((struct (find-if (lambda (f-assoc)
-                               ;; (format #t "~A: ~A~%" (white "f-assoc")
-                               ;;         f-assoc)
-                               (find-if (lambda (f)
-                                          ;; (format #t "~A: ~A (~A)~%" (white "f") (cdr f) (type-of (cdr f)))
-                                          (equal? (format #f "~A" arg)
-                                                  (format #f "~A" (cdr f))))
-                                        (cdr f-assoc)))
-                             (if-let ((structs (assoc-val :structures pkg)))
-                                     structs
-                                     '()))))
+                             ;; (format #t "~A: ~A~%" (white "f-assoc")
+                             ;;         f-assoc)
+                             (find-if (lambda (f)
+                                        ;; (format #t "~A: ~A (~A)~%" (white "f") (cdr f) (type-of (cdr f)))
+                                        (equal? (format #f "~A" arg)
+                                                (format #f "~A" (cdr f))))
+                                      (cdr f-assoc)))
+                           (if-let ((structs (assoc-val :structures pkg)))
+                                   structs
+                                   '()))))
 
-        (format #t "~A: ~A~%" (white "struct") struct)
-        (if struct
-            (let ((key (string->keyword arg)))
-              (format #t "~A: ~A~%" (magenta "INFERRED DEP") struct)
-              (set-cdr! deps (cons (cons key
-                                         (list (cons :pkg (assoc-val :pkg-path pkg))
-                                               (cons :tgt arg)))
-                                   (cdr deps)))
-              key)
-            ;; else search :modules
-            (let ((struct (find-if (lambda (m-assoc)
-                                     (format #t "~A: ~A~%" (white "m-assoc") m-assoc)
-                                     (find-if (lambda (m)
-                                                (format #t "~A: ~A (~A)~%" (white "m") (cdr m) (type-of (cdr m)))
-                                                (let ((ml (cdr m)))
-                                                  (format #t "~A: ~A~%" (white "(cdr m)") ml)
-                                                  (equal? (format #f "~A" arg)
-                                                          (format #f "~A" ml))))
-                                        (cdr m-assoc)))
-                             (if-let ((modules (assoc-val :modules pkg)))
-                                     modules
-                                     '()))))
-              (if struct
-                  (let ((key (string->keyword arg)))
-                    (format #t "~A: ~A~%" (magenta "INFERRED DEP") struct)
-                    (set-cdr! deps (cons (cons key
-                                               (list (cons :pkg (assoc-val :pkg-path pkg))
-                                                     (cons :tgt arg)))
-                                         (cdr deps)))
-                    key)
-                  ;; else no matching file
-                  ;; PROBLEM: distinguish between string args and labels of targets in other pkgs
-                  ;; solution: assume "foo.ml" is a file name
-                  (begin
-                    (format #t "~A: ~A~%" (red "NO MATCH in pkg files for") arg)
-                    ;; 1. add to pkg files :structures or :modules
-                    ;; 2. add to :targets
-                    ;;(string->keyword arg)
-                    arg))))))
+      (format #t "~A: ~A~%" (white "struct") struct)
+      (if struct
+          (let ((key (string->keyword arg)))
+            (format #t "~A: ~A~%" (magenta "INFERRED DEP") struct)
+            (set-cdr! deps (cons (cons key
+                                       (list (cons :pkg (assoc-val :pkg-path pkg))
+                                             (cons :tgt arg)))
+                                 (cdr deps)))
+            key)
+          ;; else search :modules
+          (let ((struct (find-if (lambda (m-assoc)
+                                   (format #t "~A: ~A~%" (white "m-assoc") m-assoc)
+                                   (find-if (lambda (m)
+                                              (format #t "~A: ~A (~A)~%" (white "m") (cdr m) (type-of (cdr m)))
+                                              (let ((ml (cdr m)))
+                                                (format #t "~A: ~A~%" (white "(cdr m)") ml)
+                                                (equal? (format #f "~A" arg)
+                                                        (format #f "~A" ml))))
+                                            (cdr m-assoc)))
+                                 (if-let ((modules (assoc-val :modules pkg)))
+                                         modules
+                                         '()))))
+            (if struct
+                (let ((key (string->keyword arg)))
+                  (format #t "~A: ~A~%" (magenta "INFERRED DEP") struct)
+                  (set-cdr! deps (cons (cons key
+                                             (list (cons :pkg (assoc-val :pkg-path pkg))
+                                                   (cons :tgt arg)))
+                                       (cdr deps)))
+                  key)
+                ;; else no matching file
+                ;; PROBLEM: distinguish between string args and labels of targets in other pkgs
+                ;; solution: assume "foo.ml" is a file name
+                (begin
+                  (format #t "~A: ~A~%" (red "NO MATCH in pkg files for") arg)
+                  ;; 1. add to pkg files :structures or :modules
+                  ;; 2. add to :targets
+                  ;;(string->keyword arg)
+                  arg))))))
 
    ((eq? (fnmatch "*.mli" (format #f "~A" arg) 0) 0)
     (error 'fixme (format #f "not yet implemented for: ~A" arg)))
@@ -652,10 +673,10 @@
                       (if-let ((inferred-dep (-infer-dep! arg deps pkg)))
                               inferred-dep
                               arg))))
-      ;; (cons
-      ;;  arg
-      ;;  ;;(resolve-string-arg pkg-path arg vars)
-      ;;  (expand-cmd-args* (cdr args) targets deps))))))
+     ;; (cons
+     ;;  arg
+     ;;  ;;(resolve-string-arg pkg-path arg vars)
+     ;;  (expand-cmd-args* (cdr args) targets deps))))))
      )))
 
 (define expand-cmd-args*
@@ -679,9 +700,9 @@
                    (let ((subarg (expand-cmd-args* ws (car args) pkg targets deps)))
                      (cons subarg
                            (expand-cmd-args* ws (cdr args) pkg targets deps))))
-                   ;; (expand-cmd-args* pkg-path
-                         ;;                  target targets
-                         ;;                  (cdr args) filedeps vars)))
+                  ;; (expand-cmd-args* pkg-path
+                  ;;                  target targets
+                  ;;                  (cdr args) filedeps vars)))
 
                   ;; ((number? arg)
                   ;;  (cons arg
@@ -711,9 +732,9 @@
                    (format #t "~A: ~A~%" (red "arg is string") arg)
                    (let ((sarg (expand-string-arg ws arg pkg targets deps)))
                      (append (list sarg)
-                           (expand-cmd-args* ws (cdr args) pkg targets deps))))
-                            ;; pkg-path target targets
-                            ;; (cdr args) filedeps vars)))))
+                             (expand-cmd-args* ws (cdr args) pkg targets deps))))
+                  ;; pkg-path target targets
+                  ;; (cdr args) filedeps vars)))))
 
                   (else ; not number, pair, string
                    (format #t
@@ -746,7 +767,7 @@
             (format #t "~A: ~A~%" (ured "expanded front") front)
             (format #t "~A: ~A~%" (ured "now expanding") (cdr arglist))
             (expand-terms* ws (cdr arglist) pkg (append expanded-deps  front))
-                    )
+            )
           ;; car is atom
           (let* ((kw (car arglist)))
             (if-let ((depfn (assoc-val kw dune-dep-handlers)))
@@ -768,27 +789,26 @@
 
                     ;; convert to string and dispatch
                     (let ((dep (format #f "~A" (car arglist))))
-                      (format #t "~A: ~A~%" (bgred "XXXXXXXXXXXXXXXX") "Y")
                       (cond
                        ((char=? #\: (string-ref dep 0))
-                          (begin
-                            ;; (format #t "TAGGED DEP : ~A\n" arglist)
-                            (handle-tagged-dep
-                             ws arglist pkg expanded-deps)))
+                        (begin
+                          ;; (format #t "TAGGED DEP : ~A\n" arglist)
+                          (handle-tagged-dep
+                           ws arglist pkg expanded-deps)))
 
                        ;; ((char=? #\% (string-ref dep 0))
                        ;;  )
 
                        (else
-                          ;; must be a filename literal?
-                          ;; return (:static <path> <fname>)
-                          ;; or (:dynamic <path> <fname>)
-                          (begin
-                            ;; (format #t "LIT DEP : ~A\n" arglist)
-                            (handle-filename-literal-dep
-                             ws dep arglist pkg
-                             ;; stanza-alist
-                             expanded-deps))))))
+                        ;; must be a filename literal?
+                        ;; return (:static <path> <fname>)
+                        ;; or (:dynamic <path> <fname>)
+                        (begin
+                          ;; (format #t "LIT DEP : ~A\n" arglist)
+                          (handle-filename-literal-dep
+                           ws dep arglist pkg
+                           ;; stanza-alist
+                           expanded-deps))))))
             ))))
 
 (define (expand-rule-deps ws paths stanza-alist)
@@ -840,16 +860,20 @@
                       (if (pair? kw)
                           ;; e.g. (run (cmd ...))
                           (recur kw tool expanded-cmds
-                                   (expand-cmd-args* ws args pkg targets deps))
+                                 (expand-cmd-args* ws args pkg targets deps))
 
                           ;; kw in in list of dune std tools, must be
                           ;; (run %{bin:foo} ...), (run ../foo/bar.exe) etc.
-                          (list
-                           (list (list :tool
-                                       (expand-run-tool ws kw pkg targets deps))
-                                `(:args
-                                  ,@(expand-cmd-args* ws (cdr raw-cmds)
-                                                     pkg targets deps))))))))))))
+                          ;; e.g. (run ../gen_stubs/gen_stubs.exe %{jsoo} --except %{runtime})
+                          (let ((tmp
+                                  `((:tool
+                                     ,(expand-run-tool ws kw pkg targets deps))
+                                    (:args
+                                      ,@(expand-cmd-args* ws (cdr raw-cmds)
+                                                          pkg targets deps)))))
+                            (format #t "~A: ~A~%" (bggreen "tmp") tmp)
+                            ;; (error 'X "STOP expanded run-tool")
+                            tmp)))))))))
                   ;; ;; else must be an arg
                   ;; (expand-cmd-args* (cdr raw-cmds) pkg targets deps)))
 

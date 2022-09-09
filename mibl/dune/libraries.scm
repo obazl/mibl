@@ -115,7 +115,9 @@
        ((c_types) (fld-error 'library fld-assoc))
        ((install_c_headers) (fld-error 'library fld-assoc))
        ((foreign_archives) (foreign-archives->mibl fld-assoc))
-       ((foreign_stubs) (foreign-stubs->mibl fld-assoc))
+       ((foreign_stubs) (foreign-stubs->mibl
+                         (car (assoc-val 'name stanza-alist))
+                         fld-assoc))
        ;; ppx
        ((kind) ;; ignore, not meaningful for obazl?
         (values))

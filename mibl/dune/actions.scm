@@ -110,6 +110,8 @@
                                                            (list progn)
                                                            ;;(list action-alist)
                                                            targets deps))))
+                                (format #t "~A: ~A~%" (bggreen "progn cmd-list") cmd-list)
+                                (error 'X "STOP cmd-list 2")
                                 cmd-list)
                               (begin
                                 (format #t "UNHANDLED PROGN ACTION: ~A\n"
@@ -214,14 +216,17 @@
                         (let ((cmd-list (apply (car cmd-fn)
                                                (list ws pkg
                                                      action-list targets deps))))
+                          (format #t "~A: ~A~%" (bggreen "cmd-list 1") cmd-list)
+                          (error 'X "STOP cmd-list 1")
                           cmd-list)
                         (let* ((_ (format #t "~A: ~A~%" (yellow "adhoc action") action))
                                (args (expand-cmd-list ws pkg run-dsl targets deps))
                                ;; (args (expand-cmd-args* action-args pkg targets deps))
                                (_ (format #t "~A: ~A\n" (yellow "expanded args") args)))
+                          ;; (error 'X "STOP xargs")
                           ;; `((:cmd (:tool ,action)
                           ;;         (:args ,@args)))
-                          (list (cons :cmd `,@args))))))))
+                          (list (cons :cmd args))))))))
 
     ;; (case action
     ;;   ((write-file)
@@ -269,6 +274,8 @@
                                                      (list ws pkg
                                                            (list subaction-alist)
                                                            targets deps))))
+                                ;; (format #t "~A: ~A~%" (bggreen "w/output cmd-list") cmd-list)
+                                ;; (error 'X "STOP cmd-list 3")
                                 cmd-list)
                               (begin
                                 (format #t "UNHANDLED WST ACTION: ~A\n"
@@ -654,6 +661,8 @@
                     (let ((cmd-list (apply (car cmd-fn)
                                            (list ws pkg
                                                  action-alist targets deps))))
+                      (format #t "~A: ~A~%" (bggreen "normalize cmd-list") cmd-list)
+                      ;; (error 'X "STOP cmd-list 4")
                       cmd-list)
                     (begin
                       (format #t "UNHANDLED ACTION: ~A\n" action)
