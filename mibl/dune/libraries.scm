@@ -24,58 +24,32 @@
 (define (normalize-instrumentation fld-assoc)
   (format #t "normalize-instrumentation: ~A\n" fld-assoc))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; inline_tests - generate ocaml_test
-;; task: construct 'test' stanza to serve as test runner?
-;; "Under the hood, a test executable is built by dune."
-
-;; special cases: no 'backend' fld needed for the following preprocess
-;; ppx libs:
-;;   ppx_inline_test
-;;   ppx_expect
-
-;; question: should we "select" ppx_inline_test compilation? If we do
-;; not intend to run inline tests, then we should not need to compile
-;; with inline test support.
-
-;; e.g. if no test, then omit ppx preproc on modules? but what if we
-;; have multiple ppx libs? in that case, just omit ppx_inline_test
-;; from the ppx_executable.
-
-;; BUT: see ppx_inline_test/src/dune - the lib stanza specifies
-;; 'inline_test.backend' that seems to build the required executable?
-
-;; yes, 'backend' means build/run testrunner.
-;; see https://dune.readthedocs.io/en/stable/tests.html?highlight=generate_runner#defining-your-own-inline-test-backend
-
-(define (-inline-tests->mibl fld-assoc)
-  (format #t "~A: ~A\n" (ublue "-inline-tests->mibl") fld-assoc)
-  (let ((result
-         (map (lambda (fld)
-                (format #t "~A: ~A~%" (uwhite "fld") fld)
-                (case (car fld)
-                  ((flags)
-                   ;; FIXME: modes. if (modes native),
-                   ;; treat flags as ocamlopt-flags.
-                   (normalize-stanza-fld-flags fld :compile))
-                  ((modes) (cons :modes (cdr fld)))
-                  (else
-                   fld)))
-              (cdr fld-assoc))))
-    (format #t "~A: ~A~%" (bgred "result") result)
-    result))
-
 (define (fld-error stanza-sym fld-assoc)
   (stacktrace)
   (error 'FIXME (format #f "~A ~A: ~A~%"
                         (ured "unhandled stanza fld") stanza-sym fld-assoc)))
 
-(define (-map-lib-flds->mibl stanza-alist)
+(define (-map-lib-flds->mibl ws pkg stanza-alist)
   (format #t "~A: ~A~%" (blue "-map-lib-flds->mibl") stanza-alist)
   (map
    (lambda (fld-assoc)
      (format #t "lib fld-assoc: ~A\n" fld-assoc)
      (case (car fld-assoc)
+
+       ((libraries) (values)) ;; handled separately
+       ((modules) (values)) ;; handled separately
+       ((inline_tests) (values)) ;; handled separately
+        ;; (cons :inline-tests (-inline-tests->mibl ws pkg fld-assoc)))
+
+       ((preprocess) ;; NB: (preprocess pps) handled separately
+        (if (equal? 'no_preprocessing (cadr fld-assoc))
+            (error 'PP "Unhandled pp: no_preprocess"))
+        (if (assoc 'action (cdr fld-assoc))
+            (error 'PP (format #f "Unhandled pp action: ~A" fld-assoc)))
+        ;; TODO: handle (preprocess (action)), (preprocess no_preprocessing),
+        ;; and (preprocess future_syntax)
+        (values))
+
        ((name) (cons :privname (cadr fld-assoc)))
        ((public_name) (cons :pubname (cadr fld-assoc)))
 
@@ -84,11 +58,6 @@
        ((ocamlc_flags) (normalize-stanza-fld-flags fld-assoc :ocamlc))
        ((ocamlopt_flags) (normalize-stanza-fld-flags fld-assoc :ocamlopt))
 
-       ((inline_tests) (cons :inline-tests
-                             (-inline-tests->mibl fld-assoc)))
-
-       ((libraries) (values)) ;; handled separately
-       ((modules) (values)) ;; handled separately
        ((modules_without_implementation)
         (cons :sigs (cdr fld-assoc)))
        ((empty_module_interface_if_absent) (fld-error 'library fld-assoc))
@@ -97,7 +66,6 @@
        ((allow_overlapping_dependencies) (fld-error 'library fld-assoc))
 
        ((optional) (cons :optional #t))
-       ((preprocess) (preprocess-fld->mibl fld-assoc stanza-alist))
        ((preprocessor_deps) (fld-error 'library fld-assoc))
 
        ((synopsis) (cons :docstring (cadr fld-assoc)))
@@ -132,7 +100,7 @@
      ) ;; end lamda
    stanza-alist))
 
-(define (-lib-flds->mibl pkg stanza-alist wrapped?)
+(define (-lib-flds->mibl ws pkg stanza-alist wrapped?)
   (format #t "~A: ~A\n" (blue "-lib-flds->mibl") stanza-alist)
   (format #t "~A: ~A\n" (blue "pkg") pkg)
   (format #t "~A: ~A\n" (blue "wrapped?") wrapped?)
@@ -140,6 +108,9 @@
   ;; 'libraries' and 'modules' flds may return multiple flds
   ;; so excluded them from mapping, handle separately
   ;; 'libraries' fld may generate :directs, :seldeps and :conditionals
+
+  ;; ppxes may involve by (preprocess) and (inline_tests), so do not map,
+  ;; handle separately
 
   (let* ((deps (if-let ((libdeps (assoc-val 'libraries stanza-alist)))
                        (dune-libraries-fld->mibl libdeps pkg)
@@ -151,7 +122,13 @@
          (modules (get-manifest pkg wrapped? stanza-alist)) ;;  deps
          (_ (format #t "~A: ~A\n" (red "lib get-modules") modules))
 
-         (lib-flds (-map-lib-flds->mibl stanza-alist))
+         (ppx (if-let ((ilts (assoc-val 'inline_tests stanza-alist)))
+                      (inline-tests->mibl ws pkg ilts stanza-alist)
+                      (lib-ppx->mibl stanza-alist)))
+         ;;(preprocess-fld->mibl fld-assoc stanza-alist))
+         (_ (format #t "~A: ~A~%" (bgyellow ":PPX") ppx))
+
+         (lib-flds (-map-lib-flds->mibl ws pkg stanza-alist))
          (_ (format #t "lib-flds (mibl): ~A~%" lib-flds))
 
          (lib-flds (if wrapped?
@@ -163,6 +140,7 @@
                                            ;; ))
                                lib-flds)
                        lib-flds))
+         (lib-flds (if ppx (append lib-flds (list ppx)) lib-flds))
          ) ;; end let bindings
 
     ;; now handle modules (modules fld) and submodules (deps fld)
@@ -192,15 +170,16 @@
            )
       ;; (format #t "SUBMODS:: ~A\n" submods)
       ;; (format #t "SUBSIGS:: ~A\n" subsigs)
-      (append lib-flds (remove '() (list depslist
-                                         (cons
-                                          (car modules)
-                                          (append (cdr modules)
-                                                  `((:raw
-                                                     ,(assoc 'modules stanza-alist)))))
-                                         ;;submods
-                                         ;;subsigs
-                                         ))))
+      (append lib-flds
+              (remove '() (list depslist
+                                (cons
+                                 (car modules)
+                                 (append (cdr modules)
+                                         `((:raw
+                                            ,(assoc 'modules stanza-alist)))))
+                                ;;submods
+                                ;;subsigs
+                                ))))
     ))
 
 (define (dune-library->mibl ws pkg stanza)
@@ -292,7 +271,7 @@
            ;; (_ (format #t "STANZA ALIST + SUBMODS: ~A\n" stanza-alist))
 
            ;; CONVERT THE STANZA:
-           (mibl-stanza (-lib-flds->mibl pkg stanza-alist wrapped?))
+           (mibl-stanza (-lib-flds->mibl ws pkg stanza-alist wrapped?))
            (_ (format #t "~A: ~A~%" (uwhite "mibl-stanza") mibl-stanza))
            (mibl-stanza (filter (lambda (fld)
                                   ;; remove empties e.g. (:deps)
@@ -311,32 +290,33 @@
       ;; (ocaml_library) and remove (:ns . <nsname>) assoc. OOPS! This
       ;; does not work since at this stage we may miss generated
       ;; files. So this case must be handled during emit stage.
-      ;; (let ((res
-      ;;        (if-let ((ns (assoc-val :ns mibl-stanza)))
-      ;;                (begin
-      ;;                  (format #t "~A: ~A~%" (uwhite "ns") ns)
-      ;;                  (let ((submods (assoc-in '(:manifest :modules) mibl-stanza)))
-      ;;                    (if (= 1 (length (cdr submods)))
-      ;;                        (let ((submod (cadr submods))
-      ;;                              (ns-mod (normalize-module-name ns)))
-      ;;                          (format #t "~A: ~A~%" (bgred "1 submod") submod)
-      ;;                          (format #t "~A: ~A~%" (uwhite "ns mod") ns-mod)
-      ;;                          (if (equal? ns-mod submod)
-      ;;                              (begin
-      ;;                                (format #t "~A: ~A~%" (bgred "converting to lib") mibl-stanza)
-      ;;                                (list (cons :library
-      ;;                                            (dissoc '(:ns) mibl-stanza))))
-      ;;                              ;; else 1 submodule w/diff name from ns name
-      ;;                              (list (cons kind mibl-stanza))))
-      ;;                        ;; else multiple submodules
-      ;;                        (list (cons kind mibl-stanza)))
-      ;;                    ))
-      ;;                ;; else no nos
-      ;;                (list (cons kind mibl-stanza)))))
-      ;;   (format #t "~A: ~A~%" (uwhite "lib result") res)
-      ;;   ;; (error 'STOP "STOP libs")
-      ;;   res)
-      (list (cons kind mibl-stanza)))))
+      (let ((res
+             (if-let ((ns (assoc-val :ns mibl-stanza)))
+                     (begin
+                       (format #t "~A: ~A~%" (uwhite "ns") ns)
+                       (let ((submods (assoc-in '(:manifest :modules) mibl-stanza)))
+                         (if (= 1 (length (cdr submods)))
+                             (let ((submod (cadr submods))
+                                   (ns-mod (normalize-module-name ns)))
+                               (format #t "~A: ~A~%" (bgred "1 submod") submod)
+                               (format #t "~A: ~A~%" (uwhite "ns mod") ns-mod)
+                               (if (equal? ns-mod submod)
+                                   (begin
+                                     (format #t "~A: ~A~%" (bgred "converting to lib") mibl-stanza)
+                                     (list (cons :library
+                                                 (dissoc '(:ns) mibl-stanza))))
+                                   ;; else 1 submodule w/diff name from ns name
+                                   (list (cons kind mibl-stanza))))
+                             ;; else multiple submodules
+                             (list (cons kind mibl-stanza)))
+                         ))
+                     ;; else no nos
+                     (list (cons kind mibl-stanza)))))
+        (format #t "~A: ~A~%" (uwhite "lib result") res)
+        ;; (error 'STOP "STOP libs")
+        res)
+      ;; (list (cons kind mibl-stanza))
+      )))
 
 ;; (display "loaded dune/dune_stanza_library.scm") (newline)
 

@@ -40,6 +40,7 @@
 (load "dune/emit.scm")
 (load "dune/miblark.scm")
 (load "dune/aliases.scm")
+(load "dune/shared.scm")
 (load "dune/updaters.scm")
 (load "dune/tests.scm")
 (load "dune/pkg_files.scm")

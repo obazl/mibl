@@ -167,11 +167,13 @@
             ;; (format #t "FLAGS: ~A\n" bools)
             (cons
              (case kind
+               ((:common) :common-opts)
                ((:compile) :compile-opts)
                ((:ocamlc) :ocamlc-opts)
                ((:ocamlopt) :ocamlopt-opts)
                ((:archive) :archive-opts)
-               ((:link) :link-opts)
+               ((:link) :opts)
+               ((:runtime) :runtime-opts)
                ((:exec) :exec-opts)
                (else :unknown-opts))
             ;; (cons (if (eq? kind :compile) :opts

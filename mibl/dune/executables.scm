@@ -53,7 +53,7 @@
 
 (define (-exec-flags->mibl stanza-alist)
   (format #t "~A: ~A\n"
-          (blue "-exec-flags->mibl") (assoc-val 'flags stanza-alist))
+          (ublue "-exec-flags->mibl") (assoc-val 'flags stanza-alist))
   (let* ((flags (assoc 'flags stanza-alist))
          (flags (normalize-stanza-fld-flags flags :exec))
          (ocamlc_flags (if-let ((ocflags (assoc 'ocamlc_flags stanza-alist)))
@@ -63,38 +63,41 @@
                                  (cons :ocamlopt (cdr ocflags)) '()))
          (link-flags (if-let ((lf (assoc 'link_flags stanza-alist)))
                              lf '()))
+         (link-flags (normalize-stanza-fld-flags link-flags :link))
          ;; integrate flags into link-flags
          )
-    ;; (_ (format #t "exec flags: ~A\n" flags))
+    (format #t "~A: ~A\n" (bgcyan "link-flags") link-flags)
     ;; (compile-flags '("-compile-flags"))
     ;; (link-flags '("-link_flags")))
 
     (let-values (((standard opens options flags)
                   (flags->mibl (assoc 'flags stanza-alist))))
-      ;; (format #t "~A: ~A~%" (red "standard") standard)
-      ;; (format #t "~A: ~A~%" (red "opens")    opens)
-      ;; (format #t "~A: ~A~%" (red "options")  options)
-      ;; (format #t "~A: ~A~%" (red "flags")    flags)
-      ;; (format #t "~A: ~A~%" (red "ocamlc_flags") ocamlc_flags)
-      ;; (format #t "~A: ~A~%" (red "ocamlopt_flags") ocamlopt_flags)
-      ;; (format #t "~A: ~A~%" (red "link_flags") link-flags)
+      (format #t "~A: ~A~%" (red "standard") standard)
+      (format #t "~A: ~A~%" (red "opens")    opens)
+      (format #t "~A: ~A~%" (red "options")  options)
+      (format #t "~A: ~A~%" (red "flags")    flags)
+      (format #t "~A: ~A~%" (red "ocamlc_flags") ocamlc_flags)
+      (format #t "~A: ~A~%" (red "ocamlopt_flags") ocamlopt_flags)
+      (format #t "~A: ~A~%" (red "link_flags") link-flags)
 
       ;; deal with empty lists
       (let* ((cflags (remove '() (list standard opens options flags)))
              (tcflags (remove '() (list ocamlc_flags ocamlopt_flags)))
              (compile-flags (append cflags tcflags))
-             (link-flags (if (null? flags) '()
-                             (remove '()
-                                     (list standard options
-                                           (if (null? link-flags)
-                                               flags
-                                               (cons (car flags)
-                                                     (append (cdr link-flags)
-                                                             (cdr flags)))))))))
+             (link-flags (if (truthy? link-flags) (cdr link-flags) '()))
+             ;; (link-flags (if (null? link-flags) '()
+             ;;                 (remove '()
+             ;;                         (list standard options
+             ;;                               (if (null? link-flags)
+             ;;                                   flags
+             ;;                                   (cons (car flags)
+             ;;                                         (append (cdr link-flags)
+             ;;                                                 (cdr flags))))))))
+             )
 
-        (values
-         (if (null? compile-flags) '() (list (cons :opts compile-flags)))
-         (if (null? link-flags) '() (list (cons :opts link-flags))))
+        (values ;;FIXME: add common flags
+         (if (null? compile-flags) '() (list (cons :ccopts compile-flags)))
+         (if (null? link-flags) '() (list (cons :llopts link-flags))))
         ))))
 
 (define (-exec-modules-fld->mibl stanza-alist)
@@ -142,7 +145,12 @@
             ;; varexpr.
             `(:package ,(cadr fld-assoc)))
            ((forbidden_libraries) (error 'fixme "forbidden_libraries"))
-           ((link_flags) (values)) ;; (cons :link-flags (cdr fld-assoc)))
+
+           ((flags) (normalize-stanza-fld-flags fld-assoc :common))
+           ((ocamlc_flags) (normalize-stanza-fld-flags fld-assoc :ocamlc))
+           ((ocamlopt_flags) (normalize-stanza-fld-flags fld-assoc :ocamlopt))
+           ((link_flags) (normalize-stanza-fld-flags fld-assoc :link))
+
            ((link_deps) (cons :link-deps (cdr fld-assoc)))
            ((optional) (error 'fixme "forbidden_libraries"))
 
@@ -162,9 +170,6 @@
 
            ;; ignore the rest
            ((libraries) (values))
-           ((flags) (values))
-           ((ocamlc_flags) (values))
-           ((ocamlopt_flags) (values))
 
            ((root_module) (values))
 
@@ -176,7 +181,7 @@
              ;; (error 'fixme
              ;;        (format #f "unhandled link fld: ~A" fld-assoc)))
 
-           ((modes) (values)) ;; FIXME?
+           ((modes) `(:modes ,@(cdr fld-assoc))) ;; FIXME?
 
            (else (error 'fixme
                         (format #f "unhandled link fld: ~A" fld-assoc)))))
@@ -189,13 +194,19 @@
   (map (lambda (fld-assoc)
          (format #t "compile fld-assoc: ~A\n" fld-assoc)
          (case (car fld-assoc)
+           ;; (values) - handled separately
+           ((name names public_name) (values))
+           ((package) (values))
 
            ;; compile fields (library)
-           ((modules) (values))   ;; handled separately
+           ((modules) (values))
            ((libraries) (values)) ;; handled separately
-           ((flags) (values))      ;; handled separately
-           ((ocamlc_flags) (values)) ;; handled separately
-           ((ocamlopt_flags) (values)) ;; handled separately
+
+           ((flags) (normalize-stanza-fld-flags fld-assoc :common))
+           ((ocamlc_flags) (normalize-stanza-fld-flags fld-assoc :ocamlc))
+           ((ocamlopt_flags) (normalize-stanza-fld-flags fld-assoc :ocamlopt))
+           ;; ((link_flags) (normalize-stanza-fld-flags fld-assoc :link))
+           ((link_flags) (values))      ;; handled separately
 
            ((root_module)
             (error 'fixme
@@ -209,8 +220,12 @@
             ;; (error 'fixme
             ;;        (format #f "unhandled compile fld: ~A" fld-assoc)))
 
+           ((modes) `(:modes ,@(cdr fld-assoc))) ;; FIXME?
            ;; ignore the rest
-           (else (values))))
+           ((names) (values))
+           (else
+            (error 'FIXME
+                   (format #f "unhandled fld: ~A" fld-assoc)))))
        stanza-alist))
 
 ;; returns (values <compile-flds> <link-flds>)
@@ -295,7 +310,7 @@
       (values (cons :compile
                     (remove '(:deps)
                             (remove '()
-                            (list compile-manifest compile-flds depslist))))
+                            (list compile-manifest `,@compile-flds depslist))))
               ;; (remove '() (list compile-flds compile-manifest)))
               (cons :link (remove '() (append (list link-manifest)
                                               link-flds)))))))
@@ -562,6 +577,9 @@
                                  ;; (string->symbol (format #f ":bin:~A" pubname)))
                                  privname
                                  pkg-path privname)
+          ;; (error 'fixme "STOP link modes")
+          ;; (if (assoc-in '(:link :modes) stanza-alist)
+          ;;     )
           (if (not (-is-test-executable? ws pkg stanza))
               (if package
                   (update-opam-table! ws :bin
@@ -579,6 +597,10 @@
                                  ;; (string->symbol (format #f ":bin:~A" privname)))
                                  pubname
                                  pkg-path privname)
+          ;; (error 'fixme "STOP modes privname")
+          ;; (if (assoc-in '(:link :modes) stanza-alist)
+          ;;     )
+
           (if (not (-is-test-executable? ws pkg stanza))
               (if package
                   (update-opam-table! ws :bin
@@ -605,17 +627,17 @@
                         privname
                         (normalize-module-name (cadr modules))))))
 
-    (let-values (((compile-flags link-flags)
-                  (-exec-flags->mibl stanza-alist)))
-      (format #t "~A: ~A\n" (uyellow "compile-flags") compile-flags)
-      (format #t "~A: ~A\n" (uyellow "link-flags") link-flags)
+    ;; (let-values (((compile-flags link-flags)
+    ;;               (-exec-flags->mibl stanza-alist)))
+    ;;   (format #t "~A: ~A\n" (uyellow "compile-flags") compile-flags)
+    ;;   (format #t "~A: ~A\n" (uyellow "link-flags") link-flags)
 
       (let-values (((compile-flds link-flds)
                     (-exec-flds->mibl pkg (list privname) stanza-alist)))
 
         (format #t "~A: ~A\n" (uyellow "x compile-flds") compile-flds)
         (format #t "~A: ~A\n" (uyellow "x link-flds") link-flds)
-
+        ;; (error 'STOP "STOP llflaogsopts")
         ;; `(:main ,(normalize-module-name (cadr fld-assoc))))
         ;; (list (-executable->mibl kind
         ;;                          pkg privname pubname
@@ -624,9 +646,10 @@
                     (list (cons :pubname pubname)
                           (cons :privname privname)
                           (cons :main (normalize-module-name privname))
-                          (append link-flds link-flags)
-                          (append compile-flds compile-flags))))
-              ))))
+                          link-flds ;; (append link-flds link-flags)
+                          compile-flds ;; (append compile-flds compile-flags)
+                          )))
+              )))
 
 ;; "The optional fields [for 'tests stanza] that are supported are a
 ;; subset of the alias and executables fields. In particular, all
@@ -663,7 +686,7 @@
          )
     (format #t "~A: ~A~%" (uwhite "exec privnames") privnames)
     (format #t "~A: ~A~%" (uwhite "exec pubnames") pubnames)
-    ;;(error 'fixme "STOP execs")
+    ;; (error 'fixme "STOP execs")
 
     ;; flags and (libraries) etc. apply to each of the executables
     ;; each name in (names) is one module;
@@ -671,10 +694,11 @@
     (let ((test-exe? (-is-test-executable? ws pkg stanza))
           (package (assoc-val 'package (cdr stanza))))
 
-      (let-values (((compile-flags link-flags)
-                    (-exec-flags->mibl stanza-alist)))
-        (format #t "~A: ~A\n" (uyellow "compile-flags") compile-flags)
-        (format #t "~A: ~A\n" (uyellow "link-flags") link-flags)
+      ;; (let-values (((compile-flags link-flags)
+      ;;               (-exec-flags->mibl stanza-alist)))
+      ;;   (format #t "~A: ~A\n" (uyellow "compile-flags") compile-flags)
+      ;;   (format #t "~A: ~A\n" (uyellow "link-flags") link-flags)
+      ;;   ;; (error 'STOP "STOP wwwwwwwwwwwwwwww")
 
         (let-values (((compile-flds link-flds)
                       (-exec-flds->mibl pkg privnames stanza-alist)))
@@ -682,7 +706,7 @@
           (format #t "~A: ~A\n" (uyellow "xs compile-flds") compile-flds)
           (format #t "~A: ~A\n" (uyellow "xs link-flds") link-flds)
 
-          ;; (error 'fixme "STOP execs")
+          ;; (error 'fixme "STOP execs llopts")
 
           (format #t "~A: ~A~%" (uwhite "privnames") privnames)
           (format #t "~A: ~A~%" (uwhite "pubnames") pubnames)
@@ -721,6 +745,10 @@
                                                   pkg-path privname)
                            (update-exports-table! ws :exe privname
                                                   pkg-path privname)
+                           (update-exports-table! ws :bin pubname
+                                                  pkg-path privname)
+                           (update-exports-table! ws :bin privname
+                                                  pkg-path privname)
                            (update-opam-table! ws :bin
                                                package
                                                pubname
@@ -747,7 +775,7 @@
                             (_ (format #t "~A: ~A~%" (uyellow "-compile-flds") -compile-flds))
                             (compile-manifest (assoc :manifest (cdr -compile-flds)))
                             (_ (format #t "~A: ~A~%" (uyellow "compile-manifest") compile-manifest))
-                            (compile-deps (assoc :deps (cdr -compile-flds)))
+                            (compile-deps (dissoc '(:manifest) (cdr -compile-flds))) ;; (assoc :deps (cdr -compile-flds)))
                             (_ (format #t "~A: ~A~%" (uyellow "compile-deps") compile-deps))
                             (compile-modules (copy (assoc-in '(:manifest :modules) (cdr -compile-flds))))
                             (cmodules (filter (lambda (x) (not (member x privpubmodules))) (cdr compile-modules)))
@@ -763,8 +791,9 @@
                              (cons :pubname pubname)
                              (cons :privname privname)
                              (cons :main (normalize-module-name privname))
-                             (append link-flds link-flags)
-                             (append -compile-flds compile-flags)))
+                             link-flds ;;(append link-flds link-flags)
+                             -compile-flds ;; (append -compile-flds compile-flags)
+                             ))
                      ;; (let ((x (-executable->mibl kind
                      ;;                             pkg privname pubname
                      ;;                             filtered-stanza-alist)))
@@ -783,8 +812,20 @@
                     (let ((privmodule (normalize-module-name privname)))
                       (if (not test-exe?) ;; (-is-test-executable? ws pkg stanza))
                           (begin
-                            (update-exports-table! ws :exe privname
+                            ;; (error 'fixme "STOP privexe")
+                            (update-exports-table! ws :foo privname
                                                    pkg-path privname)
+                            (update-exports-table! ws :bin privname
+                                                   pkg-path privname)
+                            ;; (if (assoc 'modes stanza-alist)
+                            ;;     (update-exports-table! ws :bin
+                            ;;                            (format #f "~A.bc" privname)
+                            ;;                        pkg-path privname)
+                            ;;     )
+                            ;; (format #t "~A: ~A~%" (red "s")
+                            ;;         (assoc 'modes stanza-alist))
+                            ;; (error 'fixme "STOP bc")
+
                             ;; (update-opam-table! ws :bin
                             ;;                     package
                             ;;                     pubname
@@ -797,12 +838,15 @@
                              (_ (format #t "~A: ~A~%" (uyellow "link-flds") link-flds))
                              (link-manifest (assoc :manifest (cdr link-flds)))
                              (_ (format #t "~A: ~A~%" (uyellow "link-manifest") link-manifest))
+                             (link-rest (dissoc '(:manifest) (cdr link-flds)))
+                             (_ (format #t "~A: ~A~%" (uyellow "link-rest") link-rest))
                              (link-modules (assoc-in '(:manifest :modules) (cdr link-flds)))
                              (_ (format #t "~A: ~A~%" (uyellow "link-modules") (cdr link-modules)))
                              (_ (format #t "~A: ~A~%" (uyellow "privmodule") privmodule))
                              ;; (lmodules (filter (lambda (x) (member x privpubmodules)) (cdr link-modules)))
                              (lmodules (list privmodule))
-                             (_ (set-cdr! link-flds `((:manifest (:modules ,@(copy lmodules))))))
+                             (_ (set-cdr! link-flds `((:manifest (:modules ,@(copy lmodules)))
+                                                      ,@link-rest)))
                              ;; (_ (alist-update-in! (cdr link-flds) '(:manifest)
                              ;;                      (lambda (old) (append (list `(:main . ,privname)) old))))
                              (_ (format #t "~A: ~A~%" (uyellow "link-flds filtered") link-flds))
@@ -811,27 +855,32 @@
                              (_ (format #t "~A: ~A~%" (uyellow "-compile-flds") -compile-flds))
                              (compile-manifest (assoc :manifest (cdr -compile-flds)))
                              (_ (format #t "~A: ~A~%" (uyellow "compile-manifest") compile-manifest))
-                             (compile-deps (assoc :deps (cdr -compile-flds)))
-                             (_ (format #t "~A: ~A~%" (uyellow "compile-deps") compile-deps))
+                             (compile-rest (dissoc '(:manifest) (cdr -compile-flds)))
+                             (_ (format #t "~A: ~A~%" (uyellow "compile-rest") compile-rest))
+                             ;; (compile-deps (assoc :deps (cdr -compile-flds)))
+                             (_ (format #t "~A: ~A~%" (uyellow "compile-rest") compile-rest))
                              (compile-modules (copy (assoc-in '(:manifest :modules) (cdr -compile-flds))))
                              ;; (cmodules (filter (lambda (x) (not (member x privpubmodules))) (cdr compile-modules)))
                              ;; (_ (set-cdr! -compile-flds `((:manifest (:modules ,@(cons privmodule cmodules)))
-                             ;;                              ,compile-deps)))
+                             ;;                              ,compile-rest)))
                              (cmodules (list privmodule))
                              (_ (set-cdr! -compile-flds `((:manifest (:modules ,@(copy cmodules)))
-                                                          ,compile-deps)))
+                                                          ,@compile-rest)))
                              ;; (_ (alist-update-in! (cdr -compile-flds) '(:manifest :modules) (lambda (old) (cons privmodule cmodules))))
                              (_ (format #t "~A: ~A~%" (uyellow "-compile-modules") compile-modules))
                              (_ (format #t "~A: ~A~%" (uyellow "-compile-flds") -compile-flds))
                              (_ (format #t "~A: ~A~%" (uyellow "compile-flds") compile-flds))
                              )
+                        ;; (error 'fixme "STOP modes")
 
                         (list kind
                               ;; `,@(if test-exe? (cons :in-testsuite 'testsuite) '())
                               ;; (cons :in-testsuite 'testsuite)
                               (cons :privname privname)
-                              (append link-flds link-flags)
-                              (append -compile-flds compile-flags))
+                              link-flds
+                              ;; (append link-flds link-flags)
+                              -compile-flds ;; (append -compile-flds compile-flags)
+                              )
 
                         ;; (let ((x (-executable->mibl kind
                         ;;                             ;; (if (equal? kind :executable)
@@ -857,6 +906,8 @@
                        (begin
                          (update-exports-table! ws :exe pubname
                                                 pkg-path pubname)
+                         (update-exports-table! ws :bin pubname
+                                                pkg-path pubname)
                          (update-opam-table! ws :bin
                                              ;;FIXME: if package package else pubname
                                              package ;; opam pkg name
@@ -871,8 +922,9 @@
                          ;; (cons :in-testsuite 'testsuite)
                          (cons :pubname pubname)
                          ;; (cons :privname privname)
-                         (append link-flds link-flags)
-                         (append compile-flds compile-flags))
+                         link-flds ;; (append link-flds link-flags)
+                         compile-flds ;;(append compile-flds)
+                         );; compile-flags))
 
                    ;; (let ((x (-executable->mibl kind
                    ;;                             ;; (if (equal? kind :executable)
@@ -891,4 +943,4 @@
                  pubnames))
 
            (else
-            (error 'fixme "executables missing flds names and public_names"))))))))
+            (error 'fixme "executables missing flds names and public_names")))))))

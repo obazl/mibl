@@ -70,6 +70,7 @@
 
 (define (is-module-in-pkg m pkg)
   ;; (format #t "~A: ~A~%" (ucyan "is-module-in-pkg") m)
+  ;; (format #t "~A: ~A~%" (ucyan "pkg") pkg)
   (let* ((pkg-mods (if-let ((files (assoc-val :modules pkg)))
                              (map car files) '()))
          ;; (_ (format #t "~A: ~A~%" (yellow "pkg-mods") pkg-mods))
@@ -90,9 +91,11 @@
                            '()))
          ;; (_ (format #t "~A: ~A~%" (yellow "pkg-sigs") pkg-sigs))
          (modules (concatenate pkg-mods pkg-structs pkg-sigs))
-         ;; (_ (format #t "~A: ~A~%" (yellow "all pkg modules") modules))
+         (_ (format #t "~A: ~A~%" (yellow "all pkg modules") modules))
+         (_ (format #t "~A: ~A~%" (yellow "all pkg modules X") modules))
          (answer (member m modules)))
-    ;; (format #t "~A: ~A~%" (cyan "answer") answer)
+    (format #t "~A: ~A~%" (cyan "answer") answer)
+    ;; (if (equal? 'Arg m) (error 'STOP "STOP mod in pkg"))
     answer))
 
 ;;FIXME: rename
@@ -175,19 +178,26 @@
       (for-each (lambda (dep)
                   (format #t "~A: ~A~%" (bgyellow "processing ocamldep") dep)
                   (let ((segs (string-split dep #\:)))
-                    ;; (format #t "~A: ~A~%" (yellow "segs") segs)
+                    (format #t "~A: ~A~%" (yellow "segs") segs)
                     (if (null? (cdr segs))
                         (begin)
                         (let* ((fpath (car segs))
                                (fname (basename fpath))
+                               (mname (filename->module-name fname))
                                (kind (filename->kind fname))
                                (mdeps (string-trim '(#\space) (cadr segs)))
                                (mdeps (string-split mdeps #\space))
                                (mdeps (map string->symbol mdeps))
+                               ;; do not include file module in deps list
+                               (mdeps (remove mname mdeps))
                                ;; eliminate mdeps not in this pkg
                                (mdeps (filter (lambda (d) (is-module-in-pkg d pkg)) mdeps))
                                )
-
+                          (format #t "~A: ~A~%" (red "mdeps") mdeps)
+                          (format #t "~A: ~A~%" (red "pkg") pkg)
+                          (format #t "~A: ~A~%" (red "fname") fname)
+                          (format #t "~A: ~A~%" (red "mname") mname)
+                          ;; (if (string=? "arg.ml" fname) (error 'STOP "STOP ocamldep"))
                           (if (not (null? mdeps))
                               (begin
                                 (format #t "~A ~A to ~A~%" (bgyellow "adding mdeps") mdeps fname)

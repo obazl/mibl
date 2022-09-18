@@ -1,10 +1,10 @@
 ;; caveat: pps ppx_inline_test implies (inline_tests), but not the
 ;; other way around.
 (define (lib-stanza->ppx stanza-alist)
+  (format #t "~A: ~A\n" (ublue "lib-stanza->ppx") stanza-alist)
   (if-let ((preproc (assoc 'preprocess stanza-alist)))
           (if-let ((ppx (assoc 'pps (cdr preproc))))
                   (begin
-                    ;; (format #t "lib-stanza->ppx ~A\n" stanza-alist)
                     (let* ((stanza-name (symbol->string
                                          (cadr (assoc 'name stanza-alist))))
                            (ppx-alist (-pps->mibl (cdr ppx)
@@ -86,8 +86,8 @@
                               `(:manifest ,@(reverse ppx-libs))))
                   (cons :ppx
                         (list ;; `(:name ,ppx-name)
-                              (:scope :all)
-                              `(:manifest ,(reverse ppx-libs))
+                              '(:scope :all)
+                              `(:manifest ,@(reverse ppx-libs))
                               `(:args ,ppx-args))))
               (if (equal? 'ppx_inline_test (car ppx))
                   (begin
@@ -107,7 +107,8 @@
                             (list ;; `(:name ,ppx-name)
                                   '(:scope :all)
                                   `(:manifest ,@(reverse ppx-libs))
-                                  `(:args ,@(cdr ppx))
+                                  `(:args ,@(append ppx-args
+                                                    (cdr ppx)))
                                     ;;,(concatenate
                                           ;;  ppx-args
                                             ;; ,(reverse
@@ -260,8 +261,10 @@
  ;;             ;;  (((action (run ./pp.sh X=2 %{input-file})) baz)))
  ;;             (staged_pps ppx1 -foo ppx2 -- -bar 42))
 
+;; WARNING: must also handle (inline_tests)
+
 ;; returns (values flds ppx_stanza)
-(define preprocess-fld->mibl
+(define preprocess-fld->mibl ;; OBSOLETE
   (let ((+documentation+ "(preprocess-fld->mibl pp-assoc stanza-alist) converts (preprocess ...) subfields 'pps' and 'per_module' to :ppx* flds for use in generating OBazl targets. Does not convert 'action' subfield, since it does not correspond to any OBazl rule attribute ('(action...)' generates a genrule."))
 
     (lambda (pp-assoc stanza-alist)
@@ -303,4 +306,95 @@
         (if ppx-data
             (append ppx (list (cons :ppx-data ppx-data)))
             ppx)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; inline_tests - generate ocaml_test
+;; task: construct 'test' stanza to serve as test runner?
+;; "Under the hood, a test executable is built by dune."
+
+;; special cases: no 'backend' fld needed for the following preprocess
+;; ppx libs:
+;;   ppx_inline_test
+;;   ppx_expect
+
+;; question: should we "select" ppx_inline_test compilation? If we do
+;; not intend to run inline tests, then we should not need to compile
+;; with inline test support.
+
+;; e.g. if no test, then omit ppx preproc on modules? but what if we
+;; have multiple ppx libs? in that case, just omit ppx_inline_test
+;; from the ppx_executable.
+
+;; BUT: see ppx_inline_test/src/dune - the lib stanza specifies
+;; 'inline_test.backend' that seems to build the required executable?
+
+;; yes, 'backend' means build/run testrunner.
+;; see https://dune.readthedocs.io/en/stable/tests.html?highlight=generate_runner#defining-your-own-inline-test-backend
+
+(define (-inline-tests->mibl ws pkg inline-tests)
+  (format #t "~A: ~A\n" (ublue "-inline-tests->mibl") inline-tests)
+  (let* ((result
+          (map (lambda (fld)
+                 (format #t "~A: ~A~%" (uwhite "fld") fld)
+                 (case (car fld)
+                   ((flags)
+                    (normalize-stanza-fld-flags fld :runtime))
+                   ((modes) (cons :modes (cdr fld)))
+                   ((deps)
+                    `(:runtime-data-deps
+                      ,@(expand-terms* ws (cdr fld) pkg '())))
+                   ;; (expand-rule-deps ws pkg rule-alist))
+                   (else
+                    (error 'FIXME
+                           (format #f "inline_tests unrecognize fld: ~A"
+                                   fld)))))
+               inline-tests))
+         (result (append
+                  '((:opts ("-inline-test-lib" . $LIBNAME)))
+                  '((:inline-tests #t)) result)))
+    (format #t "~A: ~A~%" (bgred "result") result)
+    result))
+
+;; handle both (preprocess) and (inline_tests) (and what else?)
+(define (inline-tests->mibl ws pkg inline-tests stanza-alist)
+  (format #t "~A: ~A~%" (ublue "inline-tests->mibl") inline-tests)
+  (let ((ilts (-inline-tests->mibl ws pkg inline-tests)))
+    (format #t "~A: ~A~%" (ublue "ilts") ilts)
+    (if-let ((pp-assoc (assoc 'preprocess stanza-alist)))
+            (begin
+              (format #t "~A: ~A~%" (blue "pp-assoc") pp-assoc)
+              (if-let ((ppx (preprocess-fld->mibl pp-assoc stanza-alist)))
+                      (begin
+                        (format #t "~A: ~A~%" (bgyellow "ppx") ppx)
+                        `(:ppx ,@(append (cdr ppx)
+                                       ilts)))
+                      ;; else no ppx in (preprocess)
+                      (begin
+                        )))
+            ;; else (inline_tests) only, no (preprocess)
+            #f)))
+
+;; pps without inline_tests
+(define (lib-ppx->mibl stanza-alist)
+  (format #t "~A: ~A~%" (ublue "lib-ppx->mibl") stanza-alist)
+  (if-let ((pp-assoc (assoc 'preprocess stanza-alist)))
+          (begin
+            (format #t "~A: ~A~%" (blue "pp-assoc") pp-assoc)
+            (if-let ((ppx (preprocess-fld->mibl pp-assoc stanza-alist)))
+                    (begin
+                      (format #t "~A: ~A~%" (bgyellow "ppx") ppx)
+                      `(:ppx ,@(cdr ppx)))
+                    ;; else no ppx in (preprocess)
+                    (begin
+                      )))
+          ;; else (inline_tests) only, no (preprocess)
+          #f))
+
+  ;; (if-let ((pp (assoc-val 'preprocess stanza-alist)))
+  ;;         (begin
+  ;;           (format #t "~A: ~A~%" (blue "pp") pp)
+  ;;           (let ((ppx (assoc-val 'pps pp)))
+  ;;               (format #t "~A: ~A~%" (blue "PPx") ppx)
+  ;;               `((:ppx (:manifest ,@ppx)))))
+  ;;         #f))
 

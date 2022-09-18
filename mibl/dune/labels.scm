@@ -66,6 +66,7 @@
     (compiler-libs.common . compiler-libs/common)
     (compiler-libs.bytecomp . compiler-libs/bytecomp)
     (dynlink . dynlink)
+    (num . num/core)
     (ocamldoc . ocamldoc)
     (str . str)
     (threads . threads)
@@ -79,7 +80,7 @@
 
   ;; builtin ocaml pkgs
   (if-let ((x (assoc-val dep ocaml-std-pkgs)))
-          (format #f "@ocaml//~A" x)
+          (string->symbol (format #f "@ocaml//~A" x))
           ;; try :lib:foo
           (let* ((key (string->keyword
                        (format #f "lib:~A" dep)))
@@ -123,8 +124,8 @@
                             (let ((segs (string-split (format #f "~A" key) ".")))
                               (format #t "~A: ~A~%" (ured "unresolved; assume opam") key)
                               (if (= 1 (length segs))
-                                  (format #f "@~A//lib/~A" dep dep)
-                                  (format #f "@~A//lib/~{~A~^/~}" (car segs) (cdr segs))))))))))))
+                                  (string->symbol (format #f "@~A//lib/~A" dep dep))
+                                  (string->symbol (format #f "@~A//lib/~{~A~^/~}" (car segs) (cdr segs)))))))))))))
 
 (define (-fixup-conditionals! ws pkg stanza)
   (format #t "~A: ~A\n" (bgblue "-fixup-conditionals!") stanza)
@@ -142,8 +143,9 @@
                                       (set-cdr! selector
                                                 (list
                                                  (cdr selector)
-                                                 (format #f "@~A//:~A"
-                                                         (car selector) (car selector))))
+                                                 (string->symbol
+                                                  (format #f "@~A//lib/~A"
+                                                         (car selector) (car selector)))))
                                       ;; (set-car! selector (format #f "//bzl/import:~A" (car selector)))
                                       )
                                     (assoc-val :selectors conditional)))
@@ -258,6 +260,10 @@
                                            (if  (eq? ::import (cdadr dep))
                                                 (begin
                                                   (format #t "~A~%" (bgred "IMPORT TOOL"))
+                                                  (format #t "~A~%" (red "export keys"))
+                                                  (for-each (lambda (k)
+                                                              (format #t "~A: ~A~%" (ured "key") k))
+                                                            (sort! (hash-table-keys exports) sym<?))
                                                   (if-let ((import (hash-table-ref exports (caadr dep))))
                                                           (begin
                                                             (format #t "~A: ~A~%" (bgred "importing") import)
@@ -272,6 +278,7 @@
                                                             )
                                                           (begin
                                                             (format #t "~A: ~A~%" (red "no import for tool") (caadr dep))
+                                                            ;; (error 'STOP "STOP no import")
                                                             ;; assume (rashly) that form is e.g. :tools/version/gen/gen.exe
                                                             (let* ((kw (caadr dep))
                                                                    (t (keyword->symbol kw))

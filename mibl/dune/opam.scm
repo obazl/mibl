@@ -29,7 +29,6 @@
                                     (lambda (old)
                                       (append old
                                               `(;;(,(car opam-subpkgs)
-                                                (,kind :test)
                                                 (:lib (,pkg-path ,privname))
                                                 ))));)
                   (alist-update-in! opkg (list kind)

@@ -61,6 +61,11 @@
    ((member (cadr dep) '(::import ::pkg)) #f)
    (else #f)))
 
+(define (find-in-exports ws search-key)
+  (let* ((exports (car (assoc-val :exports
+                                  (assoc-val ws -mibl-ws-table)))))
+    (hash-table-ref exports search-key)))
+
 ;; may update :deps
 (define (-expand-dep-pct-var!? ws pfx sym deps pkg)
   (format #t "~A: pfx: ~A; sym: ~A~%"
@@ -85,10 +90,13 @@
         (let ((v (format #f "~A" sym))
               (_ (format #t "~A: ~A~%" (yellow "searching pkg files") deps))
               (expanded
+               ;; FIXME: already searched :deps, no need for this:
                (if-let ((tag (deps->tag-for-file deps search-key)))
+                       ;; found it
                        tag
-                       ;; else search pkg files for file not listed in :deps
+                       ;; else not found, so search pkg files for file not listed in :deps
                        ;; if found, -infer-dep! adds to :deps
+                       ;; otherwise, search exports table, finally assume its a filename literal
                        (if-let ((inferred-dep
                                  (-infer-dep! sym #|search-key|# deps pkg)))
                                inferred-dep
@@ -96,21 +104,20 @@
                                  (format #t "~A: ~A~%"
                                          (red "unresolved") search-key)
 
-                                 (let ((x (handle-filename-literal-arg ws sym pkg)))
-                                   (format #t "~A: ~A~%" (bgred "RESOLVED") x)
-                                   (format #t "~A: ~A~%" (red "deps") deps)
-                                   (set-cdr! deps (append (cdr deps) x))
-                                   x)
-
-                                 ;; (let* ((path (dirname sym))
-                                 ;;        (dep-path (if (string=? "./" path)
-                                 ;;                      pkg-path
-                                 ;;                      path)))
-                                 ;; (set-cdr! deps
-                                 ;;           (append (cdr deps)
-                                 ;;                   `((,search-key
-                                 ;;                      (:pkg . ,dep-path)
-                                 ;;                      (:tgt . ,(basename sym)))))))
+                                 ;; first search exports tbl
+                                 (if-let ((found (find-in-exports ws search-key)))
+                                         (let* ((pkg (assoc-val :pkg found))
+                                                (tgt (assoc-val :tgt found))
+                                                (entry `((,search-key (:pkg . ,pkg) (:tgt . ,tgt)))))
+                                           (format #t "~A: ~A~%" (red "found") found)
+                                           ;; (error 'STOP "STOP exp")
+                                           (set-cdr! deps (append (cdr deps) entry))
+                                           entry)
+                                         (let ((x (handle-filename-literal-arg ws sym pkg)))
+                                           (format #t "~A: ~A~%" (bgred "RESOLVED") x)
+                                           (format #t "~A: ~A~%" (red "deps") deps)
+                                           (set-cdr! deps (append (cdr deps) x))
+                                           x))
                                  ))))
 
               (dep (list (symbol->keyword sym))))
@@ -209,10 +216,13 @@
     (format #t "~A: ~A, ~A: ~A~%"
             (uwhite "arg pfx") pfx (uwhite "sfx") sfx)
 
-    ;; find arg in deps
-    (let* ((search-key  (symbol->keyword sfx)) ;; (pct-var->keyword arg))
+    ;; find arg in deps (assumption: pfx is not :deps)
+    (let* ((search-key (if (equal? pfx :dep)
+                           (symbol->keyword sfx)
+                           (symbol->keyword sym))) ;; (pct-var->keyword arg))
            (_ (format #t "~A: ~A (kw? ~A)~%" (yellow "search-key")
                       search-key (keyword? search-key)))
+           ;; (_ (if (equal? pfx :dep) (error 'STOP "STOP pct-tool")))
            (match (find-if (lambda (dep)
                              (format #t "~A: ~A (~A)~%"
                                      (yellow "testing dep") dep (type-of (car dep)))
@@ -235,13 +245,21 @@
                        (alist-delete (list search-key #|arg-kw|# ) (cdr deps)))))
 
           ;; else infer it must be imported from exports tbl
+          ;; FIXME lookup in exports tbl
+          ;; FIXME FIXME: only works after first pass adds everything to exports tbl
           (begin
-            (format #t "~A: ~A, ~A~%" (red "tool NOT in deps") search-key deps) ;; t)
+            (format #t "~A: ~A, ~A~%" (red "tool NOT in deps") sym deps) ;; t)
+            ;; (let ((found (find-in-exports ws (symbol->keyword sym))))
+            ;;   (format #t "~A: ~A~%" (bgred "kw") (symbol->keyword sym))
+            ;;   (format #t "~A: ~A~%" (bgred "found") found))
+            ;; (error 'STOP "pctvar")
             (set-cdr! deps
                       (append
                        (list (cons ::tools
                                    (list
-                                    (cons search-key ;; arg-kw
+                                    (cons (if (equal? :dep pfx)
+                                              (symbol->keyword sfx)
+                                              (symbol->keyword sym)) ;; search-key ;; arg-kw
                                           ;; (list (cons :pkg pkg-path)
                                           ;;       (cons :tgt arg))
                                           ::import
@@ -385,10 +403,11 @@
                        ;; (error 'X "STOP expand-literal-tool")
                        (set-cdr! deps
                                  (append
-                                  `((,tool-kw
+                                  `((::tools
+                                    (,tool-kw
                                      (:pkg . ,pkg)
                                      (:tgt . ,tgt)
-                                     (:lbl . ,(format #f "//~A:~A" pkg tgt))))
+                                     (:lbl . ,(format #f "//~A:~A" pkg tgt)))))
                                   (cdr deps)))
                        tool-kw))
                    ;; else must be in cwd, but was not listed as a dep yet?

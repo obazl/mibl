@@ -208,6 +208,7 @@
                 )
               )
             (error 'FIXME "run-dsl null args, unrecognized action: ~A~%" action))
+
         (if-let ((cmd-fn (assoc-val action dune-action-cmds-no-dsl)))
                 (let ((cmd-list (apply (car cmd-fn)
                                        (list ws pkg action action-list targets deps))))

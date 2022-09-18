@@ -674,10 +674,11 @@
                 ((:bin :exe :lib :libexec :test) (list (cons pfx #t)))
                 (else '())))
          (spec `(,@pfx-assoc
-                 ,(cons :pkg pkg-path)
-                 ,(cons :tgt (if exe
-                                 (format #f "~A.exe" tgt)
-                                 (format #f "~A" tgt))))))
+                 ,(cons :pkg (string->symbol pkg-path))
+                 ,(cons :tgt (string->symbol
+                              (if exe
+                                  (format #f "~A.exe" tgt)
+                                  (format #f "~A" tgt)))))))
     (format #t "exports tbl: ~A\n" exports)
 
     (format #t "~A ~A => ~A~%" (bgred "adding to exports") key spec)
@@ -685,13 +686,45 @@
         (begin
           (hash-table-set! exports tgt spec)
           (hash-table-set! exports (symbol->keyword tgt) spec)
+          (case pfx
+            ((:exe :bin)
+             (hash-table-set! exports
+                              (string->keyword (format #f "bin:~A" tgt))
+                              spec)
+
+             (hash-table-set! exports
+                              (string->symbol (format #f "~A.bc" tgt))
+                              spec)
+             (hash-table-set! exports
+                              (string->keyword (format #f "~A.bc" tgt))
+                              spec)
+             (hash-table-set! exports
+                              (string->keyword (format #f "bin:~A.bc" tgt))
+                              spec)
+             (hash-table-set! exports
+                              (string->symbol (format #f "~A.exe" tgt))
+                              spec)
+             (hash-table-set! exports
+                              (string->keyword (format #f "~A.exe" tgt))
+                              spec)
+             (hash-table-set! exports
+                              (string->keyword (format #f "bin:~A.exe" tgt))
+                              spec))
+            ;; ((:bin)
+            ;;  (hash-table-set! exports
+            ;;                   (string->symbol (format #f "~A.bc" tgt))
+            ;;                   spec)
+            ;;  (hash-table-set! exports
+            ;;                   (string->keyword (format #f "bin:~A.bc" tgt))
+            ;;                   spec))
+            )
           (hash-table-set! exports
                            (if (keyword? key) key
                                (symbol->keyword key))
                            spec)
           )
         (begin
-          (hash-table-set! exports ;; key
+          (hash-table-set! exports
                            (if (keyword? key) key
                                (symbol->keyword key))
                            spec)))
