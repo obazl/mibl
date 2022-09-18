@@ -179,6 +179,7 @@ void initialize_mibl_data_model(s7_scheme *s7)
                     "`((:@ (:name \"@\") (:path %s) "
                     "(:exports ,(make-hash-table)) "
                     "(:opam ,(make-hash-table)) "
+                    "(:shared-ppx ,(make-hash-table)) "
                     "(:filegroups ,(make-hash-table)) "
                     "(:pkgs ,(make-hash-table)))))",
                     bws_root);
@@ -878,6 +879,12 @@ EXPORT s7_scheme *s7_configure(void)
 
     /* put ppx driver in same pkg as the ppx_executable */
     s7_define_variable(s7, "*local-ppx-driver*", s7_t(s7));
+
+    /* use ":" for locally defined ppxes */
+    s7_define_variable(s7, "*shared-ppx-pkg*", s7_make_string(s7, "bzl/ppx"));
+
+    /* list of pkgs whose stanzas share deps */
+    s7_define_variable(s7, "*shared-deps*", s7_list(s7, 0));
 
     /* tmp dir */
     char tplt[] = "/tmp/obazl.XXXXXXXXXX";

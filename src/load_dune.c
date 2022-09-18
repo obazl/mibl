@@ -2937,6 +2937,11 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
                                       ftsentry->fts_path);
                         fts_set(tree, ftsentry, FTS_SKIP);
                         /* break; */
+                    }
+                    else if (fnmatch("*.opam-bundle",
+                                     ftsentry->fts_name, 0) == 0) {
+                        fts_set(tree, ftsentry, FTS_SKIP);
+                        /* break; */
                     } else {
                         if (_include_this(ftsentry)) {
                             if (trace) log_info(RED "Including" CRESET " %s",
