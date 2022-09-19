@@ -135,12 +135,11 @@
             (for-each (lambda (dep)
                         ;; dep forms:
                         ;; (:foo (:pkg a/b/c)(:tgt "foo.sh"))
-                        ;; (::pkg foo-bar-baz)
-                        ;; (tezos-protocol-demo-noops ::pkg)
+                        ;; (::opam-pkg foo-bar-baz)
+                        ;; (tezos-protocol-demo-noops ::opam-pkg)
                         (format #t "~A: ~A~%" (ucyan "dep") dep)
-                        (case (cadr dep)
-                        ;; (if (eq? ::pkg (cadr dep))
-                          ((::pkg) (cdr dep))
+                        (case (cdr dep)
+                          ((::opam-pkg) (cdr dep))
                           (else
                               (format #t "~A: ~A~%" (red "filegroup dep?") dep)
                               (let* ((lbl-tag (car dep))

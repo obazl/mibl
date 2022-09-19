@@ -10,24 +10,25 @@
     (format #t "~A: ~A~%" (white "pkg-structs") pkg-structs))
   "mytest.ml")
 
-(define (-resolve-module-deps m stanza pkg)
-  (format #t "~A: ~A~%" (blue "-resolve-module-deps") m)
-  (format #t "~A: ~A~%" (white "stanza") stanza)
-  (let* ((m-fname (-module->filename m pkg))
-         (pkg-path (car (assoc-val :pkg-path pkg)))
-         (cmd (format #f "ocamldep -modules ~A/~A" pkg-path m-fname))
-         (_ (format #t "~A: ~A~%" (green "cmd") cmd))
-         (ocamldeps
-          (system cmd #t)))
-    (format #t "~A: '~A'~%" (red "ocamldeps") ocamldeps)
-    ;; search pkg-local modules for dep
-    ;; else search exports table for dep
-    ;; else assume opam
-    (list m '(:deps (:foo :bar)))))
+;; (define (-resolve-module-deps m stanza pkg)
+;;   (format #t "~A: ~A~%" (blue "-resolve-module-deps") m)
+;;   (format #t "~A: ~A~%" (white "stanza") stanza)
+;;   (let* ((m-fname (-module->filename m pkg))
+;;          (pkg-path (car (assoc-val :pkg-path pkg)))
+;;          (cmd (format #f "ocamldep -modules ~A/~A" pkg-path m-fname))
+;;          (_ (format #t "~A: ~A~%" (green "cmd") cmd))
+;;          (ocamldeps
+;;           (system cmd #t)))
+;;     (format #t "~A: '~A'~%" (red "ocamldeps") ocamldeps)
+;;     ;; search pkg-local modules for dep
+;;     ;; else search exports table for dep
+;;     ;; else assume opam
+;;     (list m '(:deps (:foo :bar)))))
 
-(define (-fixup-std-dep-form dep exports)
-  (case (last dep)
-    ((::import)
+(define (-fixup-std-dep-form ws pkg dep exports)
+  (format #t "~A: ~A~%" (ublue "-fixup-std-dep-form") dep)
+  (case (cdr dep)
+    ((::unresolved ::opam-pkg)
      ;; (if (eq? ::import (last dep))
      (let ((exp (hash-table-ref exports
                                 (car dep))))
@@ -38,26 +39,36 @@
                   (tgt (assoc-val :tgt exp))
                   (_ (format #t "~A: ~A~%" (ured "tgt") tgt)))
              (cons (car dep) exp))
-           dep)))
-    ((::pkg)
-     ;; side-effect: update filegroups table
-     ;; FIXME: instead, add :fg dep?
-     (format #t "~A: ~A~%" (yellow "export keys")
-             (hash-table-keys exports))
-     (format #t "~A: ~A~%" (yellow "exports")
-             exports)
-     (let* ((exp (hash-table-ref exports
-                                 (car dep)))
-            (_ (format #t "~A: ~A~%" (yellow "exp") exp))
-            (pkg (assoc-val :pkg exp))
-            )
-       (format #t "~A: ~A~%" (yellow "pkg") pkg)
-       (update-filegroups-table! ;; ws pkg-path tgt pattern
-        ws pkg-path ;; (car (assoc-val :name ws))
-        pkg ::all "*")
-       (cons (car dep)
-             (list (car exp)
-                   (cons :tgt "__all__")))))
+           ;; else try std ocaml pkgs
+           (begin
+             (format #t "~A: ~A~%" (bgred "ocaml-std-pkgs") ocaml-std-pkgs)
+             (format #t "~A: ~A~%" (bgred "dep key") (car dep))
+             (if-let ((x (assoc-val (car dep) ocaml-std-pkgs)))
+                     ;; (format #f "@ocaml//lib/~A" (car dep))
+                     (cons (car dep)
+                           `((:pkg . "@ocaml//lib")
+                             (:tgt . ,(keyword->symbol (car dep)))))
+                     dep)))))
+    ;; ((::fixme)
+    ;;  ;; side-effect: update filegroups table
+    ;;  ;; FIXME: instead, add :fg dep?
+    ;;  (format #t "~A: ~A~%" (yellow "export keys")
+    ;;          (hash-table-keys exports))
+    ;;  (format #t "~A: ~A~%" (yellow "exports")
+    ;;          exports)
+    ;;  (let* ((exp (hash-table-ref exports
+    ;;                              (car dep)))
+    ;;         (_ (format #t "~A: ~A~%" (yellow "exp") exp))
+    ;;         (-pkg (assoc-val :pkg exp))
+    ;;         (_ (format #t "~A: ~A~%" (yellow "pkg") -pkg))
+    ;;         (pkg-path (assoc-val :pkg-path pkg))
+    ;;         )
+    ;;    (update-filegroups-table! ;; ws pkg-path tgt pattern
+    ;;     ws pkg-path ;; (car (assoc-val :name ws))
+    ;;     -pkg ::all "*")
+    ;;    (cons (car dep)
+    ;;          (list (car exp)
+    ;;                (cons :tgt "__all__")))))
     (else dep)))
 
 (define ocaml-std-pkgs
@@ -68,11 +79,13 @@
     (dynlink . dynlink)
     (num . num/core)
     (ocamldoc . ocamldoc)
+    (stdlib . stdlib)
+    (:stdlib . stdlib)
     (str . str)
     (threads . threads)
     (unix . unix)))
 
-(define (-fixup-dep-sym dep pkg-path exports)
+(define (-fixup-dep-sym ws-id dep pkg-path exports)
   (format #t "~A: ~A~%" (bgblue "-fixup-dep-sym") dep)
   ;; possible keys for dep 'foo:
   ;; 'foo, :foo, :lib:foo, :exe:foo, etc.
@@ -100,7 +113,8 @@
                 (let* ((key (string->keyword
                              (format #f "~A" dep)))
                        (_ (format #t "~A: ~A~%" (uwhite "trying2") key))
-                       (_ (format #t "~A: ~A~%" (bgblue "exports") exports))
+                       ;; (_ (format #t "~A: ~A~%" (bgblue "exports") exports))
+                       ;; (_ (debug-print-exports-table ws-id))
                        (resolved (hash-table-ref exports key)))
                   (if resolved
                       (let* ((pkg (assoc-val :pkg resolved))
@@ -153,14 +167,15 @@
               )))
 
 ;; FIXME: rename
-(define (-fixup-stanza! ws pkg stanza)
+(define (-fixup-stanza! ws-id pkg stanza)
   (format #t "~A: ~A\n" (bgblue "-fixup-stanza!") stanza)
   (case (car stanza)
     ((:install) (values))
-    (else (let* ((exports (car (assoc-val :exports ws)))
+    (else (let* ((ws (assoc-val ws-id -mibl-ws-table))
+                 (exports (car (assoc-val :exports ws)))
                  (pkg-path (car (assoc-val :pkg-path pkg)))
                  (stanza-alist (cdr stanza)))
-            (format #t "~A: ~A\n" (green "exports tbl") exports)
+            ;; (debug-print-exports-table ws-id)
 
             (-fixup-conditionals! ws pkg stanza)
 
@@ -170,31 +185,36 @@
                (format #t "~A: ~A~%" (ublue "fixup") (car stanza))
                ;; FIXME: also handle :dynamic
                (let ((modules (assoc-in '(:compile :manifest :modules) stanza-alist))
-                     (deps (assoc-in '(:compile :deps :fixed) stanza-alist)))
+                     (compile-deps (assoc-in '(:compile :deps :fixed) stanza-alist))
+                     (stanza-deps (assoc-in '(:deps :fixed) stanza-alist)))
                  (format #t "x compile modules: ~A~%" modules)
-                 (format #t "x compile deps: ~A~%" deps)
-                 (if deps ;; (not (null? deps))
+                 (format #t "x compile deps: ~A~%" compile-deps)
+                 (format #t "x stanza deps: ~A~%" stanza-deps)
+                 (if compile-deps ;; (not (null? compile-deps))
                      (begin
-                       (format #t "~A: ~A~%" (ured "resolving dep labels 1") deps)
+                       (format #t "~A: ~A~%" (ured "resolving dep labels 1") compile-deps)
                        (let* ((exports (car (assoc-val :exports ws)))
                               (ppx (if-let ((ppx (assoc-val :ppx stanza-alist)))
                                            ppx #f))
                               (_ (format #t "~A: ~A~%" (ublue "ppx") ppx))
                               (fixdeps
                                (map (lambda (dep)
-                                      (format #t "~A: ~A~%" (uwhite "fixup dep") dep)
+                                      (format #t "~A: ~A~%" (uwhite "fixup dep A") dep)
                                       (cond
                                        ((list? dep)
                                         ;; std dep form: (:foo (:pkg...)(:tgt...))
-                                        (-fixup-std-dep-form dep exports))
+                                        (-fixup-std-dep-form ws-id pkg dep exports))
                                        ((symbol? dep)
-                                        (-fixup-dep-sym dep pkg-path exports))
+                                        (-fixup-dep-sym ws-id dep pkg-path exports))
                                        (else (error 'fixme
                                                     (format #f "~A: ~A~%" (bgred "unrecognized :archive dep type") dep)))))
-                                    (cdr deps))))
-                         (format #t "~A: ~A~%" (ured "fixed-up deps") fixdeps)
-                         (set-cdr! deps fixdeps)
-                         (set-car! deps :resolved)))
+                                    (cdr compile-deps))))
+                         (format #t "~A: ~A~%" (ured "fixed-up compile-deps") fixdeps)
+                         (set-cdr! compile-deps fixdeps)
+                         (set-car! compile-deps :resolved)))
+
+                     ;; else no compile-deps
+                     )
                      ;; (let ((new (map (lambda (dep)
                      ;;                   ;; (format #t "~A: ~A\n" (uyellow "dep") dep)
                      ;;                   (let ((exp (hash-table-ref exports dep)))
@@ -206,7 +226,6 @@
                      ;;                 (cdr deps))))
                      ;;   (set-cdr! deps new)
                      ;;   (set-car! deps :resolved))
-                     )
                  ;; (if modules
                  ;;     (let ((new (map (lambda (m)
                  ;;                       (format #t "module: ~A\n" m)
@@ -217,10 +236,8 @@
                  ;;                             (-resolve-module-deps m stanza pkg))))
                  ;;                     (cdr modules))))
                  ;;       (set-cdr! modules new)))
-                 (format #t "~A: ~A~%" (uwhite "deps") deps)
-                 )
-               ;; (error 'fixme "STOP labels")
-               )
+                 ;; (error 'fixme "STOP labels")
+                 ))
 
               ((:rule)
                (format #t "~A: ~A~%" (ublue "fixup :rule") stanza-alist)
@@ -253,46 +270,49 @@
                        (let ((exports (car (assoc-val :exports ws)))
                              (fixdeps
                               (map (lambda (dep)
-                                     (format #t "~A: ~A~%" (uwhite "fixup dep") dep)
+                                     (format #t "~A: ~A~%" (uwhite "fixup dep B") dep)
                                      (if (eq? (car dep) ::tools)
                                          (begin
                                            (format #t "~A: ~A~%" (bgred "::TOOLS") (caadr dep))
-                                           (if  (eq? ::import (cdadr dep))
-                                                (begin
-                                                  (format #t "~A~%" (bgred "IMPORT TOOL"))
-                                                  (format #t "~A~%" (red "export keys"))
-                                                  (for-each (lambda (k)
-                                                              (format #t "~A: ~A~%" (ured "key") k))
-                                                            (sort! (hash-table-keys exports) sym<?))
-                                                  (if-let ((import (hash-table-ref exports (caadr dep))))
-                                                          (begin
-                                                            (format #t "~A: ~A~%" (bgred "importing") import)
-                                                            (cons ::tools
-                                                                  (list (cons (caadr dep)
-                                                                              (list (assoc :pkg import)
-                                                                                    (assoc :tgt import))
-                                                                              ;; (format #f "//~A:~A"
-                                                                              ;;         (assoc-val :pkg import)
-                                                                              ;;         (assoc-val :tgt import))
-                                                                              )))
-                                                            )
-                                                          (begin
-                                                            (format #t "~A: ~A~%" (red "no import for tool") (caadr dep))
-                                                            ;; (error 'STOP "STOP no import")
-                                                            ;; assume (rashly) that form is e.g. :tools/version/gen/gen.exe
-                                                            (let* ((kw (caadr dep))
-                                                                   (t (keyword->symbol kw))
-                                                                   (path (dirname t)))
-                                                              `(::tools
-                                                                (,kw
-                                                                 ,(cons :pkg (if (string=? "./" path)
-                                                                                 pkg-path path))
-                                                                 ,(cons :tgt (basename t))))
-                                                              ))))
-                                                ;; else treat it just like a std dep
-                                                (-fixup-std-dep-form dep exports)))
+                                           (cond
+                                            ((eq? ::unresolved (cdadr dep))
+                                             (begin
+                                               (format #t "~A~%" (bgred "IMPORT TOOL"))
+                                               (format #t "~A~%" (red "export keys"))
+                                               (for-each (lambda (k)
+                                                           (format #t "~A: ~A~%" (ured "key") k))
+                                                         (sort! (hash-table-keys exports) sym<?))
+                                               (if-let ((import (hash-table-ref exports (caadr dep))))
+                                                       (begin
+                                                         (format #t "~A: ~A~%" (bgred "importing") import)
+                                                         (list ::tools
+                                                               (cons (caadr dep)
+                                                                           (list (assoc :pkg import)
+                                                                                 (assoc :tgt import))
+                                                                           ;; (format #f "//~A:~A"
+                                                                           ;;         (assoc-val :pkg import)
+                                                                           ;;         (assoc-val :tgt import))
+                                                                           ))
+                                                         )
+                                                       (begin
+                                                         (format #t "~A: ~A~%" (red "no import for tool") (caadr dep))
+                                                         ;; (error 'STOP "STOP no import")
+                                                         ;; assume (rashly) that form is e.g. :tools/version/gen/gen.exe
+                                                         (let* ((kw (caadr dep))
+                                                                (t (keyword->symbol kw))
+                                                                (path (dirname t)))
+                                                           `(::tools
+                                                             (,kw
+                                                              ,(cons :pkg (if (string=? "./" path)
+                                                                              pkg-path path))
+                                                              ,(cons :tgt (basename t))))
+                                                           )))))
+                                            ((eq? ::unresolved (cdadr dep))
+                                             )
+                                           ;; else treat it just like a std dep
+                                           (else (-fixup-std-dep-form ws-id pkg dep exports))))
                                          ;; else std dep form: (:foo (:pkg...)(:tgt...))
-                                         (-fixup-std-dep-form dep exports)))
+                                         (-fixup-std-dep-form ws-id pkg dep exports)))
                                    (cdr deps))))
                          (format #t "~A: ~A~%" (ured "fixed-up deps") fixdeps)
                          (set-cdr! deps fixdeps))))
@@ -344,9 +364,9 @@
                                      (cond
                                       ((list? dep)
                                        ;; std dep form: (:foo (:pkg...)(:tgt...))
-                                       (-fixup-std-dep-form dep exports))
+                                       (-fixup-std-dep-form ws pkg dep exports))
                                       ((symbol? dep)
-                                       (-fixup-dep-sym dep pkg-path exports))
+                                       (-fixup-dep-sym ws-id dep pkg-path exports))
                                       (else (error 'fixme
                                                    (format #f "~A: ~A~%" (bgred "unrecognized :archive dep type") dep)))))
                                    (cdr deps))))
@@ -365,9 +385,9 @@
                                       (cond
                                        ((list? dep)
                                         ;; std dep form: (:foo (:pkg...)(:tgt...))
-                                        (-fixup-std-dep-form dep exports))
+                                        (-fixup-std-dep-form ws pkg dep exports))
                                        ((symbol? dep)
-                                        (-fixup-dep-sym dep pkg-path exports))
+                                        (-fixup-dep-sym ws-id dep pkg-path exports))
                                        (else (error 'fixme
                                                     (format #f "~A: ~A~%" (bgred "unrecognized ppx-dep type") dep)))))
                                     (cdr ppx-deps))))
@@ -393,9 +413,9 @@
               ;;                        (cond
               ;;                         ((list? dep)
               ;;                          ;; std dep form: (:foo (:pkg...)(:tgt...))
-              ;;                          (-fixup-std-dep-form dep exports))
+              ;;                          (-fixup-std-dep-form ws pkg dep exports))
               ;;                         ((symbol? dep)
-              ;;                          (-fixup-dep-sym dep pkg-path exports))
+              ;;                          (-fixup-dep-sym ws-id dep pkg-path exports))
               ;;                         (else (error 'fixme
               ;;                                      (format #f "~A: ~A~%" (bgred "unrecognized :archive dep type") dep)))))
               ;;                      (cdr deps))))
@@ -408,43 +428,37 @@
               ;;        (deps (assoc-val :deps stanza-alist)))
               ;;    (format #t "library deps: ~A~%" deps)))
 
-              ((:ocamllex :ocamlyacc) (values))
-
-              ((:menhir) (values))
-
-              ((:env) (values))
-
-              ((:testsuite) (values))
-
-              ((:tuareg) (values))
+              ((:ocamllex :ocamlyacc :menhir :env :testsuite :tuareg :alias) (values))
 
               (else
                (error 'fixme
                       (format #t "~A: ~A~%" (bgred "unhandled fixup stanza") stanza))))))))
 
-;; updates stanzas
+;; updates stanzas. initial conditions:
+;; * manifest deps derived from static file inventory
 (define resolve-labels!
   (let ((+documentation+ "Map dune target references to bazel labels using exports table.")
         (+signature+ '(resolve-labels! workspace)))
-    (lambda (ws)
-      (format #t "~A for ws: ~A\n"
-              (bgred "resolve-labels!") (assoc :name ws))
-              ;; (assoc-val 'name ws))
-      (let* ((pkgs (car (assoc-val :pkgs ws)))
-             ;; (_ (format #t "PKGS: ~A\n" pkgs))
-             (exports (car (assoc-val :exports ws))))
-        ;; (format #t "resolving labels for pkgs: ~A\n" (hash-table-keys pkgs))
-        ;; (format #t "exports: ~A\n" exports)
-        (for-each (lambda (kv)
-                    (format #t "~A: ~A~%" (ublue "resolving pkg") (car kv))
-                    ;; (format #t "pkg: ~A~%" (cdr kv))
-                    (let ((pkg (cdr kv)))
-                      (if-let ((stanzas (assoc-val :dune (cdr kv))))
-                              (for-each (lambda (stanza)
-                                          (-fixup-stanza! ws pkg stanza)
-                                          (format #t "stanza: ~A~%" stanza))
-                                        stanzas)))
-                    )
-                  pkgs)
-        ))))
+    (lambda (ws-id)
+      (let ((ws (assoc-val ws-id -mibl-ws-table)))
+        (format #t "~%~A for ws: ~A\n"
+                (bgred "resolve-labels!") (assoc :name ws))
+        ;; (assoc-val 'name ws))
+        (let* ((pkgs (car (assoc-val :pkgs ws)))
+               ;; (_ (format #t "PKGS: ~A\n" pkgs))
+               (exports (car (assoc-val :exports ws))))
+          ;; (format #t "resolving labels for pkgs: ~A\n" (hash-table-keys pkgs))
+          ;; (format #t "exports: ~A\n" exports)
+          (for-each (lambda (kv)
+                      (format #t "~A: ~A~%" (ublue "resolving pkg") (car kv))
+                      ;; (format #t "pkg: ~A~%" (cdr kv))
+                      (let ((pkg (cdr kv)))
+                        (if-let ((stanzas (assoc-val :dune (cdr kv))))
+                                (for-each (lambda (stanza)
+                                            (-fixup-stanza! ws-id pkg stanza)
+                                            (format #t "stanza: ~A~%" stanza))
+                                          stanzas)))
+                      )
+                    pkgs)
+          )))))
 

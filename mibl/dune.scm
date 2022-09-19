@@ -8,6 +8,7 @@
 
 (load "dune/conditionals.scm")
 (load "dune/constants.scm")
+(load "dune/debug.scm")
 (load "dune/dune_api.scm")
 (load "dune/actions.scm")
 (load "dune/shell_actions.scm")

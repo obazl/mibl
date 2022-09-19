@@ -152,7 +152,7 @@
                   (format #t "~A: ~A~%" (ured "sigs remainder") remainder)
                   (if (null? remainder)
                       (dissoc! '(:signatures) pkg)
-                      (set-cdr! pkg-sigs remainer)))))))
+                      (set-cdr! pkg-sigs remainder)))))))
     pkg))
 
 ;; normalize-manifests: one for each aggregate, plus pkg files (:modules,
@@ -679,7 +679,7 @@
                               (if exe
                                   (format #f "~A.exe" tgt)
                                   (format #f "~A" tgt)))))))
-    (format #t "exports tbl: ~A\n" exports)
+    ;; (format #t "exports tbl: ~A\n" exports)
 
     (format #t "~A ~A => ~A~%" (bgred "adding to exports") key spec)
     (if exe
@@ -768,7 +768,8 @@
             (cdr targets))))
 
 (define (update-stanza-deps pkg fname mdeps)
-  (format #t "~A: ~A~%" (ublue "update-stanza-deps") (assoc-val :dune pkg))
+  (format #t "~A: ~A~%" (ublue "update-stanza-deps") (assoc-val :pkg-path pkg))
+  (format #t "~A: ~A~%" (blue "fname") fname)
   (format #t "~A: ~A~%" (blue "mdeps") mdeps)
   (let ((mname (filename->module-name fname)))
     (format #t "~A: ~A~%" (blue "mname") mname)
@@ -776,12 +777,17 @@
                 (case (car stanza)
                   ((:exports-files))
                   (else
-                   (format #t "~A: ~A~%" (blue "stanza") stanza)
+                   (format #t "~A: ~A~%" (ucyan "stanza") stanza)
                    (let ((compile-deps (assoc-in '(:compile :manifest :modules) (cdr stanza))))
-                     (format #t "~A: ~A~%" (blue "compile-deps") compile-deps)
+                     (format #t "~A: ~A~%" (cyan "compile-deps (before)") compile-deps)
                      (if compile-deps
                          (if (member mname (cdr compile-deps))
-                             (set-cdr! compile-deps
-                                       (append (cdr compile-deps)
-                                               mdeps))))))))
-              (assoc-val :dune pkg))))
+                             (begin
+                               (format #t "~A ~A to :compile :manifest ~A~%" (bgcyan "adding") mdeps compile-deps)
+                               (set-cdr! compile-deps
+                                         (remove-duplicates ;; don't add if its already there
+                                          (append (cdr compile-deps)
+                                                  mdeps)))
+                               (format #t "~A: ~A~%" (cyan "compile-deps (after)") compile-deps)))))
+                         )))
+                (assoc-val :dune pkg))))

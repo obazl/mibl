@@ -69,7 +69,7 @@
                           m))))
 
 (define (is-module-in-pkg m pkg)
-  ;; (format #t "~A: ~A~%" (ucyan "is-module-in-pkg") m)
+  (format #t "~A: ~A~%" (ucyan "is-module-in-pkg") m)
   ;; (format #t "~A: ~A~%" (ucyan "pkg") pkg)
   (let* ((pkg-mods (if-let ((files (assoc-val :modules pkg)))
                              (map car files) '()))
@@ -92,7 +92,6 @@
          ;; (_ (format #t "~A: ~A~%" (yellow "pkg-sigs") pkg-sigs))
          (modules (concatenate pkg-mods pkg-structs pkg-sigs))
          (_ (format #t "~A: ~A~%" (yellow "all pkg modules") modules))
-         (_ (format #t "~A: ~A~%" (yellow "all pkg modules X") modules))
          (answer (member m modules)))
     (format #t "~A: ~A~%" (cyan "answer") answer)
     ;; (if (equal? 'Arg m) (error 'STOP "STOP mod in pkg"))
@@ -169,14 +168,35 @@
           ;; (assoc-val :pkg-path pkg))
   (let* ((pkg-path (car (assoc-val :pkg-path pkg)))
          (fpath (format #f "~A/*" pkg-path)) ;; (cdr struct)))
-         (cmd (format #f "ocamldep -one-line -modules -I ~A ~A/*"
-                      pkg-path pkg-path))
-         (_ (format #t "~A: ~A~%" (green "cmd") cmd))
+         (pkg-mods (if-let ((files (assoc-val :modules pkg)))
+                             (map car files) '()))
+         ;; (_ (format #t "~A: ~A~%" (yellow "pkg-mods") pkg-mods))
+         (pkg-structs (if-let ((structs (assoc-val :structures pkg)))
+                              (let* (;; (_ (format #t "~A: ~A~%" (uyellow "pkg-structs") structs))
+                                     (statics (if-let ((statics (assoc-val :static structs)))
+                                                      statics '()))
+                                     ;; (_ (format #t "~A: ~A~%" (cyan "struct statics") statics))
+                                     (dynamics (if-let ((dynamics (assoc-val :dynamic structs)))
+                                                       dynamics '()))
+                                     ;; (_ (format #t "~A: ~A~%" (cyan "struct dynamics") dynamics))
+                                     ) ;; gets both :static & :dynamic
+                                (map car (concatenate statics dynamics)))
+                           '()))
+         ;; (_ (format #t "~A: ~A~%" (yellow "pkg-structs") pkg-structs))
+         (pkg-sigs (if-let ((files (assoc-val :signatures pkg)))
+                           (map car (car (map cdr files)))
+                           '()))
+         ;; (_ (format #t "~A: ~A~%" (yellow "pkg-sigs") pkg-sigs))
+         (modules (concatenate pkg-mods pkg-structs pkg-sigs))
+         (_ (format #t "~A: ~A~%" (yellow "all pkg modules") modules))
          )
-    (let* ((deps (string-trim '(#\newline) (system cmd #t)))
+    (let* ((cmd (format #f "ocamldep -one-line -modules -I ~A ~A/*"
+                        pkg-path pkg-path))
+           (_ (format #t "~A: ~A~%" (green "cmd") cmd))
+           (deps (string-trim '(#\newline) (system cmd #t))) ;; EXECUTE CMD
            (deps (string-split deps #\newline)))
       (for-each (lambda (dep)
-                  (format #t "~A: ~A~%" (bgyellow "processing ocamldep") dep)
+                  (format #t "~%~A: ~A~%" (uyellow "iter over ocamldeps") dep)
                   (let ((segs (string-split dep #\:)))
                     (format #t "~A: ~A~%" (yellow "segs") segs)
                     (if (null? (cdr segs))
@@ -188,34 +208,41 @@
                                (mdeps (string-trim '(#\space) (cadr segs)))
                                (mdeps (string-split mdeps #\space))
                                (mdeps (map string->symbol mdeps))
+
+                               (_ (format #t "~A for ~A: ~A~%" (ugreen "unfiltered mdeps") mname mdeps))
                                ;; do not include file module in deps list
                                (mdeps (remove mname mdeps))
+                               (_ (format #t "~A: ~A~%" (ugreen "unfiltered mdeps excluding self") mdeps))
                                ;; eliminate mdeps not in this pkg
-                               (mdeps (filter (lambda (d) (is-module-in-pkg d pkg)) mdeps))
+                               ;; (mdeps (filter (lambda (d) (is-module-in-pkg d pkg)) mdeps))
+                               (mdeps (filter (lambda (dep) (member dep modules)) mdeps))
+                               (_ (format #t "~A: ~A~%" (ugreen "filtered mdeps, excluding pkg-externals") mdeps))
                                )
                           (format #t "~A: ~A~%" (red "mdeps") mdeps)
-                          (format #t "~A: ~A~%" (red "pkg") pkg)
+                          (format #t "~A: ~A~%" (red "pkg (before)") pkg)
                           (format #t "~A: ~A~%" (red "fname") fname)
                           (format #t "~A: ~A~%" (red "mname") mname)
                           ;; (if (string=? "arg.ml" fname) (error 'STOP "STOP ocamldep"))
-                          (if (not (null? mdeps))
+                          (if (truthy? mdeps) ;; (not (null? mdeps))
                               (begin
-                                (format #t "~A ~A to ~A~%" (bgyellow "adding mdeps") mdeps fname)
-                                (format #t "~A: ~A~%" (uyellow "in pkg") pkg)
+                                (format #t "~A ~A to ~A~%" (bgyellow "updating stanza :deps") mdeps fname)
+                                ;; (format #t "~A: ~A~%" (uyellow "in pkg") pkg)
                                 (update-stanza-deps pkg fname mdeps)
+                                (format #t "~A: ~A~%" (red "pkg (after)") pkg)
                                 ))
 
                           ;; mdeps is list of ocamldeps of fname with corresponding files in this pkg
                           ;; we retrieve the pkg-dep for fname and add the mdeps to it
+                          (format #t "~A: ~A~%" (bgyellow "updating pkg file flds") pkg)
                           (format #t "~A: ~A~%" (yellow "ocamldep fname") fname)
                           (format #t "~A: ~A~%" (yellow "ocamldep kind") kind)
                           (format #t "~A: ~A~%" (yellow "ocamldep mdeps") mdeps)
-                          (if (not (null? mdeps))
+                          (if (truthy? mdeps) ;; (not (null? mdeps))
                               (if-let ((m-assoc (find-m-file-in-pkg fname pkg)))
                                       (begin
                                         (format #t "~A: ~A~%" (red "m-assoc in pkg") m-assoc)
                                         (if (proper-list? m-assoc)
-                                            ;; its a module entry, (A (:ml a.ml) (:mli a.mli))
+                                            ;; its a module entry, form (A (:ml a.ml) (:mli a.mli))
                                             (begin ;; if mdeps not empty
                                               (set-cdr! m-assoc
                                                         (append (cdr m-assoc)
@@ -236,6 +263,7 @@
                                       ;;else
                                       (format #t "~A: ~A~%" (blue "not found") m-assoc))
                               ;; else mdeps is null
+                              (format #t "~A~%" (uyellow "continue"))
                               )))))
                 deps))))
 
@@ -468,22 +496,29 @@
                   )
               structs)))
 
+;; resolve-pkg-file-deps
+;; main task: run ocamldep on each (static) file in the pkg,
+;; filter results to exclude anything not in this pkg
+;; (since any other deps will be resolved via the exports tbl or opam)
+;; then update the pkg file entries and also stanza :deps flds
+
 ;; for each pkg file (module, sig, struct),
 ;;   find the stanza that depends on it
-;;   if depending stanza is namespaced, continue
+;;   if depending stanza is namespaced aggregate, continue (?)
 ;;   else ocamldep and update the pkg fld with :deps
+;;   if stanza is executable?
 ;; skip :ocamllex, :ocamlyacc, they're already elaborated
 ;; add flds (:ml-deps), (:mli-deps)
 (define (resolve-pkg-file-deps ws)
-  (format #t "~A: ~A~%" (bgred "resolve-pkg-file-deps") ws)
+  (format #t "~%~A: ~A~%" (bgred "resolve-pkg-file-deps for ws") ws)
   (let* ((@ws (assoc-val ws -mibl-ws-table))
          (pkgs (car (assoc-val :pkgs @ws))))
     (format #t "~A: ~A~%" (uwhite "pkgs") pkgs)
-    (for-each (lambda (kv)
-                (format #t "~A: ~A~%" (uwhite "for pkg") kv)
-                (let* ((pkg-path (car kv))
+    (for-each (lambda (pkg-kv)
+                (format #t "~A: ~A~%" (uwhite "for pkg") pkg-kv)
+                (let* ((pkg-path (car pkg-kv))
                        (_ (format #t "~A: ~A~%" (green "pkg-path") pkg-path))
-                       (pkg (cdr kv))
+                       (pkg (cdr pkg-kv))
                        (_ (format #t "~A: ~A~%" (green "pkg") pkg))
                        (pkg-modules (if-let ((ms (assoc-val :modules pkg)))
                                             ms '()))
@@ -504,7 +539,9 @@
                         (-ocamldep-pkg-static-file-deps! pkg)
                         (format #t "~A: ~A~%" (bgred "pkg after sfd") pkg)
                         (-ocamldep-pkg-dynamic-file-deps! pkg)
-                        (format #t "~A: ~A~%" (bgred "pkg after dfd") pkg))
+                        (format #t "~A: ~A~%" (bgred "pkg after dfd") pkg)
+                        ;;FIXME: handle sigs
+                        )
                       (error 'STOP
                              (format #f "STOP ~A" pkgs)))
                   ))

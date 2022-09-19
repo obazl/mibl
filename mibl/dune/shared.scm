@@ -106,6 +106,8 @@
 ;;  (:deps (:resolved . 1))
 ;;  (:manifest (:modules Static_eval)))
 
+;; for executables?
+
 (define (-handle-stanza-shared-opts pkg-kv)
   (format #t "~A: ~A~%" (ublue "handle-stanza-shared-opts") pkg-kv)
   (let* ((pkg (cdr pkg-kv))

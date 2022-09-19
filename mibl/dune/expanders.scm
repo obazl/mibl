@@ -32,7 +32,7 @@
        ;;                         (cons search-key ;; arg-kw
        ;;                               ;; (list (cons :pkg pkg-path)
        ;;                               ;;       (cons :tgt arg))
-       ;;                               ::import
+       ;;                               ::unresolved
        ;;                               ))))
        ;;            (cdr deps)))
        ;; :FOO)
@@ -50,7 +50,7 @@
              (format #t "~A: ~A~%" (ured "TMP") tmp)
              (format #t "~A: ~A~%" (ured "DEPS") deps)
              ;; (error 'X "STOP expand-run-tool")
-             tmp))))))))
+            tmp))))))))
 
 (define (-match-dep pfx key dep)
   (format #t "~A: ~A/~A ? ~A~%" (ublue "-match-dep") pfx key dep)
@@ -58,12 +58,14 @@
    ((equal? (car dep) key)
     (format #t "~A: ~A~%" (uwhite "matched?") dep)
     #t)
-   ((member (cadr dep) '(::import ::pkg)) #f)
+   ((member (cdr dep) '(::unresolved ::opam-pkg)) #f)
    (else #f)))
 
 (define (find-in-exports ws search-key)
+  (format #t "~A: ~A~%" (ublue "find-in-exports") search-key)
   (let* ((exports (car (assoc-val :exports
                                   (assoc-val ws -mibl-ws-table)))))
+    (format #t "~A: ~A~%" (bgblue "exports") exports)
     (hash-table-ref exports search-key)))
 
 ;; may update :deps
@@ -79,7 +81,7 @@
          (search-key (symbol->keyword sym))
          (_ (format #t "~A: ~A~%" (yellow "searching deps") deps))
          (d (find-if (lambda (dep)
-                       ;;FIXME: special tags ::tools, ::pkgs, ::import, etc.
+                       ;;FIXME: special tags ::tools, ::opam-pkgs, ::unresolved, etc.
                        (-match-dep pfx search-key dep))
                        ;; (equal? (car dep) search-key))
                      (cdr deps))))
@@ -98,13 +100,15 @@
                        ;; if found, -infer-dep! adds to :deps
                        ;; otherwise, search exports table, finally assume its a filename literal
                        (if-let ((inferred-dep
-                                 (-infer-dep! sym #|search-key|# deps pkg)))
+                                 (-infer-dep! ws sym #|search-key|# deps pkg)))
                                inferred-dep
                                (begin
                                  (format #t "~A: ~A~%"
                                          (red "unresolved") search-key)
 
                                  ;; first search exports tbl
+                                 ;;FIXME: this is pointless since the exports tbl is incomplete
+                                 ;; unresolved args must be resolved by later pass
                                  (if-let ((found (find-in-exports ws search-key)))
                                          (let* ((pkg (assoc-val :pkg found))
                                                 (tgt (assoc-val :tgt found))
@@ -181,7 +185,7 @@
                            (append
                             (list (list (symbol->keyword sym)
                                         ;;(symbol->keyword pfx)
-                                        ::import))
+                                        ::unresolved))
                             (cdr deps)))
                  (format #t "~A: ~A~%" (ured "deps after") deps)
                  (symbol->keyword sym)))
@@ -195,7 +199,7 @@
                    ;; find arg in deps
                    (find-if (lambda (dep)
                               (format #t "~A: ~A~%" (yellow "checking dep") dep)
-                              ;; if dep == (::pkgs ...) ?
+                              ;; if dep == (::opam-pkgs ...) ?
                               (equal? (car dep) search-key))
                             (cdr deps))))
              (format #t "~A: ~A~%" (yellow "match?") match)
@@ -262,7 +266,7 @@
                                               (symbol->keyword sym)) ;; search-key ;; arg-kw
                                           ;; (list (cons :pkg pkg-path)
                                           ;;       (cons :tgt arg))
-                                          ::import
+                                          ::unresolved
                                           ))))
                        (cdr deps)))
             ;; return kw
@@ -332,12 +336,12 @@
     (if (null? (cdr deps))
         ;; infer dep for tool
         (let* ((tool-kw (string->keyword (format #f "~A" tool)))
-               (_ (format #t "~A: ~A~%" (white "inferring ::import for tool") tool-kw))
+               (_ (format #t "~A: ~A~%" (white "inferring ::unresolved for tool") tool-kw))
                )
           (set-cdr! deps
                     (list (cons ::toolsX
                                 (list
-                                 (cons tool-kw ::import
+                                 (cons tool-kw ::unresolved
                                        ;; (list (cons :pkg pkg-path)
                                        ;;       (cons :tgt tool))
                                        )))))
@@ -348,13 +352,16 @@
                (begin
                  (format #t "~A: ~A~%" (green "searching deps") (cdr deps))
                  (find-if (lambda (dep)
-                            (format #t "~A: ~A~%" (green "find test dep") dep)
+                            (format #t "~A: ~A~%" (green "checking dep") dep)
                             ;; dep forms:  (:<kw> (:pkg ...) (:tgt ...))
-                            ;; or (foo ::import), (foo ::pkg)
+                            ;; or (foo ::unresolved), (foo ::opam-pkg)
                             ;; or
                             (cond
-                              ((member (cadr dep) '(::import ::pkg))
-                               (format #t "~A: ~A~%" (ured "IMPORT") dep)
+                              ((member (cdr dep) '(::unresolved))
+                               (format #t "~A: ~A~%" (ured "::UNRESOLVED") dep)
+                               #f)
+                              ((member (cdr dep) '(::opam-pkg))
+                               (format #t "~A: ~A~%" (ured "::opam-pkgs") dep)
                                #f)
                              ((alist? (cdr dep))
                               (let* ((lbl-list (cdr dep))
@@ -383,9 +390,12 @@
                                              (cons :tgt tool))))
                            (alist-delete (list tool-kw) (cdr deps))))
                 (car t))
-              ;; else did not find t in deps.
+              ;; else did not find t in deps. try exports
+              ;  ...
+
+               ;; else fs path to some other pkg, like ../../foo/bar
               (begin
-               (format #t "~A: ~A~%" (blue "tool NOT in deps") tool)
+               (format #t "~A: ~A~%" (blue "TOOL NOT in deps") tool)
                ;; inference: must(?) be a path ref to sth in another pkg
                ;; e.g. ../gen_stubs/gen_stubs.exe
                ;; task: normalize path, split into pkg and tgt for label
@@ -410,10 +420,15 @@
                                      (:lbl . ,(format #f "//~A:~A" pkg tgt)))))
                                   (cdr deps)))
                        tool-kw))
-                   ;; else must be in cwd, but was not listed as a dep yet?
+                   ;; else must be in cwd, or in exports table to be resolved in separate pass
                    (begin
-                     (error 'FIXME
-                            (format #f "tool not listed in deps: ~A" tool)))))))
+                     (format #t "~A: ~A~%" (yellow "tool runresolved") tool)
+                     (set-cdr! deps
+                               (append
+                                `((::tools
+                                   (,(string->keyword tool) . ::unresolved)))
+                                (cdr deps)))
+                     (string->keyword tool))))))
         )))
 
 ;; may update deps
@@ -616,7 +631,7 @@
           (update-tagged-label-list! arg targets pkg))))))
 
 ;; search pkg files for arg, if found update deps
-(define (-infer-dep! arg deps pkg)
+(define (-infer-dep! ws arg deps pkg)
   (format #t "~A: ~A (~A)~%" (ublue "-infer-dep!") arg (type-of arg))
   ;; (format #t "~A: ~A~%" (uwhite "pkg") pkg)
   (format #t "~A: ~A~%" (uwhite "deps") deps)
@@ -634,9 +649,12 @@
       (find-sigfile-in-pkg-files!? arg deps pkg))
 
      (else
+
       (if (string? arg)
           ;; assume not a file to generate
-          #f
+          (begin
+            (format #t "~A: ~A~%" (bgyellow "arg is string") arg)
+            #f)
           ;; else search :files
           (let ((f (find-file-in-pkg-files!? arg deps pkg)))
             (format #t "~A: ~A~%" (red "found file in pkg files?") f)
@@ -689,9 +707,35 @@
                       tag
                       ;; else search pkg files for file not listed in :deps
                       ;; if found, -infer-dep! adds to :deps
-                      (if-let ((inferred-dep (-infer-dep! arg deps pkg)))
+                      ;; (if-let ((inferred-dep (-infer-dep! ws arg deps pkg)))
+                      ;;         inferred-dep
+                      ;;         arg)
+                      (if-let ((inferred-dep
+                                (-infer-dep! ws arg #|search-key|# deps pkg)))
                               inferred-dep
-                              arg))))
+                              (begin
+                                (format #t "~A: ~A~%" (red "string dep unresolved") arg)
+                                ;; first search exports tbl
+                                ;; pointless, tbl is incomplete
+                                (if-let ((found (find-in-exports ws (string->keyword arg))))
+                                        (let* ((pkg (assoc-val :pkg found))
+                                               (tgt (assoc-val :tgt found))
+                                               (entry `((,arg (:pkg . ,pkg) (:tgt . ,tgt)))))
+                                          (format #t "~A: ~A~%" (red "found") found)
+                                          ;; (error 'STOP "STOP exp")
+                                          entry)
+                                        ;; we've searched deps, pkg files, exports with no luck
+                                        ;; mark it unresolved and let later pass handle it
+                                        (let ((key (string->keyword arg)))
+                                          (format #t "~A: ~A~%" (bgred "unresolved string") arg)
+                                          (format #t "~A: ~A~%" (bgred " deps") deps)
+                                          ;; (update-tagged-label-list! kw deps pkg)
+                                          (set-cdr! deps
+                                                    (append (cdr deps)
+                                                            `((,key . ::unresolved))))
+                                          key))
+                                ))
+                      )))
      ;; (cons
      ;;  arg
      ;;  ;;(resolve-string-arg pkg-path arg vars)
@@ -749,9 +793,12 @@
 
                   ((string? arg)
                    (format #t "~A: ~A~%" (red "arg is string") arg)
-                   (let ((sarg (expand-string-arg ws arg pkg targets deps)))
-                     (append (list sarg)
-                             (expand-cmd-args* ws (cdr args) pkg targets deps))))
+                   (if (char=? #\- (arg 0))
+                       (append (list arg)
+                                 (expand-cmd-args* ws (cdr args) pkg targets deps))
+                       (let ((sarg (expand-string-arg ws arg pkg targets deps)))
+                         (append (list sarg)
+                                 (expand-cmd-args* ws (cdr args) pkg targets deps)))))
                   ;; pkg-path target targets
                   ;; (cdr args) filedeps vars)))))
 
@@ -839,7 +886,7 @@
                  (_ (format #t "main deplist: ~A\n" deplist))
                  (result (expand-terms* ws deplist paths '())))
             (format #t "DEPLIST EXPANDED: ~A\n" result)
-            (cons :deps result))
+            `(:deps ,@result))
           #f))
 
 (define (expand-cmd-list ws pkg -raw-cmds targets deps)

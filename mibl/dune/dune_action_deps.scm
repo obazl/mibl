@@ -253,8 +253,8 @@
   (let* ((key (string->keyword (format #f "~A" arg)))
          (match (find-if (lambda (dep)
                            (format #t "~A: ~A~%" (uwhite "dep") dep)
-                           (case (cadr dep)
-                             ((::import ::pkg) #f)
+                           (case (cdr dep)
+                             ((::unresolved ::opam-pkg) #f)
                              (else
                               (if (equal? (car dep) key)
                                   #t
@@ -607,7 +607,7 @@
 ;; (package <pkg>) depends on all files installed by <package>, as well as on the transitive package dependencies of <package>. This can be used to test a command against the files that will be installed.
   ;; we will emit a filegroup for all files in the pkg
   (let* ((key (symbol->keyword (cadr deplist))))
-    (list key ::pkg)))
+    `(,key . ::opam-pkg)))
 
 (define (handle-env-var-dep deplist)
   (format #t "handle-env-var-dep: ~A\n" deplist))
