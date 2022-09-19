@@ -861,9 +861,9 @@ EXPORT s7_scheme *s7_configure(void)
                             0, 1, 0, NULL);
 
     s7_define_function(s7, "load-dune", g_load_dune,
-                            0, 2, 0,
-                                 /* LOAD_DUNE_FORMAL_PARAMS, */
-                            LOAD_DUNE_HELP);
+                       0, 2, 0,
+                       /* LOAD_DUNE_FORMAL_PARAMS, */
+                       LOAD_DUNE_HELP);
 
     /* generate obazl code for top-down namespacing */
     s7_define_variable(s7, "*ns-topdown*", s7_t(s7));
@@ -885,6 +885,9 @@ EXPORT s7_scheme *s7_configure(void)
 
     /* list of pkgs whose stanzas share deps */
     s7_define_variable(s7, "*shared-deps*", s7_list(s7, 0));
+
+    /* only emit bazel code for this pkg (string); nil means no exclusion */
+    s7_define_variable(s7, "*emit-bazel-pkg*", s7_f(s7));
 
     /* tmp dir */
     char tplt[] = "/tmp/obazl.XXXXXXXXXX";

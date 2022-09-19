@@ -2521,6 +2521,11 @@ s7_pointer _merge_pkg_tbls(s7_scheme *s7, s7_pointer ht1, s7_pointer ht2)
 
 EXPORT s7_pointer g_load_dune(s7_scheme *s7,  s7_pointer args)
 {
+    /* arg0: rootpath to traverse */
+    /* arg1: restrict bazel emit to this pkg */
+
+    /* s7_pointer _s7_rootpath = s7_car(args); */
+
     if (debug) {
         log_debug(RED "g_load_dune" CRESET ", args: %s", TO_STR(args));
         log_debug("build_wd: %s (=BUILD_WORKING_DIRECTORY)", build_wd);
@@ -2538,9 +2543,19 @@ EXPORT s7_pointer g_load_dune(s7_scheme *s7,  s7_pointer args)
     /* s7_eval_c_string(s7, "(cadr (assoc-in '(:@ :pkgs) -mibl-ws-table))"); */
     /* printf("pkg_tbl: %s\n", TO_STR(_pkg_tbl)); */
 
+    s7_int args_ct = s7_list_length(s7, args);
+    if (debug) log_debug("args ct: %d", args_ct);
+
     const char *rootdir, *pathdir;
 
-    if ( s7_is_null(s7, args) ) {
+    if ( s7_is_null(s7, args)
+         || (args_ct == 0) ) {
+        if (debug) log_debug("args null or args ct 0");
+        rootdir = getcwd(NULL,0);
+        pathdir = ".";
+
+
+        if (debug) log_debug("args is null");
         rootdir = getcwd(NULL, 0);
         pathdir = ".";
         /* s7_pointer _pkg_tbl = */
@@ -2551,123 +2566,130 @@ EXPORT s7_pointer g_load_dune(s7_scheme *s7,  s7_pointer args)
         /*           TO_STR(s7_name_to_value(s7, "-mibl-ws-table"))); */
         /* } */
         return s7_name_to_value(s7, "-mibl-ws-table");
-    } else {
-        s7_int args_ct = s7_list_length(s7, args);
-        if (debug) log_debug("args ct: %d", args_ct);
+    } else if (args_ct < 3) {
+        if (debug) log_debug("args ct < 3");
 
-        /* s7_pointer rootarg; */
+        /* rootpath is always arg 0; ignore arg 1, it is used to set var *emit-bazel-pkg* */
+        s7_pointer arg = s7_car(args);
+        log_debug("arg 0: %", TO_STR(arg));
 
-        /* if (args_ct == 2) { */
-        /*     rootdir = s7_string(s7_car(args)); */
-        /*     pathdir = s7_string(s7_cadr(args)); */
-        /* } */
+        if (s7_is_list(s7, arg)) {
+            if (debug)
+                log_info("Arg 0 is list: %s", TO_STR(arg));
 
-        if (args_ct == 1) {
-            s7_pointer arg = s7_car(args);
-            if (s7_is_list(s7, arg)) {
-                if (trace)
-                    log_info("Arg is list: %s", TO_STR(arg));
-
-                rootdir = getcwd(NULL,0);
-
-                /* s7_int gc1; */
-                /* s7_pointer _pkgs, _iter; */
-
-                s7_pointer arglist = arg;
-                while ( !s7_is_null(s7, arglist)) {
-                    s7_pointer item = s7_car(arglist);
-                    if (trace)
-                        log_info("item: %s", TO_STR(item));
-                    pathdir = _get_path_dir(item);
-                    if (pathdir) {
-                        /* FIXME: s7_pointer _pkgs = */
-                        load_dune(rootdir, pathdir);
-                        if (trace)
-                            printf(RED "LOADED DUNE 1" CRESET "\n");
-
-                        //FIXME: is this needed?
-                        /* if (s7_is_hash_table(_pkgs)) { */
-                        /*     _pkg_tbl = _merge_pkg_tbls(s7, _pkg_tbl, _pkgs); */
-                        /*     log_debug("merged result: %s", TO_STR(_pkg_tbl)); */
-                        /* } else { */
-                        /*     log_error("load_dune returned %s", TO_STR(_pkgs)); */
-                        /*     return s7_nil(s7); */
-                        /* } */
-                    } else {
-                        log_error("cwd: %s", getcwd(NULL,0));
-                    }
-                    arglist = s7_cdr(arglist);
-                }
-                /* return _pkg_tbl; */
-                //  (set-cdr! (assoc-in '(:@ :pkgs) ws-table) )
-                /* s7_eval(s7, s7_list(s7, 3, */
-                /*                     _s7_set_cdr, */
-                /*                     s7_list(s7, 3, */
-                /*                             assoc_in, */
-                /*                             s7_list(s7, 2, */
-                /*                                     s7_make_keyword(s7, "@"), */
-                /*                                     s7_make_keyword(s7, "pkgs")), */
-                /*                             s7_name_to_value(s7, "-mibl-ws-table")), */
-                /*                     _pkg_tbl), */
-                /*         s7_rootlet(s7)); */
-
-                /* printf("root_ws 1: %s\n", TO_STR(s7_name_to_value(s7, "-mibl-ws-table"))); */
-
+            if (arg == s7_nil(s7)) {
+                log_debug("Arg 0 is null list: %s", TO_STR(arg));
+                rootdir = getcwd(NULL, 0);
+                pathdir = ".";
+                /* s7_pointer _pkg_tbl = */
+                load_dune(rootdir, pathdir);
+                /* if (trace) { */
+                log_trace("LOADED DUNE NOARG");
+                /* log_trace(RED "-mibl-ws-table:" CRESET " %s\n", */
+                /*           TO_STR(s7_name_to_value(s7, "-mibl-ws-table"))); */
+                /* } */
                 return s7_name_to_value(s7, "-mibl-ws-table");
             }
-            else if (s7_is_string(arg)) {
-                /* one string arg == path relative to current wd */
-                rootdir = getcwd(NULL,0);
+
+            rootdir = getcwd(NULL,0);
+
+            /* s7_int gc1; */
+            /* s7_pointer _pkgs, _iter; */
+
+            /* FIXME: only allow a single rootpath, always arg 0 */
+
+            s7_pointer arglist = arg;
+            while ( !s7_is_null(s7, arglist)) {
+                s7_pointer item = s7_car(arglist);
                 if (trace)
-                    log_trace("Rootdir: %s", rootdir);
-                pathdir = _get_path_dir(arg);
-                /* s7_pointer q = s7_name_to_value(s7, "quote"); */
+                    log_info("item: %s", TO_STR(item));
+                pathdir = _get_path_dir(item);
                 if (pathdir) {
-                    s7_pointer _pkg_tbl =
-                        load_dune(rootdir, pathdir);
+                    /* FIXME: s7_pointer _pkgs = */
+                    load_dune(rootdir, pathdir);
                     if (trace)
-                        printf(RED "LOADED DUNE 2" CRESET "\n");
+                        printf(RED "LOADED DUNE 1" CRESET "\n");
 
                     //FIXME: is this needed?
-
-                    //TODO: use s7_eval?
-                    /* s7_eval_c_string_with_environment(s7, */
-                    /*    "(set-cdr! (assoc-in '(:@ :pkgs) -mibl-ws-table) (list _pkg_tbl))", */
-                    /*    s7_inlet(s7, s7_list(s7, 1, */
-                    /*    s7_cons(s7, s7_make_symbol(s7, "_pkg_tbl"), _pkg_tbl)))); */
-
-                    /* printf("root_ws 2: %s\n", TO_STR(s7_name_to_value(s7, "-mibl-ws-table"))); */
-                    /* print_backtrace(s7); */
-                    /* return s7_name_to_value(s7, "-mibl-ws-table"); */
-                    return s7_t(s7);
-                    /* return s7_make_string(s7, "FOOBAR"); */
-
+                    /* if (s7_is_hash_table(_pkgs)) { */
+                    /*     _pkg_tbl = _merge_pkg_tbls(s7, _pkg_tbl, _pkgs); */
+                    /*     log_debug("merged result: %s", TO_STR(_pkg_tbl)); */
+                    /* } else { */
+                    /*     log_error("load_dune returned %s", TO_STR(_pkgs)); */
+                    /*     return s7_nil(s7); */
+                    /* } */
                 } else {
                     log_error("cwd: %s", getcwd(NULL,0));
-                    return s7_nil(s7);
                 }
+                arglist = s7_cdr(arglist);
+            }
+            /* return _pkg_tbl; */
+            //  (set-cdr! (assoc-in '(:@ :pkgs) ws-table) )
+            /* s7_eval(s7, s7_list(s7, 3, */
+            /*                     _s7_set_cdr, */
+            /*                     s7_list(s7, 3, */
+            /*                             assoc_in, */
+            /*                             s7_list(s7, 2, */
+            /*                                     s7_make_keyword(s7, "@"), */
+            /*                                     s7_make_keyword(s7, "pkgs")), */
+            /*                             s7_name_to_value(s7, "-mibl-ws-table")), */
+            /*                     _pkg_tbl), */
+            /*         s7_rootlet(s7)); */
+
+            /* printf("root_ws 1: %s\n", TO_STR(s7_name_to_value(s7, "-mibl-ws-table"))); */
+
+            return s7_name_to_value(s7, "-mibl-ws-table");
+        }
+        else if (s7_is_string(arg)) {
+            /* one string arg == path relative to current wd */
+            rootdir = getcwd(NULL,0);
+            if (trace)
+                log_trace("Rootdir: %s", rootdir);
+            pathdir = _get_path_dir(arg);
+            /* s7_pointer q = s7_name_to_value(s7, "quote"); */
+            if (pathdir) {
+                s7_pointer _pkg_tbl =
+                    load_dune(rootdir, pathdir);
+                if (trace)
+                    printf(RED "LOADED DUNE 2" CRESET "\n");
+
+                //FIXME: is this needed?
+
+                //TODO: use s7_eval?
+                /* s7_eval_c_string_with_environment(s7, */
+                /*    "(set-cdr! (assoc-in '(:@ :pkgs) -mibl-ws-table) (list _pkg_tbl))", */
+                /*    s7_inlet(s7, s7_list(s7, 1, */
+                /*    s7_cons(s7, s7_make_symbol(s7, "_pkg_tbl"), _pkg_tbl)))); */
+
+                /* printf("root_ws 2: %s\n", TO_STR(s7_name_to_value(s7, "-mibl-ws-table"))); */
+                /* print_backtrace(s7); */
+                /* return s7_name_to_value(s7, "-mibl-ws-table"); */
+                return s7_t(s7);
+                /* return s7_make_string(s7, "FOOBAR"); */
+
             } else {
-                log_error("Arg must be string or list of strings");
+                log_error("cwd: %s", getcwd(NULL,0));
                 return s7_nil(s7);
             }
+        } else {
+            log_error("Arg must be string or list of strings");
+            return s7_nil(s7);
         }
-        else if (args_ct == 0) {
-            rootdir = getcwd(NULL,0);
-            pathdir = ".";
-        }
-        else {
-            log_error("Too many args");
-            fprintf(stderr,
-                    RED "ERROR: unexpected arg count %d for load-dune\n",
-                    (int)args_ct);
-            exit(EXIT_FAILURE);
-        }
+    } else {
+        log_error("Too many args");
+        fprintf(stderr,
+                RED "ERROR: unexpected arg count %d for load-dune\n",
+                (int)args_ct);
+        exit(EXIT_FAILURE);
+    }
+
+    /* exit(0); */
+
         /* rootdir = (char *)TO_STR(rootarg); */
         /* rootdir = (char *)s7_string(rootarg); */
         /* printf("s7_car(args): %s\n", rootdir); */
         /* strlcpy(rootdir, s, 256); */
         /* rootdir = "test"; */
-    }
 
     /* char *sexp = "(set-cdr! " */
     /*     "(assoc-in '(:@ :pkgs) -mibl-ws-table) " */
