@@ -627,7 +627,7 @@
     (glob_files_rec ,handle-glob-files-rec-dep)
     (source_tree ,handle-source-tree-dep)
     (universe ,handle-universe-dep)
-    (package ,handle-package-dep)
+    ;; (package ,handle-package-dep)
     (env_var ,handle-env-var-dep)
     (sandbox ,handle-sandbox-dep)
     (include ,handle-include-dep)))

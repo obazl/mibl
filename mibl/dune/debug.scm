@@ -11,6 +11,7 @@
     ;; (format #t "~A: ~A~%" (red "exports table") exports)))
 
 (define (debug-dump-pkgs ws)
+  (format #t "~A~%" (bgred "PKG DUMP"))
   (let* ((@ws (assoc-val ws -mibl-ws-table))
          (pkgs (car (assoc-val :pkgs @ws)))
          )

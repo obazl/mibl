@@ -333,13 +333,13 @@
 
   (let ((tool (if (string-prefix? "./" tool)
                   (string-drop tool 2) tool)))
-    (if (null? (cdr deps))
+    (if (null? (cdr deps)) ;; meaning?
         ;; infer dep for tool
         (let* ((tool-kw (string->keyword (format #f "~A" tool)))
                (_ (format #t "~A: ~A~%" (white "inferring ::unresolved for tool") tool-kw))
                )
           (set-cdr! deps
-                    (list (cons ::toolsX
+                    (list (cons ::tools
                                 (list
                                  (cons tool-kw ::unresolved
                                        ;; (list (cons :pkg pkg-path)
@@ -829,11 +829,19 @@
         (format #t "~A: ~A\n" (bgred "finished term-list") expanded-deps)
         expanded-deps)
       (if (pair? (car arglist))
-          (let ((front (expand-terms* ws (car arglist) pkg '())))
-            (format #t "~A: ~A~%" (ured "expanded front") front)
-            (format #t "~A: ~A~%" (ured "now expanding") (cdr arglist))
-            (expand-terms* ws (cdr arglist) pkg (append expanded-deps  front))
-            )
+          (begin
+            (format #t "~A: ~A (t: ~A)~%" (bgred "term pair") (car arglist) (type-of (caar arglist)))
+            (if (equal? 'package (caar arglist))
+                (begin
+                  ;; in executables, (package p) just means its part of that pkg
+                  ;; in rules, (deps (package p)) means depend on everything in p
+                  (format #t "~A: ~A~%" (bgred "skipping term") (car arglist))
+                  (expand-terms* ws (cdr arglist) pkg expanded-deps))
+                (let ((front (expand-terms* ws (car arglist) pkg '())))
+                  (format #t "~A: ~A~%" (ured "expanded front") front)
+                  (format #t "~A: ~A~%" (ured "now expanding") (cdr arglist))
+                  (expand-terms* ws (cdr arglist) pkg (append expanded-deps  front))
+                  )))
           ;; car is atom
           (let* ((kw (car arglist)))
             (if-let ((depfn (assoc-val kw dune-dep-handlers)))
@@ -848,7 +856,7 @@
                       ;;     (if (pair? (car res)) res (list res))
                       (append (if (pair? (car res)) res (list res)) expanded-deps))
 
-                    ;; else car of arglist not a keyword
+                    ;; else car of arglist not in our handlers list
                     ;; must be either a ':' tagged dep or a filename literal
                     ;; or, if its a cmd arg, may be %{foo}
                     ;; or (package ...) or etc.

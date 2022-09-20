@@ -46,7 +46,10 @@
              (if-let ((x (assoc-val (car dep) ocaml-std-pkgs)))
                      ;; (format #f "@ocaml//lib/~A" (car dep))
                      (cons (car dep)
-                           `((:pkg . "@ocaml//lib")
+                           `((:ws . "@ocaml")
+                             (:pkg .
+                                   ,(format #f "lib/~A"
+                                            (keyword->symbol (car dep))))
                              (:tgt . ,(keyword->symbol (car dep)))))
                      dep)))))
     ;; ((::fixme)
@@ -76,6 +79,7 @@
     (compiler-libs . compiler-libs)
     (compiler-libs.common . compiler-libs/common)
     (compiler-libs.bytecomp . compiler-libs/bytecomp)
+    (compiler-libs.toplevel . compiler-libs/toplevel)
     (dynlink . dynlink)
     (num . num/core)
     (ocamldoc . ocamldoc)
