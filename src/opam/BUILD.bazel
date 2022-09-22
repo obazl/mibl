@@ -1,0 +1,233 @@
+load("@bazel_skylib//rules:common_settings.bzl",
+     "bool_flag", "string_flag")
+
+load(":BUILD.bzl", "CMD_FLAGS", "BOOTSTRAP_INCLUDES", "lemon")
+
+################################################################
+####    OPAM Parser
+################################################################
+cc_library(
+    name = "opam_parser",
+    # name = "opam_syntaxis",
+    srcs = [
+        "opam_parser.c",
+        "opam_parser.h",
+        "opam_syntaxis.c",
+        "opam_syntaxis.h",
+        "//src:log.h",
+        "//src:utarray.h",
+        "//src:uthash.h",
+        "//src:utstring.h",
+        ],
+    hdrs = [
+        "libopamparser.h",
+        # "opam_parser.h"
+    ],
+    copts = [
+        "-Isrc", "-I$(GENDIR)/src/opam"
+    ] + CMD_FLAGS + BOOTSTRAP_INCLUDES,
+    defines = select({
+        ":yydebug-enabled": ["YYDEBUG"],
+        "//conditions:default":   []
+    }) + select({
+        ":lexdebug-enabled": ["LEXDEBUG"],
+        "//conditions:default":   []
+    }) + select({
+        ":lexdebug-fvf": ["LEXDEBUG_FVF"],
+        "//conditions:default":   []
+    }),
+    deps = ["opam_lexer"],
+    visibility = ["//test:__subpackages__"]
+)
+
+cc_binary(
+    name  = "lemon",
+    srcs  = ["lemon.c"],
+)
+
+lemon(
+    name = "gen_opam_syntaxis",
+    yy   = "opam_syntaxis.y",
+    outs = ["opam_syntaxis.c","opam_syntaxis.out"],
+    compress = False,
+    defines = select({
+        ":yydebug-enabled": ["YYDEBUG"],
+        "//conditions:default":   []
+    }) + select({
+        ":yydebug-exit-on-error-enabled": ["YYDEBUG_EXIT_ON_ERROR"],
+        "//conditions:default":   []
+    }) + select({
+        ":yydebug-filter": ["YYDEBUG_FILTER"],
+        "//conditions:default":   []
+    }) + select({
+        ":yydebug-fpf": ["YYDEBUG_FPF"],
+        "//conditions:default":   []
+    }) + select({
+        ":lexdebug-fvf": ["YYDEBUG_FVF"],
+        "//conditions:default":   []
+    }) + select({
+        ":yydebug-build-filter": ["YYDEBUG_BUILD_FILTER"],
+        "//conditions:default":   []
+    })
+)
+
+###########
+cc_library(
+    name = "opam_lexer",
+    srcs = [
+        "opam_lexer.c", "opam_lexer.h",
+        "opam_lexis.c", "opam_lexis.h",
+        "//src:log.c", "//src:log.h",
+        "//src:utarray.h",
+        "//src:uthash.h",
+        "//src:utstring.h",
+    ],
+    copts = [
+        "-Isrc", "-I$(GENDIR)/src/opam"
+    ] + CMD_FLAGS + BOOTSTRAP_INCLUDES,
+    defines = select({
+        ":yydebug-enabled": ["YYDEBUG"],
+        "//conditions:default":   []
+    }) + select({
+        ":lexdebug-enabled": ["LEXDEBUG"],
+        "//conditions:default":   []
+    }) + select({
+        ":lexdebug-version": ["LEXDEBUG_VERSION"],
+        "//conditions:default":   []
+    }) + select({
+        ":lexdebug-fpf": ["LEXDEBUG_FPF"],
+        "//conditions:default":   []
+    }) + select({
+        ":lexdebug-fvf": ["LEXDEBUG_FVF"],
+        "//conditions:default":   []
+    }) + select({
+        ":lexdebug-build-filter": ["LEXDEBUG_BUILD_FILTER"],
+        "//conditions:default":   []
+    }),
+    visibility = ["//test:__subpackages__"]
+)
+
+## re2c takes a long time to build. we do not need to run it every
+## time once the grammar is stable, so we put the .c file under
+## version control. if you need to work on the opam lexer, uncomment this:
+# genrule(
+#     name = "gen_opam_lexis",
+#     outs  = ["opam_lexis.c"],
+#     srcs = ["opam_lexis.re"],
+#     tools = ["@opam_re2c//:re2c"],
+#     cmd   = "\n".join([
+#         "for f in $(locations @opam_re2c//:re2c)",
+#         "do",
+#         "    if [ -f $$f ]",
+#         "    then",
+#         "        if [ re2c = `basename $$f` -a -x $$f ]",
+#         "        then",
+#         "            break",
+#         "        fi",
+#         "    fi",
+#         "done",
+#         "$$f --conditions --tags -o $(@D)/opam_lexis.c $(location opam_lexis.re)",
+#     ]),
+#     visibility = ["//visibility:public"]
+# )
+
+genrule(
+    name = "mkhdrs",
+    srcs = [
+        "opam_lexer.c",
+        "opam_lexis.c",
+        "opam_parser.c",
+        "opam_syntaxis.c", ## defines token_type constants
+        "opam_package.c" ## ast node types, etc.
+    ],
+    outs = [
+        "opam_lexer.h",
+        "opam_lexis.h",
+        "opam_parser.h",
+        "opam_syntaxis.h",
+    ],
+    cmd = "\n".join([
+        "SRC1=$(location opam_lexer.c)",
+        "SRCDIR1=`dirname $$SRC1`",
+        "$(location //src:makeheaders) \\",
+        "    $(location opam_lexer.c) \\",
+        "    $(location opam_lexis.c) \\",
+        "    $(location opam_package.c) \\",
+        "    $(location opam_parser.c) \\",
+        "    $(location opam_syntaxis.c)",
+        "cp $${SRCDIR1}/*.h $(@D)",
+        # "> $@"
+    ]),
+    tools = ["//src:makeheaders"],
+    visibility = ["//visibility:public"]
+)
+
+genrule(
+    name = "mkhdrs_export",
+    srcs = [
+        "opam_lexer.c",
+        "opam_lexis.c",
+        "opam_parser.c",
+        "opam_syntaxis.c",
+        "opam_package.c"
+    ],
+    outs = [
+        "libopamparser.h",
+    ],
+    cmd = "\n".join([
+        "SRC1=$(location opam_lexis.c)",
+        "SRCDIR1=`dirname $$SRC1`",
+        "$(location //src:makeheaders) -H \\",
+        "    $(location opam_lexer.c) \\",
+        "    $(location opam_lexis.c) \\",
+        "    $(location opam_package.c) \\",
+        "    $(location opam_parser.c) \\",
+        "    $(location opam_syntaxis.c) \\",
+        "> $@"
+        # "cp $${SRCDIR1}/*.h $(@D)",
+    ]),
+    tools = ["//src:makeheaders"],
+    visibility = ["//visibility:public"]
+)
+
+################################################################
+## enable parser debugging: --//bootstrap:yydebug
+bool_flag(name = "yydebug", build_setting_default = 0)
+config_setting(name = "yydebug-enabled", flag_values = {":yydebug": "True"})
+config_setting(name = "yydebug-disabled", flag_values = {":yydebug": "False"})
+bool_flag(name = "yydebug-exit-on-error", build_setting_default = 0)
+config_setting(name = "yydebug-exit-on-error-enabled",
+               flag_values = {":yydebug-exit-on-error": "True"})
+
+bool_flag(name = "yytrace", build_setting_default = 0)
+config_setting(name = "yytrace-enabled", flag_values = {":yytrace": "True"})
+config_setting(name = "yytrace-disabled", flag_values = {":yytrace": "False"})
+
+## debug parse rules
+string_flag(name = "yydebug-rules", build_setting_default = "")
+config_setting(name = "yydebug-fpf",
+               flag_values = {":yydebug-rules": "fpf"})
+config_setting(name = "yydebug-fvf",
+               flag_values = {":yydebug-rules": "fvf"})
+config_setting(name = "yydebug-filter",
+               flag_values = {":yydebug-rules": "filter"})
+config_setting(name = "yydebug-build-filter",
+               flag_values = {":yydebug-rules": "build-filter"})
+
+## enable lexer debugging: --//bootstrap:lexdebug
+bool_flag(name = "lexdebug", build_setting_default = 0)
+config_setting(name = "lexdebug-enabled", flag_values = {":lexdebug": "True"})
+config_setting(name = "lexdebug-disabled", flag_values = {":lexdebug": "False"})
+
+string_flag(name = "lexdebug-rules", build_setting_default = "")
+config_setting(name = "lexdebug-version",
+               flag_values = {":lexdebug-rules": "version"})
+config_setting(name = "lexdebug-fpf",
+               flag_values = {":lexdebug-rules": "fpf"})
+config_setting(name = "lexdebug-fvf",
+               flag_values = {":lexdebug-rules": "fvf"})
+config_setting(name = "lexdebug-filter",
+               flag_values = {":lexdebug-rules": "filter"})
+config_setting(name = "lexdebug-build-filter",
+               flag_values = {":lexdebug-rules": "build-filter"})
+
