@@ -1,5 +1,11 @@
 ;; (display "pkg_api.scm") (newline)
 
+(define (find-in-filegroups triple)
+  ;; triple: (:key (:pkg . foo) (:tgt . bar))
+  ;; or (::glob (:pkg . foo) (:glob . "bar.*"))
+  triple
+  )
+
 ;; return normalized path relative to ws-root
 ;; FIXME: returns #f for non-existent paths
 ;; use ->canonical-path instead

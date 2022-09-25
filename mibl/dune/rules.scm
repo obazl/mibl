@@ -114,6 +114,24 @@
                                       '())))
              (_ (format #t "~A: ~A~%" (red "Targets") targets))
 
+             ;; 'target' may be omitted with with-stdout-to
+             (_ (format #t "~A: ~A~%" (green "rule-alist") rule-alist))
+             (stdout-tgt (if-let ((stdout (assoc-in '(action with-stdout-to) rule-alist)))
+                                 (let ((stdout (cadr stdout)))
+                                   (if (string-prefix? "%{" (format #f "~A" stdout))
+                                       #f
+                                       stdout))
+                                 #f))
+             (_ (format #t "~A: ~A~%" (green "stdout-tgt") stdout-tgt))
+
+             ;; if with-stdout-to is listed in targets, remove dups
+             (targets (remove-duplicates
+                       (if (truthy? stdout-tgt)
+                           (cons stdout-tgt targets)
+                           targets)))
+
+             (_ (format #t "~A: ~A~%" (red "Targets") targets))
+
              ;; add targets to pkg fields
              (pkg (if (null? targets)
                       pkg
@@ -127,7 +145,6 @@
              ;; normalize
              (targets (cons :outputs (expand-targets ws pkg targets deps)))
              (_ (format #t "~A: ~A\n" (red "expanded rule targets") targets))
-
              )
 
         (format #t "~A: ~A~%" (yellow "iterating deps") deps)

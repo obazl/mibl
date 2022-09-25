@@ -100,6 +100,7 @@
      ) ;; end lamda
    stanza-alist))
 
+;; obsolete?
 (define (-lib-flds->mibl ws pkg stanza-alist wrapped?)
   (format #t "~A: ~A\n" (blue "-lib-flds->mibl") stanza-alist)
   (format #t "~A: ~A\n" (blue "pkg") pkg)
@@ -148,7 +149,7 @@
     (let* ((depslist
             (if deps (remove '()
                              (list :deps
-                                   (if-let ((fixed (assoc :fixed deps)))
+                                   (if-let ((fixed (assoc :remote deps)))
                                            fixed '())
                                    (if-let ((conds (assoc :conditionals deps)))
                                            conds '())
@@ -207,6 +208,7 @@
 
     (if privname
         (begin
+          (format #t "~A: ~A~%" (ucyan "lib:adding privname to exports") privname)
           (update-exports-table! ws #f
                                  ;; (string->symbol (format #f "~A" privname))
                                  privname
@@ -217,6 +219,7 @@
 
     (if pubname
         (begin
+          (format #t "~A: ~A~%" (ucyan "lib:adding pubname to exports") pubname)
           (update-exports-table! ws #f
                                  ;; (string->symbol (format #f "~A" pubname))
                                  pubname
@@ -250,8 +253,6 @@
                               pkg-path
                               privname ;; lib name
                               )))
-
-
 
     (let* ((stanza-alist (cdr stanza))
            (stanza-alist (if-let ((mods (assoc 'modules stanza-alist)))

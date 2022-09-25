@@ -1,0 +1,20 @@
+########################
+####  Rule Targets  ####
+
+################  rule  ################
+genrule(
+    name  = "__output.ml__",
+    srcs  = [
+        "hello.txt",
+        "world.txt"
+    ],
+    outs  = [
+        "output.ml"
+    ],
+    cmd   = " ".join([
+        "cat",
+        "$(location hello.txt)",
+        "$(location world.txt)",
+        "> $@"
+    ]),
+)

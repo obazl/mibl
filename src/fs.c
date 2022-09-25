@@ -30,7 +30,6 @@
 #endif
 
 
-int verbosity = 0;
 int errnum;
 int rc;
 

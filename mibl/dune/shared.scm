@@ -47,7 +47,7 @@
          (pkgs (car (assoc-val :pkgs @ws))))
     ;; (format #t "~A: ~A~%" (uwhite "pkgs") pkgs)
     (for-each (lambda (kv)
-                (format #t "~A: ~A~%" (ugreen "for pkg") kv)
+                (format #t "~A: ~A~%" (ugreen "ppx for pkg") (car kv))
                 (let* ((pkg-path (car kv))
                        (_ (format #t "~A: ~A~%" (green "pkg-path") pkg-path))
                        (pkg (cdr kv)))
@@ -57,45 +57,68 @@
     '()))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define (-handle-pkg-shared-deps pkg-kv)
-  (format #t "~A: ~A~%" (ublue "handle-pkg-shared-deps") pkg-kv)
+(define (-handle-shared-deps pkg-kv)
+  (format #t "~A: ~A~%" (ublue "handle-shared-deps") pkg-kv)
   (let* ((pkg (cdr pkg-kv))
-         (pkg-shared-deps '())
-         (dune (assoc :dune pkg)))
-    (for-each (lambda (stanza)
-                (format #t "~A: ~A~%" (bgblue "stanza") stanza)
-                (let* ((shared-ct (length pkg-shared-deps))
-                       (deps (assoc :deps (cdr stanza))))
-                  (if deps
-                      (let ((resolved (assoc :resolved (cdr deps))))
-                        (format #t "~A: ~A~%" (bgred "pkg-shared-deps") pkg-shared-deps)
-                        (format #t "~A: ~A~%" (ublue "deps") deps)
-                        (format #t "~A: ~A~%" (ublue "resolved") resolved)
-                        (if resolved
-                            (let* ((deplist (cdr resolved))
-                                   (shared (rassoc deplist pkg-shared-deps)))
-                              (format #t "~A: ~A~%" (bgred "deplist") deplist)
-                              (format #t "~A: ~A~%" (bgred "rassoc") shared)
-                              (if (null? shared)
-                                  (begin
-                                    (format #t "~A: ~A~%" (green "adding") deplist)
-                                    (set! pkg-shared-deps
-                                          (append pkg-shared-deps
-                                                  `((,(+ 1 shared-ct) . ,deplist))))
-                                    (set-cdr! resolved (+ 1 shared-ct)))
-                                  (begin
-                                    ;; update stanza :deps with key
-                                    (format #t "~A: ~A => ~A~%" (ugreen "updating stanza") resolved (car shared))
-                                    (set-cdr! resolved (car shared))
-                                    (format #t "~A: ~A~%" (ugreen "updated stanza") resolved)
-                                    ))))))))
-              (cdr dune))
-    ;; now add pkg-shared-deps to pkg with key :shared-deps
-    ;; (format #t "~A~%" (bgred "updating pkg with :shared-deps"))
-    (if (truthy? pkg-shared-deps)
-        (set-cdr! dune (append (cdr dune) `((:shared-deps ,pkg-shared-deps)))))
+         (pkg-shared-deps '()))
+    (if-let ((dune (assoc :dune pkg)))
+            (begin
+              (for-each (lambda (stanza)
+                          (format #t "~A: ~A~%" (bgblue "stanza") stanza)
+                          (if (member (car stanza) '(:archive :library :ns-archive :ns-library :executable))
+                              (let* ((shared-ct (length pkg-shared-deps))
+                                     (deps (assoc :deps (cdr stanza))))
+                                (if deps
+                                    (let ((resolved (assoc :resolved (cdr deps))))
+                                      (format #t "~A: ~A~%" (bgred "pkg-shared-deps") pkg-shared-deps)
+                                      (format #t "~A: ~A~%" (ublue "deps") deps)
+                                      (format #t "~A: ~A~%" (ublue "resolved") resolved)
+                                      (if resolved
+                                          (if (not (number? (cdr resolved)))
+                                              (let* ((deplist (cdr resolved))
+                                                     (shared (rassoc deplist pkg-shared-deps)))
+                                                (format #t "~A: ~A~%" (bgred "deplist") deplist)
+                                                (format #t "~A: ~A~%" (bgred "rassoc") shared)
+                                                (if (null? shared)
+                                                    (begin
+                                                      (format #t "~A: ~A~%" (green "adding") deplist)
+                                                      (set! pkg-shared-deps
+                                                            (append pkg-shared-deps
+                                                                    `((,(+ 1 shared-ct) . ,deplist))))
+                                                      (set-cdr! resolved (+ 1 shared-ct)))
+                                                    (begin
+                                                      ;; update stanza :deps with key
+                                                      (format #t "~A: ~A => ~A~%" (ugreen "updating stanza") resolved (car shared))
+                                                      (set-cdr! resolved (car shared))
+                                                      (format #t "~A: ~A~%" (ugreen "updated stanza") resolved)
+                                                      ))))))))))
+                        (cdr dune))
+              ;; now add pkg-shared-deps to pkg with key :shared-deps
+              ;; (format #t "~A~%" (bgred "updating pkg with :shared-deps"))
+              (if (truthy? pkg-shared-deps)
+                  (set-cdr! dune (append (cdr dune) `((:shared-deps ,pkg-shared-deps)))))))
     ;; (format #t "~A: ~A~%" (bgred "shared deps") pkg-shared-deps)
-    ))
+    '()))
+
+(define (handle-shared-deps ws)
+  (format #t "~A: ~A~%" (ublue "handle-shared-deps") ws)
+  (let* ((@ws (assoc-val ws -mibl-ws-table))
+         (pkgs (car (assoc-val :pkgs @ws))))
+    (format #t "~A: ~A~%" (uwhite "pkgs") pkgs)
+    (for-each (lambda (kv)
+                (format #t "~A: ~A~%" (ugreen "dep for pkg") (car kv))
+                (let* ((pkg-path (car kv))
+                       (_ (format #t "~A: ~A~%" (green "pkg-path") pkg-path))
+                       (pkg (cdr kv)))
+                  ;; (format #t "~A: ~A~%" (green "pkg") pkg)
+                  ;;(if (member pkg-path *shared-deps*)
+                  (-handle-shared-deps kv) ;; )
+                  )
+                    ;; (format #t "~A: ~A~%" (bgred "updated pkg") kv)
+                )
+              pkgs)
+    ;; (error 'STOP "STOP shd")
+    '()))
 
 ;; (:ns-archive
 ;;  (:ns . jsooexp_static_eval)
@@ -108,60 +131,44 @@
 
 ;; for executables?
 
-(define (-handle-stanza-shared-opts pkg-kv)
-  (format #t "~A: ~A~%" (ublue "handle-stanza-shared-opts") pkg-kv)
+(define (-handle-shared-opts pkg-kv)
+  (format #t "~A: ~A~%" (ublue "handle-shared-opts") pkg-kv)
   (let* ((pkg (cdr pkg-kv))
-         (pkg-shared-opts '())
-         (dune (assoc :dune pkg)))
-    (for-each (lambda (stanza)
-                (format #t "~A: ~A~%" (bgblue "stanza") stanza)
-                (let* ((shared-ct (length pkg-shared-opts))
-                       (opts-fld (assoc :compile-opts (cdr stanza))))
-                  (if opts-fld
-                      (begin
-                        (format #t "~A: ~A~%" (bgred "pkg-shared-opts") pkg-shared-opts)
-                        (format #t "~A: ~A~%" (ublue "opts-fld") opts-fld)
-                        (let* ((opts (cdr opts-fld))
-                               (shared (rassoc opts pkg-shared-opts)))
-                          (format #t "~A: ~A~%" (bgred "rassoc") shared)
-                          (if (null? shared)
-                              (begin
-                                (format #t "~A: ~A~%" (green "adding") opts)
-                                (set! pkg-shared-opts
-                                      (append pkg-shared-opts
-                                              `((,(+ 1 shared-ct) . ,opts))))
-                                (set-cdr! opts-fld (+ 1 shared-ct)))
-                              (begin
-                                ;; update stanza :opts with key
-                                ;; (format #t "~A: ~A => ~A~%" (ugreen "updating stanza") resolved (car shared))
-                                (set-cdr! opts-fld (car shared))
-                                (format #t "~A: ~A~%" (ugreen "updated stanza") stanza)
-                                )))))))
-              (cdr dune))
-    ;; now add pkg-shared-opts to pkg with key :shared-opts
-    ;; (format #t "~A~%" (bgred "updating pkg with :shared-opts"))
-    (if (truthy? pkg-shared-opts)
-        (set-cdr! dune (append (cdr dune) `((:shared-compile-opts ,pkg-shared-opts)))))
+         (pkg-shared-opts '()))
+    (if-let ((dune (assoc :dune pkg)))
+            (begin
+              (for-each (lambda (stanza)
+                          (format #t "~A: ~A~%" (bgblue "stanza") stanza)
+                          (if (member (car stanza) '(:archive :library :ns-archive :ns-library :executable))
+                              (let* ((shared-ct (length pkg-shared-opts))
+                                     (opts-fld (assoc :opts (cdr stanza))))
+                                (if opts-fld
+                                    (if (not (number? (cdr opts-fld)))
+                                        (begin
+                                          (format #t "~A: ~A~%" (bgred "pkg-shared-opts") pkg-shared-opts)
+                                          (format #t "~A: ~A~%" (ublue "opts-fld") opts-fld)
+                                          (let* ((opts (cdr opts-fld))
+                                                 (shared (rassoc opts pkg-shared-opts)))
+                                            (format #t "~A: ~A~%" (bgred "rassoc") shared)
+                                            (if (null? shared)
+                                                (begin
+                                                  (format #t "~A: ~A~%" (green "adding") opts)
+                                                  (set! pkg-shared-opts
+                                                        (append pkg-shared-opts
+                                                                `((,(+ 1 shared-ct) . ,opts))))
+                                                  (set-cdr! opts-fld (+ 1 shared-ct)))
+                                                (begin
+                                                  ;; update stanza :opts with key
+                                                  ;; (format #t "~A: ~A => ~A~%" (ugreen "updating stanza") resolved (car shared))
+                                                  (set-cdr! opts-fld (car shared))
+                                                  (format #t "~A: ~A~%" (ugreen "updated stanza") stanza)
+                                                  )))))))))
+                        (cdr dune))
+              ;; now add pkg-shared-opts to pkg with key :shared-opts
+              ;; (format #t "~A~%" (bgred "updating pkg with :shared-opts"))
+              (if (truthy? pkg-shared-opts)
+                  (set-cdr! dune (append (cdr dune) `((:shared-compile-opts ,pkg-shared-opts)))))))
     ;; (format #t "~A: ~A~%" (bgred "shared opts") pkg-shared-opts)
-    ))
-
-(define (handle-shared-deps ws)
-  (format #t "~A: ~A~%" (ublue "handle-shared-deps") ws)
-  (let* ((@ws (assoc-val ws -mibl-ws-table))
-         (pkgs (car (assoc-val :pkgs @ws))))
-    (format #t "~A: ~A~%" (uwhite "pkgs") pkgs)
-    (for-each (lambda (kv)
-                (format #t "~A: ~A~%" (ugreen "for pkg") kv)
-                (let* ((pkg-path (car kv))
-                       (_ (format #t "~A: ~A~%" (green "pkg-path") pkg-path))
-                       (pkg (cdr kv)))
-                  ;; (format #t "~A: ~A~%" (green "pkg") pkg)
-                  (if (member pkg-path *shared-deps*)
-                      (-handle-pkg-shared-deps kv)))
-                ;; (format #t "~A: ~A~%" (bgred "updated pkg") kv)
-                )
-              pkgs)
-    ;; (error 'STOP "STOP shd")
     '()))
 
 (define (handle-shared-opts ws)
@@ -170,13 +177,15 @@
          (pkgs (car (assoc-val :pkgs @ws))))
     ;; (format #t "~A: ~A~%" (uwhite "pkgs") pkgs)
     (for-each (lambda (kv)
-                (format #t "~A: ~A~%" (ugreen "for pkg") kv)
+                (format #t "~A: ~A~%" (ugreen "opt for pkg") (car kv))
                 (let* ((pkg-path (car kv))
                        (_ (format #t "~A: ~A~%" (green "pkg-path") pkg-path))
                        (pkg (cdr kv)))
                   ;; (format #t "~A: ~A~%" (green "pkg") pkg)
-                  (if (member pkg-path *shared-deps*)
-                      (-handle-stanza-shared-opts kv)))
+                  (format #t "~A: ~A~%" (green "*shared-deps*") *shared-deps*)
+                  ;; (if (member pkg-path *shared-deps*)
+                  (-handle-shared-opts kv) ;;)
+                  )
                 ;; (format #t "~A: ~A~%" (bgred "updated pkg") kv)
                 )
               pkgs)

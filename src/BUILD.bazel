@@ -1,6 +1,23 @@
-load("@rules_cc//cc:defs.bzl", "cc_library")
+# load("@rules_cc//cc:defs.bzl", "cc_library")
+
+exports_files([
+    "log.c", "log.h",
+    "utarray.h", "uthash.h", "utstring.h"
+])
 
 load(":BUILD.bzl", "SRCS", "mkhdr_srcs")
+
+SRCS = [
+    "load_dune.c",
+    "bazel_config.c",
+    "mibl_config.c",
+    "opam_config.c",
+    "s7_config.c",
+    "error_handler.c",
+    "fs.c",
+    "utils.c",
+    # "debug.c"
+]
 
 HDRS = [
     "load_dune.h",
@@ -11,26 +28,26 @@ HDRS = [
     "error_handler.h",
     "fs.h",
     "utils.h",
-    "debug.h"
+    # "debug.h"
 ]
 
 ##########
 cc_library(
     name  = "mibl",
-    # alwayslink = True,
+    alwayslink = True,
     # linkstatic = 1,
     srcs = SRCS + HDRS + select({
         "//bzl/host:linux": ["strlcat.c", "strlcpy.c", "strnstr.c"],
         "//conditions:default":   []
-    # }) + select({
-    #     "//bzl/compilation_mode:dbg": ["debug.c", "debug.h"],
-    #     "//conditions:default": []
+    }) + select({
+        "//compilation_mode:dbg?": ["debug.c", "debug.h"],
+        "//conditions:default": []
     }) + [
-        "log.c", "log.h",
-        "uthash.h", "utarray.h", "utstring.h"
-        ## "@uthash//:include"
+        "log.c",
+        # "uthash.h", "utarray.h", "utstring.h"
+        "@uthash//:include"
     ],
-    hdrs = ["mibl.h"],
+    hdrs = ["mibl.h", "log.h"],
     data = [
         "//mibl:srcs",
         "//mibl/dune:srcs",
@@ -46,7 +63,7 @@ cc_library(
     #     "//mibl/opam:srcs",
     # ],
     defines = select({
-        "//bzl/host:debug": ["DEBUG_TRACE"],
+        "//bzl/host:debug": ["DEBUG_TRACE", "DEBUG_MIBL"],
         "//conditions:default":   []
     }) + select({
         "//bzl/host:linux": [
@@ -73,7 +90,7 @@ cc_library(
 
         "-Iexternal/libinih",
         # "-Iexternal/logc/src",
-        # "-Iexternal/uthash/include",
+        "-Iexternal/uthash/include",
     ],
     deps = [
         "//external/libinih:inih",
@@ -95,20 +112,25 @@ cc_binary(
     srcs  = ["makeheaders.c"],
     copts = ["-O3"],
     linkstatic=1,
+    visibility = ["//visibility:public"]
 )
 
 ########
 genrule(
     name = "mkhdrs",
-    srcs = SRCS + [
-        "ansi_colors.h",
-        # "uthash.h", "utarray.h", "utstring.h"
-    ],
-    # srcs = SRCS + select({
+    # srcs = SRCS + [
+    #     "ansi_colors.h",
+    #     # "uthash.h", "utarray.h", "utstring.h"
+    # ],
+    srcs = SRCS + ["debug.c", "ansi_colors.h"],
+    ## NB: we always make debug.h, but we select debug.[ch]
+    ## in the cc_rule, not here
+    # + select({
     #     "//bzl/compilation_mode:dbg": ["debug.c"],
     #     "//conditions:default": []
-    # }) + ["ansi_colors.h"],
-    outs = HDRS, # + ["debug.h"], #FIXME outs is not configurable
+    # }),
+    #FIXME outs is not configurable
+    outs = HDRS + ["debug.h"],
     cmd = CMD_HDR + "$(location :makeheaders) "
     + "$(SRCS); cp $${SRCDIR1}/*.h $(@D)",
     # + mkhdr_srcs() + "; cp $${SRCDIR1}/*.h $(@D)",

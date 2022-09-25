@@ -47,8 +47,9 @@ s7_pointer _s7_read_thunk_catcher(s7_scheme *s7, s7_pointer args)
         if (debug) log_debug(RED "FIXED:" CRESET " %s",
                              TO_STR(fixed));
         /* s7_show_stack(s7); */
+#if defined(DEBUG_TRACE)
         print_backtrace(s7);
-
+#endif
         /* close_error_config(); */
         /* error_config(); */
         // FIXING baddot always re-reads entire dunefile

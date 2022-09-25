@@ -19,4 +19,6 @@
   (format #t "~A: ~A\n" (blue "dune-alias->mibl") pkg)
   (format #t "~A~%" (red "WARNING: unimplemented: alias stanzas"))
   ;; (format #t "~A: ~A\n" (white "stanza") stanza)
-  (list (cons ':alias (cdr stanza))))
+  ;;(list (cons ':alias (cdr stanza)))
+  (-alias->miblark stanza)
+  )

@@ -1,0 +1,137 @@
+load("@bazel_skylib//rules:write_file.bzl", "write_file")
+
+########################
+####  Rule Targets  ####
+
+###########
+write_file(
+    out     = "void_for_linking-embedded-protocol-genesis.empty",
+    content = [""],
+    name    = "__void_for_linking-embedded-protocol-genesis.empty__"
+)
+###########
+write_file(
+    out     = "void_for_linking-embedded-protocol-genesis-carthagenet.empty",
+    content = [""],
+    name    = "__void_for_linking-embedded-protocol-genesis-carthagenet.empty__"
+)
+###########
+write_file(
+    out     = "void_for_linking-demo-noops.empty",
+    content = [""],
+    name    = "__void_for_linking-demo-noops.empty__"
+)
+###########
+write_file(
+    out     = "void_for_linking-demo-counter.empty",
+    content = [""],
+    name    = "__void_for_linking-demo-counter.empty__"
+)
+###########
+write_file(
+    out     = "void_for_linking-alpha.empty",
+    content = [""],
+    name    = "__void_for_linking-alpha.empty__"
+)
+###########
+write_file(
+    out     = "void_for_linking-000-Ps9mPmXa.empty",
+    content = [""],
+    name    = "__void_for_linking-000-Ps9mPmXa.empty__"
+)
+###########
+write_file(
+    out     = "void_for_linking-001-PtCJ7pwo.empty",
+    content = [""],
+    name    = "__void_for_linking-001-PtCJ7pwo.empty__"
+)
+###########
+write_file(
+    out     = "void_for_linking-002-PsYLVpVv.empty",
+    content = [""],
+    name    = "__void_for_linking-002-PsYLVpVv.empty__"
+)
+###########
+write_file(
+    out     = "void_for_linking-003-PsddFKi3.empty",
+    content = [""],
+    name    = "__void_for_linking-003-PsddFKi3.empty__"
+)
+###########
+write_file(
+    out     = "void_for_linking-004-Pt24m4xi.empty",
+    content = [""],
+    name    = "__void_for_linking-004-Pt24m4xi.empty__"
+)
+###########
+write_file(
+    out     = "void_for_linking-005-PsBABY5H.empty",
+    content = [""],
+    name    = "__void_for_linking-005-PsBABY5H.empty__"
+)
+###########
+write_file(
+    out     = "void_for_linking-005-PsBabyM1.empty",
+    content = [""],
+    name    = "__void_for_linking-005-PsBabyM1.empty__"
+)
+###########
+write_file(
+    out     = "void_for_linking-006-PsCARTHA.empty",
+    content = [""],
+    name    = "__void_for_linking-006-PsCARTHA.empty__"
+)
+###########
+write_file(
+    out     = "void_for_linking-007-PsDELPH1.empty",
+    content = [""],
+    name    = "__void_for_linking-007-PsDELPH1.empty__"
+)
+###########
+write_file(
+    out     = "void_for_linking-008-PtEdoTez.empty",
+    content = [""],
+    name    = "__void_for_linking-008-PtEdoTez.empty__"
+)
+###########
+write_file(
+    out     = "void_for_linking-008-PtEdo2Zk.empty",
+    content = [""],
+    name    = "__void_for_linking-008-PtEdo2Zk.empty__"
+)
+###########
+write_file(
+    out     = "void_for_linking-009-PsFLoren.empty",
+    content = [""],
+    name    = "__void_for_linking-009-PsFLoren.empty__"
+)
+###########
+write_file(
+    out     = "void_for_linking-010-PtGRANAD.empty",
+    content = [""],
+    name    = "__void_for_linking-010-PtGRANAD.empty__"
+)
+###########
+write_file(
+    out     = "void_for_linking-alpha-protocol-plugin-registerer.empty",
+    content = [""],
+    name    = "__void_for_linking-alpha-protocol-plugin-registerer.empty__"
+)
+###########
+write_file(
+    out     = "void_for_linking-008-PtEdo2Zk-protocol-plugin-registerer.empty",
+    content = [""],
+    name    = "__void_for_linking-008-PtEdo2Zk-protocol-plugin-registerer.empty__"
+)
+###########
+write_file(
+    out     = "void_for_linking-009-PsFLoren-protocol-plugin-registerer.empty",
+    content = [""],
+    name    = "__void_for_linking-009-PsFLoren-protocol-plugin-registerer.empty__"
+)
+###########
+write_file(
+    out     = "void_for_linking-010-PtGRANAD-protocol-plugin-registerer.empty",
+    content = [""],
+    name    = "__void_for_linking-010-PtGRANAD-protocol-plugin-registerer.empty__"
+)

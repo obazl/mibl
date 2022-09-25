@@ -884,10 +884,27 @@ EXPORT s7_scheme *s7_configure(void)
     s7_define_variable(s7, "*shared-ppx-pkg*", s7_make_string(s7, "bzl/ppx"));
 
     /* list of pkgs whose stanzas share deps */
+    /* FIXME: by default we always shared deps across stanzas, per pkg */
     s7_define_variable(s7, "*shared-deps*", s7_list(s7, 0));
 
     /* only emit bazel code for this pkg (string); nil means no exclusion */
     s7_define_variable(s7, "*emit-bazel-pkg*", s7_f(s7));
+
+    /* populate exclusions list, so scheme code can use it */
+    char **p = NULL;
+    s7_pointer _s7_exclusions = s7_nil(s7);
+    while ( (p=(char**)utarray_next(mibl_config.exclude_dirs, p))) {
+        printf("adding to exlusions list: %s\n",*p);
+        _s7_exclusions = s7_cons(s7, s7_make_string(s7, *p), _s7_exclusions);
+
+    }
+    printf("exclusions list: %s\n", TO_STR(_s7_exclusions));
+    s7_define_variable(s7, "*scan-exclusions*", _s7_exclusions);
+    /* p = utarray_find(mibl_config.exclude_dirs, */
+    /*                  &ptr, */
+    /*                  /\* &ftsentry->fts_path, *\/ */
+    /*                  strsort); */
+
 
     /* tmp dir */
     char tplt[] = "/tmp/obazl.XXXXXXXXXX";

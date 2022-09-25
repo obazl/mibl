@@ -331,7 +331,7 @@
 
 (define (update-pkg-files-with-struct! pkg tgt)
   (format #t "~A: ~A~%" (ublue "update-pkg-files-with-struct!") tgt)
-  (format #t "~A: ~A~%" (blue "pkg") pkg)
+  ;; (format #t "~A: ~A~%" (blue "pkg") pkg)
   (flush-output-port)
   ;; if we already have corresponding sig, move to :modules
   ;; else update :structures
@@ -537,7 +537,7 @@
   (let ((+documentation+ "INTERNAL. Add tgts to :modules (or :files etc) fld of pkg."))
     (lambda (pkg tgts)
       (format #t "~%~A: ~A~%" (bgblue "update-pkg-files!") tgts)
-      (format #t "  package: ~A\n" pkg)
+      (format #t "  package: ~A\n" (assoc-val :pkg-path pkg))
       ;; (format #t "  targets: ~A\n" tgts)
       ;; tgts may contain ml/mli pairs, so
       ;; step 1: partition tgts into module-tgts, struct-tgts, sig-tgts
@@ -656,7 +656,7 @@
 
 (define (update-exports-table! ws pfx nm pkg-path tgt)
   (format #t "~A: ~A , ~A\n" (ublue "update-exports-table!") pfx nm)
-  (format #t "~A: ~A , ~A~%" (uwhite "spec") pkg-path tgt)
+  (format #t "~A: (:pkg . ~A) (:tgt . ~A)~%" (uwhite "spec") pkg-path tgt)
   (let* ((exports (car (assoc-val :exports
                                   (assoc-val ws -mibl-ws-table))))
          (key (case pfx
@@ -665,7 +665,7 @@
                 ((:lib) (symbol (format #f "lib:~A" nm)))
                 ((:libexec) (symbol (format #f "libexec:~A" nm)))
                 ((:test) (string->keyword (format #f "~A.exe" nm)))
-                ((#f) (string->symbol (format #f "~A" nm)))
+                ;; ((#f) (string->symbol (format #f "~A" nm)))
                 (else nm)))
          (exe (case pfx
                 ((:bin :exe) #t)
@@ -723,11 +723,16 @@
                                (symbol->keyword key))
                            spec)
           )
+        ;; exe false
         (begin
-          (hash-table-set! exports
-                           (if (keyword? key) key
-                               (symbol->keyword key))
-                           spec)))
+          (if (keyword? key)
+              (hash-table-set! exports key spec)
+              ;;
+              ;; both with and without leading ':', just to be sure
+              (begin
+                (hash-table-set! exports key spec)
+                (hash-table-set! exports (symbol->keyword key) spec)))))
+
     (if (eq? pfx :test)
         (let ((key (string->symbol
                     (format #f ":exe~A" key))))

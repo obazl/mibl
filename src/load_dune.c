@@ -1384,9 +1384,9 @@ LOCAL void _update_pkg_structs(s7_pointer pkg_tbl,
                                                   s7_list(s7, 2,
                                                           structs_kw,
                                                           pkg_alist));
-            log_debug("STRUCTURES alist: %s", TO_STR(structures_alist));
+            /* log_debug("STRUCTURES alist: %s", TO_STR(structures_alist)); */
             if (structures_alist == s7_f(s7)) {
-                log_debug("NEW");
+                /* log_debug("NEW"); */
                 s7_pointer statics_assoc =
                     s7_list(s7, 2,
                             // static_kw,
@@ -3047,7 +3047,15 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
                                  && (strlen(ext) == 2)) {
                             _handle_cc_file(pkg_tbl, ftsentry, ext);
                         }
+                        else if ((strncmp(ext, ".h", 2) == 0)
+                                 && (strlen(ext) == 2)) {
+                            _handle_cc_file(pkg_tbl, ftsentry, ext);
+                        }
                         else if ((strncmp(ext, ".cc", 3) == 0)
+                                 && (strlen(ext) == 3)) {
+                            _handle_cc_file(pkg_tbl, ftsentry, ext);
+                        }
+                        else if ((strncmp(ext, ".hh", 3) == 0)
                                  && (strlen(ext) == 3)) {
                             _handle_cc_file(pkg_tbl, ftsentry, ext);
                         }
@@ -3055,7 +3063,15 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
                                  && (strlen(ext) == 4)) {
                             _handle_cc_file(pkg_tbl, ftsentry, ext);
                         }
+                        else if ((strncmp(ext, ".hpp", 4) == 0)
+                                 && (strlen(ext) == 4)) {
+                            _handle_cc_file(pkg_tbl, ftsentry, ext);
+                        }
                         else if ((strncmp(ext, ".cxx", 4) == 0)
+                                 && (strlen(ext) == 4)) {
+                            _handle_cc_file(pkg_tbl, ftsentry, ext);
+                        }
+                        else if ((strncmp(ext, ".hxx", 4) == 0)
                                  && (strlen(ext) == 4)) {
                             _handle_cc_file(pkg_tbl, ftsentry, ext);
                         }

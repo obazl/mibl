@@ -214,5 +214,7 @@ EXPORT void mibl_configure(void)
     utarray_sort(mibl_config.include_dirs, strsort);
     utarray_sort(mibl_config.exclude_dirs, strsort);
 
+#if defined(DEBUG_MIBL)
     if (debug) dump_mibl_config();
+#endif
 }

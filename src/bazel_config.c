@@ -42,7 +42,7 @@ char *launch_dir; /* real launch dir */
 /* path args passed to mibl relative to build_wd */
 
 /* UT_string *ws_root; */
-const char *bws_root;     /* base ws root */
+char *bws_root;     /* base ws root */
 char *ews_root;                 /* effective ws root */
 char *traversal_root;           /* maybe not same as ws root */
 

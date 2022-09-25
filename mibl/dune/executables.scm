@@ -122,20 +122,56 @@
         )
     ))
 
+(define (-map-compile-flds->mibl stanza-alist)
+  (format #t "~A: ~A~%" (ublue "-map-compile-flds->mibl") stanza-alist)
+  ;; compile manifest: includes link manifest, plus whatever
+  ;; source files are in :deps
+  (map (lambda (fld-assoc)
+         ;; (format #t "compile fld-assoc: ~A\n" fld-assoc)
+         (case (car fld-assoc)
+           ((root_module)
+            (error 'fixme
+                   (format #f "unhandled compile fld: ~A" fld-assoc)))
+
+           ;; ignore the rest - handled separately
+           (else (values))))
+       stanza-alist))
+
 (define (-map-link-flds->mibl stanza-alist)
   (format #t "~A: ~A~%" (ublue "-map-link-flds->mibl") stanza-alist)
   (map (lambda (fld-assoc)
-         (format #t "link fld-assoc: ~A\n" fld-assoc)
+         ;; (format #t "link fld-assoc: ~A\n" fld-assoc)
          ;; (if (equal? pubname 'rpc_openapi)
          ;;     (format #t "rpc_openapi pubname: ~A\n"
          ;;                fld-assoc))
          (case (car fld-assoc)
 
-           ;; link flds (executable)
-           ((name) (values)) ;; `(:main ,(normalize-module-name (cadr fld-assoc))))
-           ((names) (values))
-           ((public_name) (values))
-           ((public_names) (values))
+           ((link_flags) (normalize-stanza-fld-flags fld-assoc :link))
+           ((link_deps) (cons :link-deps (cdr fld-assoc)))
+
+           ;; ignore the rest - handled separately
+           (else (values))))
+       stanza-alist))
+
+(define (-map-cc-flds->mibl stanza-alist)
+  (format #t "~A: ~A~%" (ublue "-map-cc-flds->mibl") stanza-alist)
+  (map (lambda (fld-assoc)
+         ;; (format #t "cc fld-assoc: ~A\n" fld-assoc)
+         (case (car fld-assoc)
+           ((ctypes) (error 'fixme "ctypes"))
+           ((foreign_archives) (error 'fixme "foreign_archives"))
+           ((foreign_stubs) (error 'fixme "foreign_stubs"))
+           ;; (normalize-stanza-fld-foreign_stubs (cdr fld-assoc)))
+
+           (else (values))))
+       stanza-alist))
+
+(define (-map-common-flds->mibl stanza-alist)
+  (format #t "~A: ~A~%" (ublue "-map-common-flds->mibl") stanza-alist)
+  (map (lambda (fld-assoc)
+         ;; (format #t "common fld-assoc: ~A\n" fld-assoc)
+         (case (car fld-assoc)
+           ;; ((name) `(:main ,(cdr fld-assoc)))
            ((package) ;;
             ;; (package <package>) if there is a
             ;; (public_name ...) field, this specifies
@@ -144,90 +180,40 @@
             ;; executable is referenced by a `%{...}`
             ;; varexpr.
             `(:package ,(cadr fld-assoc)))
-           ((forbidden_libraries) (error 'fixme "forbidden_libraries"))
-
-           ((flags) (normalize-stanza-fld-flags fld-assoc :common))
-           ((ocamlc_flags) (normalize-stanza-fld-flags fld-assoc :ocamlc))
-           ((ocamlopt_flags) (normalize-stanza-fld-flags fld-assoc :ocamlopt))
-           ((link_flags) (normalize-stanza-fld-flags fld-assoc :link))
-
-           ((link_deps) (cons :link-deps (cdr fld-assoc)))
-           ((optional) (error 'fixme "forbidden_libraries"))
-
-           ;; cc fields
-           ((ctypes) (error 'fixme "ctypes"))
-           ((foreign_archives) (error 'fixme "foreign_archives"))
-           ((foreign_stubs) (error 'fixme "foreign_stubs"))
-           ;; (normalize-stanza-fld-foreign_stubs (cdr fld-assoc)))
-
-           ;; compile fields (library)
-           ;; FIXME: handle separately, since it may be omitted
-           ((modules) (values))
-           ;; ((modules) (get-manifest pkg
-           ;;                          ;; #t ;; deps
-           ;;                          #f ;; wrapped?
-           ;;                          stanza-alist))
-
-           ;; ignore the rest
-           ((libraries) (values))
-
-           ((root_module) (values))
-
-           ((preprocess) (values))
-            ;; (error 'fixme
-            ;;        (format #f "unhandled link fld: ~A" fld-assoc)))
-
-            ((preprocess_deps) (values))
-             ;; (error 'fixme
-             ;;        (format #f "unhandled link fld: ~A" fld-assoc)))
-
-           ((modes) `(:modes ,@(cdr fld-assoc))) ;; FIXME?
-
-           (else (error 'fixme
-                        (format #f "unhandled link fld: ~A" fld-assoc)))))
-       stanza-alist))
-
-(define (-map-compile-flds->mibl stanza-alist)
-  (format #t "~A: ~A~%" (ublue "-map-compile-flds->mibl") stanza-alist)
-  ;; compile manifest: includes link manifest, plus whatever
-  ;; source files are in :deps
-  (map (lambda (fld-assoc)
-         (format #t "compile fld-assoc: ~A\n" fld-assoc)
-         (case (car fld-assoc)
-           ;; (values) - handled separately
-           ((name names public_name) (values))
-           ((package) (values))
-
-           ;; compile fields (library)
-           ((modules) (values))
-           ((libraries) (values)) ;; handled separately
-
-           ((flags) (normalize-stanza-fld-flags fld-assoc :common))
-           ((ocamlc_flags) (normalize-stanza-fld-flags fld-assoc :ocamlc))
-           ((ocamlopt_flags) (normalize-stanza-fld-flags fld-assoc :ocamlopt))
-           ;; ((link_flags) (normalize-stanza-fld-flags fld-assoc :link))
-           ((link_flags) (values))      ;; handled separately
 
            ((root_module)
             (error 'fixme
-                   (format #f "unhandled compile fld: ~A" fld-assoc)))
+                   (format #f "unhandled common fld: ~A" fld-assoc)))
 
            ((preprocess) (values))
             ;; (error 'fixme
-            ;;        (format #f "unhandled compile fld: ~A" fld-assoc)))
+            ;;        (format #f "unhandled common fld: ~A" fld-assoc)))
 
            ((preprocess_deps) (values))
             ;; (error 'fixme
-            ;;        (format #f "unhandled compile fld: ~A" fld-assoc)))
+            ;;        (format #f "unhandled common fld: ~A" fld-assoc)))
 
            ((modes) `(:modes ,@(cdr fld-assoc))) ;; FIXME?
 
-           ;; ignore the rest
-           ((names public_names) (values))
+           ((forbidden_libraries) (error 'fixme "forbidden_libraries"))
+           ((optional) (error 'fixme "fld: optional"))
 
-           (else
-            (error 'FIXME
-                   (format #f "unhandled compile fld: ~A" fld-assoc)))))
+           (else (values))))
+       stanza-alist))
+
+(define (-map-common-opts->mibl stanza-alist)
+  (format #t "~A: ~A~%" (ublue "-map-common-flds->mibl") stanza-alist)
+  (map (lambda (fld-assoc)
+         ;; (format #t "common fld-assoc: ~A\n" fld-assoc)
+         (case (car fld-assoc)
+           ((flags) (normalize-stanza-fld-flags fld-assoc :common))
+           ((ocamlc_flags)
+            (normalize-stanza-fld-flags fld-assoc :ocamlc))
+
+           ((ocamlopt_flags)
+            (normalize-stanza-fld-flags fld-assoc :ocamlopt))
+
+           (else (values))))
        stanza-alist))
 
 ;; returns (values <compile-flds> <link-flds>)
@@ -238,51 +224,78 @@
   ;; so excluded them from mapping, handle separately
   ;; 'libraries' fld may generate :directs, :seldeps and :conditionals
 
-  (let* ((mains (map normalize-module-name privnames))
-         (deps (if-let ((libdeps (assoc-val 'libraries stanza-alist)))
+  (let* ((deps (if-let ((libdeps (assoc-val 'libraries stanza-alist)))
                        (dune-libraries-fld->mibl libdeps pkg)
                        '()))
          (_ (format #t "~A: ~A\n" (uwhite "exec MIBLDEPS") deps))
          ;; (_ (error 'tmp "tmp"))
 
-         ;; FIXME: deal with private_modules too
-         (pkg-manifest (get-manifest pkg #f stanza-alist))
-         (_ (format #t "~A: ~A\n" (red "pkg-manifest") pkg-manifest))
          ;; pkg-manifest: (:manifest (:modules M1 M2 ...))
+         ;; contains all modules in pkg
+         (pkg-manifest (get-manifest pkg #f stanza-alist))
+         (_ (format #t "~A: ~A\n" (uwhite "pkg-manifest") pkg-manifest))
+         ;; FIXME: deal with private_modules too
 
-         (modules (let ((modules (assoc-val :modules (cdr pkg-manifest))))
-                    modules))
-                    ;; (filter (lambda (m) (not (member m mains))) modules)))
-         (_ (format #t "~A: ~A\n" (red "modules") modules))
+         (mains (map normalize-module-name privnames))
+         (_ (format #t "~A: ~A\n" (uwhite "mains") mains))
 
-         (compile-manifest (list :manifest (cons :modules (copy modules))))
-         (_ (format #t "~A: ~A\n" (red "compile-manifest") compile-manifest))
+         ;; exec-lib: pkg-manifest excluding main executables
+         (exec-lib (cons :exec-lib (let ((modules (assoc-val :modules (cdr pkg-manifest))))
+                                    (filter (lambda (m) (not (member m mains))) modules))))
+         (exec-lib (sort! exec-lib sym<?))
+         (_ (format #t "~A: ~A\n" (uwhite "exec-lib") exec-lib))
 
-         (link-manifest (list :manifest (cons :modules (copy modules))))
-         (_ (format #t "~A: ~A\n" (red "link-manifest") link-manifest))
+         ;; NB: pkg-manifest already includes conditionals
+         ;; add conditionals to exec-lib
+         ;; (conditionals (if-let ((clist (assoc-val :conditionals deps)))
+         ;;                       (map (lambda (c)
+         ;;                              (filename->module-name (assoc-val :target c)))
+         ;;                            clist)
+         ;;                       '()))
+         ;; (_ (format #t "~A: ~A~%" (uwhite "conditionals") conditionals))
+         ;; (_ (format #t "~A: ~A\n" (uwhite "exec-lib") exec-lib))
+         ;; (_ (error 'x "conds"))
 
-         ;; (_ (format #t "~A: ~A\n" (red "XXXXXXXXXXXXXXXX") (eq? (assoc-val :modules (cdr link-manifest))
-         ;;                                                        (assoc-val :modules (cdr compile-manifest)))))
+         ;; ;; (compile-manifest (list :manifest (cons :modules (copy modules))))
+         ;; (compile-manifest (if (truthy? modules)
+         ;;                       `((:modules ,@(copy modules)))
+         ;;                       (copy modules)))
+         ;; (_ (format #t "~A: ~A\n" (red "compile-manifest X") compile-manifest))
+
+         ;;FIXME: link-manifest is obsolete
+         ;; (link-manifest (list :manifest (cons :modules (copy modules))))
+         ;; (link-manifest `(:main (:modules ,(copy modules))))
+         ;; (_ (format #t "~A: ~A\n" (red "link-manifest") link-manifest))
 
          (link-flds (-map-link-flds->mibl stanza-alist))
          (_ (format #t "~A: ~A~%" (ured "link-flds") link-flds))
+
          (compile-flds (-map-compile-flds->mibl stanza-alist))
          (_ (format #t "~A: ~A\n" (red "compile-flds") compile-flds))
-         )
 
+         (common-flds (-map-common-flds->mibl stanza-alist))
+         (_ (format #t "~A: ~A~%" (ured "common-flds") common-flds))
+
+         (common-opts (-map-common-opts->mibl stanza-alist))
+         (_ (format #t "~A: ~A~%" (ured "COMMON-opts") common-opts))
+
+         (cc-flds (-map-cc-flds->mibl stanza-alist))
+         (_ (format #t "~A: ~A~%" (ured "cc-flds") cc-flds))
+         )
     ;; now handle manifest (modules fld) and submodules (deps fld)
     (format #t "~A: ~A\n" (red "x DEPS") deps)
     (let* ((depslist
             (if (truthy? deps)
-                (let* ((fixed (assoc :fixed deps))
+                (let* ((fixed (assoc :remote deps))
                        (conds (assoc :conditionals deps))
                        (seldeps (assoc :seldeps deps))
-                       (alldeps (filter truthy? (list `,@fixed conds seldeps))))
+                       (alldeps (filter truthy? (list `,fixed conds seldeps))))
                   (format #t "~A: ~A~%" (bgred "alldeps") alldeps)
                   (if (truthy? alldeps)
-                      `(:deps ,alldeps)
+                      `(:deps ,@alldeps)
                       '()))
                 '())))
+      (format #t "~A: ~A~%" (uwhite "depslist") depslist)
 
       ;; (submods
       ;;  (if modules
@@ -306,191 +319,29 @@
 
       ;; (compile-manifest (assoc :manifest link-flds)))
 
-        (format #t "compile-manifest: ~A\n" compile-manifest)
-        (format #t "compile-flds: ~A\n" compile-flds)
-        (format #t "stanza depslist: ~A\n" depslist)
-        ;;   (format #t "link-flds: ~A\n" link-flds)
-        (values (cons :compile
-                      ;;(remove '(:deps)
-                      ;; (remove '()
-                      (list compile-manifest `,@compile-flds
-                            '(:FUCK :IT)
-                            depslist)) ;;) ;; )
+      ;; (format #t "~A: ~A\n" (cyan "compile-manifest") compile-manifest)
+      (format #t "~A: ~A\n" (cyan "compile-flds") compile-flds)
+      (format #t "~A:: ~A\n" (cyan "stanza depslist") depslist)
+      ;;   (format #t "link-flds: ~A\n" link-flds)
+
+      (values common-flds
+              common-opts
+              ;; `(:deps
+              exec-lib
+              (concatenate
+                ;; compile-manifest
+                (if (truthy? compile-flds) compile-flds '())
+                ;; '((:WHERE :HERE))
+                (if (truthy? depslist) depslist '())) ;; )
+                link-flds
                 ;; (remove '() (list compile-flds compile-manifest)))
-                (cons :link (remove '() (append (list link-manifest)
-                                                link-flds)))))))
-
-;; (let-values (((compile-modules link-modules)
-;;               ())))
-;; )
-
-;; (define (-compile-manifest compile-flds link-manifest deps pkg-modules)
-;;   (format #t "~A: ~A, ~A~%"(blue "compile-manifest") compile-flds deps)
-;;   (format #t "pkg-modules: ~A~%" pkg-modules)
-;;   (format #t "link manifest: ~A~%" link-manifest)
-
-;;   (if (null? compile-flds)
-;;       (begin
-;;         (format #t "NULL: ~A~%" compile-flds)
-;;         (let ((ctargets (fold (lambda (conditional accum)
-;;                               (format #t
-;;                                       "conditional ~A\n" conditional)
-;;                               ;; (set! pkg (-update-pkg-files! pkg
-;;                               ;;                     conditional))
-;;                               (append (assoc-val :target conditional)
-;;                                       accum))
-;;                             '()
-;;                             (assoc-val :conditionals deps))))
-;;         (format #t "CTARGETS: ~A~%" ctargets)
-;;         (let* ((cmodules (map filename->module-name ctargets)))
-;;           (format #t "CMODULES: ~A~%" cmodules)
-;;           (cons :manifest (list
-;;                            (cons :modules
-;;                                 (append (cdar link-manifest) cmodules)))))))
-;;       ;; else
-;;       (let ((manifest (assoc-val :manifest compile-flds))
-;;             (ctargets (fold (lambda (conditional accum)
-;;                               (format #t
-;;                                       "conditional ~A\n" conditional)
-;;                               ;; (set! pkg (-update-pkg-files! pkg
-;;                               ;;                     conditional))
-;;                               (append (assoc-val :target conditional)
-;;                                       accum))
-;;                             '()
-;;                             (assoc-val :conditionals deps))))
-;;         (format #t "CTARGETS: ~A~%" ctargets)
-;;         ;; now find the conditional targets in the pkg :modules list
-;;         ;; (they should have already been added)
-;;         ;; and add the found module to the manifest
-;;         ;; easier: just ctarget -> module name
-;;         (let* ((cmodules (map filename->module-name ctargets))
-;;                (manimods (if manifest (car manifest)))
-;;                (manisigs (if manifest (cadr manifest))))
-;;           (format #t "CMODULES: ~A~%" cmodules)
-;;           (format #t "MANIMODS: ~A~%" manimods)
-;;           (format #t "MANISIGS: ~A~%" manisigs)
-;;           (cons :manifest (remove '()
-;;                                   (list
-;;                                    (append manimods cmodules)
-;;                                    (if (null? manisigs) '() manisigs)
-;;                                    )))))))
-
-;; (define (-executable->mibl kind ;; :executable || :test
-;;                            pkg
-;;                            privname pubname
-;;                            stanza-alist) ;; srcfiles)
-;;   (format #t "~A: ~A, ~A\n" (bgcyan "-executable->mibl") privname pubname)
-;;   (format #t "~A: ~A~%" (blue "kind") kind)
-
-;;   ;; NB wrt pubnames: "Moreover, you can use - for executables that
-;;   ;; shouldn’t be installed."
-
-;;   ;; NB: stanza-alist excludes 'names' and 'public_names'
-;;   ;; if has modules list, one must match 'name'
-;;   ;; WARNING: updating lookup tables now in separate phase
-;;   ;; (update-public-exe-table pkg-path pubname pubname)
-;;   ;; (update-public-exe-table pkg-path privname pubname)
-
-;;   ;; 'modules' field must be handled separately since it may be
-;;   ;; omitted, defaulting to (modules :standard)
-;;   ;; ditto for 'flags', which must be split into link flags and
-;;   ;; compile flags.
-
-;;   (let-values (((compile-flags link-flags)
-;;                 (-exec-flags->mibl stanza-alist)))
-;;     (format #t "~A: ~A\n" (uyellow "compile-flags") compile-flags)
-;;     (format #t "~A: ~A\n" (uyellow "link-flags") link-flags)
-
-;;     (let-values (((compile-flds link-flds)
-;;                   (-exec-flds->mibl pkg stanza-alist)))
-
-;;     (format #t "~A: ~A\n" (uyellow "compile-flds") compile-flds)
-;;     (format #t "~A: ~A\n" (uyellow "link-flds") link-flds)
-
-;;     ;; (format #t "manifest: ~A\n" manifest)
-
-;;     ;; (let* ((deps (if-let ((libdeps (assoc-val 'libraries stanza-alist)))
-;;     ;;                      (dune-libraries-fld->mibl libdeps pkg);;RENAME
-;;     ;;                      '()))
-;;     ;;        (_ (format #t "x MIBLDEPS: ~A\n" deps))
-;;     ;;        ;; (compile-manifest (-compile-manifest
-;;     ;;        ;;                    (cdr compile-flds)
-;;     ;;        ;;                    (assoc-val :manifest (cdr link-flds))
-;;     ;;        ;;                    deps (assoc-val :modules pkg)))
-;;     ;;        )
-
-;;     ;; (format #t "compile-manifest: ~A\n" compile-manifest)
-;;     (list kind
-;;           (cons :pubname pubname)
-;;           (cons :privname privname)
-;;           (append link-flds link-flags)
-;;           (append compile-flds compile-flags))
-;;     ;; (list compile-manifest
-;;     ;; (cons :deps deps)))
-;;     )))
-
-;;FIXME: it's not clear how "exe:..." and "bin:..." work, so we
-;;register both, with and without sfx ".exe"
-;; (update-executables-table
-;;  (string->symbol
-;;   (string-append "bin:" (symbol->string pubname)))
-;;  (string->symbol (string-append "//" pkg-path
-;;                                 ":" (symbol->string pubname)
-;;                                 ".exe")))
-;; (update-executables-table
-;;  (string->symbol
-;;   (string-append "bin:" (symbol->string pubname) ".exe"))
-;;  (string->symbol (string-append "//" pkg-path
-;;                                 ":" (symbol->string pubname)
-;;                                 ".exe")))
-;; (update-executables-table
-;;  (string->symbol
-;;   (string-append "exe:" (symbol->string pubname)))
-;;  (string->symbol (string-append "//" pkg-path
-;;                                 ":" (symbol->string pubname)
-;;                                 ".exe")))
-;; (update-executables-table
-;;  (string->symbol
-;;   (string-append "exe:" (symbol->string pubname) ".exe"))
-;;  (string->symbol (string-append "//" pkg-path
-;;                                 ":" (symbol->string pubname)
-;;                                 ".exe")))
-;;     (if (equal? pubname 'tezos-node)
-;;         (format #t "tezos-node stanza: ~A\n" s)))
-
-;; WARNING: we dropped modules-ht
-;; (if-let ((mods (assoc :modules flds-alist)))
-;;         (list kind ;; :executable
-;;               (concatenate
-;;                `((:name ((:private ,privname)
-;;                          (:public ,pubname))))
-;;                flds-alist))
-
-;;         ;; else 'modules' fld is missing, so add all modules
-;;         ;; and don't forget to remove 'main' from the list
-
-;;         (let* ((modules-ht (srcfiles->modstbl srcfiles)))
-;;           (hash-table-set! modules-ht
-;;                            (normalize-module-name privname)
-;;                            :main)
-;;           ;; (format #t "exec modules-ht: ~A:: ~A\n"
-;;           ;;         pkg-path modules-ht)
-;;           (list kind ;; :executable
-;;                 (concatenate
-;;                  `((:name ((:private ,privname)
-;;                            (:public ,pubname))))
-;;                  `((:modules ,modules-ht
-;;                     ;; ((:main ,privname)
-;;                     ;;  (:direct
-;;                     ;;   ,@(sort!
-;;                     ;;      modules
-;;                     ;;      sym<?)))
-;;                     ))
-;;                  flds-alist))))
-;;   ) ;; let flds-alist
-;; ))))
-
-;; (define (normalize-stanza-executable kind pkg-path srcfiles stanza)
+                ;; (remove '() (append (list link-manifest)
+                ;;                               link-flds))
+                ;; `(:link ,@(remove '() (append (list link-manifest)
+                ;;                               link-flds)))
+                (if (truthy? cc-flds)
+                    `(:cc ,cc-flds)
+                    '())))))
 
 (define unit-test-pkgs
   '(
@@ -518,7 +369,6 @@
              (format #t "~A: ~A~%" (blue "answer") test?)
              test?))))))
 
-;; this calls -executable-mibl
 (define (dune-executable->mibl ws pkg kind stanza)
   ;; kind:: :executable || test
   ;; (let ((privname (cadr (assoc 'name (cdr stanza)))))
@@ -562,6 +412,7 @@
          (pkg-path (car (assoc-val :pkg-path pkg)))
          ;; 'name' fld is required
          (privname (cadr (assoc 'name stanza-alist)))
+
          (pubname (if-let ((pubname (assoc 'public_name stanza-alist)))
                           (cadr pubname) #f))
          (package (if-let ((p (assoc-val 'package stanza-alist)))
@@ -593,69 +444,82 @@
                                       pkg-path
                                       privname ;; lib name
                                       )))))
-    (if (and privname
+    (if (and privname pubname
              (not (equal? privname pubname)))
-        (begin
-          (update-exports-table! ws
-                                 (if (-is-test-executable? ws pkg stanza) :test :exe)
-                                 ;; (string->symbol (format #f ":test:~A" privname))
-                                 ;; (string->symbol (format #f ":bin:~A" privname)))
-                                 pubname
-                                 pkg-path privname)
-          ;; (error 'fixme "STOP modes privname")
-          ;; (if (assoc-in '(:link :modes) stanza-alist)
-          ;;     )
+        (error 'FIXME
+               (format #f "name and public_name mismatch: ~A, ~A" privname pubname)))
+        ;; (begin
+        ;;   (update-exports-table! ws
+        ;;                          (if (-is-test-executable? ws pkg stanza) :test :exe)
+        ;;                          ;; (string->symbol (format #f ":test:~A" privname))
+        ;;                          ;; (string->symbol (format #f ":bin:~A" privname)))
+        ;;                          pubname
+        ;;                          pkg-path privname)
+        ;;   ;; (error 'fixme "STOP modes privname")
+        ;;   ;; (if (assoc-in '(:link :modes) stanza-alist)
+        ;;   ;;     )
 
-          (if (not (-is-test-executable? ws pkg stanza))
-              (if package
-                  (update-opam-table! ws :bin
-                                      package
-                                      pubname
-                                      pkg-path
-                                      privname ;; lib name
-                                      )))))
+        ;;   (if (not (-is-test-executable? ws pkg stanza))
+        ;;       (if package
+        ;;           (update-opam-table! ws :bin
+        ;;                               package
+        ;;                               pubname
+        ;;                               pkg-path
+        ;;                               privname ;; lib name
+        ;;                               )))))
 
     ;; if has modules list, one must match 'name'
-    (if modules
-        (if (> (length (cdr modules)) 1)
-            (begin
-              ;; (format #t "normalize-stanza-executable WARNING: multiple modules for executable ~A\n"
-              ;;         pkg-path)
-              )
-            ;; just like the 'modules' fld of 'library' stanzas
-            (if (not
-                 (or (equal? privname (cadr modules))
-                     (equal? (normalize-module-name privname)
-                             (normalize-module-name (cadr modules)))))
-                ;; error?
-                (format #t "    WARNING: name/module mismatch: ~A : ~A\n"
-                        privname
-                        (normalize-module-name (cadr modules))))))
+    ;; FIXME: not needed, we assume the dunefile is well-formed
+    ;; (if modules
+    ;;     (if (> (length (cdr modules)) 1)
+    ;;         (begin
+    ;;           ;; (format #t "normalize-stanza-executable WARNING: multiple modules for executable ~A\n"
+    ;;           ;;         pkg-path)
+    ;;           )
+    ;;         ;; just like the 'modules' fld of 'library' stanzas
+    ;;         (if (not
+    ;;              (or (equal? privname (cadr modules))
+    ;;                  (equal? (normalize-module-name privname)
+    ;;                          (normalize-module-name (cadr modules)))))
+    ;;             ;; error?
+    ;;             (format #t "    WARNING: name/module mismatch: ~A : ~A\n"
+    ;;                     privname
+    ;;                     (normalize-module-name (cadr modules))))))
 
     ;; (let-values (((compile-flags link-flags)
     ;;               (-exec-flags->mibl stanza-alist)))
     ;;   (format #t "~A: ~A\n" (uyellow "compile-flags") compile-flags)
     ;;   (format #t "~A: ~A\n" (uyellow "link-flags") link-flags)
 
-      (let-values (((compile-flds link-flds)
+      (let-values (((common-flds common-opts exec-lib compile-flds link-flds cc-flds)
                     (-exec-flds->mibl pkg (list privname) stanza-alist)))
 
+        (format #t "~A: ~A\n" (uyellow "x common-flds") common-flds)
+        (format #t "~A: ~A\n" (uyellow "x common-opts") common-opts)
         (format #t "~A: ~A\n" (uyellow "x compile-flds") compile-flds)
         (format #t "~A: ~A\n" (uyellow "x link-flds") link-flds)
-        ;; (error 'STOP "STOP llflaogsopts")
+        (format #t "~A: ~A\n" (uyellow "x cc-flds") cc-flds)
+
         ;; `(:main ,(normalize-module-name (cadr fld-assoc))))
         ;; (list (-executable->mibl kind
         ;;                          pkg privname pubname
         ;;                          filtered-stanza-alist))
-        (list (cons kind
-                    (list (cons :pubname pubname)
-                          (cons :privname privname)
-                          (cons :main (normalize-module-name privname))
-                          (cons :BORKED :ALONE)
-                          link-flds ;; (append link-flds link-flags)
-                          compile-flds ;; (append compile-flds compile-flags)
-                          )))
-              )))
+        (let ((result
+              (list (cons kind
+                    (remove '()
+                            (append
+                             `((:privname . ,privname))
+                             (if pubname `((:pubname . ,pubname)) '())
+                             `((:main . ,(normalize-module-name privname)))
+                             (if (truthy? common-flds) common-flds '())
+                             (if (truthy? common-opts) common-opts '())
+                             (if (truthy? exec-lib) (list exec-lib) '())
+                             (if (truthy? link-flds) link-flds '())
+                             (if (truthy? compile-flds) (list compile-flds) '())
+                             (if (truthy? cc-flds) (list cc-flds) '())
+                             ))))))
+              (format #t "~A: ~A~%" (bgyellow "result") result)
+              result))))
 
 ;; "The optional fields [for 'tests stanza] that are supported are a
 ;; subset of the alias and executables fields. In particular, all
@@ -670,9 +534,9 @@
   (let* ((pkg-path (car (assoc-val :pkg-path pkg)))
          (stanza-alist (cdr stanza))
          (privnames (if (case kind ((:executable :test) #t) (else #f))
-                        (if-let ((pubnames
+                        (if-let ((privnames
                                  (assoc-val 'names stanza-alist)))
-                               pubnames '())
+                               privnames '())
                        '()))
          (exemodules (map normalize-module-name privnames))
          (_ (format #t "~A: ~A~%" (umagenta "exemodules") exemodules))
@@ -680,8 +544,8 @@
          (pubnames (if (case kind ((:executable :test) #t) (else #f)) ;; (equal? kind :executable)
                        (if-let ((pubnames
                                  (assoc-val 'public_names stanza-alist)))
-                               pubnames '())
-                       '()))
+                               pubnames privnames)
+                       privnames))
 
 
          ;;rename privpub to ??? stanza-modules?
@@ -713,13 +577,16 @@
       ;;               (-exec-flags->mibl stanza-alist)))
       ;;   (format #t "~A: ~A\n" (uyellow "compile-flags") compile-flags)
       ;;   (format #t "~A: ~A\n" (uyellow "link-flags") link-flags)
-      ;;   ;; (error 'STOP "STOP wwwwwwwwwwwwwwww")
+      ;;   (error 'STOP "STOP wwwwwwwwwwwwwwww"))
 
-        (let-values (((compile-flds link-flds)
+        (let-values (((common-flds common-opts exec-lib compile-flds link-flds cc-flds)
                       (-exec-flds->mibl pkg privnames stanza-alist)))
 
+          (format #t "~A: ~A\n" (uyellow "xs common-flds") common-flds)
+          (format #t "~A: ~A\n" (uyellow "xs common-opts") common-opts)
           (format #t "~A: ~A\n" (uyellow "xs compile-flds") compile-flds)
           (format #t "~A: ~A\n" (uyellow "xs link-flds") link-flds)
+          (format #t "~A: ~A\n" (uyellow "xs cc-flds") cc-flds)
 
           ;; (error 'fixme "STOP execs llopts")
 
@@ -729,28 +596,30 @@
           ;; (if (equal? kind :executable)
 
           ;; FIXME: don't need to do this, we assume the dunefile is good?
-          (if (> (length (cdr privnames)) 1)
-              (begin
-                ;; (format #t "MULTIPLE NAMES\n")
-                (if (not (null? pubnames))
-                    (if (not (equal?
-                              (length (cdr privnames))
-                              (length (cdr pubnames))))
-                        (error
-                         'bad-arg
-                         "names and public_names differ in length"))
-                    ))) ;;)
+          ;; (if (> (length (cdr privnames)) 1)
+          ;;     (begin
+          ;;       ;; (format #t "MULTIPLE NAMES\n")
+          ;;       (if (not (null? pubnames))
+          ;;           (if (not (equal?
+          ;;                     (length (cdr privnames))
+          ;;                     (length (cdr pubnames))))
+          ;;               (error
+          ;;                'bad-arg
+          ;;                "names and public_names differ in length"))
+          ;;           )))
 
           ;; for executables, we add the pub/priv names to the lookup table, so that the
           ;; emitter can resolve references to them.
           ;; dune emits *.exe and *.bc, which may be referred to
           ;; in dunefiles, so we add them to the lookup table too.
 
-          (cond
-           ((and (not (null? pubnames))
-                 (not (null? privnames)))
-            (format #t "~A: ~A, ~A~%" (bgblue "iter over priv/pubnames") pubnames privnames)
-            (map (lambda (privname pubname)
+          ;; (cond
+          ;;  ((and (not (null? pubnames))
+          ;;        (not (null? privnames)))
+          ;;   (format #t "~A: ~A, ~A~%" (bgblue "iter over priv/pubnames") pubnames privnames)
+
+          (format #t "~A: ~A, ~A~%" (bgred "ITERATING EXECUTABLES XXXXXXXXXX") privnames pubnames)
+          (map (lambda (privname pubname)
                    (format #t "~A: ~A, ~A~%" (umagenta "encoding pubpriv exec") privname pubname)
                    (let ((privmodule (normalize-module-name privname)))
 
@@ -772,65 +641,86 @@
                                                privname ;; lib name
                                                )))
 
-                     (format #t "~A: ~A, ~A~%" (umagenta "constructing pubpriv exec") privname pubname)
+                     (format #t "~A: ~A, ~A~%" (bgmagenta "constructing pubpriv exec") privname pubname)
                      ;; NB: to avoid structure sharing we need to copy toplevel :manifest subtree
                      (let* (;; (link-flds (copy link-flds))
-                            (_ (format #t "~A: ~A~%" (umagenta "link-flds") link-flds))
-                            (link-manifest (assoc :manifest (cdr link-flds)))
-                            (_ (format #t "~A: ~A~%" (umagenta "link-manifest") link-manifest))
-                            (link-modules (assoc-in '(:manifest :modules) (cdr link-flds)))
-                            (_ (format #t "~A: ~A~%" (umagenta "link-modules") link-modules))
-                            (_ (format #t "~A: ~A~%" (umagenta "privmodule") privmodule))
-                            ;; (lmodules (filter (lambda (x) (member x privpubmodules)) (cdr link-modules)))
+                            ;; (_ (format #t "~A: ~A~%" (umagenta "link-flds") link-flds))
+                            ;; ;; (link-manifest (assoc :manifest (cdr link-flds)))
+                            ;; (link-manifest (assoc :main (cdr link-flds)))
+                            ;; (_ (format #t "~A: ~A~%" (umagenta "link-manifest") link-manifest))
+                            ;; ;; (link-modules (assoc-in '(:manifest :modules) (cdr link-flds)))
+                            ;; (link-modules (assoc :main (cdr link-flds)))
+                            ;; (_ (format #t "~A: ~A~%" (umagenta "link-modules") link-modules))
+                            ;; (_ (format #t "~A: ~A~%" (umagenta "privmodule") privmodule))
+                            ;; ;; (lmodules (filter (lambda (x) (member x privpubmodules)) (cdr link-modules)))
 
-                            (lmodules (list privmodule))
-                            (_ (format #t "~A: ~A~%" (umagenta "lmodules") lmodules))
-                            (_ (format #t "~A: ~A~%" (umagenta "exemodules") exemodules))
+                            ;; (lmodules (list privmodule))
+                            ;; (_ (format #t "~A: ~A~%" (umagenta "lmodules") lmodules))
+                            ;; (_ (format #t "~A: ~A~%" (umagenta "exemodules") exemodules))
 
-                            ;; do not link exemodules
-                            (filtered (filter (lambda (m) (not (member m exemodules))) (cdr link-modules)))
-                            (_ (format #t "~A: ~A~%" (umagenta "link-flds exe filtered") filtered))
+                            ;; ;; do not link exemodules
+                            ;; (filtered (filter (lambda (m) (not (member m exemodules))) (cdr link-modules)))
+                            ;; (_ (format #t "~A: ~A~%" (umagenta "link-flds exe filtered") filtered))
 
-                            (_ (format #t "~A: ~A~%" (umagenta "link-flds unfiltered") link-flds))
+                            ;; (_ (format #t "~A: ~A~%" (umagenta "link-flds unfiltered") link-flds))
+                            ;; (_ (set-cdr! link-flds `((:main (:modules ,@(copy lmodules))))))
                             ;; (_ (set-cdr! link-flds `((:manifest (:modules ,@(copy lmodules))))))
-                            (_ (alist-update-in! (cdr link-flds) '(:manifest :modules)
-                                                 (lambda (old)
-                                                   filtered
-                                                   ;;(append (list `(:main . ,privname)) filtered)
-                                                   )))
-                            (_ (format #t "~A: ~A~%" (umagenta "link-flds filtered") link-flds))
+                            ;; (_ (alist-update-in! (cdr link-flds) '(:main) ;; '(:manifest :modules)
+                            ;;                      (lambda (old)
+                            ;;                        filtered
+                            ;;                        ;;(append (list `(:main . ,privname)) filtered)
+                            ;;                        )))
+                            ;; (_ (format #t "~A: ~A~%" (umagenta "link-flds filtered") link-flds))
 
                             (-compile-flds (copy compile-flds))
                             (_ (format #t "~A: ~A~%" (umagenta "-compile-flds") -compile-flds))
-                            (compile-manifest (assoc :manifest (cdr -compile-flds)))
-                            (_ (format #t "~A: ~A~%" (umagenta "compile-manifest") compile-manifest))
+
+                            ;; (compile-manifest (assoc :manifest (cdr -compile-flds)))
+                            ;; (compile-manifest (assoc-val :main (cdr -compile-flds)))
+                            ;; (_ (format #t "~A: ~A~%" (umagenta "compile-manifest") compile-manifest))
 
                             ;; (compile-deps (dissoc '(:manifest) (cdr -compile-flds))) ;; (assoc :deps (cdr -compile-flds)))
-                            (compile-deps (assoc :deps (cdr -compile-flds)))
+                            (compile-deps (if (truthy? -compile-flds)
+                                              (assoc :deps (cdr -compile-flds)) '()))
                             (_ (format #t "~A: ~A~%" (umagenta "compile-deps") compile-deps))
 
-                            (compile-modules (copy (assoc-in '(:manifest :modules) (cdr -compile-flds))))
+                            ;; (compile-modules (copy (assoc-in '(:manifest :modules) (cdr -compile-flds))))
+                            (compile-modules (if (truthy? -compile-flds)
+                                                 (copy (assoc-val :main (cdr -compile-flds))) '()))
                             (_ (format #t "~A: ~A~%" (umagenta "compile-modules A") compile-modules))
 
                             ;; (_ (format #t "~A: ~A~%" (umagenta "privpub modules") privpubmodules))
                             ;; (cmodules (filter (lambda (x) (not (member x privpubmodules))) (cdr compile-modules)))
 
                             (_ (format #t "~A: ~A~%" (umagenta "exemodules") exemodules))
-                            (cmodules (filter (lambda (x) (not (member x exemodules))) (cdr compile-modules)))
+                            (cmodules (if (and (truthy? compile-modules) (truthy? exemodules))
+                                          (filter (lambda (x) (not (member x exemodules))) (cdr compile-modules))
+                                          '()))
                             (_ (format #t "~A: ~A~%" (umagenta "cmodules A") cmodules))
 
-                            (_ (set-cdr! -compile-flds `((:manifest (:modules ,@(cons privmodule cmodules)))
-                                                         ,compile-deps)))
+                            ;; (_ (set-cdr! -compile-flds `((:manifest (:modules ,@(cons privmodule cmodules)))
+                            (_ (if (and (truthy? -compile-flds) (truthy? cmodules))
+                                   (if (truthy? compile-deps)
+                                       (set-cdr! -compile-flds `((:main ,@(cons privmodule cmodules))
+                                                                 ,compile-deps))
+                                       (set-cdr! -compile-flds `((:main ,@(cons privmodule cmodules)))))))
                             ;; (_ (alist-update-in! (cdr -compile-flds) '(:manifest :modules) (lambda (old) (cons privmodule cmodules))))
+                            (_ (format #t "~A: ~A~%" (umagenta "-common-flds") common-flds))
+                            (_ (format #t "~A: ~A~%" (umagenta "-common-opts") common-opts))
                             (_ (format #t "~A: ~A~%" (umagenta "-compile-modules") compile-modules))
                             (_ (format #t "~A: ~A~%" (umagenta "-compile-flds") -compile-flds))
                             (_ (format #t "~A: ~A~%" (umagenta "compile-flds") compile-flds))
-                            (mibl (list ;; kind
-                                   (cons :pubname pubname)
-                                   (cons :privname privname)
-                                   (cons :main (normalize-module-name privname))
-                                   link-flds ;;(append link-flds link-flags)
-                                   -compile-flds ;; (append -compile-flds compile-flags)
+                            (_ (format #t "~A: ~A~%" (umagenta "pubname") pubname))
+                            (mibl (append ;; kind
+                                   `((:pubname . ,pubname))
+                                   `((:privname . ,privname))
+                                   `((:main . ,(normalize-module-name privname)))
+                                   (if (truthy? common-flds) common-flds '())
+                                   (if (truthy? common-opts) common-opts '())
+                                   (if (truthy? exec-lib) (list exec-lib) '())
+                                   (if (truthy? link-flds) link-flds '())
+                                   (if (truthy? -compile-flds) (list -compile-flds) '())
+                                   (if (truthy? cc-flds) cc-flds '())
                                    ))
                             (mibl (if test-exe?
                                       (append mibl '(:in-testsuite testsuite)) mibl))
@@ -841,165 +731,198 @@
                        ;; (let ((x (-executable->mibl kind
                        ;;                             pkg privname pubname
                        ;;                             filtered-stanza-alist)))
-                       ;;   (format #t "~A: ~A~%" (red "XXXXXXXXXXXXXXXX") x)
                        ;;   (prune-mibl-rule x)
                        ;;   )
                        ))
-                 privnames pubnames))
+                 privnames pubnames)
+            ;;)
 
-           ((null? pubnames)
-            (format #t "~A: ~A~%" (bgblue "iter privnames") privnames)
-            (append
-             (if test-exe? testsuite-stanza '())
-             (map (lambda (privname)
-                    (format #t "~A: ~A~%" (uyellow "encoding priv exec") privname)
-                    (format #t "~A: ~A\n" (uwhite "privname") privname)
-                    (let ((privmodule (normalize-module-name privname)))
-                      (if (not test-exe?) ;; (-is-test-executable? ws pkg stanza))
-                          (begin
-                            ;; (error 'fixme "STOP privexe")
-                            (update-exports-table! ws :foo privname
-                                                   pkg-path privname)
-                            (update-exports-table! ws :bin privname
-                                                   pkg-path privname)
-                            ;; (if (assoc 'modes stanza-alist)
-                            ;;     (update-exports-table! ws :bin
-                            ;;                            (format #f "~A.bc" privname)
-                            ;;                        pkg-path privname)
-                            ;;     )
-                            ;; (format #t "~A: ~A~%" (red "s")
-                            ;;         (assoc 'modes stanza-alist))
-                            ;; (error 'fixme "STOP bc")
+           ;; ((null? pubnames)
+           ;;  (format #t "~A: ~A~%" (bgblue "iter privnames") privnames)
+           ;;  (append
+           ;;   (if test-exe? testsuite-stanza '())
+           ;;   (map (lambda (privname)
+           ;;          (format #t "~A: ~A~%" (uyellow "encoding priv exec") privname)
+           ;;          (format #t "~A: ~A\n" (uwhite "privname") privname)
+           ;;          (let ((privmodule (normalize-module-name privname)))
+           ;;            (if (not test-exe?) ;; (-is-test-executable? ws pkg stanza))
+           ;;                (begin
+           ;;                  ;; (error 'fixme "STOP privexe")
+           ;;                  (update-exports-table! ws :foo privname
+           ;;                                         pkg-path privname)
+           ;;                  (update-exports-table! ws :bin privname
+           ;;                                         pkg-path privname)
+           ;;                  ;; (if (assoc 'modes stanza-alist)
+           ;;                  ;;     (update-exports-table! ws :bin
+           ;;                  ;;                            (format #f "~A.bc" privname)
+           ;;                  ;;                        pkg-path privname)
+           ;;                  ;;     )
+           ;;                  ;; (format #t "~A: ~A~%" (red "s")
+           ;;                  ;;         (assoc 'modes stanza-alist))
+           ;;                  ;; (error 'fixme "STOP bc")
 
-                            ;; (update-opam-table! ws :bin
-                            ;;                     package
-                            ;;                     pubname
-                            ;;                     pkg-path
-                            ;;                     privname ;; lib name
-                            ;;                     )
-                            ))
+           ;;                  ;; (update-opam-table! ws :bin
+           ;;                  ;;                     package
+           ;;                  ;;                     pubname
+           ;;                  ;;                     pkg-path
+           ;;                  ;;                     privname ;; lib name
+           ;;                  ;;                     )
+           ;;                  ))
 
-                      (format #t "~A: ~A~%" (uyellow "constructing priv exec") privname)
-                      (let* (;; (link-flds (copy link-flds))
-                             (_ (format #t "~A: ~A~%" (uyellow "link-flds") link-flds))
-                             (link-manifest (assoc :manifest (cdr link-flds)))
-                             (_ (format #t "~A: ~A~%" (uyellow "link-manifest") link-manifest))
-                             (link-rest (dissoc '(:manifest) (cdr link-flds)))
-                             (_ (format #t "~A: ~A~%" (uyellow "link-rest") link-rest))
-                             (link-modules (assoc-in '(:manifest :modules) (cdr link-flds)))
-                             (_ (format #t "~A: ~A~%" (uyellow "link-modules") (cdr link-modules)))
-                             (_ (format #t "~A: ~A~%" (uyellow "privmodule") privmodule))
-                             ;; (lmodules (filter (lambda (x) (member x privpubmodules)) (cdr link-modules)))
-                             (lmodules (list privmodule))
-                             (_ (set-cdr! link-flds `((:manifest (:modules ,@(copy lmodules)))
-                                                      ,@link-rest)))
-                             ;; (_ (alist-update-in! (cdr link-flds) '(:manifest)
-                             ;;                      (lambda (old) (append (list `(:main . ,privname)) old))))
-                             (_ (format #t "~A: ~A~%" (uyellow "link-flds filtered") link-flds))
+           ;;            (format #t "~A: ~A~%" (bgyellow "constructing priv exec") privname)
+           ;;            (let* (;; (link-flds (copy link-flds))
+           ;;                   (_ (format #t "~A: ~A~%" (uyellow "link-flds") link-flds))
 
-                             (-compile-flds (copy compile-flds))
-                             (_ (format #t "~A: ~A~%" (uyellow "-compile-flds") -compile-flds))
+           ;;                   ;; (link-manifest (assoc :manifest (cdr link-flds)))
+           ;;                   ;; (link-main (assoc :main link-flds))
+           ;;                   ;; (_ (format #t "~A: ~A~%" (uyellow "link-main") link-main))
 
-                             (compile-manifest (assoc :manifest (cdr -compile-flds)))
-                             (_ (format #t "~A: ~A~%" (uyellow "compile-manifest") compile-manifest))
+           ;;                   ;; (link-rest (dissoc '(:main) (cdr link-flds)))
+           ;;                   ;; (_ (format #t "~A: ~A~%" (uyellow "link-rest") link-rest))
 
-                             ;; (compile-rest (dissoc '(:manifest) (cdr -compile-flds)))
-                             (compile-rest (if-let ((cr (assoc :deps (cdr -compile-flds))))
-                                                   cr '()))
-                             (_ (format #t "~A: ~A~%" (uyellow "compile-rest") compile-rest))
+           ;;                   ;; (link-modules (assoc-in '(:manifest :modules) (cdr link-flds)))
+           ;;                   ;; (link-modules (assoc :main link-flds))
+           ;;                   ;; (_ (format #t "~A: ~A~%" (uyellow "link-modules") (cdr link-modules)))
+           ;;                   ;; (_ (if (equal? privname 'binary) (error 'fixme "STOP modes")))
 
-                             ;; (compile-deps (assoc :deps (cdr -compile-flds)))
-                             ;; (_ (format #t "~A: ~A~%" (uyellow "compile-rest") compile-rest))
+           ;;                   ;; (_ (format #t "~A: ~A~%" (uyellow "privmodule") privmodule))
+           ;;                   ;; (lmodules (filter (lambda (x) (member x privpubmodules)) (cdr link-modules)))
 
-                             (compile-modules (copy (assoc-in '(:manifest :modules) (cdr -compile-flds))))
-                             (_ (format #t "~A: ~A~%" (uyellow "compile :manifest :modules") compile-modules))
+           ;;                   ;; (lmodules (list privmodule))
 
-                             ;; (cmodules (filter (lambda (x) (not (member x privpubmodules))) (cdr compile-modules)))
-                             ;; (_ (set-cdr! -compile-flds `((:manifest (:modules ,@(cons privmodule cmodules)))
-                             ;;                              ,compile-rest)))
-                             (cmodules (list privmodule))
+           ;;                   ;; (_ (set-cdr! link-flds `((:manifest (:modules ,@(copy lmodules)))
+           ;;                   ;;                          ,@link-rest)))
+           ;;                   ;; (_ (set-cdr! link-flds `((:main ,(copy privmodule))
+           ;;                   ;;                          ,@link-rest)))
+           ;;                   ;; (_ (alist-update-in! (cdr link-flds) '(:manifest)
+           ;;                   ;;                      (lambda (old) (append (list `(:main . ,privname)) old))))
+           ;;                   (_ (format #t "~A: ~A~%" (uyellow "link-flds") link-flds))
 
-                             (_ (set-cdr! -compile-flds `((:manifest (:modules ,@(copy cmodules)))
-                                                          ,compile-rest)))
-                             ;; (_ (alist-update-in! (cdr -compile-flds) '(:manifest :modules) (lambda (old) (cons privmodule cmodules))))
-                             (_ (format #t "~A: ~A~%" (uyellow "-compile-modules") compile-modules))
-                             (_ (format #t "~A: ~A~%" (uyellow "-compile-flds") -compile-flds))
-                             (_ (format #t "~A: ~A~%" (uyellow "compile-flds") compile-flds))
-                             )
-                        ;; (error 'fixme "STOP modes")
+           ;;                   (-compile-flds (copy compile-flds))
+           ;;                   (_ (format #t "~A: ~A~%" (uyellow "-compile-flds") -compile-flds))
 
-                        (list kind
-                              ;; `,@(if test-exe? (cons :in-testsuite 'testsuite) '())
-                              ;; (cons :in-testsuite 'testsuite)
-                              (cons :privname privname)
-                              link-flds
-                              '(:BORKED :AGAIN)
-                              ;; (append link-flds link-flags)
-                              -compile-flds ;; (append -compile-flds compile-flags)
-                              )
+           ;;                   ;; (compile-manifest (assoc :manifest (cdr -compile-flds)))
+           ;;                   (compile-manifest (if (truthy? -compile-flds)
+           ;;                                         (if-let ((cm (assoc :modules (cdr -compile-flds))))
+           ;;                                                 cm '())
+           ;;                                         '()))
+           ;;                   (_ (format #t "~A: ~A~%" (uyellow "compile-manifest") compile-manifest))
 
-                        ;; (let ((x (-executable->mibl kind
-                        ;;                             ;; (if (equal? kind :executable)
-                        ;;                             ;;     :executable
-                        ;;                             ;;     (if (equal? kind :test)
-                        ;;                             ;;         :test
-                        ;;                             ;;         #f))
-                        ;;                             pkg-path
-                        ;;                             privname privname
-                        ;;                             filtered-stanza-alist srcfiles)))
-                        ;;   ;; `(:executable ((:name ((:private ,privname)))))
-                        ;;   ;; (:module ,(normalize-module-name name))))))
-                        ;;   (prune-mibl-rule x)
-                        ;;   )
-                        )))
-                  privnames)))
+           ;;                   ;; (compile-rest (dissoc '(:manifest) (cdr -compile-flds)))
+           ;;                   (compile-rest (if (truthy? -compile-flds)
+           ;;                                     (if-let ((cr (assoc :deps (cdr -compile-flds))))
+           ;;                                             cr '())
+           ;;                                     '()))
+           ;;                   (_ (format #t "~A: ~A~%" (uyellow "compile-rest") compile-rest))
 
-           ((null? privnames)
-            (format #t "~A: ~A~%" (bgblue "iter pubnames") pubnames)
-            (map (lambda (pubname)
-                   (format #t "~A: ~A, ~A~%" (ucyan "encoding pub exec") pubname)
-                   ;; (format #t "privname: ~A\n" privname)
-                   (if (not test-exe?) ;; (-is-test-executable? ws pkg stanza))
-                       (begin
-                         (update-exports-table! ws :exe pubname
-                                                pkg-path pubname)
-                         (update-exports-table! ws :bin pubname
-                                                pkg-path pubname)
-                         (update-opam-table! ws :bin
-                                             ;;FIXME: if package package else pubname
-                                             package ;; opam pkg name
-                                             pubname ;; lib name
-                                             pkg-path
-                                             pubname ;; lib name
-                                             )))
+           ;;                   ;; (compile-deps (assoc :deps (cdr -compile-flds)))
+           ;;                   ;; (_ (format #t "~A: ~A~%" (uyellow "compile-rest") compile-rest))
 
-                   (format #t "~A: ~A~%" (ucyan "constructing pub exec") pubname)
-                   (list kind
-                         ;; `,@(if test-exe? (cons :in-testsuite 'testsuite) (values))
-                         ;; (if test-exe? (cons :in-testsuite 'testsuite) (values))
-                         ;; (cons :in-testsuite 'testsuite)
-                         (cons :pubname pubname)
-                         ;; (cons :privname privname)
-                         '(:BORKED :LAST)
-                         link-flds ;; (append link-flds link-flags)
-                         compile-flds ;;(append compile-flds)
-                         );; compile-flags))
+           ;;                   ;; (compile-modules (copy (assoc-in '(:manifest :modules) (cdr -compile-flds))))
+           ;;                   (compile-modules (if (truthy? -compile-flds)
+           ;;                                        (copy (assoc-val :modules (cdr -compile-flds)))
+           ;;                                        '()))
+           ;;                   (_ (format #t "~A: ~A~%" (uyellow "compile :manifest :modules") compile-modules))
 
-                   ;; (let ((x (-executable->mibl kind
-                   ;;                             ;; (if (equal? kind :executable)
-                   ;;                             ;;     :executable
-                   ;;                             ;;     (if (equal? kind :test)
-                   ;;                             ;;         :test
-                   ;;                             ;;         #f))
-                   ;;                             pkg-path
-                   ;;                             privname privname
-                   ;;                             filtered-stanza-alist srcfiles)))
-                   ;;   ;; `(:executable ((:name ((:private ,privname)))))
-                   ;;   ;; (:module ,(normalize-module-name name))))))
-                   ;;   (prune-mibl-rule x)
-                   ;;   )
-                   )
-                 pubnames))
+           ;;                   ;; (cmodules (filter (lambda (x) (not (member x privpubmodules))) (cdr compile-modules)))
+           ;;                   ;; (_ (set-cdr! -compile-flds `((:manifest (:modules ,@(cons privmodule cmodules)))
+           ;;                   ;;                              ,compile-rest)))
+           ;;                   (cmodules (list privmodule))
 
-           (else
-            (error 'fixme "executables missing flds names and public_names")))))))
+           ;;                   (_ (if (truthy? -compile-flds)
+           ;;                          (set-cdr! -compile-flds (if (truthy? compile-rest)
+           ;;                                                  `((:modules ,@(copy cmodules)) ,compile-rest)
+           ;;                                                  `((:modules ,@(copy cmodules)))))))
+
+           ;;                                                  ;; `((:manifest (:modules ,@(copy cmodules))) ,compile-rest)
+           ;;                                                  ;; `((:manifest (:modules ,@(copy cmodules)))))))
+
+           ;;                   ;; (_ (alist-update-in! (cdr -compile-flds) '(:manifest :modules) (lambda (old) (cons privmodule cmodules))))
+           ;;                   (_ (format #t "~A: ~A~%" (uyellow "-compile-modules") compile-modules))
+           ;;                   (_ (format #t "~A: ~A~%" (uyellow "-compile-flds") -compile-flds))
+           ;;                   (_ (format #t "~A: ~A~%" (uyellow "compile-flds") compile-flds))
+
+           ;;                   (_ (format #t "~A: ~A~%" (uyellow "common-flds") common-flds))
+           ;;                   (_ (format #t "~A: ~A~%" (uyellow "common-opts") common-opts))
+           ;;                   )
+
+           ;;              (append (list kind)
+           ;;                    ;; `,@(if test-exe? (cons :in-testsuite 'testsuite) '())
+           ;;                    ;; (cons :in-testsuite 'testsuite)
+           ;;                    `((:privname . ,privname))
+           ;;                    `((:main . ,(normalize-module-name privname)))
+           ;;                    (if (truthy? common-flds) common-flds '())
+           ;;                    (if (truthy? common-opts) common-opts '())
+           ;;                    (if (truthy? link-flds) link-flds '())
+           ;;                    (if (truthy? -compile-flds) (list -compile-flds) '())
+           ;;                    (if (truthy? cc-flds) (list cc-flds) '())
+           ;;                    )
+
+           ;;              ;; (let ((x (-executable->mibl kind
+           ;;              ;;                             ;; (if (equal? kind :executable)
+           ;;              ;;                             ;;     :executable
+           ;;              ;;                             ;;     (if (equal? kind :test)
+           ;;              ;;                             ;;         :test
+           ;;              ;;                             ;;         #f))
+           ;;              ;;                             pkg-path
+           ;;              ;;                             privname privname
+           ;;              ;;                             filtered-stanza-alist srcfiles)))
+           ;;              ;;   ;; `(:executable ((:name ((:private ,privname)))))
+           ;;              ;;   ;; (:module ,(normalize-module-name name))))))
+           ;;              ;;   (prune-mibl-rule x)
+           ;;              ;;   )
+           ;;              )))
+           ;;        privnames)))
+
+           ;; ((null? privnames)
+           ;;  (format #t "~A: ~A~%" (bgblue "iter pubnames") pubnames)
+           ;;  (map (lambda (pubname)
+           ;;         (format #t "~A: ~A, ~A~%" (ucyan "encoding pub exec") pubname)
+           ;;         ;; (format #t "privname: ~A\n" privname)
+           ;;         (if (not test-exe?) ;; (-is-test-executable? ws pkg stanza))
+           ;;             (begin
+           ;;               (update-exports-table! ws :exe pubname
+           ;;                                      pkg-path pubname)
+           ;;               (update-exports-table! ws :bin pubname
+           ;;                                      pkg-path pubname)
+           ;;               (update-opam-table! ws :bin
+           ;;                                   ;;FIXME: if package package else pubname
+           ;;                                   package ;; opam pkg name
+           ;;                                   pubname ;; lib name
+           ;;                                   pkg-path
+           ;;                                   pubname ;; lib name
+           ;;                                   )))
+
+           ;;         (format #t "~A: ~A~%" (ucyan "constructing pub exec") pubname)
+           ;;         (append (list kind)
+           ;;               ;; `,@(if test-exe? (cons :in-testsuite 'testsuite) (values))
+           ;;               ;; (if test-exe? (cons :in-testsuite 'testsuite) (values))
+           ;;               ;; (cons :in-testsuite 'testsuite)
+           ;;               `((:pubname . ,pubname))
+           ;;               `(:main . ,(normalize-module-name pubname))
+           ;;               (if (truthy? common-flds) common-flds '())
+           ;;               (if (truthy? common-opts) (list common-opts) '())
+           ;;               (if (truthy? link-flds) link-flds '())
+           ;;               (if (truthy? -compile-flds) (list -compile-flds) '())
+           ;;               (if (truthy? cc-flds) (list cc-flds) '())
+           ;;               );; compile-flags))
+
+           ;;         ;; (let ((x (-executable->mibl kind
+           ;;         ;;                             ;; (if (equal? kind :executable)
+           ;;         ;;                             ;;     :executable
+           ;;         ;;                             ;;     (if (equal? kind :test)
+           ;;         ;;                             ;;         :test
+           ;;         ;;                             ;;         #f))
+           ;;         ;;                             pkg-path
+           ;;         ;;                             privname privname
+           ;;         ;;                             filtered-stanza-alist srcfiles)))
+           ;;         ;;   ;; `(:executable ((:name ((:private ,privname)))))
+           ;;         ;;   ;; (:module ,(normalize-module-name name))))))
+           ;;         ;;   (prune-mibl-rule x)
+           ;;         ;;   )
+           ;;         )
+           ;;       pubnames))
+
+           ;; (else
+           ;;  (error 'fixme "executables missing flds names and public_names"))
+           )))) ;)

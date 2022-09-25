@@ -146,28 +146,44 @@
                                   (string->symbol (format #f "@~A//lib/~{~A~^/~}" (car segs) (cdr segs)))))))))))))
 
 (define (-fixup-conditionals! ws pkg stanza)
+
   (format #t "~A: ~A\n" (bgblue "-fixup-conditionals!") stanza)
   (if (not (eq? :menhir (car stanza)))
       (if-let ((conditionals (if-let ((dc
                                        (assoc-in '(:deps :conditionals)
                                                  (cdr stanza))))
                                      dc #f)))
-              (for-each (lambda (conditional)
-                          (format #t "~A: ~A~%" (bgblue "conditional")
-                                  conditional)
-                          (for-each (lambda (selector)
-                                      (format #t "~A: ~A~%" (bgblue "selector")
-                                              selector)
-                                      (set-cdr! selector
-                                                (list
-                                                 (cdr selector)
-                                                 (string->symbol
-                                                  (format #f "@~A//lib/~A"
-                                                         (car selector) (car selector)))))
-                                      ;; (set-car! selector (format #f "//bzl/import:~A" (car selector)))
-                                      )
-                                    (assoc-val :selectors conditional)))
-                        (cdr conditionals))
+              (if (truthy? conditionals)
+                  (begin
+                    (format #t "~A: ~A~%" (blue "conditionals") (cdr conditionals))
+                    (for-each (lambda (conditional)
+                                (format #t "~A: ~A~%" (bgblue "conditional")
+                                        conditional)
+
+                                ;;FIXME: selectors are always external pkgs (i.e. with '@')?
+                                ;; even for proj libs?
+                                (for-each (lambda (selector)
+                                            (format #t "~A: ~A~%" (bgblue "selector")
+                                                    selector)
+                                            (let ((resolution (find-in-exports ws (car selector))))
+                                              (format #t "~A: ~A~%" (bgblue "selector resolution") resolution)
+                                              (set-cdr! selector
+                                                        (list
+                                                         (cdr selector)
+                                                         (if resolution
+                                                             (string-append
+                                                              (format #f "//~A"
+                                                                      (assoc-val :pkg resolution))
+                                                              ":"
+                                                              (format #f "~A"
+                                                                      (assoc-val :tgt resolution)))
+                                                             (string->symbol
+                                                              (format #f "@~A//lib/~A"
+                                                                      (car selector) (car selector)))))))
+                                            ;; (set-car! selector (format #f "//bzl/import:~A" (car selector)))
+                                            )
+                                          (assoc-val :selectors conditional)))
+                              (cdr conditionals))))
               )))
 
 ;; FIXME: rename
@@ -181,17 +197,17 @@
                  (stanza-alist (cdr stanza)))
             ;; (debug-print-exports-table ws-id)
 
-            (-fixup-conditionals! ws pkg stanza)
+            (-fixup-conditionals! ws-id pkg stanza)
 
             (case (car stanza)
 
               ((:executable :test)
                (format #t "~A: ~A~%" (ublue "fixup") (car stanza))
                ;; FIXME: also handle :dynamic
-               (let ((modules (assoc-in '(:compile :manifest :modules) stanza-alist))
-                     (compile-deps (assoc-in '(:compile :deps :fixed) stanza-alist))
-                     (stanza-deps (assoc-in '(:deps :fixed) stanza-alist)))
-                 (format #t "x compile modules: ~A~%" modules)
+               (let (;; (modules (assoc-in '(:compile :manifest :modules) stanza-alist))
+                     (compile-deps (assoc-in '(:deps :remote) stanza-alist))
+                     (stanza-deps (assoc-in '(:deps :remote) stanza-alist)))
+                 ;; (format #t "x compile modules: ~A~%" modules)
                  (format #t "x compile deps: ~A~%" compile-deps)
                  (format #t "x stanza deps: ~A~%" stanza-deps)
                  (if compile-deps ;; (not (null? compile-deps))
@@ -351,7 +367,7 @@
                (format #t "~A: ~A~%" (blue "fixup") (car stanza))
                ;; (let ((deps (assoc-val :deps stanza-alist)))
                ;;   (format #t "archive deps: ~A~%" deps)))
-               (let* ((deps (if-let ((deps (assoc-in '(:deps :fixed) stanza-alist)))
+               (let* ((deps (if-let ((deps (assoc-in '(:deps :remote) stanza-alist)))
                                     deps #f))
                       (_ (format #t "~A: ~A~%" (blue "deps") deps))
                       (ppx (if-let ((ppx (assoc-val :ppx stanza-alist)))
@@ -403,7 +419,7 @@
 
               ;; ((:library)
               ;;  (format #t "~A~%" (ublue "fixup :library"))
-              ;;  (let* ((deps (if-let ((deps (assoc-in '(:deps :fixed) stanza-alist)))
+              ;;  (let* ((deps (if-let ((deps (assoc-in '(:deps :remote) stanza-alist)))
               ;;                       deps #f))
               ;;         (_ (format #t "deps: ~A~%" deps))
               ;;         )

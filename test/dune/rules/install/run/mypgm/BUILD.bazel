@@ -1,0 +1,28 @@
+load("@rules_ocaml//build:rules.bzl",
+     "ocaml_binary",
+     "ocaml_module",
+)
+
+package(default_visibility = ["//visibility:public"])
+
+MYPGM_DEPS = ["//#f:alib"]
+
+##############################
+####  Executable Targets  ####
+#############
+ocaml_binary(
+    name     = "mypgm",
+    exe      = "mypgm",
+    main     = "Mypgm",
+    visibility = ["//visibility:public"],
+)
+
+#############################
+####  Singleton Targets  ####
+
+ocaml_module(
+    name          = "Mypgm",
+    struct        = "mypgm.ml",
+    deps          = MYPGM_DEPS,
+)
+

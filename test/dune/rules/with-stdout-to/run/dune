@@ -1,0 +1,10 @@
+
+(rule
+ (targets output.ml)
+ (deps myscript.sh
+   (:config-file CONFIG))
+ (action
+  (with-stdout-to %{targets}
+                  (run myscript.sh
+                       "%{config-file}"
+                       "demo_counter"))))

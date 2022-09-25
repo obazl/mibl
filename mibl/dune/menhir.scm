@@ -35,7 +35,8 @@
         (format #t "TOP-STD: ~A\n" top-std)
         (format #t "CLEAN: ~A\n" clean-flags)
         (let*-values (((opens opts std) (split-opens clean-flags))
-                      ((options bools) (split-opts (reverse opts)))
+                      ;; FIXME: handle exclusions
+                      ((options bools exclusions) (split-opts (reverse opts)))
                       ((external-tokens unused-tokens other-options)
                        (-split-menhir-opts options)))
           (format #t "~A: ~A~%" (uwhite "unused-tokens") unused-tokens)
@@ -70,8 +71,8 @@
                     ((modules)
                      (cons :grammars (cdr fld)))
                     ((flags)
+                     ;; menhir flags require different parsing than ocaml flags
                      (-normalize-menhir-fld-flags (cdr fld)))
-                    ;; (cons :flags (cdr fld)))
                     ((merge_into)
                      (cons :base (cdr fld)))
                     ((infer)
@@ -80,6 +81,8 @@
                      (error 'MENHIR
                             (format #f "unrecognized menhir fld: ~A" fld)))))
                 (cdr stanza))))
+      (format #t "~A: ~A~%" (bgmagenta "menhir spec") spec)
+      ;; (error 'x "stop menhir")
       (let* ((cmd-unused (if-let ((unused (assoc-val :unused-tokens spec)))
                                  (format #f "~{--unused-token ~A~^ ~}" unused)
                                  ""))

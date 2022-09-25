@@ -56,7 +56,7 @@
 ;; if file is not in this pkg, add it to filegroups table
 (define (handle-filename-literal-arg ws dep paths)
   (format #t "~A: ~A\n" (ublue "handle-filename-literal-arg") dep)
-  (format #t "paths: ~A\n" paths)
+  (format #t "pkg-path: ~A\n" (assoc-val :pkg-path paths))
   (let* (;; (_ (format #t "dep: ~A\n" dep))
          (pkg-path (car (assoc-val :pkg-path paths)))
          (_ (format #t "pkg-path: ~A~%" pkg-path))
@@ -159,7 +159,7 @@
 (define (handle-filename-literal-dep ws dep deplist paths expanded-deps)
   (format #t "~A: ~A\n" (blue "handle-filename-literal-dep") dep)
   (format #t "deplist: ~A\n" deplist)
-  (format #t "paths: ~A\n" paths)
+  (format #t "pkg path: ~A\n" (assoc-val :pkg-path paths))
   (format #t "expanded-deps: ~A\n" expanded-deps)
   (let* (;; (_ (format #t "dep: ~A\n" dep))
          (pkg-path (car (assoc-val :pkg-path paths)))
@@ -536,7 +536,7 @@
          (fg-name (format #f "glob_~A" (string-replace canonical-pattern "STAR" glob? (+ 1 glob?))))
          (_ (format #t "~A: ~A~%" (ublue "fg-name") fg-name))
 
-         (lbl :glob)  ;;FIXME: derive tagname
+         (lbl ::glob)  ;;FIXME: derive tagname
          )
 
     (update-filegroups-table!
@@ -545,7 +545,7 @@
              (basename pattern))
 
     (let ((result
-           `((:glob
+           `((::glob
               (:pkg . ,(dirname canonical-path))
               (:glob . ,fg-name)))))
       (format #t "~A: ~A~%" (red "GLOB RESULT") result)

@@ -65,7 +65,7 @@
   (format #t "~A: ~A~%" (ublue "find-in-exports") search-key)
   (let* ((exports (car (assoc-val :exports
                                   (assoc-val ws -mibl-ws-table)))))
-    (format #t "~A: ~A~%" (bgblue "exports") exports)
+    ;; (format #t "~A: ~A~%" (bgblue "exports") exports)
     (hash-table-ref exports search-key)))
 
 ;; may update :deps
@@ -892,8 +892,13 @@
   (if-let ((deps-assoc (assoc 'deps stanza-alist)))
           (let* ((deplist (assoc-val 'deps stanza-alist))
                  (_ (format #t "main deplist: ~A\n" deplist))
+                 ;; (stdout (assoc-in '(action with-stdout-to) stanza-alist))
+                 ;; (stdout (if stdout (cadr stdout)))
+                 ;; (_ (format #t "~A: ~A~%" (green "stdout") stdout))
+                 ;; (deplist (if stdout (cons stdout deplist) deplist))
+                 (_ (format #t "~A: ~A\n" (green "DEPLIST") deplist))
                  (result (expand-terms* ws deplist paths '())))
-            (format #t "DEPLIST EXPANDED: ~A\n" result)
+            (format #t "~A: ~A\n" (green "DEPLIST EXPANDED") result)
             `(:deps ,@result))
           #f))
 

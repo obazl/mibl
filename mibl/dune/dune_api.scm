@@ -6,7 +6,11 @@
 ;; remove them from :structures, :signatures
 (define (-mark-apodoses! pkg)
   (format #t "~A: ~A\n" (ublue "-mark-apodoses!") (assoc-val :pkg-path pkg))
-  (if-let ((conditionals (assoc-in '(:dune :library :conditionals) pkg)))
+  ;; (if (equal? (car (assoc-val :pkg-path pkg)) "compiler/tests-ocaml/lib-bytes-utf")
+  ;;     (begin
+  ;;       (format #t "~A: ~A~%" (bgred "pkg") pkg))
+  ;;       (error 'x "apod"))
+   (if-let ((conditionals (assoc-in '(:dune :library :conditionals) pkg)))
          ;; conditionals val: list of alists
           (let* ((apodoses (apply append
                                  (map (lambda (x)
@@ -251,6 +255,9 @@
                         (dune-tuareg->mibl ws pkg stanza))))
 
             ((data_only_dirs) (values)) ;;FIXME
+
+            ((:sh-test) ;; ???
+             (values))
 
             (else
                ;; (format #t "~A: ~A\n" (red "unhandled") stanza)

@@ -1,0 +1,34 @@
+#############################
+####  Singleton Targets  ####
+
+#############################
+####  Signature Targets  ####
+
+)
+
+)
+
+########################
+####  Rule Targets  ####
+
+################  rule  ################
+genrule(
+    name  = "__uri_services_full.ml__",
+    srcs  = [
+        "services.full",
+        "uri_services_raw.ml"
+    ],
+    outs  = [
+        "uri_services_full.ml"
+    ],
+    cmd   = " ".join([
+        "$(location //rules/progn/config:gen_services.exe)",
+        "$(location services.full)",
+        "$(location uri_services_raw.ml)"
+        "cat",
+        "$(location uri_services_raw.ml)"
+    ]),
+    tools = [
+        "//rules/progn/config:gen_services.exe"
+    ]
+)

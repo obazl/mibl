@@ -1,3 +1,5 @@
+(define -sh-test-id 0)
+
 (define (-alias-args->miblark pkg stanza)
   (format #t "~A: ~A~%" (ublue "-alias-args->miblark") stanza)
   (if-let ((args (assoc-in '(:actions :cmd :args) (cdr stanza))))
@@ -27,7 +29,12 @@
 
                  )
             ;; (-expand-literal-tool!? (car (assoc-val :pkg-path pkg)) tool deps)
+            (set-cdr! stanza
+                      (acons :name
+                             (format #f "~A_~A" alias -sh-test-id)
+                             (cdr stanza)))
             (set-car! stanza :sh-test)
+            (set! -sh-test-id (+ 1 -sh-test-id))
 
             ;; if :args contains executable, mark as :test
             ;; (let ((tool-args (fold (lambda (arg accum)
@@ -72,6 +79,7 @@
             ;;   )
             )))
 
+;; if alias name contains 'test' convert to :sh-test
 (define (-alias->miblark stanza)
   (format #t "~A: ~A~%" (ublue "-alias->miblark") stanza)
   (if-let ((alias-assoc (assoc :alias (cdr stanza))))
@@ -118,10 +126,16 @@
                                       ))
                                 ;; else no deps in stanza?
                                 (begin))
+                        (set-cdr! stanza
+                                  (acons :name
+                                         (format #f "~A_~A" alias -sh-test-id)
+                                         (cdr stanza)))
                         (set-car! stanza :sh-test)
+                        (set! -sh-test-id (+ 1 -sh-test-id))
                         )
                       (begin
-                        (format #t "~A: ~A~%" (ured "NO executable tools") tools)))
+                        (format #t "~A: ~A~%" (ured "NO executable tools") tools)
+                        (error 'FIXME "alias without run tool")))
                   ))
               ;; else alias with no :actions
               (begin
@@ -135,6 +149,8 @@
 ;; :executable by :test if deps include unit test pkg
 (define (mibl-pkg->miblark pkg)
   (format #t "~A: ~A~%" (blue "mibl-pkg->miblark") pkg) ;;(assoc-val :pkg-path pkg))
+
+  (set! -sh-test-id 0)
 
   (if (assoc :dune pkg)
       (for-each
@@ -184,3 +200,16 @@
        (assoc-val :dune pkg))
       ;; else
       ))
+
+(define (miblarkize ws)
+  (let* ((@ws (assoc-val ws -mibl-ws-table))
+         (pkgs (car (assoc-val :pkgs @ws))))
+
+    (for-each (lambda (kv)
+                (format #t "~A: ~A~%" (blue "miblarkizing") kv)
+                ;; dir may have dune-project but no dune file:
+                (if (not (null? (cdr kv)))
+                    (mibl-pkg->miblark (cdr kv)))
+                )
+              pkgs)))
+

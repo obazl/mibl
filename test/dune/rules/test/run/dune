@@ -1,0 +1,35 @@
+;; rules with an alias that run an executable usually run a test?
+
+;; caveat: this is not a requirement. could use same pattern to run
+;; something for reasons other than testing, such as running
+;; benchmarks.  OTOH that's a kind of test.
+
+;; dune evidently predefines alias 'runtest'?
+
+;; tezos uses alias prefixes "runtest" and "runbench" (and
+;; "buildtest"). ditto for ppxlib.
+
+;; NB: the alias is not needed to run the test, it's just a method
+;; dune uses to aggregate tests under a label (the alias name).
+;; Multiple such aliases can then be grouped under another progn alias
+;; to run groups of tests.
+
+;; For mibl we need not retain :action, we just need the mapping from
+;; alias name to other name: (:alias <from> <to>)
+
+;; I.e. dune conflates aliases and actions. *Building* this kind of
+;; rule actually *runs* build output. Bazel keeps these notions
+;; distinct, so an alias is just an alias, not related to build
+;; actions.
+
+;; For bazel we do not need to emit anything for this kind of rule,
+;; but we do need to iterate over such rules to generate test_suite
+;; targets.
+
+(rule
+ (alias runtest_circular_buffer)
+ (action (run %{exe:test_circular_buffer.exe})))
+
+;; (rule
+;;  (alias runtest_circular_buffer_fuzzy)
+;;  (action (run %{exe:test_circular_buffer_fuzzy.exe})))

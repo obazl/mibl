@@ -195,8 +195,8 @@
          (action-args (cdr action-list))
          (_ (format #t "~A: ~A~%" (green "action-args") action-args)))
 
-    (if (null? action-args)
-        (if (equal? '%{deps} action)
+    (if (equal? '%{deps} action)
+        (if (null? action-args)
             (begin
               (format #t "~A: ~A~%" (ured "special case: (run %{deps}), deps") deps)
               (let ((tool-dep (cadr deps))
@@ -205,9 +205,13 @@
                 (format #t "~A: ~A~%" (ured "arg-deps") arg-deps)
                 `((:cmd (:tool ,(car tool-dep)) (:args ,@(map car arg-deps))))
                 ;; (error 'STOP "${deps}")
-                )
-              )
-            (error 'FIXME "run-dsl null args, unrecognized action: ~A~%" action))
+                ))
+            (error 'FIXME
+                   "run-dsl %{deps} action w/null args: ~A~%" action))
+
+        ;;case: action == node
+
+        ;; action not %{deps}
 
         (if-let ((cmd-fn (assoc-val action dune-action-cmds-no-dsl)))
                 (let ((cmd-list (apply (car cmd-fn)
@@ -284,7 +288,8 @@
                                 stanza))
                       )))
     (append cmd
-          `((:stdout ,arg1)))))
+            `((:stdout ,(string->keyword
+                         (format #f "~A" arg1)))))))
 
 (define (normalize-action-with-stderr-to-dsl action stanza)
   (format #t "NORMALIZE-ACTION-WITH-STDERR-TO-DSL ~A\n" action)

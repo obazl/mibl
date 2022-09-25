@@ -22,12 +22,12 @@
               (options '())
               (flags '())
               (orphans '()))
-    ;; (format #t "opts: ~A\n" opts)
-    ;; (format #t "ostack: ~A\n" ostack)
+    (format #t "~A: ~A\n" (green "opts") opts)
+    (format #t "~A: ~A\n" (green "ostack") ostack)
     (if (null? opts)
         (if (null? ostack)
-            (values options flags)
-            (values options (cons (symbol(car ostack)) flags)))
+            (values options flags (reverse orphans))
+            (values options (cons (symbol(car ostack)) flags) (reverse orphans)))
         (let* ((rawopt (car opts))
                ;; (_ (format #t "rawopt: ~A\n" rawopt))
                (opt (cond
@@ -51,27 +51,42 @@
                              (cons opt ostack) options flags orphans)
                       ;; prev must be a flag, new goes on ostack
                       (begin
-                        (format #t "~A: opt ~A prev ~A~%"
-                                (bgred "hypen prev") opt (car ostack))
-                        (if (equal? (car ostack) "-w")
-                            ;; current is arg to prev -w
-                            (recur (cdr opts)
-                                   (cdr ostack) ;; pop ostack
-                                   (cons (cons (car ostack) opt) options)
-                                   flags orphans)
+                        (format #t "~A: current: ~A, prev: ~A~%"
+                                (bgred "hyphen prev") opt (car ostack))
+                        ;; special case: dashed warning nbrs following -w, e.g. -w -27
+                        (if (or (equal? (car ostack) "-w")
+                                (string-prefix? "-" (format #f (car ostack))))
+                            ;; current is arg to prev -<opt>
+                            (begin
+                              (format #t "~A~%" (red "XXXXXXXXXXXXXXXX"))
+                              (format #t "~A: ~A~%" (red "ostack") ostack)
+                              (format #t "~A: ~A~%" (red "options") options)
+                              (format #t "~A: ~A~%" (red "flags") flags)
+                              (format #t "~A: ~A~%" (red "orphans") orphans)
+                              (format #t "~A: ~A~%" (red "opts") opts)
+                              (let ((prev (car ostack)))
+                                (recur (cdr opts)
+                                       (cons opt (cdr ostack)) ;; new opt replaces prev on stack
+                                       options
+                                       (cons prev flags)
+                                       orphans)))
                             ;; else prev is flag, push current to ostack
-                            (recur (cdr opts)
-                                   (list opt) ;; ostack
-                                   options
-                                   (cons (symbol (car ostack)) flags)
-                                   orphans))))
+                            (begin
+                              (format #t "~A~%" (green "ZZZZZZZZZZZZZZZZ"))
+                              (recur (cdr opts)
+                                     (list opt) ;; ostack
+                                     options
+                                     (cons (symbol (car ostack)) flags)
+                                     orphans)))))
                   ;; no '-', must be an opt val
                   (if (null? ostack)
+                      ;; no preceding -opt
                       (if (equal? (symbol "\\") rawopt)
                           (begin
                             ;; (format #t "Got slash\n")
-                            (recur (cdr opts) ostack options flags
-                                   (cons opt orphans)))
+                            ;; remaining args excluded
+                            (recur '() ostack options flags
+                                   (append orphans (cdr opts))))
                           (begin
                             (format #t
                                     "WARNING: value ~A without preceding -opt\n"
@@ -132,8 +147,8 @@
   ;; (format #t "~A: ~A\n" (ublue "executable-flags->mibl") stanza)
   (let* ((stanza-alist (cdr stanza))
          (link-flags (assoc-in '(:link :link-flags) stanza-alist))
-         (link-opts  (assoc-in '(:link :opts :flags) stanza-alist))
-         (link-std   (assoc-in '(:link :opts :standard) stanza-alist))
+         (link-opts  (assoc-in '(:link :common-opts :flags) stanza-alist))
+         (link-std   (assoc-in '(:link :common-opts :standard) stanza-alist))
          (flags (remove '()
                         (append
                          (if link-flags (cdr link-flags) '())
@@ -159,7 +174,7 @@
         ;; (format #t "STD: ~A\n" std)
         ;; (format #t "CLEAN: ~A\n" clean-flags)
         (let-values (((opens opts std) (split-opens clean-flags)))
-          (let-values (((options bools) (split-opts (reverse opts))))
+          (let-values (((options bools orphans) (split-opts (reverse opts))))
             ;; (format #t "OPENS: ~A\n" (reverse opens))
             ;; (format #t "OPTS: ~A\n" (reverse opts))
             ;; (format #t "STD: ~A\n" std)
@@ -167,12 +182,12 @@
             ;; (format #t "FLAGS: ~A\n" bools)
             (cons
              (case kind
-               ((:common) :common-opts)
-               ((:compile) :compile-opts)
+               ((:common) :opts)
+               ((:compile) :opts)
                ((:ocamlc) :ocamlc-opts)
                ((:ocamlopt) :ocamlopt-opts)
                ((:archive) :archive-opts)
-               ((:link) :opts)
+               ((:link) :link-opts)
                ((:runtime) :runtime-opts)
                ((:exec) :exec-opts)
                (else :unknown-opts))
@@ -190,6 +205,8 @@
                             (cons :options (reverse options)))
                         (if (null? bools) '()
                             (cons :flags (reverse bools)))
+                        (if (null? orphans) '()
+                            (cons :exclusions (reverse orphans)))
                         ;; `((:raw ,flags))
                         ))))))
       #f))
@@ -214,7 +231,7 @@
         ;; (format #t "STD: ~A\n" top-std)
         ;; (format #t "CLEAN: ~A\n" clean-flags)
         (let-values (((opens opts std) (split-opens clean-flags)))
-          (let-values (((options bools) (split-opts (reverse opts))))
+          (let-values (((options bools orphans) (split-opts (reverse opts))))
             ;; (format #t "OPENS: ~A\n" (reverse opens))
             ;; (format #t "OPTS: ~A\n" (reverse opts))
             ;; (format #t "STD: ~A\n" std)
