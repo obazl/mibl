@@ -1,6 +1,7 @@
 (define -sh-test-id 0)
 
-(define (-alias-args->miblark pkg stanza)
+;; FIXME: do not convert to sh-test unless runtool is a shell script
+(define (X-alias-args->miblark pkg stanza)
   (format #t "~A: ~A~%" (ublue "-alias-args->miblark") stanza)
   (if-let ((args (assoc-in '(:actions :cmd :args) (cdr stanza))))
           ;;FIXME assuming one cmd
@@ -145,7 +146,8 @@
             (format #t "~A: ~A~%" (ured "NO ALIAS") stanza)
             #| nop |#)))
 
-;; replace e.g. :rule by :write-file
+;; replace e.g. :rule by :write-file, :ocamlc, :node, etc.
+;; depending on action tool
 ;; :executable by :test if deps include unit test pkg
 (define (mibl-pkg->miblark pkg)
   (format #t "~A: ~A~%" (blue "mibl-pkg->miblark") pkg) ;;(assoc-val :pkg-path pkg))
@@ -171,11 +173,14 @@
                         (case tool
                           ((:write-file) ;;FIXME: what if we have write-file in an alias rule?
                            (format #t "~A: ~A~%" (red "miblarking") stanza)
-                           ;; (format #t "~A: ~A~%" (white "pkg before") pkg)
-                           (set-car! stanza :write-file)
-                           ;; (format #t "~A: ~A~%" (white "pkg after") pkg)
-                           )
+                           (set-car! stanza :write-file))
 
+                          ((::ocamlc)
+                           (if-let ((deps (assoc :deps (cdr stanza))))
+                                   (set-car! deps :srcs))
+                           (set-car! stanza :ocamlc))
+
+                          ((::node) (set-car! stanza :node))
                           (else ;; nop
                            '())))
                       ))))
@@ -193,9 +198,9 @@
            (else
             ))
          ;; aliases
-         (if (alist? (cdr stanza))
-             (if (assoc :alias (cdr stanza))
-                 (-alias-args->miblark pkg stanza)))
+         ;; (if (alist? (cdr stanza))
+         ;;     (if (assoc :alias (cdr stanza))
+         ;;         (-alias-args->miblark pkg stanza)))
          )
        (assoc-val :dune pkg))
       ;; else

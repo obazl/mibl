@@ -429,8 +429,7 @@
         (begin
           (update-exports-table! ws
                                  (if (-is-test-executable? ws pkg stanza) :test :exe)
-                                 ;; (string->symbol (format #f ":test:~A" pubname))
-                                 ;; (string->symbol (format #f ":bin:~A" pubname)))
+                                 (assoc-val 'modes stanza-alist)
                                  privname
                                  pkg-path privname)
           ;; (error 'fixme "STOP link modes")
@@ -626,14 +625,15 @@
                      (if (not test-exe?) ;; (-is-test-executable? ws pkg stanza))
                          (begin
                            (format #t "~A: ~A, ~A~%" (umagenta "updating exports w/exec") privname pubname)
-                           (update-exports-table! ws :exe pubname
-                                                  pkg-path privname)
-                           (update-exports-table! ws :exe privname
-                                                  pkg-path privname)
-                           (update-exports-table! ws :bin pubname
-                                                  pkg-path privname)
-                           (update-exports-table! ws :bin privname
-                                                  pkg-path privname)
+                           (update-exports-table! ws :exe
+                                                  (assoc-val 'modes stanza-alist)
+                                                  pubname pkg-path privname)
+                           (update-exports-table! ws :exe (assoc-val 'modes stanza-alist)
+                                                  privname pkg-path privname)
+                           (update-exports-table! ws :bin (assoc-val 'modes stanza-alist)
+                                                  pubname pkg-path privname)
+                           (update-exports-table! ws :bin (assoc-val 'modes stanza-alist)
+                                                  privname pkg-path privname)
                            (update-opam-table! ws :bin
                                                package
                                                pubname

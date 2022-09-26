@@ -210,6 +210,7 @@
         (begin
           (format #t "~A: ~A~%" (ucyan "lib:adding privname to exports") privname)
           (update-exports-table! ws #f
+                                 (assoc-val 'modes (cdr stanza))
                                  ;; (string->symbol (format #f "~A" privname))
                                  privname
                                  pkg-path privname)
@@ -221,11 +222,12 @@
         (begin
           (format #t "~A: ~A~%" (ucyan "lib:adding pubname to exports") pubname)
           (update-exports-table! ws #f
+                                 (assoc-val 'modes (cdr stanza))
                                  ;; (string->symbol (format #f "~A" pubname))
                                  pubname
                                  pkg-path privname)
-          (update-exports-table! ws :lib pubname
-                                 pkg-path privname)
+          (update-exports-table! ws :lib (assoc-val :modes (cdr stanza))
+                                 pubname pkg-path privname)
 
           ;; opam table entry
           ;; Key: 'js_of_ocaml-compiler

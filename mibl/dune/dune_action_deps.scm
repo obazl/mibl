@@ -53,7 +53,7 @@
   ;;                         (format #t "expanded: ~A\n" expanded)
   ;;                         expanded))))
 
-;; if file is not in this pkg, add it to filegroups table
+;; if file is not in this pkg files, add it to filegroups table
 (define (handle-filename-literal-arg ws dep paths)
   (format #t "~A: ~A\n" (ublue "handle-filename-literal-arg") dep)
   (format #t "pkg-path: ~A\n" (assoc-val :pkg-path paths))
@@ -256,11 +256,13 @@
                            (case (cdr dep)
                              ((::unresolved ::opam-pkg) #f)
                              (else
-                              (if (equal? (car dep) key)
+                              (if (equal? (format #f "~A" (car dep)) (format #f "~A" key))
                                   #t
                                   (let ((tgt (assoc-val :tgt (cdr dep))))
-                                    (format #t "~A: ~A~%" (uwhite "tgt") tgt)
-                                    (equal? tgt arg))))))
+                                    (format #t "~A: ~A (~A)~%" (uwhite "tgt") tgt (type-of tgt))
+                                    (format #t "~A: ~A (~A)~%" (uwhite "arg") arg (type-of arg))
+                                    (format #t "~A: ~A~%" (uwhite "tgt == arg") (equal? (format #f "~A" (car dep)) (format #f "~A" arg)))
+                                    (equal? (format #f "~A" (car dep)) (format #f "~A" arg)))))))
                          (cdr deps))))
     (format #t "~A: ~A~%" (blue "match") match)
     (if match (car match) #f)))

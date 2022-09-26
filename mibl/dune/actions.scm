@@ -73,17 +73,24 @@
 
 (define (normalize-action-pipe-outputs-dsl action stanza)
   (format #t "NORMALIZE-ACTION-PIPE-OUTPUTS-DSL ~A\n" action)
-  '()
-  )
+  (error 'NOTYET
+         (format #f "not implemented: normalize-action-pipe-outputs-dsl")))
 
 (define (normalize-action-pipe-stderr-dsl action stanza)
   (format #t "NORMALIZE-ACTION-PIPE-STDERR-DSL ~A\n" action)
-  '()
-  )
+  (error 'NOTYET
+         (format #f "not implemented: normalize-action-pipe-stderr-dsl")))
 
-(define (normalize-action-pipe-stdout-dsl action stanza)
-  (format #t "NORMALIZE-ACTION-PIPE-STDOUT-DSL ~A\n" action)
-  '()
+(define (normalize-action-pipe-stdout-dsl item ws pkg targets deps)
+  (format #t "NORMALIZE-ACTION-PIPE-STDOUT-DSL ~A\n" item)
+  (error 'NOTYET
+         (format #f "not implemented: normalize-action-pipe-stdout-dsl"))
+  ;; e.g. from jsoo compiler/tests-io/dune
+  ;; (with-stdout-to
+  ;;  %{target}
+  ;;  (pipe-stdout
+  ;;   (run printf "echo \\226\\152\\160")
+  ;;   (run node %{dep:./cat.bc.js})))
   )
 
 (define (-handle-progn-item item ws pkg targets deps)
@@ -245,10 +252,18 @@
   '()
   )
 
-(define (normalize-action-with-accepted-exit-codes-dsl action stanza)
-  (format #t "NORMALIZE-ACTION-WITH-ACCEPTED-EXIT-CODES-DSL ~A\n" action)
-  '()
-  )
+(define (normalize-action-with-accepted-exit-codes-dsl item ws pkg targets deps)
+  (format #t "NORMALIZE-ACTION-WITH-ACCEPTED-EXIT-CODES-DSL ~A\n" item)
+  (error 'NOTYET
+         (format #f "not implemented: normalize-action-with-accepted-exit-codes-dsl"))
+  ;; e.g. jsoo compiler/tests-jsoo/bin/dune
+  ;; (action
+  ;;  (with-accepted-exit-codes
+  ;;   2
+  ;;   (with-outputs-to
+  ;;    %{target}
+  ;;    (run node %{dep:error1.bc.js}))))
+   )
 
 (define (normalize-action-with-outputs-to-dsl ws pkg action-alist targets deps)
   (format #t "~A: ~A\n" (ublue "normalize-action-with-outputs-to-dsl")
@@ -346,6 +361,7 @@
     ;; update exports table with outfile
     (update-exports-table! ws
                            :FIXME ;; tag
+                           :FIXME ;; modes
                            target ;; name
                            (car (assoc-val :pkg-path pkg)) target)
 

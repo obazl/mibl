@@ -654,9 +654,13 @@
 ;; rule action for example) will refer to it as 'bin:foo', so we can
 ;; just look it up to find its Bazel label.
 
-(define (update-exports-table! ws pfx nm pkg-path tgt)
+;; executables: emit keys .bc and .exe, tgt always .exe
+;; javascript: emit 2, one with sfx .js, one without
+
+(define (update-exports-table! ws pfx modes nm pkg-path tgt)
   (format #t "~A: ~A , ~A\n" (ublue "update-exports-table!") pfx nm)
   (format #t "~A: (:pkg . ~A) (:tgt . ~A)~%" (uwhite "spec") pkg-path tgt)
+  (format #t "~A: ~A\n" (ublue "modes") modes)
   (let* ((exports (car (assoc-val :exports
                                   (assoc-val ws -mibl-ws-table))))
          (key (case pfx
@@ -701,6 +705,25 @@
              (hash-table-set! exports
                               (string->keyword (format #f "bin:~A.bc" tgt))
                               spec)
+             (if modes
+                 (if (member 'js modes)
+                     ;;FIXME: make this less hideous
+                     (let ((spec `(,@pfx-assoc
+                                   ,(cons :pkg (string->symbol pkg-path))
+                                   ,(cons :tgt (string->symbol
+                                                (if exe
+                                                    (format #f "~A.exe.js" tgt)
+                                                    (format #f "~A.js" tgt)))))))
+                           (hash-table-set! exports
+                                            (string->symbol (format #f "~A.bc.js" tgt))
+                                            spec)
+                           (hash-table-set! exports
+                                            (string->keyword (format #f "~A.bc.js" tgt))
+                                            spec)
+                           (hash-table-set! exports
+                                            (string->keyword (format #f "bin:~A.bc.js" tgt))
+                                            spec))))
+
              (hash-table-set! exports
                               (string->symbol (format #f "~A.exe" tgt))
                               spec)
@@ -738,7 +761,7 @@
                     (format #f ":exe~A" key))))
           (hash-table-set! exports key
                            spec)))
-    (format #t "~A: ~A\n" (uwhite "updated exports tbl") exports)
+    ;; (format #t "~A: ~A\n" (uwhite "updated exports tbl") exports)
     ;; (error 'STOP "STOP exports")
     ))
 
@@ -753,7 +776,7 @@
                 (format #t "~A: ~A~%" (magenta "pkg") pkg)
                 (format #t "~A: ~A~%" (magenta "tgt") tgt)
 
-                (update-exports-table! ws :FIXME tgt pkg)
+                (update-exports-table! ws :FIXME :FIXME-MODES tgt pkg)
 
                ;; (case (car target)
                 ;;   ((::)

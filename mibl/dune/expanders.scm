@@ -23,7 +23,16 @@
     (format #t "~A: ~A~%" (green "deps") deps)
 
     (case tool
+      ((%{bin:ocamlc}) ::ocamlc)
+      ((%{bin:node}) ::node)
       ((cp) ::copy) ;;FIXME: use lookup table from constants.scm
+      ((node)
+       (set-cdr! deps
+                 (append
+                  `((::tools (::node . ::unresolved)))
+                  (cdr deps)))
+       ::node)
+
       ((%{deps}) ::deps)
        ;; (set-cdr! deps
        ;;           (append
@@ -52,21 +61,66 @@
              ;; (error 'X "STOP expand-run-tool")
             tmp))))))))
 
-(define (-match-dep pfx key dep)
-  (format #t "~A: ~A/~A ? ~A~%" (ublue "-match-dep") pfx key dep)
-  (cond
-   ((equal? (car dep) key)
-    (format #t "~A: ~A~%" (uwhite "matched?") dep)
-    #t)
-   ((member (cdr dep) '(::unresolved ::opam-pkg)) #f)
-   (else #f)))
-
 (define (find-in-exports ws search-key)
   (format #t "~A: ~A~%" (ublue "find-in-exports") search-key)
   (let* ((exports (car (assoc-val :exports
                                   (assoc-val ws -mibl-ws-table)))))
     ;; (format #t "~A: ~A~%" (bgblue "exports") exports)
     (hash-table-ref exports search-key)))
+
+(define (-find-executable-for-name nm pkg)
+  (format #t "~A: ~A pkg: ~A~%" (ublue "-find-executable-for-name") nm (assoc-val :pkg-path pkg))
+  (let ((nm (if (keyword? nm) (keyword->symbol nm)))
+        (stanzas (assoc-val :dune pkg)))
+    (format #t "~A: ~A~%" (blue "stanzas") stanzas)
+    (find-if (lambda (stanza)
+               (format #t "~A: ~A~%" (blue "stanza") stanza)
+               (if (equal? (car stanza) :executable)
+                   (let* ((stanza-alist (cdr stanza))
+                          (privname (assoc-val :privname stanza-alist)))
+                     (format #t "~A: ~A =? ~A~%" (cyan "testing") nm privname)
+                     (cond
+                      ((equal? nm privname) #t)
+
+                      ;; main.bc
+                      ((member 'byte (assoc-val* :modes stanza-alist))
+                       (string=? (format #f "~A" nm) (format #f "~A.bc" privname)))
+
+                      ;; main.exe
+                      ((string=? (format #f "~A" nm) (format #f "~A.exe" privname)) #t)
+                      (else #f)))
+                   #f))
+             stanzas)))
+
+(define (-match-dep pfx key dep)
+  (format #t "~A: ~A/~A ? ~A~%" (ublue "-match-dep") pfx key dep)
+)
+
+;; may update :deps
+(define (-find-in-deps!? nm deps pkg)
+  (format #t "~A: ~A~%" (ublue "-find-in-deps") nm)
+  (format #t "~A: ~A~%" (blue "deps") deps)
+  (let ((d (find-if (lambda (dep)
+                      (format #t "~A: ~A~%" (blue "dep") dep)
+                      ;;FIXME: special tags ::tools, ::opam-pkgs, ::unresolved, etc.
+                      (cond
+                       ((equal? (car dep) nm)
+                        (format #t "~A: ~A~%" (uwhite "matched?") dep)
+                        #t)
+                       ((member (cdr dep) '(::unresolved ::opam-pkg)) #f)
+                       (else #f)))
+                      (cdr deps))))
+    (if d d
+        ;; else
+        (if-let ((matching-exe (-find-executable-for-name nm pkg)))
+                (let ((tgt (format #f "~A.exe" (assoc-val :privname (cdr matching-exe)))))
+                  ;; TODO: update :deps for stanza
+                  (format #t "~A: ~A~%" (bggreen "pctvar resolved") tgt)
+                  (let ((newdep (list (cons nm (list `(:pkg . ,(car (assoc-val :pkg-path pkg))) `(:tgt . ,tgt))))))
+                    (set-cdr! deps (append (cdr deps) newdep))
+                    #t)
+                  )
+                ))))
 
 ;; may update :deps
 (define (-expand-dep-pct-var!? ws pfx sym deps pkg)
@@ -80,15 +134,17 @@
   (let* ((pkg-path (car (assoc-val :pkg-path pkg)))
          (search-key (symbol->keyword sym))
          (_ (format #t "~A: ~A~%" (yellow "searching deps") deps))
-         (d (find-if (lambda (dep)
-                       ;;FIXME: special tags ::tools, ::opam-pkgs, ::unresolved, etc.
-                       (-match-dep pfx search-key dep))
-                       ;; (equal? (car dep) search-key))
-                     (cdr deps))))
+         (d (-find-in-deps!? search-key deps pkg)))
     (format #t "~A: ~A~%" (yellow "found?") d)
+
     (if d
         search-key
-        ;; not in :deps; search pkg files and add it to :deps if found
+        ;; if not found in :deps fld:
+        ;; 1. look for executable stanza in pkg with matching name
+        ;; 2. search pkg files and add it to :deps if found
+        ;; 3. search exports table
+        ;; 4. mark it ::unresolved and let a later pass resolve it
+
         (let ((v (format #f "~A" sym))
               (_ (format #t "~A: ~A~%" (yellow "searching pkg files") deps))
               (expanded
@@ -148,6 +204,7 @@
 ;; may update deps
 ;; case:
 ;; %{deps} => ::deps
+;; %{deps:main.bc} => look for executable in same pkg, name maine, mode byte
 ;; (%{dep:rejections.sh} => (:deps (:rejections.sh (:pkg...)(:tgt...)))
 ;;  %{bin:tezos-protocol-compiler} => (:deps (::bin tezos...))
 ;;  %{lib:tezos-protocol-demo-noops:raw/TEZOS_PROTOCOL})
@@ -155,7 +212,7 @@
 (define (-expand-pct-arg!? ws arg kind pkg deps)
   (format #t "~A: ~A (type: ~A)~%" (ublue "-expand-pct-arg!?")
           arg (type-of arg))
-  (format #t "deps: ~A~%" deps)
+  (format #t "~A: ~A~%" (uwhite "deps") deps)
 
   (case arg
     ((%{deps})
@@ -249,26 +306,34 @@
                        (alist-delete (list search-key #|arg-kw|# ) (cdr deps)))))
 
           ;; else infer it must be imported from exports tbl
-          ;; FIXME lookup in exports tbl
           ;; FIXME FIXME: only works after first pass adds everything to exports tbl
           (begin
             (format #t "~A: ~A, ~A~%" (red "tool NOT in deps") sym deps) ;; t)
-            ;; (let ((found (find-in-exports ws (symbol->keyword sym))))
-            ;;   (format #t "~A: ~A~%" (bgred "kw") (symbol->keyword sym))
-            ;;   (format #t "~A: ~A~%" (bgred "found") found))
-            ;; (error 'STOP "pctvar")
-            (set-cdr! deps
-                      (append
-                       (list (cons ::tools
-                                   (list
-                                    (cons (if (equal? :dep pfx)
-                                              (symbol->keyword sfx)
-                                              (symbol->keyword sym)) ;; search-key ;; arg-kw
-                                          ;; (list (cons :pkg pkg-path)
-                                          ;;       (cons :tgt arg))
-                                          ::unresolved
-                                          ))))
-                       (cdr deps)))
+            (if-let ((found (find-in-exports ws (symbol->keyword sym))))
+                    (begin
+                      (format #t "~A: ~A~%" (bgred "kw") (symbol->keyword sym))
+                      (format #t "~A: ~A~%" (bgred "found") found)
+                      (set-cdr! deps
+                                (append
+                                 (list (cons ::tools
+                                             (list
+                                              (cons (symbol->keyword sym)
+                                                    ::unresolved
+                                                    ))))
+                                 (cdr deps))))
+                      ;; else set to ::unresolved
+                      (set-cdr! deps
+                                (append
+                                 (list (cons ::tools
+                                             (list
+                                              (cons (if (equal? :dep pfx)
+                                                        (symbol->keyword sfx)
+                                                        (symbol->keyword sym)) ;; search-key ;; arg-kw
+                                                    ;; (list (cons :pkg pkg-path)
+                                                    ;;       (cons :tgt arg))
+                                                    ::unresolved
+                                                    ))))
+                                 (cdr deps))))
             ;; return kw
             ))
       search-key)))
@@ -672,6 +737,9 @@
     (cond
      ((string=? "./" arg) ::pkg-dir)
 
+     ((string-prefix? "./" arg)
+      (expand-string-arg ws (string-left-trim "./" arg) pkg targets deps))
+
      ;; FIXME: pct-vars should already be handled by -expand-pct-arg?
      ((string=? "%{deps}" arg)
       (let* ((kw (substring arg 6 (- (length arg) 1)))
@@ -720,7 +788,7 @@
                                 (if-let ((found (find-in-exports ws (string->keyword arg))))
                                         (let* ((pkg (assoc-val :pkg found))
                                                (tgt (assoc-val :tgt found))
-                                               (entry `((,arg (:pkg . ,pkg) (:tgt . ,tgt)))))
+                                               (entry `((,(string-keyword arg) (:pkg . ,pkg) (:tgt . ,tgt)))))
                                           (format #t "~A: ~A~%" (red "found") found)
                                           ;; (error 'STOP "STOP exp")
                                           entry)
@@ -874,15 +942,22 @@
                        ;;  )
 
                        (else
-                        ;; must be a filename literal?
-                        ;; return (:static <path> <fname>)
-                        ;; or (:dynamic <path> <fname>)
-                        (begin
-                          ;; (format #t "LIT DEP : ~A\n" arglist)
-                          (handle-filename-literal-dep
-                           ws dep arglist pkg
-                           ;; stanza-alist
-                           expanded-deps))))))
+                        (if-let ((found (find-in-exports ws (string->keyword dep))))
+                                (begin
+                                  (format #t "~A: ~A~%" (bggreen "xxxxxxxxxxxxxxxx") found)
+                                  (let* ((pkg (assoc-val :pkg found))
+                                         (tgt (assoc-val :tgt found))
+                                         (entry `((,(string->keyword dep) (:pkg . ,pkg) (:tgt . ,tgt)))))
+                                    entry))
+                                ;; else must be a filename literal?
+                                ;; return (:static <path> <fname>)
+                                ;; or (:dynamic <path> <fname>)
+                                (begin
+                                  (format #t "LIT DEP : ~A\n" arglist)
+                                  (handle-filename-literal-dep
+                                   ws dep arglist pkg
+                                   ;; stanza-alist
+                                   expanded-deps)))))))
             ))))
 
 (define (expand-rule-deps ws paths stanza-alist)
