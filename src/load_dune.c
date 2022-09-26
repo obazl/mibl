@@ -2546,6 +2546,8 @@ EXPORT s7_pointer g_load_dune(s7_scheme *s7,  s7_pointer args)
     s7_int args_ct = s7_list_length(s7, args);
     if (debug) log_debug("args ct: %d", args_ct);
 
+    s7_define_variable(s7, "*dune-execlib-includes-main*", s7_t(s7));
+
     const char *rootdir, *pathdir;
 
     if ( s7_is_null(s7, args)

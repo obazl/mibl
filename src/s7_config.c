@@ -890,6 +890,9 @@ EXPORT s7_scheme *s7_configure(void)
     /* only emit bazel code for this pkg (string); nil means no exclusion */
     s7_define_variable(s7, "*emit-bazel-pkg*", s7_f(s7));
 
+    /* if true emit 'main' attrib for binaries */
+    s7_define_variable(s7, "*dune-execlib-includes-main*", s7_f(s7));
+
     /* populate exclusions list, so scheme code can use it */
     char **p = NULL;
     s7_pointer _s7_exclusions = s7_nil(s7);
