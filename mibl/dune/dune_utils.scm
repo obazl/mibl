@@ -372,6 +372,10 @@
   (let ((mname (copy libdep)))
     libdep))
 
+(define (pkg->pkg-name pkg)
+  (let ((bn (basename (car (assoc-val :pkg-path pkg)))))
+    (string-map (lambda (ch) (if (char=? ch #\-) #\_ ch)) bn)))
+
 (define (normalize-module-name mname)
   ;;(format #t "normalize-module-name: ~A\n" mname)
   (if (equal? '(:standard) mname)
@@ -383,8 +387,8 @@
                        (error 'bad-type
                               (format #f "module name not sym or string: ~A"
                                       mname))))))
-        (string-set! s 0 (char-upcase (string-ref s 0)))
-        (string->symbol s))))
+        (string->symbol
+         (string-append (string (char-upcase (string-ref s 0))) (string-drop s 1))))))
 
 (define filename-cache (make-hash-table))
 

@@ -299,9 +299,9 @@
                                              (begin
                                                (format #t "~A~%" (bgred "IMPORT TOOL"))
                                                (format #t "~A~%" (red "export keys"))
-                                               (for-each (lambda (k)
-                                                           (format #t "~A: ~A~%" (ured "key") k))
-                                                         (sort! (hash-table-keys exports) sym<?))
+                                               ;; (for-each (lambda (k)
+                                               ;;             (format #t "~A: ~A~%" (ured "key") k))
+                                               ;;           (sort! (hash-table-keys exports) sym<?))
                                                (if-let ((import (hash-table-ref exports (caadr dep))))
                                                        (begin
                                                          (format #t "~A: ~A~%" (bgred "importing") import)

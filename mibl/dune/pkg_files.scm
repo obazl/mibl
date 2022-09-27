@@ -1,6 +1,35 @@
-;; arg:  filename
-;; returns pair from :modules e.g. (:ml foo.ml) or (:ml_ foo.ml)
-;; or (:mli foo.mli) or (:mli_ foo.mli)
+;; arg:  normalized module name
+(define (find-module-in-pkg module pkg)
+  (format #t "~A: ~A~%" (ublue "find-module-in-pkg-modules") module)
+  (let* ((pkg-modules (if-let ((files (assoc-val :modules pkg)))
+                                files '()))
+         (_ (format #t "~A: ~A~%" (yellow "pkg-modules") pkg-modules))
+         ;; (m-name (filename->module-name arg))
+         ;; (_ (format #t "~A: ~A~%" (yellow "m-name") m-name))
+         (entry
+          (find-if (lambda (mod)
+                     ;; (format #t "~A: ~A~%" (white "mod") mod)
+                     (equal? (format #f "~A" module)
+                             (format #f "~A" (car mod))))
+                   pkg-modules)))
+        ;; (format #t "~A: ~A~%" (white "found entry") file)
+    (if entry
+        entry
+        ;; else srch pkg-structs
+        (let* ((structs-static (if-let ((ss (assoc-in '(:structures :static) pkg))) (cdr ss) '()))
+               (structs-dynamic (if-let ((ss (assoc-in '(:structures :dynamic) pkg))) (cdr ss) '()))
+               (pkg-structs (append structs-static structs-dynamic))
+               (_ (format #t "~A: ~A~%" (yellow "pkg-structs") pkg-structs))
+               ;; (m-name (filename->module-name arg))
+               ;; (_ (format #t "~A: ~A~%" (yellow "m-name") m-name))
+               (entry
+                (find-if (lambda (struct)
+                           ;; (format #t "~A: ~A~%" (white "mod") mod)
+                           (equal? (format #f "~A" module)
+                                   (format #f "~A" (car struct))))
+                         pkg-structs)))
+          entry))))
+
 (define (-find-m-file-in-pkg-modules arg pkg)
   ;; (format #t "~A: ~A~%" (ublue "find-m-file-in-pkg-modules") arg)
   (let* ((pkg-modules (if-let ((files (assoc-val :modules pkg)))
@@ -247,10 +276,10 @@
 
                           ;; mdeps is list of ocamldeps of fname with corresponding files in this pkg
                           ;; we retrieve the pkg-dep for fname and add the mdeps to it
-                          (format #t "~A: ~A~%" (bgyellow "updating pkg file flds") pkg)
-                          (format #t "~A: ~A~%" (yellow "ocamldep fname") fname)
-                          (format #t "~A: ~A~%" (yellow "ocamldep kind") kind)
-                          (format #t "~A: ~A~%" (yellow "ocamldep mdeps") mdeps)
+                          ;; (format #t "~A: ~A~%" (bgyellow "updating pkg file flds") pkg)
+                          ;; (format #t "~A: ~A~%" (yellow "ocamldep fname") fname)
+                          ;; (format #t "~A: ~A~%" (yellow "ocamldep kind") kind)
+                          ;; (format #t "~A: ~A~%" (yellow "ocamldep mdeps") mdeps)
                           (if (truthy? mdeps) ;; (not (null? mdeps))
                               (if-let ((m-assoc (find-m-file-in-pkg fname pkg)))
                                       (begin

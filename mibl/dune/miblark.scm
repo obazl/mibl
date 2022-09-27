@@ -154,55 +154,80 @@
 
   (set! -sh-test-id 0)
 
-  (if (assoc :dune pkg)
-      (for-each
-       (lambda (stanza)
-         (format #t "~A: ~A~%" (magenta "stanza") stanza)
-         ;; first do write-file etc.
-         (case (car stanza)
-           ((:rule)
-            ;; if multiple cmds (progn) do not miblarkize
-            (format #t "~A: ~A~%" (red "cmd ct:")
-                    (length (assoc-in* '(:actions :cmd) (cdr stanza))))
-            (if (< (length (assoc-in* '(:actions :cmd) (cdr stanza))) 2)
-                (let ((tool (assoc-in '(:actions :cmd :tool) (cdr stanza))))
-                  (format #t "~A: ~A~%" (green "tool") tool)
-                  (if tool
-                      (let ((tool (cadr tool)))
-                        (format #t "~A: ~A~%" (green "tool") tool)
-                        (case tool
-                          ((:write-file) ;;FIXME: what if we have write-file in an alias rule?
-                           (format #t "~A: ~A~%" (red "miblarking") stanza)
-                           (set-car! stanza :write-file))
+  (if-let ((dune-pkg (assoc :dune pkg)))
+          (for-each
+           (lambda (stanza)
+             (format #t "~A: ~A~%" (magenta "stanza") stanza)
+             ;; first do write-file etc.
+             (case (car stanza)
+               ((:rule)
+                ;; if multiple cmds (progn) do not miblarkize
+                (format #t "~A: ~A~%" (red "cmd ct:")
+                        (length (assoc-in* '(:actions :cmd) (cdr stanza))))
+                (if (< (length (assoc-in* '(:actions :cmd) (cdr stanza))) 2)
+                    (let ((tool (assoc-in '(:actions :cmd :tool) (cdr stanza))))
+                      (format #t "~A: ~A~%" (green "tool") tool)
+                      (if tool
+                          (let ((tool (cadr tool)))
+                            (format #t "~A: ~A~%" (green "tool") tool)
+                            (case tool
+                              ((:write-file) ;;FIXME: what if we have write-file in an alias rule?
+                               (format #t "~A: ~A~%" (red "miblarking") stanza)
+                               (set-car! stanza :write-file))
 
-                          ((::ocamlc)
-                           (if-let ((deps (assoc :deps (cdr stanza))))
-                                   (set-car! deps :srcs))
-                           (set-car! stanza :ocamlc))
+                              ((::ocamlc)
+                               (if-let ((deps (assoc :deps (cdr stanza))))
+                                       (set-car! deps :srcs))
+                               (set-car! stanza :ocamlc))
 
-                          ((::node) (set-car! stanza :node))
-                          (else ;; nop
-                           '())))
-                      ))))
-           ((:executable)
-            (format #t "~A: ~A~%" (uwhite "miblarkizing executable") stanza)
-            (let* ((stanza-alist (cdr stanza))
-                   (compile-deps (assoc-in '(:compile :deps :resolved) stanza-alist)))
-              (format #t "~A: ~A~%" (uwhite "compile-deps") compile-deps)
-              (if compile-deps
-                  (let ((test? (find-if (lambda (dep)
-                                          (member dep unit-test-pkgs))
-                                        (cdr compile-deps))))
-                    (if test? (set-car! stanza :test) #f))
-                  #f)))
-           (else
-            ))
-         ;; aliases
-         ;; (if (alist? (cdr stanza))
-         ;;     (if (assoc :alias (cdr stanza))
-         ;;         (-alias-args->miblark pkg stanza)))
-         )
-       (assoc-val :dune pkg))
+                              ((::node) (set-car! stanza :node))
+                              (else ;; nop
+                               '())))
+                          ))))
+               ((:executable)
+                (format #t "~A: ~A~%" (uwhite "miblarkizing executable") (car stanza))
+                (let* ((stanza-alist (cdr stanza))
+                       (compile-deps (assoc-in '(:compile :deps :resolved) stanza-alist))
+                       (exec-lib (assoc :exec-lib stanza-alist)))
+                  (format #t "~A: ~A~%" (uwhite "compile-deps") compile-deps)
+                  (format #t "~A: ~A~%" (uwhite "exec-lib") exec-lib)
+                  (if compile-deps
+                      (let ((test? (find-if (lambda (dep)
+                                              (member dep unit-test-pkgs))
+                                            (cdr compile-deps))))
+                        (if test? (set-car! stanza :test) #f)))
+                  (if (truthy? exec-lib)
+                      (if-let ((pkg-exec-libs (assoc :exec-libs (cdr dune-pkg))))
+                              (begin
+                                (format #t "~A: ~A~%" (ublue "found pkg-exec-libs") pkg-exec-libs)
+                                (if (number? (cdr exec-lib))
+                                    (begin) ;; already done
+                                    (if (member (cdr exec-lib) (cdr pkg-exec-libs)
+                                                (lambda (a b)
+                                                  (format #t "~A: a: ~A, b: ~A~%" (red "comparing") a b)
+                                                  (equal? a (assoc-val :modules (cdr b)))))
+                                        (format #t "~A: ~A~%" (ublue "match") exec-lib)
+                                        (let* ((ct (length (cdr pkg-exec-libs)))
+                                               (new (list (cons (+ 1 ct)
+                                                                `((:modules ,@(cdr exec-lib)))))))
+                                          (format #t "~A: ~A~%" (ublue "mismatch; adding") exec-lib)
+                                          (set-cdr! pkg-exec-libs (append (cdr pkg-exec-libs) new))))))
+                              (let* ((opts (if-let ((opts (assoc-val :opts stanza-alist)))
+                                                  `((:opts ,@opts)) '()))
+                                     (new `((:exec-libs (1 (:modules ,@(cdr exec-lib)) ,@opts)))))
+                                (format #t "~A: ~A~%" (ublue "adding :exec-libs to stanzas") exec-lib)
+                                (set-cdr! dune-pkg (append (cdr dune-pkg) new))
+                                (set-cdr! exec-lib 1))
+                                ))
+                  ))
+               (else
+                ))
+             ;; aliases
+             ;; (if (alist? (cdr stanza))
+             ;;     (if (assoc :alias (cdr stanza))
+             ;;         (-alias-args->miblark pkg stanza)))
+             )
+           (cdr dune-pkg))
       ;; else
       ))
 

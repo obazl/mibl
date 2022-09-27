@@ -4,7 +4,7 @@
 
 (define (x-get-manifest pkg wrapped? stanza-alist spec) ;;  deps
   (format #t "~A: ~A\n" (ublue "x-get-manifest") stanza-alist)
-  (format #t "~A: ~A\n" (uwhite "pkg") pkg)
+  ;; (format #t "~A: ~A\n" (uwhite "pkg") pkg)
   (format #t "~A: ~A\n" (blue "spec") spec)
   ;; (if deps
   (let* ((submods+sigs-list

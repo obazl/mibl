@@ -871,7 +871,8 @@ EXPORT s7_scheme *s7_configure(void)
     /* map dune library (wrapped) to :ns-archive or :ns-library */
     s7_define_variable(s7, "*wrapped-libs-to-ns-archives*", s7_t(s7));
 
-    /* map dune library (unwrapped) to :archive or :library */
+    /* true: map dune library (unwrapped) to :archive
+       false: map to :library */
     s7_define_variable(s7, "*unwrapped-libs-to-archives*", s7_t(s7));
 
     /* emit ocaml_signature for every sigfile target */
@@ -887,11 +888,19 @@ EXPORT s7_scheme *s7_configure(void)
     /* FIXME: by default we always shared deps across stanzas, per pkg */
     s7_define_variable(s7, "*shared-deps*", s7_list(s7, 0));
 
-    /* only emit bazel code for this pkg (string); nil means no exclusion */
+    /* only emit bazel code for pkg listed here (string); nil means no
+       exclusion. set by cli -p option */
     s7_define_variable(s7, "*emit-bazel-pkg*", s7_f(s7));
 
-    /* if true emit 'main' attrib for binaries */
+    /* executable 'main' attr may be a module or an 'execlib'.
+       if this flag is true, use execlib; otherwise use module.
+    */
     s7_define_variable(s7, "*dune-execlib-includes-main*", s7_f(s7));
+
+    s7_define_variable(s7, "*emit-rules-jsoo*", s7_t(s7));
+    s7_define_variable(s7, "*emit-rules-js*", s7_t(s7));
+    s7_define_variable(s7, "*emit-rules-swc*", s7_f(s7));
+    s7_define_variable(s7, "*emit-rules-closure*", s7_f(s7));
 
     /* populate exclusions list, so scheme code can use it */
     char **p = NULL;

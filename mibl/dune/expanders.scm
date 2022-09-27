@@ -788,7 +788,7 @@
                                 (if-let ((found (find-in-exports ws (string->keyword arg))))
                                         (let* ((pkg (assoc-val :pkg found))
                                                (tgt (assoc-val :tgt found))
-                                               (entry `((,(string-keyword arg) (:pkg . ,pkg) (:tgt . ,tgt)))))
+                                               (entry `((,(string->keyword arg) (:pkg . ,pkg) (:tgt . ,tgt)))))
                                           (format #t "~A: ~A~%" (red "found") found)
                                           ;; (error 'STOP "STOP exp")
                                           entry)

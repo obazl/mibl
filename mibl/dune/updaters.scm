@@ -175,12 +175,12 @@
                 (let* ((pkg-key (car kv))
                        (pkg (cdr kv))
                        (stanzas (assoc-val :dune (cdr kv))))
-                  (format #t "~%~A: ~A~%" (bgcyan "pkg key") pkg-key)
+                  ;; (format #t "~%~A: ~A~%" (bgcyan "pkg key") pkg-key)
 
-                  (format #t "~A: ~A~%" (bgmagenta ":structures before") (assoc :structures pkg))
+                  ;; (format #t "~A: ~A~%" (bgmagenta ":structures before") (assoc :structures pkg))
                   ;; task 1.
                   (set! pkg (-normalize-pkg-files pkg))
-                  (format #t "~A: ~A~%" (bgmagenta ":structures after") (assoc :structures pkg))
+                  ;; (format #t "~A: ~A~%" (bgmagenta ":structures after") (assoc :structures pkg))
                   ;; (set! pkg (-normalize-pkg-files pkg))
                   ;; (format #t "~A: ~A~%" (bgred "normed pkg") pkg)
                   ;; (if (equal? "compiler/lib" (car (assoc-val :pkg-path (cdr kv))))
@@ -544,10 +544,10 @@
       ;; and other-tgts
       (let-values (((module-tgts sig-tgts struct-tgts file-tgts)
                     (-partition-tgts tgts)))
-        (format #t "~A: ~A~%" (blue "module-tgts") module-tgts)
-        (format #t "~A: ~A~%" (blue "sig-tgts")    sig-tgts)
-        (format #t "~A: ~A~%" (blue "struct-tgts") struct-tgts)
-        (format #t "~A: ~A~%" (blue "file-tgts")   file-tgts)
+        ;; (format #t "~A: ~A~%" (blue "module-tgts") module-tgts)
+        ;; (format #t "~A: ~A~%" (blue "sig-tgts")    sig-tgts)
+        ;; (format #t "~A: ~A~%" (blue "struct-tgts") struct-tgts)
+        ;; (format #t "~A: ~A~%" (blue "file-tgts")   file-tgts)
 
         (if (not (null? module-tgts))
             (for-each (lambda (tgt)
