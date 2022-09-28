@@ -242,110 +242,131 @@ enum extension fext(const char *filename) {
 /* } */
 
 //FIXME: use std lib fn instead?
-char* mystrcat( char* dest, char* src )
-{
-     while (*dest) dest++;
-     while ( (*dest++ = *src++) );
-     return --dest;
-}
+/* char* mystrcat( char* dest, char* src ) */
+/* { */
+/*      while (*dest) dest++; */
+/*      while ( (*dest++ = *src++) ); */
+/*      return --dest; */
+/* } */
 
 /* **************************************************************** */
 /*
   equivalent to 'mkdir -p'. caller must free result.
   assumption: base already exists
  */
-EXPORT char *mkdir_r(char *base, char *path)
+EXPORT char *mkdir_r(char *base, char *_path)
 {
     /* log_debug("entering mkdir_r base: '%s', path: '%s'", base, path); */
 
-    char *buf_dirname[PATH_MAX];
-    char *buf_basename[PATH_MAX];
+    /* UT_string *path; */
+    /* utstring_new(path); */
+    /* utstring_printf(path, "%s/%s", base, _path); */
 
-    if ( access(base, R_OK) ) {
-        /* base does not exist */
-        /* log_debug("mkdir_r recurring to create base: %s, path: %s", */
-        /*           dirname_r(base, buf_dirname), basename_r(base, buf_basename)); */
-        mkdir_r(dirname_r(base, (char*)buf_dirname), basename_r(base, (char*)buf_basename));
-    }
-    /* now base should exist */
-    if ( access(base, R_OK) ) {
-        log_fatal("no base: %s", base);
-        exit(EXIT_FAILURE);
+    char tmp[256];
+    char *p = NULL;
+    size_t len;
+
+    snprintf(tmp, sizeof(tmp),"%s/%s", base, _path);
+    len = strlen(tmp);
+    if (tmp[len - 1] == '/')
+        tmp[len - 1] = 0;
+    for (p = tmp + 1; *p; p++)
+        if (*p == '/') {
+            *p = 0;
+            mkdir(tmp, S_IRWXU);
+            *p = '/';
+        }
+    mkdir(tmp, S_IRWXU);
+
+
+    /* char *buf_dirname[PATH_MAX]; */
+    /* char *buf_basename[PATH_MAX]; */
+
+    /* if ( access(base, R_OK) ) { */
+    /*     /\* base does not exist *\/ */
+    /*     /\* log_debug("mkdir_r recurring to create base: %s, path: %s", *\/ */
+    /*     /\*           dirname_r(base, buf_dirname), basename_r(base, buf_basename)); *\/ */
+    /*     mkdir_r(dirname_r(base, (char*)buf_dirname), basename_r(base, (char*)buf_basename)); */
+    /* } */
+    /* /\* now base should exist *\/ */
+    /* if ( access(base, R_OK) ) { */
+    /*     log_fatal("no base: %s", base); */
+    /*     exit(EXIT_FAILURE); */
+    /* /\* } else { *\/ */
+    /* /\*     log_info("base exists: %s, %s", base, path); *\/ */
+    /* } */
+
+    /* if ( strlen(path) == 0 ) return base; */
+
+    /* if ( strncmp(path, ".", 1) == 0 */
+    /*      && strlen(path) == 1) */
+    /*     return base; */
+
+    /* char work[PATH_MAX]; */
+    /* work[0] = '\0'; */
+    /* char last_seg[PATH_MAX]; */
+    /* last_seg[0] = '\0'; */
+
+    /* char *bn = basename(path); */
+    /* mystrcat(last_seg, bn); */
+    /* /\* log_debug("mkdir_r last_seg: %s", last_seg); *\/ */
+    /* if ( ! strncmp(last_seg, path, PATH_MAX) ) { // 0 (false) means equal, so !0 means true */
+    /*     /\* printf("mkdir_r bottomed out at %s\n", path); *\/ */
+    /*     sprintf(work, "%s/%s", base, last_seg); */
+    /*     /\* log_debug("making dir1: %s\n", work); *\/ */
+    /*     rc = mkdir(work, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH); */
+    /*     if (rc != 0) { */
+    /*         errnum = errno; */
+    /*         if (errnum == EEXIST) { */
+    /*             /\* already exists *\/ */
+    /*             ; */
+    /*         } else { */
+    /*             fprintf(stderr, "mkdir failure\n"); */
+    /*             perror(work); */
+    /*             fprintf(stderr, "Value of errno: %d\n", errnum); */
+    /*             fprintf(stderr, "mkdir error %s\n", strerror( errnum )); */
+    /*             /\* free(work); *\/ */
+    /*             exit(EXIT_FAILURE); */
+    /*         } */
+    /*     } */
+    /*     /\* log_debug("mkdired 1: %s\n", work); *\/ */
+    /*     char *real = realpath(work, NULL); */
+    /*     /\* log_debug("\trealpath: %s\n", real); *\/ */
+    /*     free(real); */
+    /*     return strndup(work, PATH_MAX); */
     /* } else { */
-    /*     log_info("base exists: %s, %s", base, path); */
-    }
+    /*     /\* chop off last seg and recur *\/ */
+    /*     char *d = dirname(path); */
 
-    if ( strlen(path) == 0 ) return base;
+    /*     // RECUR */
+    /*     /\* log_debug("mkdir_r recurring on %s with pending last_seg %s", d, last_seg); *\/ */
+    /*     char *so_far = mkdir_r(base, d); */
+    /*     /\* log_debug("mkdir_r resuming after %s with pending last_seg %s", d, last_seg); *\/ */
 
-    if ( strncmp(path, ".", 1) == 0
-         && strlen(path) == 1)
-        return base;
-
-    char work[PATH_MAX];
-    work[0] = '\0';
-    char last_seg[PATH_MAX];
-    last_seg[0] = '\0';
-
-    char *bn = basename(path);
-    mystrcat(last_seg, bn);
-    /* log_debug("mkdir_r last_seg: %s", last_seg); */
-    if ( ! strncmp(last_seg, path, PATH_MAX) ) { // 0 (false) means equal, so !0 means true
-        /* printf("mkdir_r bottomed out at %s\n", path); */
-        sprintf(work, "%s/%s", base, last_seg);
-        /* log_debug("making dir1: %s\n", work); */
-        rc = mkdir(work, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
-        if (rc != 0) {
-            errnum = errno;
-            if (errnum == EEXIST) {
-                /* already exists */
-                ;
-            } else {
-                fprintf(stderr, "mkdir failure\n");
-                perror(work);
-                fprintf(stderr, "Value of errno: %d\n", errnum);
-                fprintf(stderr, "mkdir error %s\n", strerror( errnum ));
-                /* free(work); */
-                exit(EXIT_FAILURE);
-            }
-        }
-        /* log_debug("mkdired 1: %s\n", work); */
-        char *real = realpath(work, NULL);
-        /* log_debug("\trealpath: %s\n", real); */
-        free(real);
-        return strndup(work, PATH_MAX);
-    } else {
-        /* chop off last seg and recur */
-        char *d = dirname(path);
-
-        // RECUR
-        /* log_debug("mkdir_r recurring on %s with pending last_seg %s", d, last_seg); */
-        char *so_far = mkdir_r(base, d);
-        /* log_debug("mkdir_r resuming after %s with pending last_seg %s", d, last_seg); */
-
-        /* log_debug("mkdir_r so far: %s", so_far); */
-        sprintf(work, "%s/%s", so_far, last_seg);
-        if ( access(work, R_OK) ) {
-            /* work does not exist */
-            /* log_info("mkdir_r mking dir: %s\n", work); */
-            rc = mkdir(work, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
-            if (rc != 0) {
-                errnum = errno;
-                if (errnum == EEXIST) {
-                    /* already exists (should not happen) */
-                    ;
-                } else {
-                    fprintf(stderr, "mkdir failure");
-                    perror(work);
-                    free(so_far);
-                    /* free(work); */
-                    exit(EXIT_FAILURE);
-                }
-            }
-        }
-        /* log_debug("mkdired 2: %s\n", work); */
-        free(so_far);
-        return strndup(work, PATH_MAX);
-    }
+    /*     /\* log_debug("mkdir_r so far: %s", so_far); *\/ */
+    /*     sprintf(work, "%s/%s", so_far, last_seg); */
+    /*     if ( access(work, R_OK) ) { */
+    /*         /\* work does not exist *\/ */
+    /*         /\* log_info("mkdir_r mking dir: %s\n", work); *\/ */
+    /*         rc = mkdir(work, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH); */
+    /*         if (rc != 0) { */
+    /*             errnum = errno; */
+    /*             if (errnum == EEXIST) { */
+    /*                 /\* already exists (should not happen) *\/ */
+    /*                 ; */
+    /*             } else { */
+    /*                 fprintf(stderr, "mkdir failure"); */
+    /*                 perror(work); */
+    /*                 free(so_far); */
+    /*                 /\* free(work); *\/ */
+    /*                 exit(EXIT_FAILURE); */
+    /*             } */
+    /*         } */
+    /*     } */
+    /*     /\* log_debug("mkdired 2: %s\n", work); *\/ */
+    /*     free(so_far); */
+    /*     return strndup(work, PATH_MAX); */
+    /* } */
 }
 
 /* **************************************************************** */
@@ -427,11 +448,15 @@ void register_file(struct package_s *the_pkg, char *dir, char *pkg_base, char *p
     mname[0] = toupper(mname[0]);
     /* printf("fileset name: %s\n", mname); */
 
-    char tgt_label[512];
-    tgt_label[0] = '\0';
-    mystrcat(tgt_label, pkg_base);
-    mystrcat(tgt_label, ":");
-    mystrcat(tgt_label, mname);
+    /* char tgt_label[512]; */
+    UT_string *tgt_label;
+    utstring_new(tgt_label);
+    /* tgt_label[0] = '\0'; */
+    /* mystrcat(tgt_label, pkg_base); */
+    /* mystrcat(tgt_label, ":"); */
+    /* mystrcat(tgt_label, mname); */
+    utstring_printf(tgt_label, "%s:%s", pkg_base, mname);
+
     /* printf("tgt_label: %s\n", tgt_label); */
     /* struct fileset_s *test_s, *test_tgt_label; */
     /* HASH_ITER(hh, filesets, test_s, test_tgt_label) { */
@@ -526,24 +551,33 @@ int link_dir_rec(char *basedir,
     /* log_trace("link_dir_rec directory: %s\n", directory); */
     /* log_trace("link_dir_rec bazel_pkg: %s\n", bazel_pkg); */
 
-    char currdir[PATH_MAX];
-    currdir[0] = '\0';
-    mystrcat(currdir, basedir);
+    /* char currdir[PATH_MAX]; */
+    /* currdir[0] = '\0'; */
+    UT_string *currdir;
+    utstring_new(currdir);
+    /* mystrcat(currdir, basedir); */
+    utstring_printf(currdir, "%s", basedir);
     if (strnlen(directory, PATH_MAX) > 0) {
-        mystrcat(currdir, "/");
-        mystrcat(currdir, directory);
+        /* mystrcat(currdir, "/"); */
+        /* mystrcat(currdir, directory); */
+        utstring_printf(currdir, "/%s", directory);
     }
 
-    char currpkg[PATH_MAX];
-    currpkg[0] = '\0';
+    /* char currpkg[PATH_MAX]; */
+    /* currpkg[0] = '\0'; */
+    UT_string *currpkg;
+    utstring_new(currpkg);
     if (strnlen(bazel_pkg, PATH_MAX) > 0) {
-        mystrcat(currpkg, bazel_pkg);
+        /* mystrcat(currpkg, bazel_pkg); */
+        utstring_printf(currpkg, "%s", bazel_pkg);
         if (strnlen(directory, PATH_MAX) > 0) {
-            mystrcat(currpkg, "/");
-            mystrcat(currpkg, directory);
+            /* mystrcat(currpkg, "/"); */
+            /* mystrcat(currpkg, directory); */
+            utstring_printf(currpkg, "/%s", directory);
         }
     } else {
-        mystrcat(currpkg, directory);
+        /* mystrcat(currpkg, directory); */
+        utstring_printf(currpkg, "%s", directory);
     }
     /* log_debug("currpkg: %s", currpkg); */
 
@@ -568,20 +602,20 @@ int link_dir_rec(char *basedir,
     errno = 0;
     /* printf("opening dir %s\n", currdir); */
     /* d = opendir("/usr/local/lib/coq/plugins"); // coqlib); */
-    d = opendir(currdir);
+    d = opendir(utstring_body(currdir));
     if (d == NULL) {
         errnum = errno;
-        printf("opendir failure for %s", currdir);
+        printf("opendir failure for %s", utstring_body(currdir));
         fprintf(stderr, "Value of errno: %d\n", errnum);
-        fprintf(stderr, "opendir error %s: %s\n", currdir, strerror( errnum ));
+        fprintf(stderr, "opendir error %s: %s\n", utstring_body(currdir), strerror( errnum ));
         exit(1);
         /* return(-1); */
     }
     /* printf("opened dir %s\n", currdir); */
 
     struct package_s *the_pkg = NULL;
-    if (strlen(currpkg) > 0) {
-        HASH_FIND_STR(packages, currpkg, the_pkg);  /* pkg already in the hash? */
+    if (strlen(utstring_body(currpkg)) > 0) {
+        HASH_FIND_STR(packages, utstring_body(currpkg), the_pkg);  /* pkg already in the hash? */
         /* printf("found pkg? %d\n", p); */
     }
     if (the_pkg == NULL) {
@@ -594,7 +628,7 @@ int link_dir_rec(char *basedir,
             exit(1);
         }
         /* memset(the_pkg, 0, sizeof *the_pkg); */
-        strncpy(the_pkg->name, currpkg, strlen(currpkg));
+        strncpy(the_pkg->name, utstring_body(currpkg), strlen(utstring_body(currpkg)));
 
         /* s = (struct fileset_s *)malloc(sizeof *s); */
         /* if (s == NULL) { */
@@ -626,7 +660,7 @@ int link_dir_rec(char *basedir,
                 /* printf("handling subdir, currpkg: %s\n", currpkg); */
                 /* printf("handling subdir, dir: %s\n", dir_entry->d_name); */
                 /* log_debug("handling subdir, outdir: %s\n", outdir); */
-                link_dir_rec(currdir, currpkg, dir_entry->d_name,
+                link_dir_rec(utstring_body(currdir), utstring_body(currpkg), dir_entry->d_name,
                              /* outdir, */
                              linkfiles,
                              file_to_handle, handle_meta);
@@ -639,7 +673,7 @@ int link_dir_rec(char *basedir,
                     /* (or invoke callback) */
                     if ( handle_meta ) {
                         if (strncmp(dir_entry->d_name, file_to_handle, PATH_MAX) == 0) {
-                            handle_meta(basedir, currpkg, dir_entry->d_name);
+                            handle_meta(basedir, utstring_body(currpkg), dir_entry->d_name);
                         }
                         // FIXME: check for foo.META
                     }
