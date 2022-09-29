@@ -58,7 +58,9 @@ bool _is_ws_root(FTSENT *ftsentry)
     int rc = access(utstring_body(pathdir), R_OK);
     /* log_debug("RC: %d", rc); */
     if (!rc) {
+#if defined(DEBUG_TRACE)
         if (trace) log_trace("true");
+#endif
         return true;
     } else {
         utstring_new(pathdir);
@@ -66,11 +68,15 @@ bool _is_ws_root(FTSENT *ftsentry)
         utstring_printf(pathdir, "%s", "/WORKSPACE");
         rc = access(utstring_body(pathdir), R_OK);
         if (!rc) {
+#if defined(DEBUG_TRACE)
             if (trace) log_trace("true");
+#endif
             return true;
         }
     }
+#if defined(DEBUG_TRACE)
     if (trace) log_trace("false");
+#endif
     return false;
 }
 
@@ -111,6 +117,7 @@ LOCAL bool _this_is_hidden(FTSENT *ftsentry)
  */
 void handle_dir(FTS* tree, FTSENT *ftsentry)
 {
+#if defined(DEBUG_TRACE)
     if (debug) {
         log_debug("");
         /* log_debug(BLUE "_handle_dir:" CRESET " %s (%s)", */
@@ -121,6 +128,7 @@ void handle_dir(FTS* tree, FTSENT *ftsentry)
         log_info("%-20s%s", "ftsentry->path:", ftsentry->fts_path);
         log_info("%-20s%s", "ftsentry->accpath:", ftsentry->fts_accpath);
     }
+#endif
 
     UT_string *dune_test;
     utstring_new(dune_test);

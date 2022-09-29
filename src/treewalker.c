@@ -48,8 +48,10 @@ UT_string *dunefile_name;
 
 bool _is_ws_root(FTSENT *ftsentry)
 {
+#if defined(DEBUG_TRACE)
     if (trace)
         log_trace("_is_ws_root: %s", ftsentry->fts_path);
+#endif
 
     UT_string *pathdir;
     utstring_new(pathdir);
@@ -59,7 +61,9 @@ bool _is_ws_root(FTSENT *ftsentry)
     int rc = access(utstring_body(pathdir), R_OK);
     /* log_debug("RC: %d", rc); */
     if (!rc) {
+#if defined(DEBUG_TRACE)
         if (trace) log_trace("true");
+#endif
         return true;
     } else {
         utstring_new(pathdir);
@@ -67,11 +71,15 @@ bool _is_ws_root(FTSENT *ftsentry)
         utstring_printf(pathdir, "%s", "/WORKSPACE");
         rc = access(utstring_body(pathdir), R_OK);
         if (!rc) {
+#if defined(DEBUG_TRACE)
             if (trace) log_trace("true");
+#endif
             return true;
         }
     }
+#if defined(DEBUG_TRACE)
     if (trace) log_trace("false");
+#endif
     return false;
 }
 
@@ -108,9 +116,11 @@ int _compare(const FTSENT** one, const FTSENT** two)
 
 bool _include_this(FTSENT *ftsentry)
 {
+#if defined(DEBUG_TRACE)
     if (trace)
         log_trace(MAG "_include_this?" CRESET " %s (%s)",
                   ftsentry->fts_name, ftsentry->fts_path);
+#endif
 
     /* if (debug) { */
     /*     dump_mibl_config(); */
@@ -136,7 +146,9 @@ bool _include_this(FTSENT *ftsentry)
     else
         ptr = ftsentry->fts_path;
 
+#if defined(DEBUG_TRACE)
     if (debug) log_debug("srch ptr: %s", ptr);
+#endif
     char **p;
     p = NULL;
     p = utarray_find(mibl_config.exclude_dirs,
@@ -206,7 +218,9 @@ EXPORT void walk_tree(const char *home_sfx, const char *travroot)
 
     UT_string *abs_troot;
     utstring_new(abs_troot);
+#if defined(DEBUG_TRACE)
     if (debug) log_debug("build_wd: %s", build_wd);
+#endif
     utstring_printf(abs_troot, "%s/%s",
                     //getcwd(NULL,0),
                     //build_wd,
@@ -214,17 +228,21 @@ EXPORT void walk_tree(const char *home_sfx, const char *travroot)
                     travroot);
     char *abstr = strdup(utstring_body(abs_troot)); //FIXME: free after use
     char *_ews = effective_ws_root(abstr);
+#if defined(DEBUG_TRACE)
     if (debug) log_debug("ews: %s", _ews);
+#endif
     ews_root = _ews;
     // put ews_root into the scheme env. so users can use it
     /* s7_define_variable(s7, */
     /*                    "effective-ws-root", */
     /*                    s7_make_string(s7, ews_root)); */
 
+#if defined(DEBUG_TRACE)
     if (debug) {
         log_debug("haystack (troot): %s", utstring_body(abs_troot));
         log_debug("needle (ews): %s", ews_root);
     }
+#endif
 
     char *resolved_troot = strnstr(utstring_body(abs_troot),
                                    ews_root, strlen(ews_root));
@@ -240,10 +258,12 @@ EXPORT void walk_tree(const char *home_sfx, const char *travroot)
         /* log_error("no resolved_troot"); */
         resolved_troot = realpath(".", NULL);
     }
+#if defined(DEBUG_TRACE)
     if (debug) {
         log_debug("resolved resolved_troot: %s", resolved_troot);
         log_debug("cwd: %s", getcwd(NULL, 0));
     }
+#endif
 
     errno = 0;
 
@@ -256,9 +276,11 @@ EXPORT void walk_tree(const char *home_sfx, const char *travroot)
     */
     char *old_cwd = getcwd(NULL, 0);
     if (strncmp(old_cwd, ews_root, strlen(ews_root)) != 0) {
+#if defined(DEBUG_TRACE)
         if (debug) {
             log_debug("chdir: %s => %s\n", old_cwd, ews_root);
         }
+#endif
         rc = chdir(ews_root);
         if (rc != 0) {
             log_error("FAIL on chdir: %s => %s\n", old_cwd, ews_root);
@@ -266,7 +288,9 @@ EXPORT void walk_tree(const char *home_sfx, const char *travroot)
                     old_cwd, ews_root, strerror(errno));
             exit(EXIT_FAILURE);
         }
+#if defined(DEBUG_TRACE)
         if (debug) log_debug("%-16s%s", "cwd:",  getcwd(NULL, 0));
+#endif
     }
 
     FTS* tree = NULL;
@@ -279,9 +303,13 @@ EXPORT void walk_tree(const char *home_sfx, const char *travroot)
         [0] = (char *const)travroot,
         NULL
     };
-    if (debug) log_debug("_travroot: %s", _travroot[0]);
-    if (debug) log_debug("real _travroot: %s",
-                         realpath(_travroot[0], NULL));
+#if defined(DEBUG_TRACE)
+    if (debug) {
+        log_debug("_travroot: %s", _travroot[0]);
+        log_debug("real _travroot: %s",
+                  realpath(_travroot[0], NULL));
+    }
+#endif
 
     errno = 0;
     tree = fts_open(_travroot,
@@ -315,6 +343,7 @@ EXPORT void walk_tree(const char *home_sfx, const char *travroot)
             if (ftsentry->fts_info == FTS_DP) {
                 continue; // do not process post-order visits
             }
+#if defined(DEBUG_TRACE)
             if (debug) {
                 printf("\n");
                 log_debug(CYN "iter ftsentry->fts_name: " CRESET "%s",
@@ -322,6 +351,7 @@ EXPORT void walk_tree(const char *home_sfx, const char *travroot)
                 log_debug("iter ftsentry->fts_path: %s", ftsentry->fts_path);
                 log_debug("iter ftsentry->fts_info: %d", ftsentry->fts_info);
             }
+#endif
             /* if (debug) { */
             /*     if (ftsentry->fts_info != FTS_DP) { */
             /*         log_debug(CYN "ftsentry:" CRESET " %s (%s), type: %d", */
@@ -333,15 +363,19 @@ EXPORT void walk_tree(const char *home_sfx, const char *travroot)
             switch (ftsentry->fts_info)
                 {
                 case FTS_D : // dir visited in pre-order
+#if defined(DEBUG_TRACE)
                     if (trace)
                         log_trace("pre-order visit dir: %s (%s) :: (%s)",
                                   ftsentry->fts_name,
                                   ftsentry->fts_path,
                                   ftsentry->fts_accpath);
+#endif
                     if (_this_is_hidden(ftsentry)) {
+#if defined(DEBUG_TRACE)
                         if (trace)
                             log_trace(RED "Excluding" CRESET " hidden dir: %s",
                                       ftsentry->fts_path);
+#endif
                         fts_set(tree, ftsentry, FTS_SKIP);
                         /* break; */
                     }
@@ -351,8 +385,10 @@ EXPORT void walk_tree(const char *home_sfx, const char *travroot)
                         /* break; */
                     } else {
                         if (_include_this(ftsentry)) {
+#if defined(DEBUG_TRACE)
                             if (trace) log_info(RED "Including" CRESET " %s",
                                                 ftsentry->fts_path);
+#endif
                             if (strncmp(ftsentry->fts_name, "_build", 6) == 0) {
                                 /* skip _build (dune) */
                                 fts_set(tree, ftsentry, FTS_SKIP);
@@ -368,11 +404,13 @@ EXPORT void walk_tree(const char *home_sfx, const char *travroot)
                     break;
                 case FTS_DP:
                     /* postorder directory */
+#if defined(DEBUG_TRACE)
                     if (trace)
                         log_trace("post-order visit dir: %s (%s) :: (%s)",
                                   ftsentry->fts_name,
                                   ftsentry->fts_path,
                                   ftsentry->fts_accpath);
+#endif
                     break;
                 case FTS_F : // regular file
                     file_ct++;

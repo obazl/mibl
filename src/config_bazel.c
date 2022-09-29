@@ -117,7 +117,9 @@ void _set_base_ws_root(void)
     /*     printf(RED "_set_base_ws_root" CRESET "\n"); */
     /* } */
     char *_bws_root = getenv("BUILD_WORKSPACE_DIRECTORY");
+#if defined(DEBUG_TRACE)
     if (debug) log_debug("BUILD_WORKSPACE_DIRECTORY: %s", bws_root);
+#endif
 
     if (_bws_root == NULL) {
         /* we're not in Bazel rte, but we may be in a Bazel WS. So
@@ -125,15 +127,19 @@ void _set_base_ws_root(void)
            ancestor. */
         /* effective_ws_root makes a copy */
         bws_root = effective_ws_root(getcwd(NULL,0));
+#if defined(DEBUG_TRACE)
         if (debug)
             log_debug("Found WS file at %s", bws_root);
+#endif
     } else {
         bws_root = strdup(_bws_root);
     }
 
     ews_root = strdup(bws_root);  /* by default, effective ws == base ws */
+#if defined(DEBUG_TRACE)
     if (debug)
         log_debug("base ws root: %s", bws_root);
+#endif
 
     /* utstring_new(ws_root); */
     /* if (bws_root == NULL) */
@@ -145,24 +151,33 @@ void _set_base_ws_root(void)
 /* should always be called first, so launch dir gets set to cwd */
 EXPORT void bazel_configure(void) // char *_exec_root)
 {
+#if defined(DEBUG_TRACE)
     if (trace) {
         log_debug("bazel_configure");
     }
+#endif
     launch_dir = getcwd(NULL, 0);
 
     build_wd = getenv("BUILD_WORKING_DIRECTORY");
+
+#if defined(DEBUG_TRACE)
     if (debug) log_debug("BUILD_WORKING_DIRECTORY: %s", build_wd);
+#endif
 
     if (build_wd == NULL) {
         /* running outside of bazel */
+#if defined(DEBUG_TRACE)
         if (debug) log_debug("BUILD_WORKING_DIRECTORY: null");
+#endif
         build_wd = launch_dir;
     }
 
+#if defined(DEBUG_TRACE)
     if (debug) {
         log_debug("build_wd: %s (=BUILD_WORKING_DIRECTORY)", build_wd);
         log_debug("launch_dir: %s", launch_dir);
     }
+#endif
 
     homedir = getenv("HOME");
     /* log_debug("HOME: %s", homedir); */
