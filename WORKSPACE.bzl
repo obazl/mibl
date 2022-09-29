@@ -24,29 +24,30 @@ def cc_fetch_repos():
         # branch = "master"
     )
 
-    maybe(
-        http_archive,
-        name = "logc",
-        url  = "https://github.com/rxi/log.c/archive/refs/heads/master.zip",
-        sha256 = "4839147fb0674bcfb4b3ede3d1db055546d12315d2f7592862293dfd1c065f83",
-        strip_prefix = "log.c-master",
-        build_file_content = """
-cc_library(
-    name  = 'logc',
-    linkstatic = 1,
-    alwayslink = 1,
-    srcs  = ['src/log.c'],
-    hdrs = ['src/log.h'],
-    copts = [
-        '-std=c11',
-        # '-g',
-    ],
-    local_defines = ['LOG_USE_COLOR'],
-    visibility = ['//visibility:public']
-)
-""",
-        # sha256 = "33a5690733c5cc2ede39cb62ebf89e751f2448e27f20c8b2fbbc7d136b166804",
-    )
+    ## logc vendored
+#     maybe(
+#         http_archive,
+#         name = "logc",
+#         url  = "https://github.com/rxi/log.c/archive/refs/heads/master.zip",
+#         sha256 = "4839147fb0674bcfb4b3ede3d1db055546d12315d2f7592862293dfd1c065f83",
+#         strip_prefix = "log.c-master",
+#         build_file_content = """
+# cc_library(
+#     name  = 'logc',
+#     linkstatic = 1,
+#     alwayslink = 1,
+#     srcs  = ['src/log.c'],
+#     hdrs = ['src/log.h'],
+#     copts = [
+#         '-std=c11',
+#         # '-g',
+#     ],
+#     local_defines = ['LOG_USE_COLOR'],
+#     visibility = ['//visibility:public']
+# )
+# """,
+#         # sha256 = "33a5690733c5cc2ede39cb62ebf89e751f2448e27f20c8b2fbbc7d136b166804",
+#     )
 
     ######
     maybe(

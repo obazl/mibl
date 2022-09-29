@@ -12,16 +12,16 @@ CMD_FLAGS = [
 
 ## macos: -UDEBUG
 
-BOOTSTRAP_INCLUDES = [
-    "-I.",
-    "-Ibootstrap",
-    "-Iexternal/opam/bootstrap",
+BOOTSTRAP_INCLUDES = []
+#     "-I.",
+#     "-Ibootstrap",
+#     "-Iexternal/opam/bootstrap",
 
-    "-I$(GENDIR)",
-    "-I$(GENDIR)/bootstrap",
-    "-I$(GENDIR)/opam/bootstrap",
-    "-I$(GENDIR)/external/opam/bootstrap",
-]
+#     "-I$(GENDIR)",
+#     "-I$(GENDIR)/bootstrap",
+#     "-I$(GENDIR)/opam/bootstrap",
+#     "-I$(GENDIR)/external/opam/bootstrap",
+# ]
 
 def _lemon_impl(ctx):
 

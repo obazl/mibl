@@ -27,7 +27,7 @@
 #include "utstring.h"
 #endif
 
-#include "s7_config.h"
+#include "config_s7.h"
 
 /* char *callback_script_file = "dune.scm"; // passed in 'data' attrib */
 char *callback = "camlark_handler"; /* fn in callback_script_file  */
@@ -139,6 +139,26 @@ UT_string *xdg_data_home;
 
 #endif
 
+EXPORT s7_pointer g_effective_ws_root(s7_scheme *s7,  s7_pointer args)
+{
+    char *dir = NULL;
+    if ( s7_is_null(s7, args) ) {
+        dir = getcwd(NULL, 0);
+    } else {
+        s7_int args_ct = s7_list_length(s7, args);
+        if (args_ct == 1) {
+            s7_pointer arg = s7_car(args);
+            if (s7_is_string(arg)) {
+                dir = strdup((char*)s7_string(arg));
+            }
+        } else {
+            // throw exception
+        }
+    }
+    ews_root = effective_ws_root(dir);
+    free(dir); // effective_ws_root allocates its own
+    return s7_make_string(s7, ews_root);
+}
 
 void initialize_mibl_data_model(s7_scheme *s7)
 {

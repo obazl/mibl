@@ -2,10 +2,7 @@
 
 #include <stdbool.h>
 
-bool debug = false;
 bool dev_mode = false;
-bool trace = false;
-bool verbose = false;
 int  verbosity = 0;
 
 #include <unistd.h>
@@ -18,7 +15,7 @@ int  verbosity = 0;
 
 #include "ini.h"
 
-#include "mibl_config.h"
+#include "config_mibl.h"
 
 #if INTERFACE
 #define HOME_MIBL ".mibl"
@@ -51,8 +48,10 @@ struct mibl_config_s mibl_config = {
 
 LOCAL int _config_handler(void* config, const char* section, const char* name, const char* value)
 {
+#if defined(DEBUG_TRACE)
     if (trace)
         log_debug("config_handler section %s: %s=%s", section, name, value);
+#endif
 
     struct mibl_config_s *pconfig = (struct mibl_config_s*)config;
 
@@ -183,13 +182,13 @@ EXPORT void mibl_configure(void)
 
     rc = access(utstring_body(obazl_ini_path), R_OK);
     if (rc) {
-        if (verbose || debug)
+        if (verbose)
             log_warn("NOT FOUND: miblrc config file %s",
                      utstring_body(obazl_ini_path));
         //FIXME: also look in XDG_CONFIG_HOME
     } else {
         ini_error = false;
-        if (verbose || debug)
+        if (verbose)
             log_info("loading miblrc config file: %s",
                      utstring_body(obazl_ini_path));
 
@@ -215,6 +214,7 @@ EXPORT void mibl_configure(void)
     utarray_sort(mibl_config.exclude_dirs, strsort);
 
 #if defined(DEBUG_MIBL)
-    if (debug) dump_mibl_config();
+    if (debug)
+        dump_mibl_config();
 #endif
 }

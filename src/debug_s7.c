@@ -1,10 +1,11 @@
 #include <errno.h>
 #include <execinfo.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+
+/* #include "s7.h" */
 
 #include "log.h"
 /* #if EXPORT */
@@ -15,20 +16,6 @@
 
 bool debug = false;
 bool trace = false;
-
-/* void dump_mibl_config(void) */
-/* { */
-/*     log_debug("mibl_config:"); */
-/*     char **p; */
-/*     p = NULL; */
-/*     while ( (p=(char**)utarray_next(mibl_config.include_dirs,p))) { */
-/*         log_debug("  include: %s",*p); */
-/*     } */
-/*     p = NULL; */
-/*     while ( (p=(char**)utarray_next(mibl_config.exclude_dirs,p))) { */
-/*         log_debug("  exclude: %s",*p); */
-/*     } */
-/* } */
 
 /* #if defined(DEBUG) */
 /* https://stackoverflow.com/questions/6934659/how-to-make-backtrace-backtrace-symbols-print-the-function-names */
@@ -45,8 +32,13 @@ static void full_write(int fd, const char *buf, size_t len)
         }
 }
 
-void print_c_backtrace(void)
+void s7_show_stack(s7_scheme *sc);
+
+void print_backtrace(s7_scheme *s7)
 {
+    s7_show_stack(s7);
+    /* s7_stacktrace(s7); */
+
     static const char start[] = "C BACKTRACE ------------\n";
     static const char end[] = "----------------------\n";
 

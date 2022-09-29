@@ -29,7 +29,7 @@
 #include "utstring.h"
 #endif
 
-#include "bazel_config.h"
+#include "config_bazel.h"
 
 /* bool debug; */
 /* bool verbose; */
@@ -42,8 +42,9 @@ char *launch_dir; /* real launch dir */
 /* path args passed to mibl relative to build_wd */
 
 /* UT_string *ws_root; */
-char *bws_root;     /* base ws root */
-char *ews_root;                 /* effective ws root */
+char *bws_root = NULL;     /* base ws root */
+char *ews_root = NULL;     /* effective ws root */
+
 char *traversal_root;           /* maybe not same as ws root */
 
 /* UT_string *runfiles_root;       /\* bazel only *\/ */
@@ -65,31 +66,12 @@ char *homedir;
 /*
   FIXME: also deal with dune workspace roots
  */
-EXPORT s7_pointer g_effective_ws_root(s7_scheme *s7,  s7_pointer args)
-{
-    char *dir = NULL;
-    if ( s7_is_null(s7, args) ) {
-        dir = getcwd(NULL, 0);
-    } else {
-        s7_int args_ct = s7_list_length(s7, args);
-        if (args_ct == 1) {
-            s7_pointer arg = s7_car(args);
-            if (s7_is_string(arg)) {
-                dir = strdup((char*)s7_string(arg));
-            }
-        } else {
-            // throw exception
-        }
-    }
-    ews_root = effective_ws_root(dir);
-    free(dir); // effective_ws_root allocates its own
-    return s7_make_string(s7, ews_root);
-}
-
 char *_effective_ws_root(char *dir)
 {
+#if defined(DEBUG_TRACE)
     if (trace)
         log_debug("effective_ws_root: %s", dir);
+#endif
 
    if (strncmp(homedir, dir, strlen(dir)) == 0) {
        log_debug("xxxx");

@@ -1,9 +1,9 @@
 SRCS = [
     "load_dune.c",
-    "bazel_config.c",
-    "mibl_config.c",
-    "opam_config.c",
-    "s7_config.c",
+    "config_bazel.c",
+    "config_mibl.c",
+    "config_opam.c",
+    "config_s7.c",
     "error_handler.c",
     "fs.c",
     "utils.c",

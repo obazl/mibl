@@ -9,25 +9,33 @@ load(":BUILD.bzl", "SRCS", "mkhdr_srcs")
 
 SRCS = [
     "load_dune.c",
-    "bazel_config.c",
-    "mibl_config.c",
-    "opam_config.c",
-    "s7_config.c",
+    "config.c",
+    "config_bazel.c",
+    "config_mibl.c",
+    "config_opam.c",
+    "config_s7.c",
     "error_handler.c",
     "fs.c",
     "utils.c",
+
+    # "treewalker.c",
+    # "handlers.c"
     # "debug.c"
 ]
 
 HDRS = [
     "load_dune.h",
-    "bazel_config.h",
-    "mibl_config.h",
-    "opam_config.h",
-    "s7_config.h",
+    # "config_bazel.h",
+    # "config_mibl.h",
+    # "config.h",
+    "config_opam.h",
+    "config_s7.h",
     "error_handler.h",
     "fs.h",
-    "utils.h",
+    # "utils.h",
+
+    # "treewalker.h",
+    # "handlers.h"
     # "debug.h"
 ]
 
@@ -40,7 +48,10 @@ cc_library(
         "//bzl/host:linux": ["strlcat.c", "strlcpy.c", "strnstr.c"],
         "//conditions:default":   []
     }) + select({
-        "//compilation_mode:dbg?": ["debug.c", "debug.h"],
+        "//compilation_mode:dbg?": [
+            "debug.c", "debug.h",
+            "debug_mibl.c", "debug_mibl.h"
+        ],
         "//conditions:default": []
     }) + [
         "log.c",
@@ -94,7 +105,6 @@ cc_library(
     ],
     deps = [
         "//external/libinih:inih",
-        # "@logc//:logc",
         "@libs7//src:s7",
         "@libs7//vendored/linenoise",
     ],
@@ -118,22 +128,10 @@ cc_binary(
 ########
 genrule(
     name = "mkhdrs",
-    # srcs = SRCS + [
-    #     "ansi_colors.h",
-    #     # "uthash.h", "utarray.h", "utstring.h"
-    # ],
-    srcs = SRCS + ["debug.c", "ansi_colors.h"],
-    ## NB: we always make debug.h, but we select debug.[ch]
-    ## in the cc_rule, not here
-    # + select({
-    #     "//bzl/compilation_mode:dbg": ["debug.c"],
-    #     "//conditions:default": []
-    # }),
-    #FIXME outs is not configurable
-    outs = HDRS + ["debug.h"],
+    srcs = SRCS + ["ansi_colors.h"],
+    outs = HDRS,
     cmd = CMD_HDR + "$(location :makeheaders) "
     + "$(SRCS); cp $${SRCDIR1}/*.h $(@D)",
-    # + mkhdr_srcs() + "; cp $${SRCDIR1}/*.h $(@D)",
     tools = [":makeheaders"],
     visibility = ["//visibility:public"]
 )
@@ -141,10 +139,6 @@ genrule(
 ########
 genrule(
     name = "mkhdrs-export",
-    # srcs = + select({
-    #     "//bzl/compilation_mode:dbg": ["debug.c"],
-    #     "//conditions:default": []
-    # }) + ["ansi_colors.h"],
     srcs = SRCS + [
         "ansi_colors.h",
         "uthash.h", "utarray.h", "utstring.h"
@@ -162,4 +156,175 @@ genrule(
 config_setting(
     name = "dbg_mode",
     values = {"compilation_mode": "dbg"},
+)
+
+################################################################
+####    OPAM Loader
+################################################################
+cc_library(
+    name = "treewalker",
+    srcs = [
+        "treewalker.c",
+        "treewalker.h",
+        "handlers.c",
+        "handlers.h",
+        "//src:config.c",
+        "//src:config.h",
+        "//src:config_bazel.c",
+        "//src:config_bazel.h",
+        "//src:config_mibl.c",
+        "//src:config_mibl.h",
+        "//src:utils.c",
+        "//src:utils.h",
+        "//src:log.c",
+        "//src:log.h",
+        "//src:utarray.h",
+        "//src:uthash.h",
+        "//src:utstring.h",
+    ] + select({
+        "//compilation_mode:dbg?": [
+            "debug.c", "debug.h",
+            "debug_mibl.c", "debug_mibl.h"
+        ],
+        "//conditions:default": []
+    }),
+    hdrs = [
+        "libtreewalker.h",
+    ],
+    copts = [
+        "-Isrc",
+        "-I$(GENDIR)/src",
+        "-Iexternal/libs7/src",
+        "-Iexternal/libinih",
+    ],
+    defines = select({
+        "//compilation_mode:dbg?": ["DEBUG_TRACE", "DEBUG_MIBL"],
+        "//conditions:default":   []
+    }),
+    deps = [
+        # "//src:mibl",
+        # "@libs7//src:s7",
+        "//external/libinih:inih",
+    ],
+    visibility = ["//visibility:public"]
+)
+
+genrule(
+    name = "mkhdrs_treewalker",
+    srcs = [
+        "treewalker.c",
+        "handlers.c",
+        "//src:config.c",
+        "//src:config_mibl.c",
+        "//src:config_bazel.c",
+        "//src:utils.c",
+        "ansi_colors.h",
+    ] + select({
+        "//compilation_mode:dbg?": [
+            "debug.c", "debug_mibl.c"],
+        "//conditions:default": []
+    }),
+    outs = [
+        "treewalker.h",
+        "handlers.h",
+        # "config_bazel.h",
+        # "config_mibl.h"
+    ],
+    cmd = "\n".join([
+        "SRC1=$(location treewalker.c)",
+        "SRCDIR1=`dirname $$SRC1`;",
+        "$(location :makeheaders) \\",
+        "$(SRCS);",
+        "cp $${SRCDIR1}/*.h $(@D)",
+        # "> $@"
+    ]),
+    tools = [":makeheaders"],
+    visibility = ["//visibility:private"]
+)
+
+genrule(
+    name = "mkhdrs_libtreewalker",
+    srcs = [
+        "treewalker.c",
+        "handlers.c",
+        "//src:config.c",
+        "//src:config_mibl.c",
+        "//src:config_bazel.c",
+        "//src:utils.c",
+        "ansi_colors.h",
+    ] + select({
+        "//compilation_mode:dbg?": [
+            "debug.c", "debug_mibl.c"
+        ],
+        "//conditions:default": []
+    }),
+    outs = [
+        "libtreewalker.h",
+        # "handlers.h",
+        # "config_bazel.h",
+        # "config_mibl.h"
+    ],
+    cmd = "\n".join([
+        "SRC1=$(location treewalker.c)",
+        "SRCDIR1=`dirname $$SRC1`;",
+        "$(location :makeheaders) -H \\",
+        "$(SRCS) \\",
+        # "cp $${SRCDIR1}/*.h $(@D)",
+        "> $@"
+    ]),
+    tools = [":makeheaders"],
+    visibility = ["//visibility:private"]
+)
+
+genrule(
+    name = "mkhdrs_config",
+    srcs = [
+        "config.c",
+        "config_bazel.c",
+        "config_mibl.c",
+        "utils.c"
+    ] + select({
+        "//compilation_mode:dbg?": [
+            "debug.c", "debug_mibl.c"],
+        "//conditions:default": []
+    }),
+    outs = [
+        "config.h",
+        "config_bazel.h",
+        "config_mibl.h",
+        "utils.h"
+    ],
+    cmd = "\n".join([
+        "SRC1=$(location config_bazel.c)",
+        "SRCDIR1=`dirname $$SRC1`;",
+        "$(location :makeheaders) \\",
+        "$(SRCS); \\",
+        "cp $${SRCDIR1}/*.h $(@D)",
+        # "> $@"
+    ]),
+    tools = [":makeheaders"],
+    visibility = ["//visibility:private"]
+)
+
+genrule(
+    name = "mkhdrs_debug",
+    srcs = [
+        "debug.c",
+        "config_mibl.c",
+        "debug_mibl.c",
+    ],
+    outs = [
+        "debug.h",
+        "debug_mibl.h",
+    ],
+    cmd = "\n".join([
+        "SRC1=$(location debug.c)",
+        "SRCDIR1=`dirname $$SRC1`;",
+        "$(location :makeheaders) \\",
+        "$(SRCS); \\",
+        "cp $${SRCDIR1}/*.h $(@D)",
+        # "> $@"
+    ]),
+    tools = [":makeheaders"],
+    visibility = ["//visibility:private"]
 )

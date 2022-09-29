@@ -6,6 +6,8 @@ cc_binary(
     linkstatic = True,
     srcs  = [
         "convert.c", "convert.h",
+        # "//src:log.c",
+        # "//src:log.h",
     ],
     defines = select({
         "//bzl/host:debug": ["DEBUG_TRACE"],
@@ -25,16 +27,17 @@ cc_binary(
         "-Wpedantic",
         "-Wno-unused-function",
 
-        "-I$(GENDIR)/convert",
-        "-I$(GENDIR)/src",
+        "-Isrc",                             # log.h (local)
+        "-Iexternal/mibl/src",               # log.h
 
-        "-I$(GENDIR)/external/mibl/convert",
-        "-I$(GENDIR)/external/mibl/src",
+        "-I$(GENDIR)/convert",               # convert.h (local)
+        "-I$(GENDIR)/external/mibl/convert", # convert.h
+
+        "-I$(GENDIR)/src",                   # mibl.h (local)
+        "-I$(GENDIR)/external/mibl/src",     # mibl.h
 
         "-Iexternal/uthash/include",
         "-Iexternal/libinih",
-        "-Iexternal/logc/src",
-
         "-Iexternal/libs7/src",
     ],
     linkopts = select({
@@ -54,7 +57,6 @@ cc_binary(
     deps = [
         "//src:mibl",
         "//external/libinih:inih",
-        "@logc//:logc",
         # "@libs7//src:s7",
         # "@libs7//src:c_s7",
         # "@libs7//vendored/linenoise",

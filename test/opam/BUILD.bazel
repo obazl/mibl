@@ -2,6 +2,29 @@ load("@rules_cc//cc:defs.bzl", "cc_library")
 load("//src/opam:BUILD.bzl", "CMD_FLAGS", "BOOTSTRAP_INCLUDES")
 
 ################################################################
+cc_binary(
+    name  = "walk_test",
+    srcs  = [
+        "walk_test.c",
+        "walk_test.h",
+        "//src:log.h"
+    ],
+    copts = CMD_FLAGS + BOOTSTRAP_INCLUDES + [
+        "-Isrc",
+        "-I$(GENDIR)/src",
+        "-I$(GENDIR)/src/opam",
+        "-I$(GENDIR)/test/opam",
+        # "-I$(GENDIR)/external/opam/test"
+    ],
+    defines = ["DEBUG", "DEBUG_TRACE"],
+    deps = [
+        "//src:treewalker",
+        # "//src/opam:opam_lexer"
+    ],
+    linkstatic = 1
+)
+
+################################################################
 ## testing lexis, syntaxis
 
 cc_binary(
@@ -69,14 +92,16 @@ cc_binary(
 ################################################################
 genrule(
     name = "mkhdrs",
-    srcs = ["opam_lex.c", "opam_parse.c"],
-    outs = ["opam_lex.h", "opam_parse.h"],
+    srcs = ["opam_lex.c", "opam_parse.c",
+            "walk_test.c"],
+    outs = ["opam_lex.h", "opam_parse.h", "walk_test.h"],
     cmd = "\n".join([
         "SRC1=$(location opam_lex.c)",
         "SRCDIR1=`dirname $$SRC1`",
         "$(location //src:makeheaders) \\",
         "    $(location opam_lex.c) \\",
-        "    $(location opam_parse.c)",
+        "    $(location opam_parse.c) \\",
+        "    $(location walk_test.c) ",
         "cp $${SRCDIR1}/*.h $(@D)",
     ]),
     tools = ["//src:makeheaders"],

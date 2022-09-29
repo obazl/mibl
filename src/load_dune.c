@@ -1945,16 +1945,19 @@ LOCAL void _update_ml(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
     if (verbose) {
         log_info(BLU "_update_ml:" CRESET " %s; ", mname);
         log_info("pkg name: %s; fname: %s", pkg_name, ftsentry->fts_name);
+        log_info("fts_path: %s\n", ftsentry->fts_path);
+        log_info("fts_accpath: %s\n", ftsentry->fts_accpath);
     }
 
     char *ml_name = strdup(ftsentry->fts_name);
 
     /* dirname may mutate its arg, use a copy */
+#
     char *dname = strdup(ftsentry->fts_path);
     UT_string *mli_test;
     utstring_new(mli_test);
     /* add terminal 'i' with printf */
-    utstring_printf(mli_test, "%s/%si", dirname(dname), ml_name);
+    utstring_printf(mli_test, "%s/%si", realpath(dirname(dname), NULL), ml_name);
     if (trace) {
         log_debug("Checking for companion .mli: %s",
                   utstring_body(mli_test));

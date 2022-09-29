@@ -27,7 +27,7 @@
 #include "utstring.h"
 #endif
 
-#include "opam_config.h"
+#include "config_opam.h"
 
 /* const char *errmsg = NULL; */
 

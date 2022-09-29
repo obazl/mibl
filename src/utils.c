@@ -1,6 +1,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <fts.h>
 #include <glob.h>
 #include <libgen.h>
 #ifdef __linux__
@@ -22,7 +23,7 @@
 #include "ini.h"
 #include "log.h"
 #if EXPORT_INTERFACE
-#include "s7.h"
+/* #include "s7.h" */
 #include "utarray.h"
 #include "utstring.h"
 #endif
@@ -162,3 +163,22 @@ EXPORT char * run_cmd(char *executable, char **argv)
     posix_spawn_file_actions_destroy(&action);
     return buffer;
 }
+
+LOCAL char principal[256];
+
+LOCAL char *_module_name(FTSENT *ftsentry, char *ext)
+{
+    strlcpy(principal, ftsentry->fts_name, 256);
+    principal[ext - ftsentry->fts_name] = '\0';
+    principal[0] = toupper(principal[0]);
+    return (char *)principal;
+}
+
+LOCAL char *_principal_name(FTSENT *ftsentry, char *ext)
+{
+    strlcpy(principal, ftsentry->fts_name, 256);
+    principal[ext - ftsentry->fts_name] = '\0';
+    /* principal[0] = toupper(principal[0]); */
+    return (char *)principal;
+}
+
