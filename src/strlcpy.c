@@ -1,7 +1,7 @@
-/*	$OpenBSD: strlcpy.c,v 1.12 2015/01/15 03:54:12 millert Exp $	*/
+/*	$OpenBSD: strlcpy.c,v 1.16 2019/01/25 00:19:25 millert Exp $	*/
 
 /*
- * Copyright (c) 1998, 2015 Todd C. Miller <Todd.Miller@courtesan.com>
+ * Copyright (c) 1998, 2015 Todd C. Miller <millert@openbsd.org>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -16,11 +16,8 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <sys/cdefs.h>
-/* __FBSDID("$FreeBSD$"); */
-
 #include <sys/types.h>
-/* #include <sys/libkern.h> */
+#include <string.h>
 
 /*
  * Copy string src to buffer dst of size dsize.  At most dsize-1
@@ -28,7 +25,7 @@
  * Returns strlen(src); if retval >= dsize, truncation occurred.
  */
 size_t
-strlcpy(char * __restrict dst, const char * __restrict src, size_t dsize)
+strlcpy(char *dst, const char *src, size_t dsize)
 {
 	const char *osrc = src;
 	size_t nleft = dsize;
@@ -51,3 +48,4 @@ strlcpy(char * __restrict dst, const char * __restrict src, size_t dsize)
 
 	return(src - osrc - 1);	/* count does not include NUL */
 }
+/* DEF_WEAK(strlcpy); // OpenBSD-specific */
