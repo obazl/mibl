@@ -45,7 +45,8 @@ cc_library(
     alwayslink = True,
     # linkstatic = 1,
     srcs = SRCS + HDRS + select({
-        "//bzl/host:linux": ["strlcat.c", "strlcpy.c", "strnstr.c"],
+        "//bzl/host:linux": [
+            "linux/strlcat.c", "linux/strlcpy.c", "linux/strnstr.c"],
         "//conditions:default":   []
     }) + select({
         "//compilation_mode:dbg?": [
@@ -182,7 +183,8 @@ cc_library(
         "//src:uthash.h",
         "//src:utstring.h",
     ] + select({
-        "//bzl/host:linux": ["strlcat.c", "strlcpy.c", "strnstr.c"],
+        "//bzl/host:linux": [
+            "linux/strlcat.c", "linux/strlcpy.c", "linux/strnstr.c"],
         "//conditions:default":   []
     }) + select({
         "//compilation_mode:dbg?": [
