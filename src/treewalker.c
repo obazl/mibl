@@ -27,10 +27,6 @@
 UT_array  *segs;
 UT_string *group_tag;
 
-extern int dunefile_ct = 0;
-extern int file_ct = 0;
-extern int dir_ct  = 0;
-
 UT_string *dunefile_name;
 
 /* s7_int dune_gc_loc = -1; */
