@@ -176,8 +176,10 @@ void initialize_mibl_data_model(s7_scheme *s7)
      * passes.
      */
 
+#if defined(DEBUG_TRACE)
     if (trace)
         log_debug("_initialize_mibl_data_model");
+#endif
 
     /* _s7_acons = _load_acons(s7); */
     /* _s7_list_set = _load_list_set(s7); */
@@ -417,8 +419,10 @@ LOCAL void _config_s7_load_path_bazel_runfiles(char *manifest)
         /* exit(EXIT_FAILURE); */
     }
 
+#if defined(DEBUG_TRACE)
     if (debug)
         log_debug("Reading MANIFEST");
+#endif
 
     /* char *mibl_mibl = NULL; */
 
@@ -458,8 +462,10 @@ LOCAL void _config_s7_load_path_bazel_runfiles(char *manifest)
 
         if ( (strncmp(basename(token),
                       "libc_s7.so", 10) == 0) ) {
+#if defined(DEBUG_TRACE)
             if (trace)
                 log_info("FOUND LIBC_S7.SO: %s", token);
+#endif
 
             tmp_load_path =
                 s7_append(s7, tmp_load_path,
@@ -534,7 +540,7 @@ LOCAL void _config_s7_load_path_bws_root(void)
                     ews_root, PROJ_MIBL);
     rc = access(utstring_body(proj_script_dir), R_OK);
     if (rc) {
-        if (verbose || debug)
+        if (verbose)
             log_warn("project script dir %s not found",
                      utstring_body(proj_script_dir));
     } else {
@@ -556,7 +562,7 @@ LOCAL void _config_user_load_path(void)
 
     rc = access(utstring_body(user_script_dir), R_OK);
     if (rc) {
-        if (verbose || debug)
+        if (verbose)
             log_info("Not found: user script dir: %s",
                      utstring_body(user_script_dir));
     } else {
@@ -569,8 +575,10 @@ LOCAL void _config_user_load_path(void)
 
 LOCAL void _config_s7_load_path_xdg_home(void)
 {
+#if defined(DEBUG_TRACE)
     if (trace)
         log_trace("_config_s7_load_path_xdg_home");
+#endif
 
     UT_string *xdg_script_dir;
 
@@ -599,7 +607,7 @@ LOCAL void _config_s7_load_path_xdg_home(void)
     /*                 utstring_body(xdg_data_home)); */
     /* rc = access(utstring_body(xdg_script_dir), R_OK); */
     /* if (rc) { */
-    /*     if (verbose || debug) */
+    /*     if (verbose) */
     /*         log_info("Not found: %s.", utstring_body(xdg_script_dir)); */
     /* } else { */
     /*     if (verbose) */
@@ -613,7 +621,7 @@ LOCAL void _config_s7_load_path_xdg_home(void)
                     utstring_body(xdg_data_home));
     rc = access(utstring_body(xdg_script_dir), R_OK);
     if (rc) {
-        if (verbose || debug)
+        if (verbose)
             log_info("Not found: %s.", utstring_body(xdg_script_dir));
     } else {
         if (verbose)
@@ -627,7 +635,7 @@ LOCAL void _config_s7_load_path_xdg_home(void)
     /*                 utstring_body(xdg_data_home), "/mibl/dune"); */
     /* rc = access(utstring_body(xdg_script_dir), R_OK); */
     /* if (rc) { */
-    /*     if (verbose || debug) */
+    /*     if (verbose) */
     /*         log_info("Not found: %s.", utstring_body(xdg_script_dir)); */
     /* } else { */
     /*     if (verbose) */
@@ -641,7 +649,7 @@ LOCAL void _config_s7_load_path_xdg_home(void)
     /*                 utstring_body(xdg_data_home), "/mibl/meta"); */
     /* rc = access(utstring_body(xdg_script_dir), R_OK); */
     /* if (rc) { */
-    /*     if (verbose || debug) */
+    /*     if (verbose) */
     /*         log_info("Not found: %s.", utstring_body(xdg_script_dir)); */
     /* } else { */
     /*     if (verbose) */
@@ -655,7 +663,7 @@ LOCAL void _config_s7_load_path_xdg_home(void)
     /*                 utstring_body(xdg_data_home), "/mibl/opam"); */
     /* rc = access(utstring_body(xdg_script_dir), R_OK); */
     /* if (rc) { */
-    /*     if (verbose || debug) */
+    /*     if (verbose) */
     /*         log_info("Not found: %s.", utstring_body(xdg_script_dir)); */
     /* } else { */
     /*     if (verbose) */
@@ -669,7 +677,7 @@ LOCAL void _config_s7_load_path_xdg_home(void)
                     utstring_body(xdg_data_home));
     rc = access(utstring_body(xdg_script_dir), R_OK);
     if (rc) {
-        if (verbose || debug)
+        if (verbose)
             log_info("Not found: %s.", utstring_body(xdg_script_dir));
     } else {
         if (verbose)
@@ -696,7 +704,7 @@ LOCAL void _config_s7_load_path_xdg_sys(void)
                     xdg_data_dirs, "mibl");
     rc = access(utstring_body(xdg_script_dir), R_OK);
     if (rc) {
-        if (verbose || debug)
+        if (verbose)
             log_info("Not found: %s.", utstring_body(xdg_script_dir));
     } else {
         s7_add_to_load_path(s7, utstring_body(xdg_script_dir));
@@ -707,7 +715,7 @@ LOCAL void _config_s7_load_path_xdg_sys(void)
     /*                 xdg_data_dirs, "s7"); */
     /* rc = access(utstring_body(xdg_script_dir), R_OK); */
     /* if (rc) { */
-    /*     if (verbose || debug) */
+    /*     if (verbose) */
     /*         log_info("Not found: obazl s7 system script dir at: %s", */
     /*                  utstring_body(xdg_script_dir)); */
     /* } else { */
@@ -723,10 +731,12 @@ EXPORT void set_load_path(void) // char *scriptfile)
 {
     /* char *_wd = getcwd(NULL, 0); */
 
+#if defined(DEBUG_TRACE)
     if (debug) {
         s7_pointer lp = s7_load_path(s7);
         log_debug("*load-path*: %s", s7_object_to_c_string(s7, lp));
     }
+#endif
 
     /* FIXME: reliable way to detect if we're run by bazel */
 
@@ -756,14 +766,18 @@ bazel run is similar, but not identical, to directly invoking the binary built b
            directories to load-path. The only exception is the
            project-local script directory in <projroot>/.mibl . */
         s7_pointer lp = s7_load_path(s7);
+#if defined(DEBUG_TRACE)
         if (debug) {
             log_debug("1 *LOAD-PATH*: %s", TO_STR(lp));
         }
+#endif
         _config_s7_load_path_bazel_runfiles(manifest);
         lp = s7_load_path(s7);
+#if defined(DEBUG_TRACE)
         if (debug) {
             log_debug("2 *LOAD-PATH*: %s", TO_STR(lp));
         }
+#endif
     }
     _config_s7_load_path_bws_root();
 

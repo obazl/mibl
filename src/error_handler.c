@@ -44,10 +44,10 @@ s7_pointer _s7_read_thunk_catcher(s7_scheme *s7, s7_pointer args)
         // FIXME: test case: 'include' after baddot
         s7_pointer fixed = fix_baddot(dunefile_name);
         /* s7_pointer fixed = s7_eval_c_string(s7, "'(foob)"); */
+#if defined(DEBUG_TRACE)
         if (debug) log_debug(RED "FIXED:" CRESET " %s",
                              TO_STR(fixed));
         /* s7_show_stack(s7); */
-#if defined(DEBUG_TRACE)
         print_backtrace(s7);
 #endif
         /* close_error_config(); */
@@ -95,8 +95,11 @@ s7_pointer _s7_error_handler(s7_scheme *s7, s7_pointer args)
     /* log_info("err: %s", TO_STR(args)); */
 
     if (strstr(s7_string(s7_car(args)), "unexpected close paren:") != NULL) {
+#if defined(DEBUG_TRACE)
         if (debug)
             printf(RED "Error: BAD DOT" CRESET "\n");
+#endif
+
         s7_write(s7, s7_make_string(s7, "BADDOT"),
                  s7_current_error_port(s7));
 
@@ -346,7 +349,9 @@ char *dunefile_to_string(UT_string *dunefile_name)
 s7_pointer fix_baddot(UT_string *dunefile_name)
 {
     //FIXME: this duplicates the code in load_dune:_read_dunefile
+#if defined(DEBUG_TRACE)
     log_debug("fix_baddot");
+#endif
 
     char *dunestring = dunefile_to_string(dunefile_name);
 
@@ -372,8 +377,10 @@ s7_pointer fix_baddot(UT_string *dunefile_name)
             exit(EXIT_FAILURE);
         }
     }
+#if defined(DEBUG_TRACE)
     if (debug)
         log_debug("s7_open_input_string for error correction");
+#endif
 
     /* read all stanzas in dunefile */
     while(true) {
@@ -382,14 +389,16 @@ s7_pointer fix_baddot(UT_string *dunefile_name)
         /* log_debug("stanza: %s", stanza); */
         errmsg = s7_get_output_string(s7, s7_current_error_port(s7));
         if ((errmsg) && (*errmsg)) {
+#if defined(DEBUG_TRACE)
             if (debug) log_error("[%s\n]", errmsg);
+#endif
             s7_close_input_port(s7, sport);
             s7_shutdown(s7);
             exit(EXIT_FAILURE);
             break;
         }
         if (stanza == s7_eof_object(s7)) break;
-        log_debug("stanza: %s", TO_STR(stanza));
+        /* log_debug("stanza: %s", TO_STR(stanza)); */
         if (s7_is_null(s7,stanzas)) {
             stanzas = s7_list(s7, 1, stanza);
         } else{
