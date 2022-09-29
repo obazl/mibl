@@ -182,6 +182,9 @@ cc_library(
         "//src:uthash.h",
         "//src:utstring.h",
     ] + select({
+        "//bzl/host:linux": ["strlcat.c", "strlcpy.c", "strnstr.c"],
+        "//conditions:default":   []
+    }) + select({
         "//compilation_mode:dbg?": [
             "debug.c", "debug.h",
             "debug_mibl.c", "debug_mibl.h"
