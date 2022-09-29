@@ -27,16 +27,9 @@
 UT_array  *segs;
 UT_string *group_tag;
 
-int dunefile_ct = 0;
-int file_ct = 0;
-int dir_ct  = 0;
-
-void _indent(int i)
-{
-    /* printf("_indent: %d\n", i); */
-    /* for (; i > 0; i--) */
-    /*     printf("    "); */
-}
+extern int dunefile_ct = 0;
+extern int file_ct = 0;
+extern int dir_ct  = 0;
 
 UT_string *dunefile_name;
 
@@ -45,43 +38,6 @@ UT_string *dunefile_name;
 /* s7_pointer g_dunefile_port; */
 
 /* void s7_show_stack(s7_scheme *sc); */
-
-bool _is_ws_root(FTSENT *ftsentry)
-{
-#if defined(DEBUG_TRACE)
-    if (trace)
-        log_trace("_is_ws_root: %s", ftsentry->fts_path);
-#endif
-
-    UT_string *pathdir;
-    utstring_new(pathdir);
-    utstring_printf(pathdir, "%s", ftsentry->fts_path);
-    utstring_printf(pathdir, "%s", "/WORKSPACE.bazel");
-    /* log_trace("accessing %s", utstring_body(pathdir)); */
-    int rc = access(utstring_body(pathdir), R_OK);
-    /* log_debug("RC: %d", rc); */
-    if (!rc) {
-#if defined(DEBUG_TRACE)
-        if (trace) log_trace("true");
-#endif
-        return true;
-    } else {
-        utstring_new(pathdir);
-        utstring_printf(pathdir, "%s", ftsentry->fts_path);
-        utstring_printf(pathdir, "%s", "/WORKSPACE");
-        rc = access(utstring_body(pathdir), R_OK);
-        if (!rc) {
-#if defined(DEBUG_TRACE)
-            if (trace) log_trace("true");
-#endif
-            return true;
-        }
-    }
-#if defined(DEBUG_TRACE)
-    if (trace) log_trace("false");
-#endif
-    return false;
-}
 
 LOCAL bool _this_is_hidden(FTSENT *ftsentry)
 {
