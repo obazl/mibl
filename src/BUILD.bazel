@@ -1,13 +1,9 @@
-# load("@rules_cc//cc:defs.bzl", "cc_library")
-
 exports_files([
     "log.c", "log.h",
     "utarray.h", "uthash.h", "utstring.h"
 ])
 
-load(":BUILD.bzl", "SRCS", "mkhdr_srcs")
-
-SRCS = [
+MIBL_SRCS = [
     "load_dune.c",
     "config.c",
     "config_bazel.c",
@@ -17,26 +13,6 @@ SRCS = [
     "error_handler.c",
     "fs.c",
     "utils.c",
-
-    # "treewalker.c",
-    # "handlers.c"
-    # "debug.c"
-]
-
-HDRS = [
-    "load_dune.h",
-    # "config_bazel.h",
-    # "config_mibl.h",
-    # "config.h",
-    "config_opam.h",
-    "config_s7.h",
-    "error_handler.h",
-    "fs.h",
-    # "utils.h",
-
-    # "treewalker.h",
-    # "handlers.h"
-    # "debug.h"
 ]
 
 ##########
@@ -44,7 +20,17 @@ cc_library(
     name  = "mibl",
     alwayslink = True,
     # linkstatic = 1,
-    srcs = SRCS + HDRS + select({
+    srcs = MIBL_SRCS + [
+        "load_dune.h",
+        "config.h",
+        "config_bazel.h",
+        "config_mibl.h",
+        "config_opam.h",
+        "config_s7.h",
+        "error_handler.h",
+        "fs.h",
+        "utils.h"
+    ] + select({
         "//bzl/host:linux": [
             "linux/strlcat.c", "linux/strlcpy.c", "linux/strnstr.c"],
         "//conditions:default":   []
@@ -129,8 +115,14 @@ cc_binary(
 ########
 genrule(
     name = "mkhdrs",
-    srcs = SRCS + ["ansi_colors.h"],
-    outs = HDRS,
+    srcs = MIBL_SRCS + ["ansi_colors.h"],
+    outs = [
+        "load_dune.h",
+        "config_opam.h",
+        "config_s7.h",
+        "error_handler.h",
+        "fs.h",
+    ],
     cmd = CMD_HDR + "$(location :makeheaders) "
     + "$(SRCS); cp $${SRCDIR1}/*.h $(@D)",
     tools = [":makeheaders"],
@@ -140,7 +132,7 @@ genrule(
 ########
 genrule(
     name = "mkhdrs-export",
-    srcs = SRCS + [
+    srcs = MIBL_SRCS + [
         "ansi_colors.h",
         "uthash.h", "utarray.h", "utstring.h"
     ],
@@ -148,7 +140,6 @@ genrule(
     cmd = CMD_HDR
     + "$(location :makeheaders) -H "
     + "$(SRCS)"
-    # + mkhdr_srcs()
     + " > $@",
     tools = [":makeheaders"],
     visibility = ["//visibility:public"]
