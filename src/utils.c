@@ -39,7 +39,17 @@ int strsort(const void *_a, const void *_b)
 
 EXPORT char * run_cmd(char *executable, char **argv)
 {
-    log_debug("run_cmd %s", argv[0]);
+#if defined(DEBUG_TRACE)
+    char **ptr = argv;
+    UT_string *tmp;
+    utstring_new(tmp);
+    while (*ptr) {
+        utstring_printf(tmp, "%s ", *ptr);
+        ptr++;
+    }
+    log_debug("run cmd: %s", utstring_body(tmp));
+    utstring_free(tmp);
+#endif
 
     pid_t pid;
     /* char *argv[] = { */
@@ -79,10 +89,10 @@ EXPORT char * run_cmd(char *executable, char **argv)
     posix_spawn_file_actions_addclose(&action, cout_pipe[1]);
     posix_spawn_file_actions_addclose(&action, cerr_pipe[1]);
 
-    /* now child will not inherit open pipes, but its stdout/stderr
-       FDs will be connected to the write ends of the pipe.
+    /* now child will not inherit open pipes (fds?), but its
+       stdout/stderr FDs will be connected to the write ends of our
+       pipes.
      */
-
     /* posix_spawn_file_actions_addopen(&action, */
     /*                                  STDOUT_FILENO, */
     /*                                  codept_deps_file, */
@@ -116,7 +126,7 @@ EXPORT char * run_cmd(char *executable, char **argv)
 
     /* https://github.com/pixley/InvestigativeProgramming/blob/114b698339fb0243f50cf5bfbe5d5a701733a125/test_spawn_pipe.cpp */
 
-    // Read from pipes
+    /* printf("Read from pipes\n"); */
     static char buffer[1024] = "";
     struct timespec timeout = {5, 0};
 
@@ -139,16 +149,15 @@ EXPORT char * run_cmd(char *executable, char **argv)
 
     int bytes_read = read(cerr_pipe[0], &buffer[0], 1024);
     if (bytes_read > 0) {
-        /* fprintf(stdout, "Read message: %s", buffer); */
+        fprintf(stdout, "Read message: %s", buffer);
     }
 
     bytes_read = read(cout_pipe[0], &buffer[0], 1024);
+    /* printf("outpipe bytes_read: %d\n", bytes_read); */
     if (bytes_read > 0){
-        //std::cout << "Read in " << bytes_read << " bytes from cout_pipe." << std::endl;
-        buffer[bytes_read] = '\0';
-        fprintf(stdout, "%s\n",
-                //bytes_read,
-                buffer);
+        /* drop trailing newline */
+        if (buffer[bytes_read - 1] == '\n')
+            buffer[bytes_read - 1] = '\0';
     }
 
     waitpid(pid, &rc, 0);
@@ -159,8 +168,7 @@ EXPORT char * run_cmd(char *executable, char **argv)
     }
 
     /* fprintf(stdout,  "exit code: %d\n", rc); */
-
-    posix_spawn_file_actions_destroy(&action);
+   posix_spawn_file_actions_destroy(&action);
     return buffer;
 }
 

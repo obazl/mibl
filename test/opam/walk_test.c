@@ -13,12 +13,12 @@
 #include <unistd.h>
 
 #include "log.h"
-#include "utarray.h"
-#include "utstring.h"
+/* #include "utarray.h" */
+/* #include "utstring.h" */
 
-#if INTERFACE
-#include "utstring.h"
-#endif
+/* #if INTERFACE */
+/* #include "utstring.h" */
+/* #endif */
 
 /* #include "opam_lexer.h" */
 /* #include "opam_lex.h" */
@@ -36,6 +36,8 @@ int main(int argc, char *argv[])
     int opt;
 
     char *opts = "hdtv";
+
+    char *opam_switch = NULL;
 
     while ((opt = getopt(argc, argv, opts)) != -1) {
         switch (opt) {
@@ -55,12 +57,22 @@ int main(int argc, char *argv[])
         case 'v':
             verbose = true;
         default:
-            log_error("Usage: %s [-f] [opamfile]", argv[0]);
-            exit(EXIT_FAILURE);
+            ;
+            /* log_error("Usage: %s [-f] [opamfile]", argv[0]); */
+            /* exit(EXIT_FAILURE); */
         }
     }
 
-    bazel_configure(); // getcwd(NULL, 0));
+    bazel_configure();
+    // bazel_configure does chdir to ws root
+
+    // opam_configure must be run from root ws to account for local switches
+    char *opam_lib;
+    if (opam_switch)
+        opam_lib = opam_configure(opam_switch);
+    else
+        opam_lib = opam_configure("");
+
     mibl_configure();
 
     /* char *wd = getenv("BUILD_WORKING_DIRECTORY"); */
@@ -69,7 +81,7 @@ int main(int argc, char *argv[])
     /*     chdir(wd); */
     /* } */
 
-    walk_tree("foo", "bar");
+    walk_tree(opam_lib, NULL);
 
     /* UT_array *result = opam_lex_file(utstring_body(opam_file)); */
 

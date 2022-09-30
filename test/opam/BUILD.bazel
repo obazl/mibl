@@ -10,11 +10,18 @@ cc_binary(
         "//src:log.h"
     ],
     copts = CMD_FLAGS + BOOTSTRAP_INCLUDES + [
-        "-Isrc",
+        "-Itest",
+
         "-I$(GENDIR)/src",
         "-I$(GENDIR)/src/opam",
         "-I$(GENDIR)/test/opam",
         # "-I$(GENDIR)/external/opam/test"
+
+        "-Iexternal/mibl/src",
+        "-I$(GENDIR)/external/mibl/src",
+
+        "-Iexternal/mibl/opam/test",
+        "-I$(GENDIR)/external/mibl/test/opam",
     ],
     defines = ["DEBUG", "DEBUG_TRACE"],
     deps = [

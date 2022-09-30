@@ -189,6 +189,8 @@ EXPORT void bazel_configure(void) // char *_exec_root)
 
     _set_base_ws_root();
 
+    chdir(bws_root);            /* always run from base ws root */
+
     /* mibl_config(); */
     /* utarray_new(src_files,&ut_str_icd); */
 }
