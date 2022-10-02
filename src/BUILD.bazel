@@ -34,7 +34,7 @@ cc_library(
         "utils.h"
     ] + select({
         "//bzl/host:linux": [
-            "linux/strlcat.c", "linux/strlcpy.c", "linux/strnstr.c"],
+            "//src/linux:strlcat.c", "//src/linux:strlcpy.c", "//src/linux:strnstr.c"],
         "//conditions:default":   []
     }) + select({
         "//compilation_mode:dbg?": [
@@ -183,7 +183,7 @@ cc_library(
         "//src:utstring.h",
     ] + select({
         "//bzl/host:linux": [
-            "linux/strlcat.c", "linux/strlcpy.c", "linux/strnstr.c"],
+            "//src/linux:strlcat.c", "//src/linux:strlcpy.c", "//src/linux:strnstr.c"],
         "//conditions:default":   []
     }) + select({
         "//compilation_mode:dbg?": [
