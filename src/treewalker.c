@@ -35,8 +35,15 @@ UT_string *dunefile_name;
 
 /* void s7_show_stack(s7_scheme *sc); */
 
+UT_string *meta_path;           /* = opam_lib + pkg_name */
+
 extern UT_string *opam_lib;
 
+int fts_d_ct  = 0;
+int fts_dp_ct  = 0;
+int fts_dot_ct  = 0;
+int fts_f_ct = 0;
+int fts_sl_ct = 0;
 
 LOCAL bool _this_is_hidden(FTSENT *ftsentry)
 {
@@ -126,10 +133,14 @@ bool _include_this(FTSENT *ftsentry)
     if (utarray_len(mibl_config.include_dirs) > 0) {
         p = NULL;
         while ( (p=(char**)utarray_next(mibl_config.include_dirs, p))) {
-            log_debug("inclusion test pfx: '%s', path: '%s'",
-                      *p, ftsentry->fts_path);
-            log_debug("result: %d\n",
-                      strncmp(*p, ftsentry->fts_path, strlen(*p)));
+#if defined(DEBUG_TRACE)
+            if (debug) {
+                log_debug("inclusion test pfx: '%s', path: '%s'",
+                          *p, ftsentry->fts_path);
+                log_debug("result: %d\n",
+                          strncmp(*p, ftsentry->fts_path, strlen(*p)));
+            }
+#endif
             if (strncmp(*p, ftsentry->fts_path, strlen(*p)) < 1) {
                 if (verbose) { // & verbosity > 2) {
                     log_info("Include! '%s'", ftsentry->fts_path);
@@ -151,29 +162,14 @@ LOCAL void _walk_opam(char *opam_switch)
     log_trace("walk_opam: %s", opam_switch);
     log_trace("global opam_lib: %s", utstring_body(opam_lib));
 
-    char *ext;
-
     char *old_cwd = getcwd(NULL, 0);
 
     int rc = chdir(opam_switch);
 
-/*     if (strncmp(old_cwd, ews_root, strlen(ews_root)) != 0) { */
-/* #if defined(DEBUG_TRACE) */
-/*         if (debug) { */
-/*             log_debug("chdir: %s => %s\n", old_cwd, ews_root); */
-/*         } */
-/* #endif */
-/*         rc = chdir(opam_switch); */
-/*         if (rc != 0) { */
-/*             log_error("FAIL on chdir: %s => %s\n", old_cwd, ews_root); */
-/*             fprintf(stderr, RED "FAIL on chdir: %s => %s: %s\n", */
-/*                     old_cwd, ews_root, strerror(errno)); */
-/*             exit(EXIT_FAILURE); */
-/*         } */
-/*     } */
 #if defined(DEBUG_TRACE)
     if (debug) log_debug("%-16s%s", "cwd:",  getcwd(NULL, 0));
 #endif
+    log_debug("%-16s%s", "cwd:",  getcwd(NULL, 0));
 
     FTS* tree = NULL;
     FTSENT *ftsentry     = NULL;
@@ -190,6 +186,7 @@ LOCAL void _walk_opam(char *opam_switch)
                     FTS_COMFOLLOW
                     | FTS_NOCHDIR
                     | FTS_PHYSICAL,
+                    /* | FTS_SEEDOT, // handle foo/. and foo/.. */
                     // NULL
                     &_compare
                     );
@@ -211,186 +208,39 @@ LOCAL void _walk_opam(char *opam_switch)
 
     if (NULL != tree) {
         while( (ftsentry = fts_read(tree)) != NULL) {
-            if (ftsentry->fts_info == FTS_DP) {
-                continue; // do not process post-order visits
-            }
+            /* if (ftsentry->fts_info == FTS_DP) { continue; } // do not process post-order visits */
+
 #if defined(DEBUG_TRACE)
             if (debug) {
                 printf("\n");
                 log_debug(CYN "iter ftsentry->fts_name: " CRESET "%s",
                           ftsentry->fts_name);
                 log_debug("iter ftsentry->fts_path: %s", ftsentry->fts_path);
-                log_debug("iter ftsentry->fts_info: %d", ftsentry->fts_info);
+                log_debug("iter ftsentry->fts_info: %d (%d)", ftsentry->fts_info, FTS_D);
             }
 #endif
-            /* if (debug) { */
-            /*     if (ftsentry->fts_info != FTS_DP) { */
-            /*         log_debug(CYN "ftsentry:" CRESET " %s (%s), type: %d", */
-            /*                   ftsentry->fts_name, */
-            /*                   ftsentry->fts_path, */
-            /*                   ftsentry->fts_info); */
-            /*     } */
-            /* } */
             switch (ftsentry->fts_info)
                 {
                 case FTS_D : // dir visited in pre-order
-#if defined(DEBUG_TRACE)
-                    if (trace)
-                        log_trace("pre-order visit dir: %s (%s) :: (%s)",
-                                  ftsentry->fts_name,
-                                  ftsentry->fts_path,
-                                  ftsentry->fts_accpath);
-#endif
-                    if (_this_is_hidden(ftsentry)) {
-#if defined(DEBUG_TRACE)
-                        if (trace)
-                            log_trace(RED "Excluding" CRESET " hidden dir: %s",
-                                      ftsentry->fts_path);
-#endif
-                        fts_set(tree, ftsentry, FTS_SKIP);
-                        /* break; */
-                    }
-                    else if (fnmatch("*.opam-bundle",
-                                     ftsentry->fts_name, 0) == 0) {
-                        fts_set(tree, ftsentry, FTS_SKIP);
-                        /* break; */
-                    } else {
-                        if (_include_this(ftsentry)) {
-#if defined(DEBUG_TRACE)
-                            if (trace) log_info(RED "Including" CRESET " %s",
-                                                ftsentry->fts_path);
-#endif
-                            if (strncmp(ftsentry->fts_name, "_build", 6) == 0) {
-                                /* skip _build (dune) */
-                                fts_set(tree, ftsentry, FTS_SKIP);
-                                break;
-                            }
-                            dir_ct++;
-                            handle_dir(tree, ftsentry);
-                            /* printf("pkg tbl: %s\n", TO_STR(pkg_tbl)); */
-                        } else {
-                            fts_set(tree, ftsentry, FTS_SKIP);
-                        }
-                    }
+                    fts_d_ct++;
+                    opam_handle_fts_d(tree, ftsentry);
                     break;
                 case FTS_DP:
-                    /* postorder directory */
-#if defined(DEBUG_TRACE)
-                    if (trace)
-                        log_trace("post-order visit dir: %s (%s) :: (%s)",
-                                  ftsentry->fts_name,
-                                  ftsentry->fts_path,
-                                  ftsentry->fts_accpath);
-#endif
+                    fts_dp_ct++;
+                    /* postorder directory - skip */
+                    break;
+                case FTS_DOT:
+                    /* log_debug("FTS_DOT ftsentry->fts_path: %s", ftsentry->fts_path); */
+                    /* log_debug("FTS_DOT ftsentry->fts_info: %d (%d)", ftsentry->fts_info, FTS_D); */
+                    fts_dot_ct++;
                     break;
                 case FTS_F : // regular file
-                    file_ct++;
-
-                    if (strncmp(ftsentry->fts_name,"BUILD.bazel", 11)==0){
-                            /* skip BUILD.bazel files */
-                            break;
-                    }
-                    /* TODO: skip *.bzl files */
-                    /* TODO: skip standard files: READMEs, LICENSE, etc. */
-                    /* handle_regular_file(ftsentry); */
-                    if (strncmp(ftsentry->fts_name, "dune-project", 12)
-                        == 0) {
-                        handle_dune_project_file(ftsentry);
-                        break;
-                    }
-                    if ((strncmp(ftsentry->fts_name, "dune", 4) == 0)
-                        /* don't read dune.foo */
-                        && (strlen(ftsentry->fts_name) == 4)) {
-                        handle_dune_file(ftsentry);
-                        /* break; */
-                        continue;
-                    }
-
-                    ext = strrchr(ftsentry->fts_name, '.');
-
-                    if (ext) {
-                        if ((strncmp(ext, ".ml", 3) == 0)) {
-                            handle_ml_file(ftsentry, ext);
-                        }
-                        else if ((strncmp(ext, ".md", 3) == 0)
-                                 && (strlen(ext) == 3)) {
-                            handle_ml_file(ftsentry, ext);
-                        }
-                        else if ((strncmp(ext, ".sh", 3) == 0)
-                                 && (strlen(ext) == 3)) {
-                            handle_file(ftsentry, ext);
-                            /*_handle_script_file(ftsentry, ext);*/
-                        }
-                        else if ((strncmp(ext, ".py", 3) == 0)
-                                 && (strlen(ext) == 3)) {
-                            handle_file(ftsentry, ext);
-                            /*_handle_script_file(ftsentry, ext);*/
-                        }
-                        else if ((strncmp(ext, ".opam", 5) == 0)
-                                 && (strlen(ext) == 5)) {
-                            handle_opam_file(ftsentry);
-                        }
-                        else if (fnmatch("*.opam.template",
-                                         ftsentry->fts_name, 0) == 0) {
-                            handle_opam_template_file(ftsentry);
-                        }
-                        else if (strncmp(ext, ".ocamlformat", 12) == 0) {
-                            handle_ocamlformat_file(ftsentry);
-                        }
-                        else if ((strncmp(ext, ".c", 2) == 0)
-                                 && (strlen(ext) == 2)) {
-                            handle_cc_file(ftsentry, ext);
-                        }
-                        else if ((strncmp(ext, ".h", 2) == 0)
-                                 && (strlen(ext) == 2)) {
-                            handle_cc_file(ftsentry, ext);
-                        }
-                        else if ((strncmp(ext, ".cc", 3) == 0)
-                                 && (strlen(ext) == 3)) {
-                            handle_cc_file(ftsentry, ext);
-                        }
-                        else if ((strncmp(ext, ".hh", 3) == 0)
-                                 && (strlen(ext) == 3)) {
-                            handle_cc_file(ftsentry, ext);
-                        }
-                        else if ((strncmp(ext, ".cpp", 4) == 0)
-                                 && (strlen(ext) == 4)) {
-                            handle_cc_file(ftsentry, ext);
-                        }
-                        else if ((strncmp(ext, ".hpp", 4) == 0)
-                                 && (strlen(ext) == 4)) {
-                            handle_cc_file(ftsentry, ext);
-                        }
-                        else if ((strncmp(ext, ".cxx", 4) == 0)
-                                 && (strlen(ext) == 4)) {
-                            handle_cc_file(ftsentry, ext);
-                        }
-                        else if ((strncmp(ext, ".hxx", 4) == 0)
-                                 && (strlen(ext) == 4)) {
-                            handle_cc_file(ftsentry, ext);
-                        }
-                        else {
-                            handle_file(ftsentry, ext);
-                        }
-                    }
-                    else {
-                        /* no extension */
-                        if ((strstr(ftsentry->fts_name, "opam"))
-                            && (strlen(ftsentry->fts_name) == 4)) {
-                            handle_opam_file(ftsentry);
-                        }
-                        else if ((strstr(ftsentry->fts_name, "META"))
-                                 && (strlen(ftsentry->fts_name) == 4)) {
-                            handle_meta_file(ftsentry);
-                        }
-                        else {
-                            handle_file(ftsentry, ext);
-                        }
-                    }
+                    fts_f_ct++;
+                    opam_handle_fts_f(tree, ftsentry);
                     break;
                 case FTS_SL: // symlink
-                    file_ct++;
-                    handle_symlink(tree, ftsentry);
+                    fts_sl_ct++;
+                    opam_handle_symlink(tree, ftsentry);
                     break;
                 case FTS_SLNONE:
                     /* symlink to non-existent target */
@@ -432,7 +282,7 @@ LOCAL void _walk_opam(char *opam_switch)
                     exit(EXIT_FAILURE);
                     break;
                 }
-        }
+        } /* end while */
         /* chdir(old_cwd); */
         /* printf(RED "Restored cwd: %s\n" CRESET, getcwd(NULL, 0)); */
     }
@@ -443,49 +293,33 @@ LOCAL void _walk_opam(char *opam_switch)
 
 
 #if defined(DEBUG_TRACE)
-    log_debug("opam_dir_ct: %d", opam_dir_ct);
-    log_debug("opam_file_ct: %d", opam_file_ct);
+    log_debug("fts_d_ct: %d", fts_d_ct);
+    log_debug("fts_dp_ct: %d", fts_dp_ct);
+    log_debug("fts_dot_ct: %d", fts_dot_ct);
+    log_debug("fts_f_ct: %d", fts_f_ct);
+    log_debug("fts_sl_ct: %d", fts_sl_ct);
+    log_debug("opam_opam_file_ct: %d", opam_opam_file_ct);
     log_debug("opam_meta_ct: %d", opam_meta_ct);
+    log_debug("opam_dune_package_ct: %d", opam_dune_package_ct);
     log_debug("traversal root: %s", opam_switch);
     log_debug("cwd: %s", getcwd(NULL, 0));
 #endif
 
 }
 
-LOCAL void _walk_project(char *pkg_path)
+LOCAL void _walk_findlib_all(char *opam_switch)
 {
-    log_trace("walk_project");
-    /*
-      FIXME: traversal root(s) to be determined by miblrc.srcs.include
-      default is cwd, but if miblrc designates 'include' dirs, then
-      cwd must be excluded, and each 'include' dir traversed.
-     */
+    log_trace(RED "walk_findlib_all:" CRESET " %s", opam_switch);
+    log_trace("global opam_lib: %s", utstring_body(opam_lib));
 
-    /*
-      always cd to effective ws root, since the resolved traversal
-      root is relative to it. that way ftsentry->fts_path will be a
-      proper workspace-relative pkg-path.
-
-      restore cwd after traversal.
-    */
     char *old_cwd = getcwd(NULL, 0);
-    if (strncmp(old_cwd, ews_root, strlen(ews_root)) != 0) {
+
+    int rc = chdir(opam_switch);
+
 #if defined(DEBUG_TRACE)
-        if (debug) {
-            log_debug("chdir: %s => %s\n", old_cwd, ews_root);
-        }
+    if (debug) log_debug("%-16s%s", "cwd:",  getcwd(NULL, 0));
 #endif
-        rc = chdir(ews_root);
-        if (rc != 0) {
-            log_error("FAIL on chdir: %s => %s\n", old_cwd, ews_root);
-            fprintf(stderr, RED "FAIL on chdir: %s => %s: %s\n",
-                    old_cwd, ews_root, strerror(errno));
-            exit(EXIT_FAILURE);
-        }
-#if defined(DEBUG_TRACE)
-        if (debug) log_debug("%-16s%s", "cwd:",  getcwd(NULL, 0));
-#endif
-    }
+    log_debug("%-16s%s", "cwd:",  getcwd(NULL, 0));
 
     FTS* tree = NULL;
     FTSENT *ftsentry     = NULL;
@@ -493,23 +327,16 @@ LOCAL void _walk_project(char *pkg_path)
     errno = 0;
 
     char *const _pkg_path[] = {
-        /* [0] = resolved_troot, // pkg_path; */
-        [0] = (char *const)pkg_path,
+        [0] = ".", // (char *const)opam_switch,
         NULL
     };
-#if defined(DEBUG_TRACE)
-    if (debug) {
-        log_debug("_pkg_path: %s", _pkg_path[0]);
-        log_debug("real _pkg_path: %s",
-                  realpath(_pkg_path[0], NULL));
-    }
-#endif
 
     errno = 0;
     tree = fts_open(_pkg_path,
                     FTS_COMFOLLOW
                     | FTS_NOCHDIR
                     | FTS_PHYSICAL,
+                    /* | FTS_SEEDOT, // handle foo/. and foo/.. */
                     // NULL
                     &_compare
                     );
@@ -521,9 +348,7 @@ LOCAL void _walk_project(char *pkg_path)
         /*                         s7_make_string(s7, strerror(errno)), */
         /*                         s7_make_string(s7, _pkg_path[0]))); */
     }
-
-    char *ext;
-
+    log_debug("fts_open ok\n");
     if (verbose) {
         log_info(GRN "Beginning traversal" CRESET " at %s",
                  _pkg_path[0]);
@@ -531,189 +356,41 @@ LOCAL void _walk_project(char *pkg_path)
         log_info(GRN " with cwd:" CRESET " at %s", getcwd(NULL, 0));
     }
 
-    /* TRAVERSAL STARTS HERE */
     if (NULL != tree) {
         while( (ftsentry = fts_read(tree)) != NULL) {
-            if (ftsentry->fts_info == FTS_DP) {
-                continue; // do not process post-order visits
-            }
+            /* if (ftsentry->fts_info == FTS_DP) { continue; } // do not process post-order visits */
+
 #if defined(DEBUG_TRACE)
             if (debug) {
                 printf("\n");
                 log_debug(CYN "iter ftsentry->fts_name: " CRESET "%s",
                           ftsentry->fts_name);
                 log_debug("iter ftsentry->fts_path: %s", ftsentry->fts_path);
-                log_debug("iter ftsentry->fts_info: %d", ftsentry->fts_info);
+                log_debug("iter ftsentry->fts_info: %d (%d)", ftsentry->fts_info, FTS_D);
             }
 #endif
-            /* if (debug) { */
-            /*     if (ftsentry->fts_info != FTS_DP) { */
-            /*         log_debug(CYN "ftsentry:" CRESET " %s (%s), type: %d", */
-            /*                   ftsentry->fts_name, */
-            /*                   ftsentry->fts_path, */
-            /*                   ftsentry->fts_info); */
-            /*     } */
-            /* } */
             switch (ftsentry->fts_info)
                 {
                 case FTS_D : // dir visited in pre-order
-#if defined(DEBUG_TRACE)
-                    if (trace)
-                        log_trace("pre-order visit dir: %s (%s) :: (%s)",
-                                  ftsentry->fts_name,
-                                  ftsentry->fts_path,
-                                  ftsentry->fts_accpath);
-#endif
-                    if (_this_is_hidden(ftsentry)) {
-#if defined(DEBUG_TRACE)
-                        if (trace)
-                            log_trace(RED "Excluding" CRESET " hidden dir: %s",
-                                      ftsentry->fts_path);
-#endif
-                        fts_set(tree, ftsentry, FTS_SKIP);
-                        /* break; */
-                    }
-                    else if (fnmatch("*.opam-bundle",
-                                     ftsentry->fts_name, 0) == 0) {
-                        fts_set(tree, ftsentry, FTS_SKIP);
-                        /* break; */
-                    } else {
-                        if (_include_this(ftsentry)) {
-#if defined(DEBUG_TRACE)
-                            if (trace) log_info(RED "Including" CRESET " %s",
-                                                ftsentry->fts_path);
-#endif
-                            if (strncmp(ftsentry->fts_name, "_build", 6) == 0) {
-                                /* skip _build (dune) */
-                                fts_set(tree, ftsentry, FTS_SKIP);
-                                break;
-                            }
-                            dir_ct++;
-                            handle_dir(tree, ftsentry);
-                            /* printf("pkg tbl: %s\n", TO_STR(pkg_tbl)); */
-                        } else {
-                            fts_set(tree, ftsentry, FTS_SKIP);
-                        }
-                    }
+                    fts_d_ct++;
+                    opam_handle_fts_d(tree, ftsentry);
                     break;
                 case FTS_DP:
-                    /* postorder directory */
-#if defined(DEBUG_TRACE)
-                    if (trace)
-                        log_trace("post-order visit dir: %s (%s) :: (%s)",
-                                  ftsentry->fts_name,
-                                  ftsentry->fts_path,
-                                  ftsentry->fts_accpath);
-#endif
+                    fts_dp_ct++;
+                    /* postorder directory - skip */
+                    break;
+                case FTS_DOT:
+                    /* log_debug("FTS_DOT ftsentry->fts_path: %s", ftsentry->fts_path); */
+                    /* log_debug("FTS_DOT ftsentry->fts_info: %d (%d)", ftsentry->fts_info, FTS_D); */
+                    fts_dot_ct++;
                     break;
                 case FTS_F : // regular file
-                    file_ct++;
-
-                    if (strncmp(ftsentry->fts_name,"BUILD.bazel", 11)==0){
-                            /* skip BUILD.bazel files */
-                            break;
-                    }
-                    /* TODO: skip *.bzl files */
-                    /* TODO: skip standard files: READMEs, LICENSE, etc. */
-                    /* handle_regular_file(ftsentry); */
-                    if (strncmp(ftsentry->fts_name, "dune-project", 12)
-                        == 0) {
-                        handle_dune_project_file(ftsentry);
-                        break;
-                    }
-                    if ((strncmp(ftsentry->fts_name, "dune", 4) == 0)
-                        /* don't read dune.foo */
-                        && (strlen(ftsentry->fts_name) == 4)) {
-                        handle_dune_file(ftsentry);
-                        /* break; */
-                        continue;
-                    }
-
-                    ext = strrchr(ftsentry->fts_name, '.');
-
-                    if (ext) {
-                        if ((strncmp(ext, ".ml", 3) == 0)) {
-                            handle_ml_file(ftsentry, ext);
-                        }
-                        else if ((strncmp(ext, ".md", 3) == 0)
-                                 && (strlen(ext) == 3)) {
-                            handle_ml_file(ftsentry, ext);
-                        }
-                        else if ((strncmp(ext, ".sh", 3) == 0)
-                                 && (strlen(ext) == 3)) {
-                            handle_file(ftsentry, ext);
-                            /*_handle_script_file(ftsentry, ext);*/
-                        }
-                        else if ((strncmp(ext, ".py", 3) == 0)
-                                 && (strlen(ext) == 3)) {
-                            handle_file(ftsentry, ext);
-                            /*_handle_script_file(ftsentry, ext);*/
-                        }
-                        else if ((strncmp(ext, ".opam", 5) == 0)
-                                 && (strlen(ext) == 5)) {
-                            handle_opam_file(ftsentry);
-                        }
-                        else if (fnmatch("*.opam.template",
-                                         ftsentry->fts_name, 0) == 0) {
-                            handle_opam_template_file(ftsentry);
-                        }
-                        else if (strncmp(ext, ".ocamlformat", 12) == 0) {
-                            handle_ocamlformat_file(ftsentry);
-                        }
-                        else if ((strncmp(ext, ".c", 2) == 0)
-                                 && (strlen(ext) == 2)) {
-                            handle_cc_file(ftsentry, ext);
-                        }
-                        else if ((strncmp(ext, ".h", 2) == 0)
-                                 && (strlen(ext) == 2)) {
-                            handle_cc_file(ftsentry, ext);
-                        }
-                        else if ((strncmp(ext, ".cc", 3) == 0)
-                                 && (strlen(ext) == 3)) {
-                            handle_cc_file(ftsentry, ext);
-                        }
-                        else if ((strncmp(ext, ".hh", 3) == 0)
-                                 && (strlen(ext) == 3)) {
-                            handle_cc_file(ftsentry, ext);
-                        }
-                        else if ((strncmp(ext, ".cpp", 4) == 0)
-                                 && (strlen(ext) == 4)) {
-                            handle_cc_file(ftsentry, ext);
-                        }
-                        else if ((strncmp(ext, ".hpp", 4) == 0)
-                                 && (strlen(ext) == 4)) {
-                            handle_cc_file(ftsentry, ext);
-                        }
-                        else if ((strncmp(ext, ".cxx", 4) == 0)
-                                 && (strlen(ext) == 4)) {
-                            handle_cc_file(ftsentry, ext);
-                        }
-                        else if ((strncmp(ext, ".hxx", 4) == 0)
-                                 && (strlen(ext) == 4)) {
-                            handle_cc_file(ftsentry, ext);
-                        }
-                        else {
-                            handle_file(ftsentry, ext);
-                        }
-                    }
-                    else {
-                        /* no extension */
-                        if ((strstr(ftsentry->fts_name, "opam"))
-                            && (strlen(ext) == 4)) {
-                            handle_opam_file(ftsentry);
-                        }
-                        else if ((strstr(ftsentry->fts_name, "META"))
-                                 && (strlen(ext) == 4)) {
-                            handle_meta_file(ftsentry);
-                        }
-                        else {
-                            handle_file(ftsentry, ext);
-                        }
-                    }
+                    fts_f_ct++;
+                    opam_handle_fts_f(tree, ftsentry);
                     break;
                 case FTS_SL: // symlink
-                    file_ct++;
-                    handle_symlink(tree, ftsentry);
+                    fts_sl_ct++;
+                    opam_handle_symlink(tree, ftsentry);
                     break;
                 case FTS_SLNONE:
                     /* symlink to non-existent target */
@@ -755,49 +432,62 @@ LOCAL void _walk_project(char *pkg_path)
                     exit(EXIT_FAILURE);
                     break;
                 }
-        }
-        chdir(old_cwd);
+        } /* end while */
+        /* chdir(old_cwd); */
         /* printf(RED "Restored cwd: %s\n" CRESET, getcwd(NULL, 0)); */
     }
 
-    if (verbose) {
-        log_info("cwd: %s", getcwd(NULL, 0));
-        log_info("bws: %s", bws_root);
-        log_info("ews: %s", ews_root);
-        log_info("dir count: %d", dir_ct);
-        log_info("file count: %d", file_ct);
-        log_info("dunefile count: %d", dunefile_ct);
-        /* log_info("pkg_tbl: %s", TO_STR(pkg_tbl)); */
 
-        log_info("exiting load_dune");
-    }
-    /* s7_gc_unprotect_at(s7, pkg_tbl_gc_loc); */
+    fts_close(tree);
+    rc = chdir(old_cwd);
 
-    return;
+
+#if defined(DEBUG_TRACE)
+    log_debug("fts_d_ct: %d", fts_d_ct);
+    log_debug("fts_dp_ct: %d", fts_dp_ct);
+    log_debug("fts_dot_ct: %d", fts_dot_ct);
+    log_debug("fts_f_ct: %d", fts_f_ct);
+    log_debug("fts_sl_ct: %d", fts_sl_ct);
+    log_debug("opam_opam_file_ct: %d", opam_opam_file_ct);
+    log_debug("opam_meta_ct: %d", opam_meta_ct);
+    log_debug("opam_dune_package_ct: %d", opam_dune_package_ct);
+    log_debug("traversal root: %s", opam_switch);
+    log_debug("cwd: %s", getcwd(NULL, 0));
+#endif
+
 }
 
 /* switch: NULL = no opam; empty = default switch
    pkg: for conversions, relative to root dir
 */
-EXPORT void walk_tree(char *opam_switch, char* pkg_path)
+EXPORT void walk_tree(char *opam_switch, char* pkg_name)
 {
-#if defined(DEBUG_TRACE)
+/* #if defined(DEBUG_TRACE) */
         log_debug(BLU "walk_tree" CRESET);
         log_debug("%-16s%s", "opam switch:", opam_switch);
-        log_debug("%-16s%s", "pkg path:", pkg_path);
+        log_debug("%-16s%s", "pkg name:", pkg_name);
         log_debug("%-16s%s", "launch_dir:", launch_dir);
         log_debug("%-16s%s", "base ws:", bws_root);
         log_debug("%-16s%s", "effective ws:", ews_root);
-#endif
+/* #endif */
     if (verbose) {
         log_debug("current dir: %s", getcwd(NULL, 0));
-        /* printf(YEL "%-16s%s\n" CRESET, "pkg_path:", pkg_path); */
+        /* printf(YEL "%-16s%s\n" CRESET, "pkg_name:", pkg_name); */
     }
 
+    utstring_new(meta_path);
+
     if (opam_switch == NULL) {
-        _walk_project(pkg_path);
+        /* _walk_project(pkg_name); */
     } else {
-        _walk_opam(opam_switch);
+        if (pkg_name == NULL) {
+            _walk_findlib_all(opam_switch);
+        } else {
+            utstring_new(workspace_file);
+            handle_findlib_pkg(opam_switch, pkg_name);
+        }
     }
+
+    utstring_free(meta_path);
     return;
 }

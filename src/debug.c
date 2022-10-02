@@ -16,20 +16,6 @@
 bool debug = false;
 bool trace = false;
 
-/* void dump_mibl_config(void) */
-/* { */
-/*     log_debug("mibl_config:"); */
-/*     char **p; */
-/*     p = NULL; */
-/*     while ( (p=(char**)utarray_next(mibl_config.include_dirs,p))) { */
-/*         log_debug("  include: %s",*p); */
-/*     } */
-/*     p = NULL; */
-/*     while ( (p=(char**)utarray_next(mibl_config.exclude_dirs,p))) { */
-/*         log_debug("  exclude: %s",*p); */
-/*     } */
-/* } */
-
 /* #if defined(DEBUG) */
 /* https://stackoverflow.com/questions/6934659/how-to-make-backtrace-backtrace-symbols-print-the-function-names */
 static void full_write(int fd, const char *buf, size_t len)

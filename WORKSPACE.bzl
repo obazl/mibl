@@ -51,6 +51,20 @@ def cc_fetch_repos():
 
     ######
     maybe(
+        http_archive,
+        name = "libre2c",
+        urls = [
+            "https://github.com/skvadrik/re2c/archive/refs/tags/2.1.1.zip"
+        ],
+        strip_prefix = "re2c-2.1.1",
+        sha256 = "080931d214943ea021fa9360a4694e824674e5c0f2e880153e8cb41982453aa6",
+        build_file = "//external/re2c:BUILD.bazel"
+        # build_file_content = all_content,
+        # workspace_file_content = "workspace( name = \"opam-re2c\" )"
+    )
+
+    ######
+    maybe(
         git_repository,
         name = "makeheaders",
         remote = "https://github.com/obazl/makeheaders",

@@ -1,0 +1,397 @@
+load("@bazel_skylib//rules:common_settings.bzl",
+     "bool_flag", "string_flag")
+
+load("//src/lemon:BUILD.bzl", "lemon")
+
+CMD_FLAGS = [
+    "-std=c11",
+    "-pedantic-errors",
+] + select({
+    "//bzl/host:linux": [
+        "-D_POSIX_C_SOURCE=200809L", ## strdup, strndup
+        "-D_DEFAULT_SOURCE"],        ## DT_ constants from dirent.h
+    "//conditions:default":   []
+})
+
+cc_library(
+    name = "findlib",
+    srcs = [
+        "emit_build_bazel.c",
+        "emit_build_bazel.h",
+
+        "meta_parser.c",
+        "meta_parser.h",
+
+        "meta_entries.c",
+        "meta_entries.h",
+        "meta_flags.c",
+        "meta_flags.h",
+        "meta_lexis.c",
+        "meta_lexis.h",
+        "meta_packages.c",
+        "meta_packages.h",
+        "meta_properties.c",
+        "meta_properties.h",
+        "meta_settings.c",
+        "meta_settings.h",
+        "meta_values.c",
+        "meta_values.h",
+
+        # "//src:config.c",
+        # "//src:config.h",
+        # "//src:config_bazel.c",
+        # "//src:config_bazel.h",
+        # "//src:config_mibl.c",
+        # "//src:config_mibl.h",
+        # "//src:config_opam.c",
+        # "//src:config_opam.h",
+        "//src:utils.c",
+        "//src:utils.h",
+        "//src:log.c",
+        "//src:log.h",
+        "//src:utarray.h",
+        "//src:uthash.h",
+        "//src:utstring.h",
+    ] + select({
+        "//bzl/host:linux": [
+            "linux/strlcat.c", "linux/strlcpy.c", "linux/strnstr.c"],
+        "//conditions:default":   []
+    }) + select({
+        "//compilation_mode:dbg?": ["debug_meta.c", "debug_meta.h"],
+        "//conditions:default": []
+    }),
+    hdrs = [
+        "libfindlib.h",
+        # "log.h",
+    ],
+    copts = [
+        "-Isrc",
+        "-I$(GENDIR)/src",
+
+        "-Iexternal/mibl/src",
+        "-I$(GENDIR)/external/mibl/src",
+
+
+        "-Isrc/findlib",
+        "-I$(GENDIR)/src/findlib",
+
+        "-Iexternal/mibl/src/findlib",
+        "-I$(GENDIR)/external/mibl/src/findlib",
+
+        # "-Iexternal/libs7/src",
+        # "-Iexternal/libinih",
+    ],
+    defines = select({
+        "//compilation_mode:dbg?": ["DEBUG_TRACE", "DEBUG_MIBL"],
+        "//conditions:default":   []
+    }),
+    deps = [
+        ":meta_lexis",
+        ":meta_syntaxis",
+    ],
+    visibility = ["//visibility:public"]
+)
+
+###########
+cc_library(
+    name = "meta_syntaxis",
+    srcs = [
+        "meta_syntaxis.c",
+        "meta_syntaxis.h",
+        "//src:log.h",
+        "//src:utarray.h",
+        "//src:uthash.h",
+        "//src:utstring.h",
+        ] + select({
+        ":yydebug-enabled": [
+            "meta_entries.c", "meta_entries.h"
+        ],
+        "//conditions:default":   []
+    }),
+    copts = CMD_FLAGS + [
+        ## NOTE: generated meta_syntaxis.c includes header with full
+        ## bazel path, e.g.
+        ## #include "bazel-out/darwin-fastbuild/bin/external/mibl/src/findlib/meta_syntaxis.h"
+        ## so we always need '-I .'
+        "-I.",
+        "-Isrc",
+        "-Iexternal/mibl/src",
+        "-I$(GENDIR)/external/mibl/src/findlib"
+    ],
+    defines = select({
+        ":yydebug-enabled": ["YYDEBUG", "DEBUG_TRACE"],
+        "//conditions:default":   []
+    }) + select({
+        ":yytrace-enabled": ["YYTRACE"],
+        "//conditions:default":   []
+    }),
+    visibility = ["//test:__subpackages__"]
+)
+
+########
+lemon(
+    name = "gen_meta_syntaxis",
+    yy   = "meta_syntaxis.y",
+    outs = ["meta_syntaxis.c","meta_syntaxis.out"],
+    defines = select({
+        ":yydebug-enabled": ["YYDEBUG", "DEBUG_TRACE"],
+        "//conditions:default":   []
+    }) + select({
+        ":yytrace-enabled": ["YYTRACE"],
+        "//conditions:default":   []
+    })
+)
+
+###########
+cc_library(
+    name = "meta_lexis",
+    srcs = [
+        # "meta_lexer.c", "meta_lexer.h",
+        "meta_lexis.c", "meta_lexis.h",
+        "//src:log.c", "//src:log.h",
+        "//src:utarray.h",
+        "//src:uthash.h",
+        "//src:utstring.h",
+    ],
+    # alwayslink = True,
+    hdrs = [
+        # "log.h",
+        # "meta_lexer.h"
+    ],
+    copts = CMD_FLAGS + [
+        "-I$(GENDIR)/src/findlib", # meta_lexis.h
+        "-I$(GENDIR)/external/mibl/src/findlib",
+        # "-I$(GENDIR)/external/mibl/src",
+    ],
+    # copts = [
+    #     "-Ibootstrap",
+    #     "-Iopam/bootstrap",
+    #     "-I$(GENDIR)/bootstrap",
+    #     "-I$(GENDIR)/opam/bootstrap",
+    #     "-I$(GENDIR)/external/tools_opam/bootstrap"
+    # ],
+    visibility = ["//test:__subpackages__"]
+)
+
+########
+## re2c takes a long time to build. we do not need to run it every
+## time once the grammar is stable, so we put the .c file under
+## version control. if you need to work on the meta lexer,
+## uncomment this genrule, run it, and replace meta_lexis.c
+## by the newly generated version.
+# genrule(
+#     name = "gen_meta_lexis",
+#     srcs = [
+#         "meta_lexis.re",
+#     ],
+#     tools = ["@libre2c//:re2c"],
+#     outs  = [
+#         "meta_lexis.c"
+#     ],
+#     cmd   = "\n".join([
+#         "for f in $(locations @libre2c//:re2c)",
+#         "do",
+#         "    if [ -f $$f ]",
+#         "    then",
+#         "        if [ re2c = `basename $$f` -a -x $$f ]",
+#         "        then",
+#         "            break",
+#         "        fi",
+#         "    fi",
+#         "done",
+#         "$$f --conditions --tags -o $(@D)/meta_lexis.c $(location meta_lexis.re)",
+#     ]),
+#     visibility = ["//visibility:public"]
+# )
+
+########
+# CMD_HDR = "\n".join([
+#     "SRC1=$(location config.c)",
+#     "SRCDIR1=`dirname $$SRC1`;",
+# ])
+
+genrule(
+    name = "mkhdrs",
+    srcs = [
+        "emit_build_bazel.c",
+        "meta_parser.c",
+        "meta_entries.c",
+        "meta_flags.c",
+        # "meta_fs.c",
+        "meta_packages.c",
+        "meta_properties.c",
+        "meta_settings.c",
+        "meta_values.c",
+        "meta_lexis.c",
+        "meta_syntaxis.c",
+        # "debug_findlib.c",
+#         "handlers_findlib.c",
+#         "config.c",
+#         # "config_mibl.c",
+#         # "config_bazel.c",
+        "//src:utils.c",
+        "//src:ansi_colors.h",
+
+    ] + select({
+        "//bzl/host:linux": ["strlcpy.c", "strlcat.c"],
+        "//conditions:default":   []
+    # }) + select({
+    #     "//compilation_mode:dbg?": ["debug_meta.c"],
+    #     "//conditions:default": []
+    }),
+    outs = [
+        "emit_build_bazel.h",
+        "meta_parser.h",
+        "meta_entries.h",
+        "meta_flags.h",
+        # "meta_fs.h",
+        "meta_packages.h",
+        "meta_properties.h",
+        "meta_settings.h",
+        "meta_values.h",
+        "meta_lexis.h",
+        "meta_syntaxis.h",
+    ],
+    cmd = "\n".join([
+        "SRC1=$(location meta_parser.c)",
+        "SRCDIR1=`dirname $$SRC1`;",
+        "$(location //src:makeheaders) \\",
+        "$(SRCS);",
+        "cp $${SRCDIR1}/*.h $(@D)",
+    ]),
+    tools = ["//src:makeheaders"],
+    visibility = ["//visibility:public"]
+)
+
+genrule(
+    name = "mkhdrs_libfindlib",
+    srcs = [
+        "emit_build_bazel.c",
+        "meta_parser.c",
+        "meta_entries.c",
+        "meta_flags.c",
+        # "meta_fs.c",
+        "meta_packages.c",
+        "meta_properties.c",
+        "meta_settings.c",
+        "meta_values.c",
+        "meta_lexis.c",
+        "meta_syntaxis.c",
+        # "debug_findlib.c",
+#         "handlers_findlib.c",
+#         "config.c",
+#         # "config_mibl.c",
+#         # "config_bazel.c",
+#         "//src:utils.c",
+        "//src:ansi_colors.h",
+
+    ] + select({
+        "//bzl/host:linux": ["strlcpy.c", "strlcat.c"],
+        "//conditions:default":   []
+    }) + select({
+        "//compilation_mode:dbg?": ["debug_meta.c"],
+        "//conditions:default": []
+    }),
+    outs = [
+        "libfindlib.h",
+    ],
+    cmd = "\n".join([
+        "SRC1=$(location meta_parser.c)",
+        "SRCDIR1=`dirname $$SRC1`;",
+        "$(location //src:makeheaders) -H \\",
+        "$(SRCS) \\",
+        "> $@",
+    ]),
+    tools = ["//src:makeheaders"],
+    visibility = ["//visibility:public"]
+)
+
+genrule(
+    name = "mkhdrs_debug",
+    srcs = [
+        "meta_parser.c",
+        "meta_entries.c",
+        "meta_flags.c",
+        "meta_packages.c",
+        "meta_properties.c",
+        "meta_settings.c",
+        "meta_values.c",
+        "meta_lexis.c",
+        "meta_syntaxis.c",
+        "debug_meta.c",
+        "//src:utils.c",
+        "//src:ansi_colors.h",
+
+    ] + select({
+        "//bzl/host:linux": ["strlcpy.c", "strlcat.c"],
+        "//conditions:default":   []
+    }),
+    outs = [
+        "debug_meta.h",
+    ],
+    cmd = "\n".join([
+        "SRC1=$(location debug_meta.c)",
+        "SRCDIR1=`dirname $$SRC1`;",
+        "$(location //src:makeheaders) \\",
+        "$(SRCS);",
+        "cp $${SRCDIR1}/*.h $(@D)",
+    ]),
+    tools = ["//src:makeheaders"],
+    visibility = ["//visibility:public"]
+)
+
+################################################################
+## enable meta ast debugging: --//bootstrap:ast-dump
+bool_flag(name = "ast-dump", build_setting_default = 0)
+config_setting(name = "ast-dump-enabled",
+               flag_values = {":ast-dump": "True"})
+config_setting(name = "ast-dump-disabled",
+               flag_values = {":ast-dump": "False"})
+
+## enable meta ast debugging: --//bootstrap:ast-trace
+bool_flag(name = "ast-trace", build_setting_default = 0)
+config_setting(name = "ast-trace-enabled",
+               flag_values = {":ast-trace": "True"})
+config_setting(name = "ast-trace-disabled",
+               flag_values = {":ast-trace": "False"})
+
+## enable parser debugging: --//bootstrap:yydebug
+bool_flag(name = "yydebug", build_setting_default = 0)
+config_setting(name = "yydebug-enabled", flag_values = {":yydebug": "True"})
+config_setting(name = "yydebug-disabled", flag_values = {":yydebug": "False"})
+bool_flag(name = "yydebug-exit-on-error", build_setting_default = 0)
+config_setting(name = "yydebug-exit-on-error-enabled",
+               flag_values = {":yydebug-exit-on-error": "True"})
+
+bool_flag(name = "yytrace", build_setting_default = 0)
+config_setting(name = "yytrace-enabled", flag_values = {":yytrace": "True"})
+config_setting(name = "yytrace-disabled", flag_values = {":yytrace": "False"})
+
+## debug parse rules
+string_flag(name = "yydebug-rules", build_setting_default = "")
+config_setting(name = "yydebug-fpf",
+               flag_values = {":yydebug-rules": "fpf"})
+config_setting(name = "yydebug-fvf",
+               flag_values = {":yydebug-rules": "fvf"})
+config_setting(name = "yydebug-filter",
+               flag_values = {":yydebug-rules": "filter"})
+config_setting(name = "yydebug-build-filter",
+               flag_values = {":yydebug-rules": "build-filter"})
+
+## enable lexer debugging: --//bootstrap:lexdebug
+bool_flag(name = "lexdebug", build_setting_default = 0)
+config_setting(name = "lexdebug-enabled", flag_values = {":lexdebug": "True"})
+config_setting(name = "lexdebug-disabled", flag_values = {":lexdebug": "False"})
+
+string_flag(name = "lexdebug-rules", build_setting_default = "")
+config_setting(name = "lexdebug-version",
+               flag_values = {":lexdebug-rules": "version"})
+config_setting(name = "lexdebug-fpf",
+               flag_values = {":lexdebug-rules": "fpf"})
+config_setting(name = "lexdebug-fvf",
+               flag_values = {":lexdebug-rules": "fvf"})
+config_setting(name = "lexdebug-filter",
+               flag_values = {":lexdebug-rules": "filter"})
+config_setting(name = "lexdebug-build-filter",
+               flag_values = {":lexdebug-rules": "build-filter"})
+

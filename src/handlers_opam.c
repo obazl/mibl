@@ -21,17 +21,15 @@
 #endif
 
 #include "log.h"
+#include "libfindlib.h"
 #include "handlers_opam.h"
 
 UT_array  *segs;
 UT_string *group_tag;
 
-int dunefile_ct = 0;
-int file_ct = 0;
-int opam_file_ct = 0;
+int opam_dune_package_ct = 0;
+int opam_opam_file_ct = 0;
 int opam_meta_ct = 0;
-int opam_dir_ct  = 0;
-int dir_ct  = 0;
 
 void _indent(int i)
 {
@@ -39,6 +37,8 @@ void _indent(int i)
     /* for (; i > 0; i--) */
     /*     printf("    "); */
 }
+
+char *ext;
 
 UT_string *dunefile_name;
 
@@ -132,8 +132,6 @@ void handle_dir(FTS* tree, FTSENT *ftsentry)
     }
 #endif
 
-    opam_dir_ct++;
-
     /* UT_string *dune_test; */
     /* utstring_new(dune_test); */
     /* utstring_printf(dune_test, "%s/%s", ftsentry->fts_path, "dune"); */
@@ -200,14 +198,16 @@ void handle_dune_file(FTSENT *ftsentry)
 {
 }
 
-void handle_dune_project_file(FTSENT *ftsentry)
+void handle_dune_package_file(FTSENT *ftsentry)
 {
+    opam_dune_package_ct++;
 }
 
 void handle_meta_file(FTSENT *ftsentry)
 {
+    opam_meta_ct++;
 #if defined(DEBUG_TRACE)
-    if (debug) {
+    if (debug_findlib) {
         log_debug("");
         log_debug(BLU "handle_meta_file:" CRESET);
         /* log_info("%-20s%s", "base ws:", bws_root); */
@@ -218,7 +218,7 @@ void handle_meta_file(FTSENT *ftsentry)
     }
 #endif
 
-    opam_meta_ct++;
+    handle_findlib_meta(ftsentry);
 }
 
 void handle_opam_file(FTSENT *ftsentry)
@@ -235,7 +235,7 @@ void handle_opam_file(FTSENT *ftsentry)
     }
 #endif
 
-    opam_file_ct++;
+    opam_opam_file_ct++;
 }
 
 void handle_opam_template_file(FTSENT *ftsentry)
@@ -254,7 +254,158 @@ void handle_cc_file(FTSENT *ftsentry, char *ext)
 {
 }
 
-void handle_symlink(FTS *tree, FTSENT *ftsentry)
+void opam_handle_symlink(FTS *tree, FTSENT *ftsentry)
 {
 }
 
+/* **************************************************************** */
+void opam_handle_fts_d(FTS *tree, FTSENT *ftsentry)
+{
+#if defined(DEBUG_TRACE)
+    if (trace)
+        log_trace("pre-order visit dir: %s (%s) :: (%s)",
+                  ftsentry->fts_name,
+                  ftsentry->fts_path,
+                  ftsentry->fts_accpath);
+#endif
+    if (_this_is_hidden(ftsentry)) {
+#if defined(DEBUG_TRACE)
+        if (trace)
+            log_trace(RED "Excluding" CRESET " hidden dir: %s",
+                      ftsentry->fts_path);
+#endif
+        fts_set(tree, ftsentry, FTS_SKIP);
+        /* break; */
+    }
+    else if (fnmatch("*.opam-bundle",
+                     ftsentry->fts_name, 0) == 0) {
+        fts_set(tree, ftsentry, FTS_SKIP);
+        /* break; */
+    } else {
+        handle_dir(tree, ftsentry);
+
+        /*                         if (_include_this(ftsentry)) { */
+        /* #if defined(DEBUG_TRACE) */
+        /*                             if (trace) log_info(RED "Including" CRESET " %s", */
+        /*                                                 ftsentry->fts_path); */
+        /* #endif */
+        /*                             if (strncmp(ftsentry->fts_name, "_build", 6) == 0) { */
+        /*                                 /\* skip _build (dune) *\/ */
+        /*                                 fts_set(tree, ftsentry, FTS_SKIP); */
+        /*                                 break; */
+        /*                             } */
+        /*                             dir_ct++; */
+        /*                             handle_dir(tree, ftsentry); */
+        /*                             /\* printf("pkg tbl: %s\n", TO_STR(pkg_tbl)); *\/ */
+        /*                         } else { */
+        /*                             fts_set(tree, ftsentry, FTS_SKIP); */
+        /*                         } */
+    }
+}
+
+void opam_handle_fts_f(FTS *tree, FTSENT *ftsentry)
+{
+    if (strncmp(ftsentry->fts_name,"BUILD.bazel", 11)==0){
+        /* skip BUILD.bazel files - we'll need this when we re-run conversion */
+        return;
+    }
+    /* TODO: skip *.bzl files */
+
+    if ((strstr(ftsentry->fts_name, "opam"))
+        && (strlen(ftsentry->fts_name) == 4)) {
+        return handle_opam_file(ftsentry);
+    }
+    else if ((strstr(ftsentry->fts_name, "META"))
+             && (strlen(ftsentry->fts_name) == 4)) {
+        return handle_meta_file(ftsentry);
+    }
+    else if (strncmp(ftsentry->fts_name, "dune-package", 12) == 0) {
+        return handle_dune_package_file(ftsentry);
+    }
+    else if ((strncmp(ftsentry->fts_name, "dune", 4) == 0)
+             && (strlen(ftsentry->fts_name) == 4)) {
+        return handle_dune_file(ftsentry);
+    }
+
+    ext = strrchr(ftsentry->fts_name, '.');
+
+    if (ext) {
+        if ((strncmp(ext, ".ml", 3) == 0)) {
+            handle_ml_file(ftsentry, ext);
+        }
+        else if ((strncmp(ext, ".md", 3) == 0)
+                 && (strlen(ext) == 3)) {
+            handle_ml_file(ftsentry, ext);
+        }
+        else if ((strncmp(ext, ".sh", 3) == 0)
+                 && (strlen(ext) == 3)) {
+            handle_file(ftsentry, ext);
+            /*_handle_script_file(ftsentry, ext);*/
+        }
+        else if ((strncmp(ext, ".py", 3) == 0)
+                 && (strlen(ext) == 3)) {
+            handle_file(ftsentry, ext);
+            /*_handle_script_file(ftsentry, ext);*/
+        }
+        else if ((strncmp(ext, ".opam", 5) == 0)
+                 && (strlen(ext) == 5)) {
+            handle_opam_file(ftsentry);
+        }
+        else if (fnmatch("*.opam.template",
+                         ftsentry->fts_name, 0) == 0) {
+            handle_opam_template_file(ftsentry);
+        }
+        else if (strncmp(ext, ".ocamlformat", 12) == 0) {
+            handle_ocamlformat_file(ftsentry);
+        }
+        else if ((strncmp(ext, ".c", 2) == 0)
+                 && (strlen(ext) == 2)) {
+            handle_cc_file(ftsentry, ext);
+        }
+        else if ((strncmp(ext, ".h", 2) == 0)
+                 && (strlen(ext) == 2)) {
+            handle_cc_file(ftsentry, ext);
+        }
+        else if ((strncmp(ext, ".cc", 3) == 0)
+                 && (strlen(ext) == 3)) {
+            handle_cc_file(ftsentry, ext);
+        }
+        else if ((strncmp(ext, ".hh", 3) == 0)
+                 && (strlen(ext) == 3)) {
+            handle_cc_file(ftsentry, ext);
+        }
+        else if ((strncmp(ext, ".cpp", 4) == 0)
+                 && (strlen(ext) == 4)) {
+            handle_cc_file(ftsentry, ext);
+        }
+        else if ((strncmp(ext, ".hpp", 4) == 0)
+                 && (strlen(ext) == 4)) {
+            handle_cc_file(ftsentry, ext);
+        }
+        else if ((strncmp(ext, ".cxx", 4) == 0)
+                 && (strlen(ext) == 4)) {
+            handle_cc_file(ftsentry, ext);
+        }
+        else if ((strncmp(ext, ".hxx", 4) == 0)
+                 && (strlen(ext) == 4)) {
+            handle_cc_file(ftsentry, ext);
+        }
+        else {
+            handle_file(ftsentry, ext);
+        }
+    }
+    else {
+        /* no extension */
+        /* if ((strstr(ftsentry->fts_name, "opam")) */
+        /*     && (strlen(ftsentry->fts_name) == 4)) { */
+        /*     handle_opam_file(ftsentry); */
+        /* } */
+        /* else if ((strstr(ftsentry->fts_name, "META")) */
+        /*          && (strlen(ftsentry->fts_name) == 4)) { */
+        /*     handle_meta_file(ftsentry); */
+        /* } */
+        /* else { */
+            handle_file(ftsentry, ext);
+        /* } */
+    }
+}

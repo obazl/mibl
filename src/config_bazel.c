@@ -74,7 +74,7 @@ char *_effective_ws_root(char *dir)
 #endif
 
    if (strncmp(homedir, dir, strlen(dir)) == 0) {
-       log_debug("xxxx");
+       log_debug("No Bazel workspace file found.");
        return NULL;
    }
 
@@ -118,7 +118,7 @@ void _set_base_ws_root(void)
     /* } */
     char *_bws_root = getenv("BUILD_WORKSPACE_DIRECTORY");
 #if defined(DEBUG_TRACE)
-    if (debug) log_debug("BUILD_WORKSPACE_DIRECTORY: %s", bws_root);
+    if (debug) log_debug("Bazel BUILD_WORKSPACE_DIRECTORY: %s", bws_root);
 #endif
 
     if (_bws_root == NULL) {
@@ -167,14 +167,14 @@ EXPORT void bazel_configure(void) // char *_exec_root)
     if (build_wd == NULL) {
         /* running outside of bazel */
 #if defined(DEBUG_TRACE)
-        if (debug) log_debug("BUILD_WORKING_DIRECTORY: null");
+        if (debug) log_debug("Running outside of Bazel");
 #endif
         build_wd = launch_dir;
     }
 
 #if defined(DEBUG_TRACE)
     if (debug) {
-        log_debug("build_wd: %s (=BUILD_WORKING_DIRECTORY)", build_wd);
+        log_debug("build_wd: %s", build_wd);
         log_debug("launch_dir: %s", launch_dir);
     }
 #endif

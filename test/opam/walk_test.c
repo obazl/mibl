@@ -28,14 +28,17 @@
 #include "walk_test.h"
 
 extern bool debug = false;
+extern bool debug_findlib = false;
 extern bool trace = false;
 extern bool verbose = false;
+
+char *pkg_path = NULL;
 
 int main(int argc, char *argv[])
 {
     int opt;
 
-    char *opts = "hdtv";
+    char *opts = "p:hdmtv";
 
     char *opam_switch = NULL;
 
@@ -51,6 +54,19 @@ int main(int argc, char *argv[])
         case 'h':
             log_info("Help: ");
             exit(EXIT_SUCCESS);
+        case 'm':
+            debug_findlib = true;
+            break;
+        case 'p':
+            printf("PKG: %s\n", optarg);
+            pkg_path = strdup(optarg);
+            /* remove trailing '/' */
+            int len = strlen(pkg_path);
+            if (pkg_path[len-1] == '/') {
+                pkg_path[len-1] = '\0';
+            }
+            /* validate - no abs paths, may start with '//" */
+            break;
         case 't':
             trace = true;
             break;
@@ -64,6 +80,7 @@ int main(int argc, char *argv[])
     }
 
     bazel_configure();
+
     // bazel_configure does chdir to ws root
 
     // opam_configure must be run from root ws to account for local switches
@@ -81,7 +98,7 @@ int main(int argc, char *argv[])
     /*     chdir(wd); */
     /* } */
 
-    walk_tree(opam_lib, NULL);
+    walk_tree(opam_lib, pkg_path);
 
     /* UT_array *result = opam_lex_file(utstring_body(opam_file)); */
 

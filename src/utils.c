@@ -20,7 +20,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "ini.h"
+/* #include "ini.h" */
 #include "log.h"
 #if EXPORT_INTERFACE
 /* #include "s7.h" */
@@ -35,6 +35,24 @@ int strsort(const void *_a, const void *_b)
     const char *a = *(const char* const *)_a;
     const char *b = *(const char* const *)_b;
     return strcmp(a,b);
+}
+
+void mkdir_r(const char *dir) {
+    char tmp[256];
+    char *p = NULL;
+    size_t len;
+
+    snprintf(tmp, sizeof(tmp),"%s",dir);
+    len = strlen(tmp);
+    if (tmp[len - 1] == '/')
+        tmp[len - 1] = 0;
+    for (p = tmp + 1; *p; p++)
+        if (*p == '/') {
+            *p = 0;
+            mkdir(tmp, S_IRWXU);
+            *p = '/';
+        }
+    mkdir(tmp, S_IRWXU);
 }
 
 EXPORT char * run_cmd(char *executable, char **argv)

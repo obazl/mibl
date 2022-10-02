@@ -1,6 +1,8 @@
 exports_files([
     "log.c", "log.h",
-    "utarray.h", "uthash.h", "utstring.h"
+    "utarray.h", "uthash.h", "utstring.h",
+    "ansi_colors.h",
+    "utils.c"
 ])
 
 MIBL_SRCS = [
@@ -37,7 +39,8 @@ cc_library(
     }) + select({
         "//compilation_mode:dbg?": [
             "debug.c", "debug.h",
-            "debug_mibl.c", "debug_mibl.h"
+            "debug_mibl.c", "debug_mibl.h",
+            # "debug_findlib.c", "debug_findlib.h"
         ],
         "//conditions:default": []
     }) + [
@@ -159,6 +162,8 @@ cc_library(
     srcs = [
         "treewalker.c",
         "treewalker.h",
+        "handlers_findlib.c",
+        "handlers_findlib.h",
         "handlers_opam.c",
         "handlers_opam.h",
         "//src:config.c",
@@ -183,7 +188,8 @@ cc_library(
     }) + select({
         "//compilation_mode:dbg?": [
             "debug.c", "debug.h",
-            "debug_mibl.c", "debug_mibl.h"
+            "debug_mibl.c", "debug_mibl.h",
+            # "debug_findlib.c", "debug_findlib.h"
         ],
         "//conditions:default": []
     }),
@@ -194,9 +200,12 @@ cc_library(
     copts = [
         "-Isrc",
         "-I$(GENDIR)/src",
+        "-I$(GENDIR)/src/findlib",
 
         "-Iexternal/mibl/src",
         "-I$(GENDIR)/external/mibl/src",
+
+        "-I$(GENDIR)/external/mibl/src/findlib",
 
         "-Iexternal/libs7/src",
         "-Iexternal/libinih",
@@ -206,6 +215,7 @@ cc_library(
         "//conditions:default":   []
     }),
     deps = [
+        "//src/findlib",
         # "//src:mibl",
         # "@libs7//src:s7",
         "//external/libinih:inih",
@@ -220,16 +230,19 @@ genrule(
         "config.c",
         "config_mibl.c",
         "config_bazel.c",
+        "handlers_findlib.c",
         "handlers_opam.c",
         "utils.c",
         "ansi_colors.h",
     ] + select({
         "//compilation_mode:dbg?": [
-            "debug.c", "debug_mibl.c"],
+            "debug.c", "debug_mibl.c", "debug_findlib.c"
+        ],
         "//conditions:default": []
     }),
     outs = [
         "treewalker.h",
+        "handlers_findlib.h",
         "handlers_opam.h",
         # "config_bazel.h",
         # "config_mibl.h"
@@ -250,6 +263,7 @@ genrule(
     name = "mkhdrs_libtreewalker",
     srcs = [
         "treewalker.c",
+        "handlers_findlib.c",
         "handlers_opam.c",
         "//src:config.c",
         "//src:config_mibl.c",
@@ -259,7 +273,7 @@ genrule(
         "ansi_colors.h",
     ] + select({
         "//compilation_mode:dbg?": [
-            "debug.c", "debug_mibl.c"
+            "debug.c", "debug_mibl.c", "debug_findlib.c"
         ],
         "//conditions:default": []
     }),
@@ -289,7 +303,8 @@ genrule(
         "utils.c"
     ] + select({
         "//compilation_mode:dbg?": [
-            "debug.c", "debug_mibl.c"],
+            "debug.c", "debug_mibl.c", "debug_findlib.c"
+        ],
         "//conditions:default": []
     }),
     outs = [
@@ -309,7 +324,7 @@ genrule(
         # "> $@"
     ]),
     tools = [":makeheaders"],
-    visibility = ["//visibility:private"]
+    visibility = ["//visibility:public"]
 )
 
 genrule(
@@ -318,10 +333,12 @@ genrule(
         "debug.c",
         "config_mibl.c",
         "debug_mibl.c",
+        "debug_findlib.c",
     ],
     outs = [
         "debug.h",
         "debug_mibl.h",
+        "debug_findlib.h",
     ],
     cmd = "\n".join([
         "SRC1=$(location debug.c)",

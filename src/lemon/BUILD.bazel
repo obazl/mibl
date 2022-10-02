@@ -1,0 +1,7 @@
+exports_files(["lempar.c"])
+
+cc_binary(
+    name  = "lemon",
+    srcs  = ["lemon.c"],
+    visibility = ["//visibility:public"]
+)
