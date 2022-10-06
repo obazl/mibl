@@ -55,9 +55,6 @@ FILE *opam_resolver;
 
 UT_string *repo_name = NULL;
 
-UT_string *bazel_pkg_root;
-UT_string *build_bazel_file;
-
 s7_pointer _get_executables(s7_pointer stanzas)
 {
     s7_pointer e = s7_inlet(s7,

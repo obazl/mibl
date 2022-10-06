@@ -34,11 +34,13 @@ int rc;
 
 /* char *bazel_script_dir = NULL; */
 
-UT_string *opam_switch;
-UT_string *opam_bin;
-UT_string *opam_lib = NULL;
+UT_string *opam_switch_id     = NULL;
+UT_string *opam_switch_prefix = NULL;
+UT_string *opam_switch_bin    = NULL;
+UT_string *opam_switch_lib    = NULL;
 
-EXPORT char *opam_configure(char *_opam_switch)
+/* seets global opam_switch_* vars */
+EXPORT void opam_configure(char *_opam_switch)
 {
 #if defined(DEBUG_TRACE)
     if (trace)
@@ -54,9 +56,10 @@ EXPORT char *opam_configure(char *_opam_switch)
       2. discover lib dir: 'opam var lib'
      */
 
-    utstring_new(opam_switch);
-    utstring_new(opam_bin);
-    utstring_new(opam_lib);
+    utstring_new(opam_switch_id);
+    utstring_new(opam_switch_prefix);
+    utstring_new(opam_switch_bin);
+    utstring_new(opam_switch_lib);
 
     /* FIXME: handle switch arg */
     /* FIXME: argv */
@@ -70,41 +73,55 @@ EXPORT char *opam_configure(char *_opam_switch)
 
         result = run_cmd(exe, argv);
         if (result == NULL) {
-            fprintf(stderr, "FAIL: run_cmd 'opam var switch'\n");
+            fprintf(stderr, "FAIL: run_cmd 'opam var ocaml:version'\n");
         } else {
-            utstring_printf(opam_switch, "%s", result);
+            utstring_printf(opam_switch_id, "%s", result);
 #if defined(DEBUG_TRACE)
-            log_debug("cmd result: '%s'", utstring_body(opam_switch));
+            log_debug("cmd result: '%s'", utstring_body(opam_switch_id));
 #endif
         }
     } // else??
-
-    /* cmd = "opam var bin"; */
-    char *argv1[] = {"opam", "var", "bin", NULL};
+    /* cmd = "opam var prefix"; */
+    char *argv1[] = {"opam", "var", "prefix", NULL};
     result = NULL;
     result = run_cmd(exe, argv1);
+    if (result == NULL) {
+        log_fatal("FAIL: run_cmd 'opam var prefix'\n");
+        exit(EXIT_FAILURE);
+    } else {
+        utstring_printf(opam_switch_prefix, "%s", result);
+#if defined(DEBUG_TRACE)
+        log_debug("cmd result: '%s'", utstring_body(opam_switch_bin));
+#endif
+    }
+
+    /* cmd = "opam var bin"; */
+    char *argv2[] = {"opam", "var", "bin", NULL};
+    result = NULL;
+    result = run_cmd(exe, argv2);
     if (result == NULL) {
         log_fatal("FAIL: run_cmd 'opam var bin'\n");
         exit(EXIT_FAILURE);
     } else {
-        utstring_printf(opam_bin, "%s", result);
+        utstring_printf(opam_switch_bin, "%s", result);
 #if defined(DEBUG_TRACE)
-        log_debug("cmd result: '%s'", utstring_body(opam_bin));
+        log_debug("cmd result: '%s'", utstring_body(opam_switch_bin));
 #endif
     }
+
     /* cmd = "opam var lib"; */
-    char *argv2[] = {"opam", "var", "lib", NULL};
+    char *argv3[] = {"opam", "var", "lib", NULL};
     result = NULL;
-    result = run_cmd(exe, argv2);
+    result = run_cmd(exe, argv3);
     if (result == NULL) {
         log_fatal("FAIL: run_cmd 'opam var lib'\n");
         exit(EXIT_FAILURE);
     } else {
-        utstring_printf(opam_lib, "%s", result);
+        utstring_printf(opam_switch_lib, "%s", result);
 #if defined(DEBUG_TRACE)
-        log_debug("cmd result: '%s'", utstring_body(opam_lib));
+        log_debug("cmd result: '%s'", utstring_body(opam_switch_lib));
 #endif
     }
-    return utstring_body(opam_lib);
+    return;
 }
 

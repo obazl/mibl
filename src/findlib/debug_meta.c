@@ -1,9 +1,12 @@
 #include "log.h"
+#include "utarray.h"
 #include "debug_meta.h"
 
 static int indent = 2;
 static int delta = 2;
 static char *sp = " ";
+
+bool debug_symlinks = true;
 
 EXPORT void dump_package(int indent, struct obzl_meta_package *pkg)
 {

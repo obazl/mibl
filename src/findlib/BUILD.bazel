@@ -19,6 +19,9 @@ cc_library(
         "emit_build_bazel.c",
         "emit_build_bazel.h",
 
+        "emit_ocaml_repo.c",
+        "emit_ocaml_repo.h",
+
         "meta_parser.c",
         "meta_parser.h",
 
@@ -60,6 +63,7 @@ cc_library(
         "//compilation_mode:dbg?": ["debug_meta.c", "debug_meta.h"],
         "//conditions:default": []
     }),
+
     hdrs = [
         "libfindlib.h",
         # "log.h",
@@ -85,10 +89,45 @@ cc_library(
         "//compilation_mode:dbg?": ["DEBUG_TRACE", "DEBUG_MIBL"],
         "//conditions:default":   []
     }),
+    data  = [
+        "//templates:ocaml_bigarray.BUILD",
+        "//templates:ocaml_c_api.BUILD",
+        "//templates:ocaml_compiler-libs.BUILD",
+        "//templates/compiler_libs:bytecomp.BUILD",
+        "//templates/compiler_libs:common.BUILD",
+        "//templates/compiler_libs:optcomp.BUILD",
+        "//templates/compiler_libs:toplevel.BUILD",
+        "//templates/compiler_libs:native_toplevel.BUILD",
+        "//templates:ocaml_dynlink.BUILD",
+        "//templates:ocaml_num.BUILD",
+        "//templates:ocaml_ocamldoc.BUILD",
+        "//templates:ocaml_runtime.BUILD",
+        "//templates:ocaml_stdlib.BUILD",
+        "//templates:ocaml_str.BUILD",
+        "//templates/toolchain/adapters/local:BUILD.bazel",
+        "//templates/toolchain/adapters/linux/x86_64:BUILD.bazel",
+        "//templates/toolchain/adapters/linux/arm:BUILD.bazel",
+        "//templates/toolchain/adapters/macos/x86_64:BUILD.bazel",
+        "//templates/toolchain/adapters/macos/arm:BUILD.bazel",
+        "//templates/toolchain/profiles:BUILD.bazel",
+        "//templates/toolchain/selectors/local:BUILD.bazel",
+        "//templates/toolchain/selectors/linux/x86_64:BUILD.bazel",
+        "//templates/toolchain/selectors/linux/arm:BUILD.bazel",
+        "//templates/toolchain/selectors/macos/x86_64:BUILD.bazel",
+        "//templates/toolchain/selectors/macos/arm:BUILD.bazel",
+        "//templates/host/bazel:BUILD.bazel",
+        "//templates/host/build:BUILD.bazel",
+        "//templates/host/target:BUILD.bazel",
+        "//templates:ocaml_threads.BUILD",
+        "//templates:ocaml_unix.BUILD",
+    ],
     deps = [
         ":meta_lexis",
         ":meta_syntaxis",
-    ],
+    ] + select({
+        "//compilation_mode:dbg?": ["//src:debug"],
+        "//conditions:default": []
+    }),
     visibility = ["//visibility:public"]
 )
 
@@ -214,6 +253,7 @@ genrule(
     name = "mkhdrs",
     srcs = [
         "emit_build_bazel.c",
+        "emit_ocaml_repo.c",
         "meta_parser.c",
         "meta_entries.c",
         "meta_flags.c",
@@ -241,6 +281,7 @@ genrule(
     }),
     outs = [
         "emit_build_bazel.h",
+        "emit_ocaml_repo.h",
         "meta_parser.h",
         "meta_entries.h",
         "meta_flags.h",
@@ -267,6 +308,7 @@ genrule(
     name = "mkhdrs_libfindlib",
     srcs = [
         "emit_build_bazel.c",
+        "emit_ocaml_repo.c",
         "meta_parser.c",
         "meta_entries.c",
         "meta_flags.c",

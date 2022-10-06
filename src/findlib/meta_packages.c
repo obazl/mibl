@@ -141,7 +141,10 @@ obzl_meta_values *resolve_setting_values(obzl_meta_setting *_setting,
                                          obzl_meta_flags *_flags,
                                          obzl_meta_settings *_settings)
 {
-    log_debug("resolve_setting_values, opcode: %d", _setting->opcode);
+#if defined(DEBUG_TRACE)
+    if (trace)
+        log_debug("resolve_setting_values, opcode: %d", _setting->opcode);
+#endif
     obzl_meta_values * vals = obzl_meta_setting_values(_setting);
     /* log_debug("vals ct: %d", obzl_meta_values_count(vals)); */
     if (_setting->opcode == OP_SET)
@@ -203,10 +206,13 @@ obzl_meta_values *resolve_setting_values(obzl_meta_setting *_setting,
 }
 
 /* **************** */
-EXPORT UT_array *pkg_deps(struct obzl_meta_package *_pkg,
-                          UT_array *_deps)
+EXPORT int pkg_deps(struct obzl_meta_package *_pkg,
+                    UT_array *pending_deps,
+                    UT_array *completed_deps)
 {
     log_trace("pkg_deps");
+    utarray_sort(completed_deps,strsort);
+
     obzl_meta_entries *entries = obzl_meta_package_entries(_pkg);
 
     char *property = "requires";
@@ -214,7 +220,7 @@ EXPORT UT_array *pkg_deps(struct obzl_meta_package *_pkg,
     deps_prop = obzl_meta_entries_property(entries, property);
     if ( deps_prop == NULL ) {
         log_warn("Prop '%s' not found for pkg: %s.", property, _pkg->name);
-        return NULL;
+        return 0;
     }
 
     obzl_meta_settings *settings = obzl_meta_property_settings(deps_prop);
@@ -223,20 +229,20 @@ EXPORT UT_array *pkg_deps(struct obzl_meta_package *_pkg,
     int settings_ct = obzl_meta_settings_count(settings);
     if (settings_ct == 0) {
         log_info("No settings for %s", obzl_meta_property_name(deps_prop));
-        return NULL;
+        return 0;
     } else {
-        log_info("settings count: %d", settings_ct);
+        /* log_info("settings count: %d", settings_ct); */
     }
 
     int settings_no_ppx_driver_ct = obzl_meta_settings_flag_count(settings, "ppx_driver", false);
 
     settings_ct -= settings_no_ppx_driver_ct;
 
-    log_info("settings count w/o ppx_driver: %d", settings_ct);
+    /* log_info("settings count w/o ppx_driver: %d", settings_ct); */
 
     if (settings_ct == 0) {
         log_info("No deps for %s", obzl_meta_property_name(deps_prop));
-        return NULL;
+        return 0;
     }
 
     obzl_meta_values *vals;
@@ -245,17 +251,17 @@ EXPORT UT_array *pkg_deps(struct obzl_meta_package *_pkg,
     UT_string *condition_name;
     utstring_new(condition_name);
 
-    log_debug("iterating settings");
+    /* log_debug("iterating settings"); */
     for (int i = 0; i < settings_ct; i++) {
         setting = obzl_meta_settings_nth(settings, i);
-        log_debug("setting %d", i+1);
+        /* log_debug("setting %d", i+1); */
 
         obzl_meta_flags *flags = obzl_meta_setting_flags(setting);
         /* int flags_ct; // = 0; */
         if (flags != NULL) {
             /* register_flags(flags); // why? */
             int flags_ct = obzl_meta_flags_count(flags);
-            log_debug("flags_ct: %d", flags_ct);
+            /* log_debug("flags_ct: %d", flags_ct); */
         }
 
         if (obzl_meta_flags_has_flag(flags, "ppx_driver", false)) {
@@ -269,7 +275,7 @@ EXPORT UT_array *pkg_deps(struct obzl_meta_package *_pkg,
             has_conditions = obzl_meta_flags_to_selection_label(flags, condition_name);
 
         char *condition_comment = obzl_meta_flags_to_comment(flags);
-        log_debug("condition_comment: %s", condition_comment);
+        /* log_debug("condition_comment: %s", condition_comment); */
 
         /* 'requires' usually has no flags; when it does, empirically we find only */
         /*   ppx pkgs: ppx_driver, -ppx_driver */
@@ -294,113 +300,39 @@ EXPORT UT_array *pkg_deps(struct obzl_meta_package *_pkg,
         vals = obzl_meta_setting_values(setting);
         /* vals = resolve_setting_values(setting, flags, settings); */
         /* vals = obzl_meta_setting_values(setting); */
-        log_debug("vals ct: %d", obzl_meta_values_count(vals));
+        /* log_debug("vals ct: %d", obzl_meta_values_count(vals)); */
         /* dump_values(0, vals); */
         /* now we handle UPDATE settings */
 
         log_debug("iterating values");
+        char **p = NULL;        /* for searching completed_deps */
         for (int j = 0; j < obzl_meta_values_count(vals); j++) {
             dep_name = obzl_meta_values_nth(vals, j);
             /* log_debug("property val[%d]: '%s'", j, *dep_name); */
 
-            char *s = (char*)*dep_name;
+            char *s = strdup((char*)*dep_name);
+            log_debug("DEP: '%s'", s);
 
-            log_debug("DEP: %s", s);
+            /* FIXME: drop trailing dot segs - only record topelevels */
+            char *dot = strchr(s, '.');
+            /* log_debug("DOT: %s", dot); */
 
-            /* special case: uchar */
-            if ((strncmp(s, "uchar", 5) == 0)
-                && (strlen(s) == 5)){
-                /* log_debug("OMITTING UCHAR dep"); */
-                continue;
+            if (dot) {
+                *dot = '\0';
             }
+            log_debug("DEP DESEGMENTED: '%s'", s);
 
-            /* special case: threads */
-            /* if ((strncmp(s, "threads", 7) == 0) */
-            /*     && (strlen(s) == 7)){ */
-            /*     /\* log_debug("OMITTING THREADS dep"); *\/ */
-            /*     continue; */
-            /* } */
-
-            /* while (*s) { */
-            /*     /\* printf("s: %s\n", s); *\/ */
-            /*     if(s[0] == '.') { */
-            /*         /\* log_info("Hit"); *\/ */
-            /*         s[0] = '/'; */
-            /*     } */
-            /*     s++; */
-            /* } */
-
-            /* emit 'deps' attr labels */
-
-            /* if (settings_ct > 1) { */
-            /*     fprintf(ostream, "%*s\"@FIXME: %s//%s\",\n", */
-            /*             (2+level)*spfactor, sp, *dep_name, pkg); */
-            /* } else { */
-            /*     /\* first convert pkg string *\/ */
-            /*     /\* char *s = (char*)*dep_name; *\/ */
-            /*     /\* char *tmp; *\/ */
-            /*     /\* while(s) { *\/ */
-            /*     /\*     tmp = strchr(s, '/'); *\/ */
-            /*     /\*     if (tmp == NULL) break; *\/ */
-            /*     /\*     *tmp = '.'; *\/ */
-            /*     /\*     s = tmp; *\/ */
-            /*     /\* } *\/ */
-            /*     /\* then extract target segment *\/ */
-            /*     char *delim1 = strchr(*dep_name, '/'); */
-            /*     /\* log_debug("WW *dep_name: %s; delim1: %s, null? %d\n", *\/ */
-            /*     /\*         *dep_name, delim1, (delim1 == NULL)); *\/ */
-
-            /*     if (delim1 == NULL) { */
-            /*         if (special_case_multiseg_dep(ostream, dep_name, delim1)) */
-            /*             continue; */
-            /*         else { */
-            /*             /\* single-seg pkg, e.g. ptime  *\/ */
-
-            /*             // handle core libs: dynlink, str, unix, etc. */
-            /*             if ((strncmp(*dep_name, "bigarray", 8) == 0) */
-            /*                 && strlen(*dep_name) == 8) { */
-            /*                 fprintf(ostream, "%*s\"@ocaml//bigarray\",\n", */
-            /*                         (1+level)*spfactor, sp); */
-            /*             } else { */
-            /*                 if ((strncmp(*dep_name, "unix", 4) == 0) */
-            /*                     && strlen(*dep_name) == 4) { */
-            /*                     fprintf(ostream, "%*s\"@ocaml//unix\",\n", */
-            /*                             (1+level)*spfactor, sp); */
-            /*                 } else { */
-            /*                     //NOTE: we use @foo instead of @foo//:foo */
-            /*                     // seems to work */
-            /*                     /\* fprintf(ostream, *\/ */
-            /*                     /\*         "%*s\"@%s\",\n", *\/ */
-            /*                     /\*         (1+level)*spfactor, sp, *\/ */
-            /*                     /\*         *dep_name); *\/ */
-            /*                     fprintf(ostream, */
-            /*                             "%*s\"@%s//lib/%s\",\n", */
-            /*                             (1+level)*spfactor, sp, */
-            /*                             *dep_name, *dep_name); */
-            /*                 } */
-            /*             } */
-            /*         } */
-            /*     } else { */
-            /*         /\* multi-seg pkg, e.g. lwt.unix, ptime.clock.os *\/ */
-            /*         if (special_case_multiseg_dep(ostream, dep_name, delim1)) */
-            /*             continue; */
-            /*         else { */
-            /*             int repo_len = delim1 - (char*)*dep_name; */
-            /*             fprintf(ostream, "%*s\"@%.*s//lib/%s\",\n", */
-            /*                     (1+level)*spfactor, sp, */
-            /*                     repo_len, */
-            /*                     *dep_name, */
-            /*                     delim1+1); */
-            /*             /\* (1+level)*spfactor, sp, repo, pkg, *dep_name); *\/ */
-            /*         } */
-            /*     } */
-            /* } */
+            p = NULL;
+            p = (const char**)utarray_find(completed_deps, &s, strsort);
+            if (p != NULL) {
+                log_debug(" found completed dep: %s", *p);
+            } else {
+                log_debug(" adding new pending dep: %s", s);
+                utarray_push_back(pending_deps, &s);
+                utarray_sort(pending_deps,strsort); /* FIXME: can we avoid this? */
+            }
         }
-        /* if (settings_ct > 1) { */
-        /*     fprintf(ostream, "%*s],\n", (1+level)*spfactor, sp); */
-        /* } */
         free(condition_comment);
     }
-
-    return _deps;
+    return 0;
 }

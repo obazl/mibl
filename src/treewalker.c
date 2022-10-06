@@ -22,6 +22,7 @@
 #endif
 
 #include "log.h"
+#include "libfindlib.h"
 #include "treewalker.h"
 
 UT_array  *segs;
@@ -35,9 +36,12 @@ UT_string *dunefile_name;
 
 /* void s7_show_stack(s7_scheme *sc); */
 
-UT_string *meta_path;           /* = opam_lib + pkg_name */
+UT_string *meta_path;           /* = opam_switch_lib + pkg_name */
 
-extern UT_string *opam_lib;
+extern UT_string *opam_switch_lib;
+
+/* config_opam.c */
+extern UT_string *opam_switch_lib;
 
 int fts_d_ct  = 0;
 int fts_dp_ct  = 0;
@@ -160,7 +164,7 @@ bool _include_this(FTSENT *ftsentry)
 LOCAL void _walk_opam(char *opam_switch)
 {
     log_trace("walk_opam: %s", opam_switch);
-    log_trace("global opam_lib: %s", utstring_body(opam_lib));
+    log_trace("global opam_switch_lib: %s", utstring_body(opam_switch_lib));
 
     char *old_cwd = getcwd(NULL, 0);
 
@@ -310,7 +314,7 @@ LOCAL void _walk_opam(char *opam_switch)
 LOCAL void _walk_findlib_all(char *opam_switch)
 {
     log_trace(RED "walk_findlib_all:" CRESET " %s", opam_switch);
-    log_trace("global opam_lib: %s", utstring_body(opam_lib));
+    log_trace("global opam_switch_lib: %s", utstring_body(opam_switch_lib));
 
     char *old_cwd = getcwd(NULL, 0);
 
@@ -484,10 +488,80 @@ EXPORT void walk_tree(char *opam_switch, char* pkg_name)
             _walk_findlib_all(opam_switch);
         } else {
             utstring_new(workspace_file);
-            handle_findlib_pkg(opam_switch, pkg_name);
+            bazel_ws_root = opam_switch;
+            /* handle_findlib_pkg(opam_switch, pkg_name); */
         }
     }
 
     utstring_free(meta_path);
+    return;
+}
+
+EXPORT void convert_findlib_pkgs(UT_array *opam_pending_deps)
+{
+/* #if defined(DEBUG_TRACE) */
+        log_debug(BLU "convert_findlib_pkgs" CRESET);
+        log_debug("%-16s%s", "opam switch:", utstring_body(opam_switch_lib));
+        log_debug("%-16s%s", "launch_dir:", launch_dir);
+        log_debug("%-16s%s", "base ws:", bws_root);
+        log_debug("%-16s%s", "effective ws:", ews_root);
+/* #endif */
+    if (verbose) {
+        log_debug("current dir: %s", getcwd(NULL, 0));
+        /* printf(YEL "%-16s%s\n" CRESET, "pkg_name:", pkg_name); */
+    }
+
+    utstring_new(workspace_file);
+    bazel_ws_root = utstring_body(opam_switch_lib); /* dst dir == src dir */
+
+    /* Then do requested opam pkgs */
+    UT_array *opam_completed_deps;
+    utarray_new(opam_completed_deps, &ut_str_icd);
+
+    char **p = NULL;
+    char **this;
+    char *next;
+    while ( utarray_len(opam_pending_deps) > 0 ) {
+        this = utarray_eltptr(opam_pending_deps, 0);
+        next = strdup(*this);
+        log_info("next pkg: %s", next);
+        utarray_erase(opam_pending_deps, 0, 1);
+        /* handle_findlib_pkg will check completed_deps before adding
+           new pkg to pending_deps */
+        /* FIXME: make this a subroutine */
+        p = NULL;
+        p = (const char**)utarray_find(opam_completed_deps, &next, strsort);
+        if (p == NULL)
+            utarray_push_back(opam_completed_deps, &next);
+
+        handle_findlib_pkg(next, opam_pending_deps, opam_completed_deps);
+        /* while ( (p=(char**)utarray_next(opam_pending_deps, p))) { */
+        /*     log_info("opam pkg: %s", *p); */
+        /* } */
+        free(next);
+    }
+    log_debug("done");
+    log_debug("completed:");
+    while ( (p=(char**)utarray_next(opam_completed_deps, p))) {
+        log_info("  %s", *p);
+    }
+    log_debug("pending:");
+    while ( (p=(char**)utarray_next(opam_pending_deps, p))) {
+        log_info("  %s", *p);
+    }
+
+    /* First do @ocaml */
+    emit_ocaml_workspace(bazel_ws_root);
+
+    /* if (opam_switch_lib == NULL) { */
+    /*     /\* _walk_project(pkg_name); *\/ */
+    /* } else { */
+    /*     if (pkg_name == NULL) { */
+    /*         _walk_findlib_all(opam_switch_lib); */
+    /*     } else { */
+    /*         handle_findlib_pkg(opam_switch_lib, pkg_name); */
+    /*     } */
+    /* } */
+
     return;
 }

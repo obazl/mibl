@@ -13,7 +13,7 @@ MIBL_SRCS = [
     "config_opam.c",
     "config_s7.c",
     "error_handler.c",
-    "fs.c",
+    # "fs.c",
     "utils.c",
 ]
 
@@ -30,7 +30,7 @@ cc_library(
         "config_opam.h",
         "config_s7.h",
         "error_handler.h",
-        "fs.h",
+        # "fs.h",
         "utils.h"
     ] + select({
         "//bzl/host:linux": [
@@ -125,7 +125,7 @@ genrule(
         # "config_opam.h",
         "config_s7.h",
         "error_handler.h",
-        "fs.h",
+        # "fs.h",
     ],
     cmd = CMD_HDR + "$(location :makeheaders) "
     + "$(SRCS); cp $${SRCDIR1}/*.h $(@D)",
@@ -185,13 +185,6 @@ cc_library(
         "//bzl/host:linux": [
             "//src/linux:strlcat.c", "//src/linux:strlcpy.c", "//src/linux:strnstr.c"],
         "//conditions:default":   []
-    }) + select({
-        "//compilation_mode:dbg?": [
-            "debug.c", "debug.h",
-            "debug_mibl.c", "debug_mibl.h",
-            # "debug_findlib.c", "debug_findlib.h"
-        ],
-        "//conditions:default": []
     }),
     hdrs = [
         "libtreewalker.h",
@@ -219,7 +212,10 @@ cc_library(
         # "//src:mibl",
         # "@libs7//src:s7",
         "//external/libinih:inih",
-    ],
+    ] + select({
+        "//compilation_mode:dbg?": [":debug"],
+        "//conditions:default": []
+    }),
     visibility = ["//visibility:public"]
 )
 
@@ -324,6 +320,60 @@ genrule(
         # "> $@"
     ]),
     tools = [":makeheaders"],
+    visibility = ["//visibility:public"]
+)
+
+################################################################
+cc_library(
+    name = "debug",
+    srcs = [
+        "debug.c",
+        "debug.h",
+        "debug_findlib.c",
+        "debug_findlib.h",
+        "debug_mibl.c",
+        "debug_mibl.h",
+        # "debug_opam.c",
+        # "debug_opam.h",
+        # "//src:utils.c",
+        # "//src:utils.h",
+        "log.c",
+        "log.h",
+        "utarray.h",
+        # "//src:uthash.h",
+        # "//src:utstring.h",
+    ] + select({
+        "//bzl/host:linux": [
+            "//src/linux:strlcat.c", "//src/linux:strlcpy.c", "//src/linux:strnstr.c"],
+        "//conditions:default":   []
+    }),
+    # hdrs = [
+    #     "libtreewalker.h",
+    #     "log.h",
+    # ],
+    copts = [
+        "-Isrc",
+        "-I$(GENDIR)/src",
+        "-I$(GENDIR)/src/findlib",
+
+        "-Iexternal/mibl/src",
+        "-I$(GENDIR)/external/mibl/src",
+
+        "-I$(GENDIR)/external/mibl/src/findlib",
+
+        "-Iexternal/libs7/src",
+        "-Iexternal/libinih",
+    ],
+    defines = select({
+        "//compilation_mode:dbg?": ["DEBUG_TRACE", "DEBUG_MIBL"],
+        "//conditions:default":   []
+    }),
+    # deps = [
+    #     "//src/findlib",
+    #     # "//src:mibl",
+    #     # "@libs7//src:s7",
+    #     "//external/libinih:inih",
+    # ],
     visibility = ["//visibility:public"]
 )
 

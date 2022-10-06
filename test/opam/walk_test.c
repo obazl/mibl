@@ -13,7 +13,7 @@
 #include <unistd.h>
 
 #include "log.h"
-/* #include "utarray.h" */
+#include "utarray.h"
 /* #include "utstring.h" */
 
 /* #if INTERFACE */
@@ -34,6 +34,8 @@ extern bool verbose = false;
 
 char *pkg_path = NULL;
 
+UT_array *opam_pkgs;
+
 int main(int argc, char *argv[])
 {
     int opt;
@@ -41,6 +43,8 @@ int main(int argc, char *argv[])
     char *opts = "p:hdmtv";
 
     char *opam_switch = NULL;
+
+    utarray_new(opam_pkgs,&ut_str_icd);
 
     while ((opt = getopt(argc, argv, opts)) != -1) {
         switch (opt) {
@@ -57,14 +61,15 @@ int main(int argc, char *argv[])
         case 'm':
             debug_findlib = true;
             break;
-        case 'p':
+        case 'p':               /* pkg name, not path */
             printf("PKG: %s\n", optarg);
-            pkg_path = strdup(optarg);
-            /* remove trailing '/' */
-            int len = strlen(pkg_path);
-            if (pkg_path[len-1] == '/') {
-                pkg_path[len-1] = '\0';
-            }
+            utarray_push_back(opam_pkgs, &optarg);
+            /* pkg_path = strdup(optarg); */
+            /* /\* remove trailing '/' *\/ */
+            /* int len = strlen(pkg_path); */
+            /* if (pkg_path[len-1] == '/') { */
+            /*     pkg_path[len-1] = '\0'; */
+            /* } */
             /* validate - no abs paths, may start with '//" */
             break;
         case 't':
@@ -84,11 +89,11 @@ int main(int argc, char *argv[])
     // bazel_configure does chdir to ws root
 
     // opam_configure must be run from root ws to account for local switches
-    char *opam_lib;
+    // sets global opam_switch_* vars
     if (opam_switch)
-        opam_lib = opam_configure(opam_switch);
+        opam_configure(opam_switch);
     else
-        opam_lib = opam_configure("");
+        opam_configure("");
 
     mibl_configure();
 
@@ -98,12 +103,14 @@ int main(int argc, char *argv[])
     /*     chdir(wd); */
     /* } */
 
-    walk_tree(opam_lib, pkg_path);
+    /* walk_tree(opam_lib, pkg_path); */
+
+    convert_findlib_pkgs(opam_pkgs);
 
     /* UT_array *result = opam_lex_file(utstring_body(opam_file)); */
 
     /* UT_array *result = sealark_lex_string("'hello'\n#cmt1\n"); */
 
-    log_debug("main RESULT dump:");
+    log_debug("exiting walk_test");
     /* dump_nodes(result); */
 }

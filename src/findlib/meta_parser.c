@@ -38,7 +38,7 @@ EXPORT struct obzl_meta_package *obzl_meta_parse_file(char *_fname)
 /* #else */
 /*     log_set_quiet(true); */
 /* #endif */
-    log_trace("obzl_meta_parse_file: %s", _fname);
+    /* log_trace("obzl_meta_parse_file: %s", _fname); */
 #endif
 
     /* we're using dirname which can mutate its arg. we need to return fname as-is */
@@ -59,7 +59,7 @@ EXPORT struct obzl_meta_package *obzl_meta_parse_file(char *_fname)
         return NULL;
     }
 #if defined(DEBUG_TRACE)
-    log_debug("fopened %s", fname);
+    /* log_debug("fopened %s", fname); */
 #endif
     fseek(f, 0, SEEK_END);
     const size_t fsize = (size_t) ftell(f);
@@ -73,12 +73,9 @@ EXPORT struct obzl_meta_package *obzl_meta_parse_file(char *_fname)
     }
     fseek(f, 0, SEEK_SET);
     char *buffer = (char*) malloc(fsize + 1);
-#if defined(DEBUG_TRACE)
-    log_debug("reading\n");
-#endif
     size_t read_ct = fread(buffer, 1, fsize, f);
 #if defined(DEBUG_TRACE)
-    log_info("readed: %d\nn", read_ct);
+    /* log_info("readed: %d", read_ct); */
 #endif
     buffer[fsize] = 0;
     fclose(f);
@@ -90,7 +87,7 @@ EXPORT struct obzl_meta_package *obzl_meta_parse_file(char *_fname)
     }
 
 #if defined(DEBUG_TRACE)
-    log_debug("lexing\n");
+    /* log_debug("lexing"); */
 #endif
     /* THE_METAFILE[0] = '\0'; */
     /* mystrcat(THE_METAFILE, fname); */

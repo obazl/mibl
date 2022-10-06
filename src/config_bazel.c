@@ -54,6 +54,8 @@ char *traversal_root;           /* maybe not same as ws root */
 
 UT_string *runtime_data_dir;
 
+UT_string *runfiles_root;
+
 bool ini_error; // = false;
 UT_string *obazl_ini_path; // .config
 
@@ -159,6 +161,13 @@ EXPORT void bazel_configure(void) // char *_exec_root)
     launch_dir = getcwd(NULL, 0);
 
     build_wd = getenv("BUILD_WORKING_DIRECTORY");
+
+    utstring_new(runfiles_root);
+    utstring_printf(runfiles_root, "%s", getcwd(NULL, 0));
+#if defined(DEBUG_TRACE)
+    log_debug("runfiles_root: %s", utstring_body(runfiles_root));
+#endif
+
 
 #if defined(DEBUG_TRACE)
     if (debug) log_debug("BUILD_WORKING_DIRECTORY: %s", build_wd);

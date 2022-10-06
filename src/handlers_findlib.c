@@ -23,6 +23,7 @@
 #endif
 
 #if INTERFACE
+#include "utarray.h"
 #include "utstring.h"
 #endif
 
@@ -33,8 +34,11 @@
 /* we emit one ws file per opam (findlib) pkg */
 UT_string *workspace_file;
 
-/*  */
+/* for emitting:  */
 UT_string *pkg_parent;
+UT_string *imports_path;
+char *ocaml_ws = "ocaml";
+char *bazel_ws_root = NULL;
 
 bool g_ppx_pkg = false;
 /* extern bool stdlib_root = false; */
@@ -44,6 +48,9 @@ UT_string *workspace_file;
 UT_string *pkg_parent;
 
 UT_string *bzl_switch_pfx;      /* emit output locn */
+
+UT_string *bazel_pkg_root;
+UT_string *build_bazel_file;
 
 extern int errnum;
 
@@ -167,7 +174,7 @@ bool _skip_pkg(char *pkg)
 /*                         char *obazl_opam_root, */
 /*                         char *pkgdir, */
 /*                         char *metafile) */
-EXPORT int handle_findlib_meta(FTSENT *ftsentry)
+EXPORT int handle_findlib_meta(FTSENT *ftsentry) /* OBSOLETE */
 {
 #if defined(DEBUG_TRACE)
     log_debug(BLU "handle_findlib_meta" CRESET);
@@ -259,7 +266,7 @@ EXPORT int handle_findlib_meta(FTSENT *ftsentry)
         /* utstring_printf(workspace_file, "%s/%s", obazl_opam_root, pkg->name); */
         mkdir_r(utstring_body(workspace_file));
         utstring_printf(workspace_file, "%s", "/WORKSPACE.bazel");
-        printf("emitting ws file: %s\n", utstring_body(workspace_file));
+        /* printf("emitting ws file: %s\n", utstring_body(workspace_file)); */
         /* emit_workspace_file(workspace_file, pkg->name); */
 
         utstring_renew(pkg_parent);
@@ -291,24 +298,27 @@ EXPORT int handle_findlib_meta(FTSENT *ftsentry)
     return 0;
 }
 
-UT_array *_deps;
-void handle_findlib_pkg(char *opam_switch, char *pkg_name)
+void handle_findlib_pkg(// char *opam_switch_lib,
+                        char *pkg_name,
+                        UT_array *opam_pending_deps,
+                        UT_array *opam_completed_deps)
 {
-    log_trace(RED "handle_findlib_pkg:" CRESET " %s", opam_switch);
-    log_trace(" pkg_name: %s", pkg_name);
-    log_trace("global opam_lib: %s", utstring_body(opam_lib));
+    log_trace(RED "handle_findlib_pkg:" CRESET " %s", pkg_name);
+    log_trace("global opam_lib: %s", utstring_body(opam_switch_lib));
+
+    utstring_new(build_bazel_file);
+    utstring_new(bazel_pkg_root);
 
     utstring_new(bzl_switch_pfx);
-    utstring_printf(bzl_switch_pfx, "%s", opam_switch);
+    utstring_concat(bzl_switch_pfx, opam_switch_lib);
 
     char *old_cwd = getcwd(NULL, 0);
 
-    int rc = chdir(opam_switch);
+    int rc = chdir(utstring_body(opam_switch_lib));
 
 #if defined(DEBUG_TRACE)
     if (debug) log_debug("%-16s%s", "cwd:",  getcwd(NULL, 0));
 #endif
-    log_debug("%-16s%s", "cwd:",  getcwd(NULL, 0));
 
     FTS* tree = NULL;
     FTSENT *ftsentry     = NULL;
@@ -316,14 +326,15 @@ void handle_findlib_pkg(char *opam_switch, char *pkg_name)
     errno = 0;
 
     utstring_renew(meta_path);
-    utstring_printf(meta_path, "%s/%s/META", opam_switch, pkg_name);
+    utstring_printf(meta_path, "%s/%s/META",
+                    utstring_body(opam_switch_lib), pkg_name);
 
-    log_info("meta_path: %s", utstring_body(meta_path));
+    /* log_info("meta_path: %s", utstring_body(meta_path)); */
 
     errno = 0;
     if ( access(utstring_body(meta_path), F_OK) == 0 ) {
         /* exists */
-        log_info("accessible: %s", utstring_body(meta_path));
+        /* log_info("accessible: %s", utstring_body(meta_path)); */
     } else {
         /* fail */
         perror(utstring_body(meta_path));
@@ -347,26 +358,46 @@ void handle_findlib_pkg(char *opam_switch, char *pkg_name)
         /* emitted_bootstrapper = false; */
     } else {
 #if defined(DEBUG_TRACE)
-        log_warn("PARSED %s", utstring_body(meta_path));
+        if (debug)
+            log_warn("PARSED %s", utstring_body(meta_path));
         if (debug_findlib)
             dump_package(0, pkg);
 #endif
     }
-    log_info("PARSED %s", utstring_body(meta_path));
-
-    _deps = pkg_deps(pkg, _deps);
 
     /* emit ws file */
     utstring_renew(workspace_file);
     utstring_printf(workspace_file, "%s/%s/WORKSPACE.bazel",
-                    opam_switch, pkg_name);
+                    utstring_body(opam_switch_lib), pkg_name);
     /* we know META file exists, so pkg path exists */
-    /* mkdir_r(utstring_body(workspace_file)); */
-    printf("emitting ws file: %s\n", utstring_body(workspace_file));
     emit_workspace_file(workspace_file, pkg->name);
 
     /* emit buildfile(s) */
 
+    /* UT_string *imports_path; */
+    utstring_new(imports_path);
+    utstring_printf(imports_path, "%s",
+                    obzl_meta_package_name(pkg));
+
+    utstring_new(pkg_parent);
+    /* utarray_new(_deps,&ut_str_icd); */
+    /* _deps = pkg_deps(pkg, _deps); */
+    /* char **p = NULL; */
+    /* while ( (p=(char**)utarray_next(_deps, p))) { */
+    /*     log_debug("dep: %s",*p); */
+    /* } */
+
+    emit_build_bazel(// ocaml_ws,       /* "ocaml" */
+                     bazel_ws_root, /* same as origin (opam_lib) */
+                     0,               /* level */
+                     pkg->name,
+                     pkg_parent, /* needed for handling subpkgs */
+                     NULL, // "buildfiles",        /* _pkg_prefix */
+                     utstring_body(imports_path),
+                     /* "",      /\* pkg-path *\/ */
+                     pkg,
+                     opam_pending_deps,
+                     opam_completed_deps);
     return;
 }
 
