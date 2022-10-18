@@ -2,13 +2,14 @@
 
 ;; mibl/dune/modules.scm
 
-(define (x-get-manifest pkg wrapped? stanza-alist spec) ;;  deps
+;;(define (  get-manifest pkg kind wrapped? stanza-alist) ;;  deps
+(define (x-get-manifest pkg kind wrapped? stanza-alist spec) ;;  deps
   (format #t "~A: ~A\n" (ublue "x-get-manifest") stanza-alist)
   ;; (format #t "~A: ~A\n" (uwhite "pkg") pkg)
   (format #t "~A: ~A\n" (blue "spec") spec)
   ;; (if deps
   (let* ((submods+sigs-list
-          (modules-fld->submodules-fld
+          (modules-fld->submodules-fld kind
            ;; (assoc 'modules stanza-alist)
            spec
            ;; files
@@ -31,12 +32,13 @@
         (cons :manifest
               (remove () submods+sigs-list)))))
 
-(define (get-manifest pkg wrapped? stanza-alist) ;;  deps
+(define (get-manifest pkg kind wrapped? stanza-alist) ;;  deps
   (format #t "~A: ~A\n" (ublue "get-manifest") stanza-alist)
   (format #t "~A: ~A\n" "pkg" pkg)
   ;; (if deps
   (let* ((submods+sigs-list
           (modules-fld->submodules-fld
+           kind
            (assoc 'modules stanza-alist)
            ;; files
            (assoc :modules pkg)
@@ -289,9 +291,9 @@
 (define modules-fld->submodules-fld
   ;;TODO: direct/indirect distinction. indirect are generated src files
   (let ((+documentation+ "Expand  'modules' field (of library or executable stanzas) and convert to pair of :submodules :subsigs assocs. modules-spec is a '(modules ...)' field from a library stanza; pkg-modules is the list of modules in the package: an alist whose assocs have the form (A (:ml a.ml)(:mli a.mli)), i.e. keys are module names.")
-        (+signature+ '(modules-fld->submodules-fld modules-spec pkg-modules pkg-sigs pkg-structs))) ;;  modules-deps
+        (+signature+ '(kind modules-fld->submodules-fld modules-spec pkg-modules pkg-sigs pkg-structs))) ;;  modules-deps
         ;; modules-ht)))
-    (lambda (modules-spec pkg-modules pkg-sigs pkg-structs)
+    (lambda (kind modules-spec pkg-modules pkg-sigs pkg-structs)
       (format #t "~A\n" (ublue "modules-fld->submodules-fld"))
       (format #t "modules-spec: ~A\n" modules-spec)
       (format #t "pkg-modules: ~A\n" pkg-modules)
@@ -299,7 +301,7 @@
       (format #t "pkg-sigs: ~A\n" pkg-sigs)
       (format #t "pkg-structs: ~A\n" pkg-structs)
       (if (equal? modules-spec '(modules))
-          ;; exclude all modules
+          ;; exclude all modules (lib and exe)
           '((:modules) (:signatures))
           (if (or pkg-modules pkg-structs)
               (if modules-spec
@@ -348,13 +350,13 @@
                                     ;; or (A B C)
                                     ;; just unroll and recur
                                     (if (equal? '(:standard) (car modules-spec))
-                                        (modules-fld->submodules-fld
+                                        (modules-fld->submodules-fld kind
                                          (append
                                           (list 'modules :standard) (cdr modules-spec))
                                          pkg-modules
                                          ;; deps
                                          pkg-sigs pkg-structs)
-                                        (modules-fld->submodules-fld
+                                        (modules-fld->submodules-fld kind
                                          (cons
                                           'modules (car modules-spec))
                                          pkg-modules
@@ -405,11 +407,13 @@
                                  ) ;; cond
                                 ))) ;; recur
                     tmp) ;; let*
-                  ;; no modules-spec - default is all
+                  ;; no modules-spec - default is all (lib) or none (exe)
                   (begin
-                    ;; (format #t "no modules-spec\n")
-                    ;; (get-module-names pkg-modules)
-                    (let* ((pkg-module-names (if pkg-modules
+                    (format #t "~A~%" (bgred "no modules-spec"))
+                    (if (equal? kind :exe)
+                        ;; exclude all
+                        '((:modules) (:signatures))
+                        (let* ((pkg-module-names (if pkg-modules
                                                  (get-module-names
                                                   pkg-modules)
                                                  '()))
@@ -428,12 +432,10 @@
                       (list
                        (cons :modules all-module-names)
                        (if (null? sig-module-names)
-                           '() (cons :signatures sig-module-names)))))
+                           '() (cons :signatures sig-module-names))))))
                   ) ;; if modules-spec
-              ;; else no pkg-modules, pkg-structs
               (begin
-                (format #t "no pkg-modules, pkg-structs\n")
-                ;;(error 'fixme "STOP pkg sigs")
+                (format #t "modules-spec but no pkg modules nor structs\n")
                 '((:modules) (:signatures)))))
       ) ;; lamda
     ) ;; let

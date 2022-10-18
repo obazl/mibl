@@ -1,12 +1,13 @@
 #if INTERFACE
 #include <stdbool.h>
-#include "utarray.h"
+/* #include "utarray.h" */
 #endif
 
 #include <stdio.h>
-#include "uthash.h"
+/* #include "uthash.h" */
 
-#include "log.h"
+/* #include "log.h" */
+
 #include "meta_entries.h"
 
 /* **************************************************************** */

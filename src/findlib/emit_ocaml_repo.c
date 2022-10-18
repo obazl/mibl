@@ -1,21 +1,21 @@
 #include <errno.h>
 #include <dirent.h>
-
-#if EXPORT_INTERFACE
-#include <stdio.h>
-#endif
-
 #ifdef __linux__
 #include <linux/limits.h>
 #else
 #include <limits.h>
 #endif
+/* #if EXPORT_INTERFACE */
+#include <stdio.h>
+/* #endif */
+#include <stdlib.h>
+
 #include <string.h>
 #include <unistd.h>
 
-#include "log.h"
-#include "utarray.h"
-#include "utstring.h"
+/* #include "log.h" */
+/* #include "utarray.h" */
+/* #include "utstring.h" */
 
 #include "emit_ocaml_repo.h"
 
@@ -27,7 +27,9 @@ extern UT_string *opam_switch_bin;
 extern UT_string *opam_switch_lib;
 extern UT_string *runfiles_root;
 
+#if defined(DEBUG_TRACE)
 extern bool debug_symlinks;
+#endif
 
 void _copy_buildfile(char *buildfile, UT_string *to_file) {
     UT_string *src;
@@ -159,8 +161,8 @@ void emit_ocaml_runtime_pkg(char *bzl_switch_lib)  // dest
 
     UT_string *ocaml_file;
     utstring_new(ocaml_file);
-    utstring_printf(ocaml_file, bzl_switch_lib); // pfx);
-    utstring_printf(ocaml_file, "/ocaml/runtime");
+    /* utstring_printf(ocaml_file, bzl_switch_lib); // pfx); */
+    utstring_printf(ocaml_file, "%s/ocaml/runtime", bzl_switch_lib);
     mkdir_r(utstring_body(ocaml_file));
 
     /* _symlink_ocaml_runtime(utstring_body(ocaml_file)); */
@@ -267,11 +269,11 @@ void _emit_ocaml_stublibs_symlinks(char *_dir)
 #if defined(DEBUG_TRACE)
     if (trace) log_trace("_emit_ocaml_stublibs_symlinks: %s", _dir);
 #endif
-
+     // _dir ==? "/ocaml/stublibs");
     UT_string *dst_dir;
     utstring_new(dst_dir);
-    utstring_printf(dst_dir, bzl_switch_pfx);
-    utstring_printf(dst_dir, "%s", _dir); // "/ocaml/stublibs");
+    /* utstring_printf(dst_dir, bzl_switch_pfx); */
+    utstring_printf(dst_dir, "%s/%s", utstring_body(bzl_switch_pfx), _dir);
     mkdir_r(utstring_body(dst_dir));
 
     UT_string *src_dir; // relative to opam_switch_lib
@@ -282,8 +284,10 @@ void _emit_ocaml_stublibs_symlinks(char *_dir)
                     utstring_body(opam_switch_lib),
                     _dir);
 
+#if defined(DEBUG_TRACE)
     log_debug("src_dir: %s\n", utstring_body(src_dir));
     log_debug("dst_dir: %s\n", utstring_body(dst_dir));
+#endif
 
     UT_string *src;
     utstring_new(src);
@@ -291,8 +295,10 @@ void _emit_ocaml_stublibs_symlinks(char *_dir)
     utstring_new(dst);
     int rc;
 
+#if defined(DEBUG_TRACE)
     log_debug("opening src_dir for read: %s\n",
               utstring_body(src_dir));
+#endif
     DIR *srcd = opendir(utstring_body(src_dir));
     /* DIR *srcd = opendir(utstring_body(opamdir)); */
     if (srcd == NULL) {
@@ -307,11 +313,18 @@ void _emit_ocaml_stublibs_symlinks(char *_dir)
     struct dirent *direntry;
     while ((direntry = readdir(srcd)) != NULL) {
         //Condition to check regular file.
-        log_debug("stublib: %s, type %d",
-                  direntry->d_name, direntry->d_type);
+#if defined(DEBUG_TRACE)
+        if (debug)
+            log_debug("stublib: %s, type %d",
+                      direntry->d_name, direntry->d_type);
+#endif
         if( (direntry->d_type==DT_REG)
             || (direntry->d_type==DT_LNK) ){
 
+            /* do not symlink workspace file */
+            if (strncmp(direntry->d_name, "WORKSPACE", 9) == 0) {
+                continue;
+            }
             utstring_renew(src);
             utstring_printf(src, "%s/%s",
                             utstring_body(src_dir),
@@ -320,11 +333,13 @@ void _emit_ocaml_stublibs_symlinks(char *_dir)
             utstring_printf(dst, "%s/%s",
                             utstring_body(dst_dir), direntry->d_name);
 
+#if defined(DEBUG_TRACE)
             if (debug) {
                 log_debug("stublibs: symlinking %s to %s\n",
                           utstring_body(src),
                           utstring_body(dst));
             }
+#endif
 
             rc = symlink(utstring_body(src),
                          utstring_body(dst));
@@ -467,6 +482,10 @@ void _emit_lib_stublibs_symlinks(char *bzl_switch_lib)
                       direntry->d_name, direntry->d_type);
         }
 #endif
+        if (strncmp(direntry->d_name, "WORKSPACE", 9) == 0) {
+            continue;
+        }
+
         if( (direntry->d_type==DT_REG)
             || (direntry->d_type==DT_LNK) ){
 
@@ -525,145 +544,130 @@ void emit_ocaml_platform_buildfiles(char *bzl_switch_lib)
     /* platform definitions */
     utstring_new(ocaml_file);
     /* utstring_concat(ocaml_file, bzl_switch_pfx); */
-    utstring_printf(ocaml_file, "%s/ocaml/host/bazel", bzl_switch_lib);
+    utstring_printf(ocaml_file, "%s/ocaml/platforms", bzl_switch_lib);
     mkdir_r(utstring_body(ocaml_file));
     utstring_printf(ocaml_file, "/BUILD.bazel");
-    _copy_buildfile("host/bazel/BUILD.bazel", ocaml_file);
+    _copy_buildfile("platforms/BUILD.bazel", ocaml_file);
 
-    utstring_renew(ocaml_file);
-    /* utstring_concat(ocaml_file, bzl_switch_pfx); */
-    utstring_printf(ocaml_file, "%s/ocaml/host/build", bzl_switch_lib);
-    mkdir_r(utstring_body(ocaml_file));
-    utstring_printf(ocaml_file, "/BUILD.bazel");
-    _copy_buildfile("host/build/BUILD.bazel", ocaml_file);
+    utstring_free(ocaml_file);
+}
 
-    utstring_renew(ocaml_file);
-    /* utstring_concat(ocaml_file, bzl_switch_pfx); */
-    utstring_printf(ocaml_file, "%s/ocaml/host/target", bzl_switch_lib);
-    mkdir_r(utstring_body(ocaml_file));
-    utstring_printf(ocaml_file, "/BUILD.bazel");
-    _copy_buildfile("host/target/BUILD.bazel", ocaml_file);
+void emit_ocaml_toolchain_buildfiles(char *bzl_switch_lib)
+{
+#if defined(DEBUG_TRACE)
+    if (trace)
+        log_trace("emit_ocaml_toolchain_buildfiles: %s", bzl_switch_lib);
+#endif
+    UT_string *ocaml_file;
 
-    /* toolchain selectors */
+    /* platform definitions */
     utstring_new(ocaml_file);
-    /* utstring_concat(ocaml_file, bzl_switch_pfx); */
+    utstring_new(ocaml_file);
     utstring_printf(ocaml_file, "%s/ocaml/toolchain/selectors/local",
                     bzl_switch_lib);
     mkdir_r(utstring_body(ocaml_file));
     utstring_printf(ocaml_file, "/BUILD.bazel");
-    _copy_buildfile("toolchain/selectors/local/BUILD.bazel", ocaml_file);
+    _copy_buildfile("toolchain/selectors/local.BUILD", ocaml_file);
 
     utstring_new(ocaml_file);
-    /* utstring_concat(ocaml_file, bzl_switch_pfx); */
     utstring_printf(ocaml_file, "%s/ocaml/toolchain/selectors/macos/x86_64",
                     bzl_switch_lib);
     mkdir_r(utstring_body(ocaml_file));
     utstring_printf(ocaml_file, "/BUILD.bazel");
-    _copy_buildfile("toolchain/selectors/macos/x86_64/BUILD.bazel", ocaml_file);
+    _copy_buildfile("toolchain/selectors/macos/x86_64.BUILD", ocaml_file);
 
     utstring_new(ocaml_file);
-    /* utstring_concat(ocaml_file, bzl_switch_pfx); */
     utstring_printf(ocaml_file, "%s/ocaml/toolchain/selectors/macos/arm",
                     bzl_switch_lib);
     mkdir_r(utstring_body(ocaml_file));
     utstring_printf(ocaml_file, "/BUILD.bazel");
-    _copy_buildfile("toolchain/selectors/macos/arm/BUILD.bazel", ocaml_file);
+    _copy_buildfile("toolchain/selectors/macos/arm.BUILD", ocaml_file);
 
     utstring_new(ocaml_file);
-    /* utstring_concat(ocaml_file, bzl_switch_pfx); */
     utstring_printf(ocaml_file, "%s/ocaml/toolchain/selectors/linux/x86_64",
                     bzl_switch_lib);
     mkdir_r(utstring_body(ocaml_file));
     utstring_printf(ocaml_file, "/BUILD.bazel");
-    _copy_buildfile("toolchain/selectors/linux/x86_64/BUILD.bazel", ocaml_file);
+    _copy_buildfile("toolchain/selectors/linux/x86_64.BUILD", ocaml_file);
 
     utstring_new(ocaml_file);
-    /* utstring_concat(ocaml_file, bzl_switch_pfx); */
     utstring_printf(ocaml_file, "%s/ocaml/toolchain/selectors/linux/arm",
                     bzl_switch_lib);
     mkdir_r(utstring_body(ocaml_file));
     utstring_printf(ocaml_file, "/BUILD.bazel");
-    _copy_buildfile("toolchain/selectors/linux/arm/BUILD.bazel", ocaml_file);
+    _copy_buildfile("toolchain/selectors/linux/arm.BUILD", ocaml_file);
 
     /* toolchain options */
     utstring_new(ocaml_file);
-    /* utstring_concat(ocaml_file, bzl_switch_pfx); */
     utstring_printf(ocaml_file, "%s/ocaml/toolchain/profiles",
                     bzl_switch_lib);
 
     mkdir_r(utstring_body(ocaml_file));
     utstring_printf(ocaml_file, "/BUILD.bazel");
-    _copy_buildfile("toolchain/profiles/BUILD.bazel", ocaml_file);
+    _copy_buildfile("toolchain/profiles/profiles.BUILD", ocaml_file);
 
     /* toolchain adapters */
     utstring_new(ocaml_file);
-    /* utstring_concat(ocaml_file, bzl_switch_pfx); */
     utstring_printf(ocaml_file, "%s/ocaml/toolchain/adapters/local",
                     bzl_switch_lib);
     mkdir_r(utstring_body(ocaml_file));
     utstring_printf(ocaml_file, "/BUILD.bazel");
-    _copy_buildfile("toolchain/adapters/local/BUILD.bazel", ocaml_file);
+    _copy_buildfile("toolchain/adapters/local.BUILD", ocaml_file);
 
     utstring_new(ocaml_file);
-    /* utstring_concat(ocaml_file, bzl_switch_pfx); */
     utstring_printf(ocaml_file, "%s/ocaml/toolchain/adapters/linux/x86_64",
                     bzl_switch_lib);
     mkdir_r(utstring_body(ocaml_file));
     utstring_printf(ocaml_file, "/BUILD.bazel");
-    _copy_buildfile("toolchain/adapters/linux/x86_64/BUILD.bazel", ocaml_file);
+    _copy_buildfile("toolchain/adapters/linux/x86_64.BUILD", ocaml_file);
 
     utstring_new(ocaml_file);
-    /* utstring_concat(ocaml_file, bzl_switch_pfx); */
     utstring_printf(ocaml_file, "%s/ocaml/toolchain/adapters/linux/arm",
                     bzl_switch_lib);
     mkdir_r(utstring_body(ocaml_file));
     utstring_printf(ocaml_file, "/BUILD.bazel");
-    _copy_buildfile("toolchain/adapters/linux/arm/BUILD.bazel", ocaml_file);
+    _copy_buildfile("toolchain/adapters/linux/arm.BUILD", ocaml_file);
 
     utstring_new(ocaml_file);
-    /* utstring_concat(ocaml_file, bzl_switch_pfx); */
     utstring_printf(ocaml_file, "%s/ocaml/toolchain/adapters/macos/x86_64",
                     bzl_switch_lib);
     mkdir_r(utstring_body(ocaml_file));
     utstring_printf(ocaml_file, "/BUILD.bazel");
-    _copy_buildfile("toolchain/adapters/macos/x86_64/BUILD.bazel", ocaml_file);
+    _copy_buildfile("toolchain/adapters/macos/x86_64.BUILD", ocaml_file);
 
     utstring_new(ocaml_file);
-    /* utstring_concat(ocaml_file, bzl_switch_pfx); */
     utstring_printf(ocaml_file, "%s/ocaml/toolchain/adapters/macos/arm",
                     bzl_switch_lib);
     mkdir_r(utstring_body(ocaml_file));
     utstring_printf(ocaml_file, "/BUILD.bazel");
-    _copy_buildfile("toolchain/adapters/macos/arm/BUILD.bazel", ocaml_file);
+    _copy_buildfile("toolchain/adapters/macos/arm.BUILD", ocaml_file);
 
     utstring_free(ocaml_file);
 }
 
-void emit_ocaml_toolchain_buildfile(char *bzl_switch_lib)
-{
-#if defined(DEBUG_TRACE)
-    if (trace) log_trace("emit_ocaml_toolchain_buildfile");
-#endif
-    UT_string *ocaml_file;
-    utstring_new(ocaml_file);
-    /* utstring_concat(ocaml_file, bzl_switch_pfx); */
-    utstring_printf(ocaml_file, "%s/ocaml/toolchains",
-                    bzl_switch_lib);
-    mkdir_r(utstring_body(ocaml_file));
-    utstring_printf(ocaml_file, "/BUILD.bazel");
-    _copy_buildfile("ocaml_toolchains.BUILD", ocaml_file);
-    utstring_free(ocaml_file);
-}
+/* void emit_ocaml_toolchain_buildfile(char *bzl_switch_lib) */
+/* { */
+/* #if defined(DEBUG_TRACE) */
+/*     if (trace) log_trace("emit_ocaml_toolchain_buildfile"); */
+/* #endif */
+/*     UT_string *ocaml_file; */
+/*     utstring_new(ocaml_file); */
+/*     /\* utstring_concat(ocaml_file, bzl_switch_pfx); *\/ */
+/*     utstring_printf(ocaml_file, "%s/ocaml/toolchains", */
+/*                     bzl_switch_lib); */
+/*     mkdir_r(utstring_body(ocaml_file)); */
+/*     utstring_printf(ocaml_file, "/BUILD.bazel"); */
+/*     _copy_buildfile("ocaml_toolchains.BUILD", ocaml_file); */
+/*     utstring_free(ocaml_file); */
+/* } */
 
-void emit_ocaml_bin_dir(char *opam_switch_bin, // symlink src
-                        char *bzl_switch_lib)  // dest
+void emit_ocaml_bin_dir(char *bzl_switch_lib)  // dest
 {
 #if defined(DEBUG_TRACE)
     if (trace) log_trace("emit_ocaml_bin_dir");
 #endif
     UT_string *ocaml_file;
     utstring_new(ocaml_file);
-    /* utstring_printf(ocaml_file, bzl_switch_lib); // pfx); */
     utstring_printf(ocaml_file, "%s/ocaml/bin", bzl_switch_lib);
     mkdir_r(utstring_body(ocaml_file));
     utstring_printf(ocaml_file, "/BUILD.bazel");
@@ -706,8 +710,12 @@ void _emit_ocaml_bin_symlinks(char *bzl_switch_lib)  // dest
 
     mkdir_r(utstring_body(dst_dir));
 
-    log_debug("src_dir: %s\n", opam_switch_bin);
-    log_debug("dst_dir: %s\n", utstring_body(dst_dir));
+#if defined(DEBUG_TRACE)
+    if (debug) {
+        log_debug("src_dir: %s\n", opam_switch_bin);
+        log_debug("dst_dir: %s\n", utstring_body(dst_dir));
+    }
+#endif
 
     /* UT_string *opamdir; */
     /* utstring_new(opamdir); */
@@ -722,8 +730,11 @@ void _emit_ocaml_bin_symlinks(char *bzl_switch_lib)  // dest
     utstring_new(dst);
     int rc;
 
-    log_debug("opening src_dir for read: %s\n",
-              utstring_body(opam_switch_bin));
+#if defined(DEBUG_TRACE)
+    if (debug)
+        log_debug("opening src_dir for read: %s\n",
+                  utstring_body(opam_switch_bin));
+#endif
     DIR *srcd = opendir(utstring_body(opam_switch_bin));
     /* DIR *srcd = opendir(utstring_body(opamdir)); */
     if (dst == NULL) {
@@ -780,6 +791,8 @@ void _emit_ocaml_bin_symlinks(char *bzl_switch_lib)  // dest
     closedir(srcd);
 }
 
+/* **************************************************************** */
+/* obsolete but keep it around in case we decide to use it later */
 void _symlink_buildfile(char *buildfile, UT_string *to_file)
 {
 #if defined(DEBUG_TRACE)
@@ -799,11 +812,13 @@ void _symlink_buildfile(char *buildfile, UT_string *to_file)
         return;
     }
 
+#if defined(DEBUG_TRACE)
     if (debug) {
         log_debug("c_libs: symlinking %s to %s\n",
                   utstring_body(src),
                   utstring_body(to_file));
     }
+#endif
     errno = 0;
     rc = symlink(utstring_body(src),
                  utstring_body(to_file));
@@ -1161,7 +1176,10 @@ void _symlink_ocaml_num(char *tgtdir)
         /* example, see topkg and topkg-care */
         return;
     }
-    log_debug("reading num dir %s", utstring_body(opamdir));
+#if defined(DEBUG_TRACE)
+    if (debug)
+        log_debug("reading num dir %s", utstring_body(opamdir));
+#endif
 
     struct dirent *direntry;
     while ((direntry = readdir(d)) != NULL) {
@@ -1762,9 +1780,10 @@ EXPORT void emit_ocaml_workspace(char *bzl_switch_lib)  // dest
     /* utstring_concat(ocaml_file, bzl_switch_lib); // pfx); */
     utstring_printf(ocaml_file, "%s/ocaml", bzl_switch_lib);
 
-    /* emit_ocaml_bin_dir(opam_switch_lib, bzl_switch_lib); */
+    emit_ocaml_bin_dir(bzl_switch_lib);
 
     emit_ocaml_platform_buildfiles(bzl_switch_lib);
+    emit_ocaml_toolchain_buildfiles(bzl_switch_lib);
     /* /\* X emit_ocaml_toolchain_buildfile(); *\/ */
 
     /* /\* FIXME: decide on stdlib or runtime *\/ */

@@ -1,14 +1,16 @@
 #include <errno.h>
 #include <execinfo.h>
+#if INTERFACE
 #include <stdbool.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
-#include "log.h"
+/* #include "log.h" */
 /* #if EXPORT */
-#include "utarray.h"
+/* #include "utarray.h" */
 /* #endif */
 
 #include "debug.h"

@@ -5,14 +5,14 @@
 #include <string.h>
 #include <unistd.h>
 
-/* #include "s7.h" */
+#include "s7.h"
 
-#include "log.h"
-/* #if EXPORT */
-#include "utarray.h"
-/* #endif */
+/* #include "log.h" */
+/* /\* #if EXPORT *\/ */
+/* #include "utarray.h" */
+/* /\* #endif *\/ */
 
-#include "debug.h"
+#include "debug_s7.h"
 
 bool debug = false;
 bool trace = false;

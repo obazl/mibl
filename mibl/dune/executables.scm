@@ -232,7 +232,7 @@
 
          ;; pkg-manifest: (:manifest (:modules M1 M2 ...))
          ;; contains all modules in pkg
-         (pkg-manifest (get-manifest pkg #f stanza-alist))
+         (pkg-manifest (get-manifest pkg :exe #f stanza-alist))
          (_ (format #t "~A: ~A\n" (uwhite "pkg-manifest") pkg-manifest))
          ;; FIXME: deal with private_modules too
 

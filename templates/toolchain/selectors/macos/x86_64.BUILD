@@ -15,7 +15,7 @@ toolchain(
         "@platforms//cpu:x86_64",
      ],
     target_compatible_with = [
-        "@ocaml//host/target:vm",
+        "@ocaml//platforms:vm",
      ],
     visibility             = ["//visibility:public"],
 )
@@ -38,8 +38,8 @@ toolchain(
 
 ##########
 # We can select this with
-# --host_platform=@ocaml//host/build:macos_x86_64
-# --platforms=@ocaml//host/target:linux_x86_64
+# --host_platform=@ocaml//platforms:macos_x86_64
+# --platforms=@ocaml//platforms:linux_x86_64
 # but CC toolchain selection will fail since we do not have a
 # cross-compiling cc toolchain.
 toolchain(

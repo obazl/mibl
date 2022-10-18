@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "log.h"
+/* #include "log.h" */
 
 #if defined(YYDEBUG)
 static int indent = 2;

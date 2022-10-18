@@ -22,13 +22,14 @@
 #endif
 #endif
 
-#if INTERFACE
-#include "utarray.h"
-#include "utstring.h"
-#endif
+/* #if INTERFACE */
+/* #include "utarray.h" */
+/* #include "utstring.h" */
+/* #endif */
 
-#include "log.h"
-#include "libfindlib.h"
+/* #include "log.h" */
+
+/* #include "libfindlib.h" */
 #include "handlers_findlib.h"
 
 /* we emit one ws file per opam (findlib) pkg */
@@ -38,7 +39,7 @@ UT_string *workspace_file;
 UT_string *pkg_parent;
 UT_string *imports_path;
 char *ocaml_ws = "ocaml";
-char *bazel_ws_root = NULL;
+char *bazel_ws_root = NULL;     /* FIXME: rename bzl_switch_lib */
 
 bool g_ppx_pkg = false;
 /* extern bool stdlib_root = false; */
@@ -348,9 +349,11 @@ void handle_findlib_pkg(// char *opam_switch_lib,
 #endif
     struct obzl_meta_package *pkg = obzl_meta_parse_file(utstring_body(meta_path));
     if (pkg == NULL) {
-        if (errno == -1)
+        if (errno == -1) {
             log_warn("Empty META file: %s", utstring_body(meta_path));
-        else
+            /* check dune-package for installed executables */
+            return;
+        } else
             if (errno == -2)
                 log_warn("META file contains only whitespace: %s", utstring_body(meta_path));
             else

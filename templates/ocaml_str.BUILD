@@ -22,7 +22,7 @@ opam_import(
 
 opam_import(
     name       = "plugin",
-    cmxs       = ["str.cmxs"],
-    cma        = ["str.cma"],
+    cmxs       = "str.cmxs",
+    cma        = "str.cma",
     visibility = ["//visibility:public"]
 )

@@ -1,0 +1,8 @@
+exports_files(glob(["*.c"]))
+
+
+filegroup(
+    name = "mkhdrs_srcs",
+    srcs = glob(["*.c"]),
+    visibility = ["//visibility:public"]
+)

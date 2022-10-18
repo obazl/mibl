@@ -1,7 +1,8 @@
 #include <stdbool.h>
 
-#include "log.h"
-#include "utarray.h"
+/* #include "log.h" */
+/* #include "utarray.h" */
+
 #include "meta_packages.h"
 
 #if EXPORT_INTERFACE
@@ -210,7 +211,9 @@ EXPORT int pkg_deps(struct obzl_meta_package *_pkg,
                     UT_array *pending_deps,
                     UT_array *completed_deps)
 {
-    log_trace("pkg_deps");
+/* #if defined(DEBUG_TRACE) */
+/*     if (trace) log_trace("pkg_deps"); */
+/* #endif */
     utarray_sort(completed_deps,strsort);
 
     obzl_meta_entries *entries = obzl_meta_package_entries(_pkg);
@@ -304,14 +307,18 @@ EXPORT int pkg_deps(struct obzl_meta_package *_pkg,
         /* dump_values(0, vals); */
         /* now we handle UPDATE settings */
 
-        log_debug("iterating values");
+/* #if defined(DEBUG_TRACE) */
+/*         log_debug("iterating values"); */
+/* #endif */
         char **p = NULL;        /* for searching completed_deps */
         for (int j = 0; j < obzl_meta_values_count(vals); j++) {
             dep_name = obzl_meta_values_nth(vals, j);
             /* log_debug("property val[%d]: '%s'", j, *dep_name); */
 
             char *s = strdup((char*)*dep_name);
-            log_debug("DEP: '%s'", s);
+/* #if defined(DEBUG_TRACE) */
+/*             if (debug) log_debug("DEP: '%s'", s); */
+/* #endif */
 
             /* FIXME: drop trailing dot segs - only record topelevels */
             char *dot = strchr(s, '.');
@@ -320,16 +327,29 @@ EXPORT int pkg_deps(struct obzl_meta_package *_pkg,
             if (dot) {
                 *dot = '\0';
             }
-            log_debug("DEP DESEGMENTED: '%s'", s);
+            /* log_debug("DEP DESEGMENTED: '%s'", s); */
 
             p = NULL;
             p = (const char**)utarray_find(completed_deps, &s, strsort);
             if (p != NULL) {
-                log_debug(" found completed dep: %s", *p);
+/* #if defined(DEBUG_TRACE) */
+/*                 if (debug) */
+/*                     log_debug(" found completed dep: %s", *p); */
+/* #endif */
             } else {
-                log_debug(" adding new pending dep: %s", s);
-                utarray_push_back(pending_deps, &s);
                 utarray_sort(pending_deps,strsort); /* FIXME: can we avoid this? */
+                p = (const char**)utarray_find(pending_deps, &s, strsort);
+                if (p != NULL) {
+/* #if defined(DEBUG_TRACE) */
+/*                     if (debug) */
+/*                         log_debug(" pending dep already added: %s", *p); */
+/* #endif */
+                } else {
+/* #if defined(DEBUG_TRACE) */
+/*                     if (debug) log_debug(" adding new pending dep: %s", s); */
+/* #endif */
+                    utarray_push_back(pending_deps, &s);
+                }
             }
         }
         free(condition_comment);

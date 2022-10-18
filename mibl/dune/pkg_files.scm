@@ -1,6 +1,6 @@
 ;; arg:  normalized module name
 (define (find-module-in-pkg module pkg)
-  (format #t "~A: ~A~%" (ublue "find-module-in-pkg-modules") module)
+  (format #t "~A: ~A~%" (ublue "find-module-in-pkg") module)
   (let* ((pkg-modules (if-let ((files (assoc-val :modules pkg)))
                                 files '()))
          (_ (format #t "~A: ~A~%" (yellow "pkg-modules") pkg-modules))

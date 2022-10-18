@@ -1,6 +1,38 @@
-LOCAL void _walk_project(char *pkg_path)
+#include <fnmatch.h>
+#include <stdlib.h>
+#include <sys/errno.h>
+#include <unistd.h>
+
+#include "treewalker_project.h"
+
+/* FIXME: common to both walkers */
+LOCAL bool _this_is_hidden(FTSENT *ftsentry)
 {
-    log_trace("walk_project");
+    if (ftsentry->fts_name[0] == '.') {
+        /* process the "." passed to fts_open, skip any others */
+        if (ftsentry->fts_pathlen > 1) {
+            // do not process children of hidden dirs
+            /* if (trace) */
+            /*     log_trace(RED "Excluding" CRESET " hidden dir: %s\n", */
+            /*               ftsentry->fts_path); //, ftsentry->fts_name); */
+            return true;
+            /* } else { */
+            /*     printf("ROOT DOT dir\n"); */
+        }
+    }
+    return false;
+}
+
+EXPORT void convert_dune_project(UT_array *opam_pending_deps)
+{
+#if defined(DEBUG_TRACE)
+    log_debug(BLU "convert_dune_project" CRESET);
+    log_debug("%-16s%s", "opam switch:", utstring_body(opam_switch_lib));
+    log_debug("%-16s%s", "launch_dir:", launch_dir);
+    log_debug("%-16s%s", "base ws:", bws_root);
+    log_debug("%-16s%s", "effective ws:", ews_root);
+#endif
+    return;
     /*
       FIXME: traversal root(s) to be determined by miblrc.srcs.include
       default is cwd, but if miblrc designates 'include' dirs, then
@@ -57,7 +89,7 @@ LOCAL void _walk_project(char *pkg_path)
                     | FTS_NOCHDIR
                     | FTS_PHYSICAL,
                     // NULL
-                    &_compare
+                    &compare_fts
                     );
     if (errno != 0) {
         log_error("fts_open error: %s", strerror(errno));
@@ -124,7 +156,7 @@ LOCAL void _walk_project(char *pkg_path)
                         fts_set(tree, ftsentry, FTS_SKIP);
                         /* break; */
                     } else {
-                        if (_include_this(ftsentry)) {
+                        if (include_this(ftsentry)) {
 #if defined(DEBUG_TRACE)
                             if (trace) log_info(RED "Including" CRESET " %s",
                                                 ftsentry->fts_path);

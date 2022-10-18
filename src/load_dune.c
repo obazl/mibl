@@ -15,13 +15,14 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#if INTERFACE
-#include "utarray.h"
-#include "utstring.h"
+/* #if INTERFACE */
+/* #include "utarray.h" */
+/* #include "utstring.h" */
 #include "s7.h"
-#endif
+/* #endif */
 
-#include "log.h"
+/* #include "log.h" */
+
 #include "load_dune.h"
 
 UT_array  *segs;
@@ -2614,7 +2615,7 @@ LOCAL void _handle_symlink(s7_pointer pkg_tbl, FTS *tree, FTSENT *ftsentry)
 }
 
 /* control traversal order */
-int _compare(const FTSENT** one, const FTSENT** two)
+LOCAL int _compare(const FTSENT** one, const FTSENT** two)
 {
     return (strcmp((*one)->fts_name, (*two)->fts_name));
 }
@@ -2930,7 +2931,7 @@ bool _include_this(FTSENT *ftsentry)
             }
         }
     }
-    /* exclusions override inclusiongs */
+    /* exclusions override inclusions */
     /* if exclude return false */
     /* otherwise, if include return true else false */
 
@@ -3004,12 +3005,6 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
         log_debug("%-16s%s", "traversal_root:", traversal_root);
     }
 #endif
-    if (verbose) {
-        printf(YEL "%-16s%s\n" CRESET, "current dir:", getcwd(NULL, 0));
-        printf(YEL "%-16s%s\n" CRESET, "traversal_root:", traversal_root);
-    }
-
-
     /*
       FIXME: traversal root(s) to be determined by miblrc.srcs.include
       default is cwd, but if miblrc designates 'include' dirs, then
@@ -3365,8 +3360,11 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
                     break;
                 }
         }
+        log_error("end while (ftsentry = fts_read(tree)) != NULL)");
         chdir(old_cwd);
         /* printf(RED "Restored cwd: %s\n" CRESET, getcwd(NULL, 0)); */
+    } else {
+        log_error("TREE == NULL");
     }
 
     /* s7_pointer pkg_tbl = */

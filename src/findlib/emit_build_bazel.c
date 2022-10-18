@@ -22,11 +22,11 @@
 /* #include "s7.h" */
 /* #endif */
 
-#include "log.h"
-#if EXPORT_INTERFACE
-#include "utarray.h"
-#include "utstring.h"
-#endif
+/* #include "log.h" */
+/* #if EXPORT_INTERFACE */
+/* #include "utarray.h" */
+/* #include "utstring.h" */
+/* #endif */
 
 #include "emit_build_bazel.h"
 
@@ -51,7 +51,7 @@ extern bool verbose;
 extern bool debug;
 extern bool trace;
 
-extern bool stdlib_root = false;
+extern bool stdlib_root;
 
 extern UT_string *bzl_switch_pfx;
 
@@ -124,146 +124,6 @@ char *pfxdir = NULL; // ""; // buildfiles";
 /*         } */
 /*     } */
 /* } */
-
-/* FIXME: same in mibl/error_handler.c */
-char *dunefile_to_string(UT_string *dunefile_name)
-{
-#if defined(DEBUG_TRACE)
-    if (trace)
-        printf("dunefile_to_string: %s\n", utstring_body(dunefile_name));
-#endif
-    /* core/dune file size: 45572 */
-#define BUFSZ 65536
-    static char inbuf[BUFSZ];
-    memset(inbuf, '\0', BUFSZ);
-    static char outbuf[BUFSZ + 20];
-    memset(outbuf, '\0', BUFSZ);
-
-    /* FIXME: what about e.g. unicode in string literals? */
-    errno = 0;
-    FILE *instream = fopen(utstring_body(dunefile_name), "r");
-    if (instream == NULL) {
-        printf(RED "ERROR" CRESET "fopen failure: %s\n",
-               utstring_body(dunefile_name));
-        perror(NULL);
-        exit(EXIT_FAILURE);
-    } else {
-#if defined(DEBUG_TRACE)
-        if (debug) printf("fopened %s\n", utstring_body(dunefile_name));
-#endif
-    }
-    fseek(instream, 0, SEEK_END);
-    uint64_t fileSize = ftell(instream);
-#if defined(DEBUG_TRACE)
-    if (debug) printf("filesize: %d\n", fileSize);
-#endif
-
-    if (fileSize > BUFSZ) {
-        printf(RED "ERROR:" CRESET " dune file size (%d) > BUFSZ (%d)\n", fileSize, BUFSZ);
-        log_error("dune file size (%d) > BUFSZ (%d)", fileSize, BUFSZ);
-        exit(EXIT_FAILURE);     /* FIXME: exit gracefully */
-    }
-    rewind(instream);
-
-    /* char *outbuf = malloc(fileSize + 1); */
-    /* memset(outbuf, '\0', fileSize); */
-
-    uint64_t outFileSizeCounter = fileSize;
-
-    /* we fread() bytes from instream in COPY_BUFFER_MAXSIZE increments,
-       until there is nothing left to fread() */
-    int read_ct = 0;
-    do {
-        /* printf("reading...\n"); */
-        if (outFileSizeCounter > BUFSZ) {
-            /* probably won't see a 16K dune file */
-            read_ct = fread(inbuf, 1, (size_t) BUFSZ, instream);
-            if (read_ct != BUFSZ) {
-                if (ferror(instream) != 0) {
-                    printf(RED "ERROR" CRESET " fread error 1 for %s\n",
-                              utstring_body(dunefile_name));
-                    log_error("fread error 1 for %s\n",
-                              utstring_body(dunefile_name));
-                    exit(EXIT_FAILURE); //FIXME: exit gracefully
-                } else {
-                    printf("xxxxxxxxxxxxxxxx\n");
-                }
-            } else {
-                printf("aaaaaaaaaaaaaaaa\n");
-            }
-            /* log_debug("writing"); */
-            outFileSizeCounter -= BUFSZ;
-        }
-        else {
-            read_ct = fread(inbuf, 1, (size_t) outFileSizeCounter, instream);
-#if defined(DEBUG_TRACE)
-            if (debug) printf("read_ct: %d\n", read_ct);
-#endif
-            if (read_ct != outFileSizeCounter) {
-                if (ferror(instream) != 0) {
-                    printf(RED "ERROR" CRESET "fread error 2 for %s\n",
-                              utstring_body(dunefile_name));
-                    log_error("fread error 2 for %s\n",
-                              utstring_body(dunefile_name));
-                    exit(EXIT_FAILURE); //FIXME: exit gracefully
-                } else {
-                    if (feof(instream) == 0) {
-                        printf(RED "ERROR" CRESET "fread error 3 for %s\n",
-                              utstring_body(dunefile_name));
-                        log_error("fread error 3 for %s\n",
-                                  utstring_body(dunefile_name));
-                        exit(EXIT_FAILURE); //FIXME: exit gracefully
-                    } else {
-                        /* printf("bbbbbbbbbbbbbbbb\n"); */
-                    }
-                }
-            }
-            outFileSizeCounter = 0ULL;
-        }
-    } while (outFileSizeCounter > 0);
-    /* printf(RED "readed" CRESET " %d bytes\n", read_ct); */
-    fclose(instream);
-
-    // FIXME: loop over the entire inbuf
-    char *inptr = (char*)inbuf;
-    char *outptr = (char*)outbuf;
-    char *cursor = inptr;
-
-    while (true) {
-        cursor = strstr(inptr, ".)");
-
-/* https://stackoverflow.com/questions/54592366/replacing-one-character-in-a-string-with-multiple-characters-in-c */
-
-        if (cursor == NULL) {
-            printf("remainder: %s\n", inptr);
-            size_t ct = strlcpy(outptr, (const char*)inptr, strlen(outptr));
-            break;
-        } else {
-#if defined(DEBUG_TRACE)
-            if (debug) printf("FOUND and fixing \".)\" at pos: %d\n", cursor - inbuf);
-#endif
-            size_t ct = strlcpy(outptr, (const char*)inptr, cursor - inptr);
-            printf("copied %d chars\n", ct);
-            if (ct >= BUFSZ) {
-                printf("output string has been truncated!\n");
-            }
-            outptr = outptr + (cursor - inptr) - 1;
-            outptr[cursor - inptr] = '\0';
-            ct = strlcat(outptr, " ./", BUFSZ);
-            outptr += 3;
-
-            inptr = inptr + (cursor - inptr) + 1;
-            /* printf(GRN "inptr:\n" CRESET " %s\n", inptr); */
-
-            if (ct >= BUFSZ) {
-                printf(RED "ERROR" CRESET "write count exceeded output bufsz\n");
-                exit(EXIT_FAILURE);
-                // output string has been truncated
-            }
-        }
-    }
-    return outbuf;
-}
 
 void emit_new_local_subpkg_entries(FILE *bootstrap_FILE,
                                    struct obzl_meta_package *_pkg,
@@ -753,7 +613,7 @@ void emit_bazel_attribute(FILE* ostream,
             if (rc == 0)    /* i.e. 'ocaml', 'ocaml/ocamldoc' */
                  /* special cases: unix, dynlink, etc. */
                 if (strlen(_filedeps_path) == 5) {
-                    utstring_printf(label, "@%s//lib:%s",
+                    utstring_printf(label, "@opam_%s//lib:%s",
                                     _filedeps_path, *archive_name);
                 } else {
                     rc = strncmp("ocaml-compiler-libs", _filedeps_path, 19);
@@ -777,7 +637,7 @@ void emit_bazel_attribute(FILE* ostream,
                 */
                 if (_pkg_prefix == NULL) {
                     utstring_printf(label,
-                                    "@%s//%s", // filedeps path: %s",
+                                    "@opam_%s//%s", // filedeps path: %s",
                                     /* _pkg_name, */
                                     _filedeps_path,
                                     *archive_name);
@@ -786,7 +646,7 @@ void emit_bazel_attribute(FILE* ostream,
                     int repo_len = start - (char*)_pkg_prefix;
                     if (start == NULL) {
                         utstring_printf(label,
-                                        "@%.*s//%s:%s", // || PKG_pfx: %s",
+                                        "@opam_%.*s//%s:%s", // || PKG_pfx: %s",
                                         repo_len,
                                         _pkg_prefix,
                                         _pkg_name,
@@ -795,7 +655,7 @@ void emit_bazel_attribute(FILE* ostream,
                     } else {
                         start++;
                         utstring_printf(label,
-                                        "@%.*s//%s/%s:%s", // || PKG_pfx: %s",
+                                        "@opam_%.*s//%s/%s:%s", // || PKG_pfx: %s",
                                         repo_len,
                                         _pkg_prefix,
                                         (char*)start,
@@ -1412,7 +1272,7 @@ void emit_bazel_cmxs_attr(FILE* ostream,
 
             // FIXME: verify existence using access()?
                 if (strncmp(utstring_body(cmtag), "cmxa", 4) == 0) {
-                    fprintf(ostream, " = [\"%s\"],\n", utstring_body(label));
+                    fprintf(ostream, " = \"%s\",\n", utstring_body(label));
                 }
         }
         utstring_free(label);
@@ -2007,8 +1867,8 @@ void emit_bazel_deps_attribute(FILE* ostream, int level,
                                 /*         (1+level)*spfactor, sp, */
                                 /*         *dep_name); */
                                 fprintf(ostream,
-                                        /* "%*s\"@%s//lib/%s\",\n", */
-                                        "%*s\"@%s//:%s\",\n",
+                                        "%*s\"@opam_%s//lib/%s\",\n",
+                                        /* "%*s\"@%s//:%s\",\n", */
                                         (1+level)*spfactor, sp,
                                         *dep_name, *dep_name);
                             }
@@ -2021,8 +1881,8 @@ void emit_bazel_deps_attribute(FILE* ostream, int level,
                     else {
                         int repo_len = delim1 - (char*)*dep_name;
                         fprintf(ostream,
-                                /* "%*s\"@%.*s//lib/%s\",\n", */
-                                "%*s\"@%.*s//%s\",\n",
+                                "%*s\"@opam_%.*s//lib/%s\",\n",
+                                /* "%*s\"@%.*s//%s\",\n", */
                                 (1+level)*spfactor, sp,
                                 repo_len,
                                 *dep_name,
@@ -2236,7 +2096,8 @@ void emit_bazel_ppx_codeps(FILE* ostream, int level,
                     else {
                 /* if (delim1 == NULL) { */
                     int repo_len = strlen((char*)*v);
-                    fprintf(ostream, "%*s\"@%.*s//lib/%s\",\n",
+                    fprintf(ostream,
+                            "%*s\"@opam_%.*s//lib/%s\",\n",
                             (1+level)*spfactor, sp, repo_len,
                             *v, *v);
                     }
@@ -2248,7 +2109,8 @@ void emit_bazel_ppx_codeps(FILE* ostream, int level,
                         /* *delim1 = '\0'; // split string on '.' */
                         int repo_len = delim1 - (char*)*v;
                         /* fprintf(ostream, "%*s\"@%.*s//%s\",\n", */
-                        fprintf(ostream, "%*s\"@%.*s//lib",
+                        fprintf(ostream,
+                                "%*s\"@opam_%.*s//lib",
                                 (1+level)*spfactor, sp,
                                 repo_len, *v);
                         /* delim1+1); */
@@ -2384,7 +2246,7 @@ void emit_bazel_deps_target(FILE* ostream, int level,
     if (strncmp(_pkg_name, "findlib", 7) == 0) {
         fprintf(ostream, "\nalias(\n");
         fprintf(ostream, "    name   = \"findlib\",\n");
-        fprintf(ostream, "    actual = \"@findlib//lib/internal\",\n");
+        fprintf(ostream, "    actual = \"@opam_findlib//lib/internal\",\n");
         fprintf(ostream, "    visibility = [\"//visibility:public\"]\n");
         fprintf(ostream, ")\n");
     } else {
@@ -2728,109 +2590,118 @@ EXPORT void emit_workspace_file(UT_string *ws_file, char *repo_name)
         exit(EXIT_FAILURE);
     }
 
-    fprintf(ostream, "## generated file - DO NOT EDIT\n");
-    fprintf(ostream, "workspace( name = \"%s\" )\n", repo_name);
+    fprintf(ostream, "## X generated file - DO NOT EDIT\n");
+    fprintf(ostream, "workspace( name = \"opam_%s\" )\n", repo_name);
 
     fclose(ostream);
 }
 
-/* void emit_pkg_symlinks(UT_string *dst_dir, */
-/*                        UT_string *src_dir, */
-/*                        char *pkg_name) */
-/* { */
-/* #if defined(DEBUG_TRACE) */
-/*     if (debug) */
-/*         log_debug("emit_symlinks for pkg: %s", pkg_name); */
-/* #endif */
-/*     if ((strncmp(pkg_name, "dune", 4) == 0) */
-/*         || (strncmp(utstring_body(src_dir), "dune/configurator", 17) == 0)) { */
-/* #if defined(DEBUG_TRACE) */
-/*         if (debug) */
-/*             log_debug("Skipping 'dune' stuff\n"); */
-/* #endif */
-/*         return; */
-/*     } */
-/* #if defined(DEBUG_TRACE) */
-/*     if (debug) { */
-/*         log_debug("\tpkg_symlinks src_dir: %s", utstring_body(src_dir)); */
-/*         log_debug("\tpkg_symlinks dst_dir: %s", utstring_body(dst_dir)); */
-/*     } */
-/* #endif */
+void emit_pkg_symlinks(UT_string *dst_dir,
+                       UT_string *src_dir,
+                       char *pkg_name)
+{
+#if defined(DEBUG_TRACE)
+    if (debug)
+        log_debug("emit_symlinks for pkg: %s", pkg_name);
+#endif
+    if ((strncmp(pkg_name, "dune", 4) == 0)
+        || (strncmp(utstring_body(src_dir), "dune/configurator", 17) == 0)) {
+#if defined(DEBUG_TRACE)
+        if (debug)
+            log_debug("Skipping 'dune' stuff\n");
+#endif
+        return;
+    }
+#if defined(DEBUG_TRACE)
+    if (debug) {
+        log_debug("\tpkg_symlinks src_dir: %s", utstring_body(src_dir));
+        log_debug("\tpkg_symlinks dst_dir: %s", utstring_body(dst_dir));
+    }
+#endif
 
-/*     UT_string *opamdir; */
-/*     utstring_new(opamdir); */
-/*     utstring_printf(opamdir, "%s/%s", */
-/*                     utstring_body(opam_switch_lib), */
-/*                     //pkg_name */
-/*                     utstring_body(src_dir) */
-/*                     ); */
+    UT_string *opamdir;
+    utstring_new(opamdir);
+    utstring_printf(opamdir, "%s/%s",
+                    utstring_body(opam_switch_lib),
+                    //pkg_name
+                    utstring_body(src_dir)
+                    );
 
-/*     UT_string *src; */
-/*     utstring_new(src); */
-/*     UT_string *dst; */
-/*     utstring_new(dst); */
-/*     int rc; */
+    UT_string *src;
+    utstring_new(src);
+    UT_string *dst;
+    utstring_new(dst);
+    int rc;
 
+#if defined(DEBUG_TRACE)
+    log_debug("opening src_dir for read: %s", utstring_body(opamdir));
+#endif
+    DIR *d = opendir(utstring_body(opamdir));
+    if (d == NULL) {
+        if (strncmp(pkg_name, "care", 4) == 0) {
+            if (strncmp(utstring_body(src_dir),
+                        "topkg/../topkg-care",
+                        19) == 0) {
+#if defined(DEBUG_TRACE)
+                if (debug)
+                    log_debug("Skipping missing 'topkg-care'\n");
+#endif
+                if (verbose)
+                    fprintf(stdout, "Skipping missing pkg 'topkg-care'\n");
+                return;
+            }
+        } else
+            fprintf(stderr, "pkg_symlinks: Unable to opendir %s\n",
+                    utstring_body(opamdir));
+        /* exit(EXIT_FAILURE); */
+        /* this can happen if a related pkg is not installed */
+        /* example, see topkg and topkg-care */
+        return;
+    }
+
+    struct dirent *direntry;
+    while ((direntry = readdir(d)) != NULL) {
+        //Condition to check regular file.
+        if(direntry->d_type==DT_REG){
 /* #if defined(DEBUG_TRACE) */
-/*     log_debug("opening src_dir for read: %s\n", utstring_body(opamdir)); */
-/* #endif */
-/*     DIR *d = opendir(utstring_body(opamdir)); */
-/*     if (d == NULL) { */
-/*         if (strncmp(pkg_name, "care", 4) == 0) { */
-/*             if (strncmp(utstring_body(src_dir), */
-/*                         "topkg/../topkg-care", */
-/*                         19) == 0) { */
-/* #if defined(DEBUG_TRACE) */
-/*                 if (debug) */
-/*                     log_debug("Skipping missing 'topkg-care'\n"); */
-/* #endif */
-/*                 if (verbose) */
-/*                     fprintf(stdout, "Skipping missing pkg 'topkg-care'\n"); */
-/*                 return; */
+/*             if (debug) { */
+/*                 log_debug("dirent: %s/%s", */
+/*                           utstring_body(opamdir), direntry->d_name); */
 /*             } */
-/*         } else */
-/*             fprintf(stderr, "pkg_symlinks: Unable to opendir %s\n", */
-/*                     utstring_body(opamdir)); */
-/*         /\* exit(EXIT_FAILURE); *\/ */
-/*         /\* this can happen if a related pkg is not installed *\/ */
-/*         /\* example, see topkg and topkg-care *\/ */
-/*         return; */
-/*     } */
+/* #endif */
 
-/*     struct dirent *direntry; */
-/*     while ((direntry = readdir(d)) != NULL) { */
-/*         //Condition to check regular file. */
-/*         if(direntry->d_type==DT_REG){ */
-/*             /\* printf("dirent: %s/%s\n", *\/ */
-/*             /\*        utstring_body(opamdir), direntry->d_name); *\/ */
-/*             /\* printf("\t=> %s/%s\n", *\/ */
-/*             /\*        utstring_body(dst_dir), *\/ */
-/*             /\*        //pkg_name, *\/ */
-/*             /\*        direntry->d_name); *\/ */
+            if (strncmp(direntry->d_name, "WORKSPACE", 9) == 0) {
+                continue;
+            }
 
-/*             utstring_renew(src); */
-/*             utstring_printf(src, "%s/%s", */
-/*                             utstring_body(opamdir), direntry->d_name); */
-/*             utstring_renew(dst); */
-/*             utstring_printf(dst, "%s/%s", */
-/*                             utstring_body(dst_dir), direntry->d_name); */
-/*             /\* if (debug) *\/ */
-/*             /\*     log_debug("pkg symlinking %s to %s", *\/ */
-/*             /\*               utstring_body(src), *\/ */
-/*             /\*               utstring_body(dst)); *\/ */
-/*             rc = symlink(utstring_body(src), */
-/*                          utstring_body(dst)); */
-/*             if (rc != 0) { */
-/*                 if (errno != EEXIST) { */
-/*                     perror(utstring_body(src)); */
-/*                     fprintf(stderr, "exiting\n"); */
-/*                     exit(EXIT_FAILURE); */
-/*                 } */
-/*             } */
-/*         } */
-/*     } */
-/*     closedir(d); */
-/* } */
+            utstring_renew(src);
+            utstring_printf(src, "%s/%s",
+                            utstring_body(opamdir), direntry->d_name);
+            utstring_renew(dst);
+            utstring_printf(dst, "%s/%s/%s",
+                            utstring_body(dst_dir),
+                            pkg_name,
+                            direntry->d_name);
+#if defined(DEBUG_TRACE)
+            if (debug) {
+                log_debug("pkg symlinking");
+                fprintf(stderr, "  from %s\n", utstring_body(src));
+                fprintf(stderr, "  to   %s\n", utstring_body(dst));
+            }
+#endif
+            rc = symlink(utstring_body(src),
+                         utstring_body(dst));
+            if (rc != 0) {
+                if (errno != EEXIST) {
+                    perror(utstring_body(src));
+                    fprintf(stderr, "exiting\n");
+                    exit(EXIT_FAILURE);
+                }
+            }
+        }
+    }
+    closedir(d);
+}
 
 /*
   params:
@@ -3014,16 +2885,21 @@ EXPORT void emit_build_bazel(// char *ws_name,
 
     utstring_renew(bazel_pkg_root); /* OUTPUT dir */
     /* utstring_printf(bazel_pkg_root, "%s/%s/lib", bazel_ws_root, _pkg_root); */
-    utstring_printf(bazel_pkg_root, "%s/%s", bazel_ws_root, _pkg_root);
+    utstring_printf(bazel_pkg_root, "%s/%s/lib", bazel_ws_root, _pkg_root);
 
     if (level > 1) {
+        /* e.g. a.b.c => <switch>/lib/a/lib/b/c = @a//lib/b/c */
         utstring_printf(bazel_pkg_root, "/%s", utstring_body(pkg_parent));
     }
-    /* do not create pkg subdir for pkg itself */
-    /* target will be @foo//:foo, not @foo//foo */
-    if (strncmp(_pkg_root, pkg_name, strlen(pkg_name)) != 0) {
-        utstring_printf(bazel_pkg_root, "/%s", pkg_name);
-    }
+    /* /\* do not create pkg subdir for pkg itself *\/ */
+    /* /\* target will be @foo//:foo, not @foo//foo *\/ */
+    /* if (strncmp(_pkg_root, pkg_name, strlen(pkg_name)) != 0) { */
+    /*     utstring_printf(bazel_pkg_root, "/%s", pkg_name); */
+    /* } */
+#if defined(DEBUG_TRACE)
+    if (debug)
+        log_debug("bazel_pkg_root: %s", utstring_body(bazel_pkg_root));
+#endif
 
     /* utstring_printf(build_bazel_file, "/%s", pkg_name); */
 
@@ -3032,13 +2908,13 @@ EXPORT void emit_build_bazel(// char *ws_name,
 
     /* mkdir_r(utstring_body(bazel_pkg_root)); */
 
-    mkdir_r(utstring_body(bazel_pkg_root));
-
     utstring_renew(build_bazel_file);
-    utstring_printf(build_bazel_file, "%s/BUILD.bazel",
-                    utstring_body(bazel_pkg_root));
+    utstring_printf(build_bazel_file, "%s/%s",
+                    utstring_body(bazel_pkg_root),
+                    pkg_name);
+    mkdir_r(utstring_body(build_bazel_file));
+    utstring_printf(build_bazel_file, "/%s", "BUILD.bazel");
 
-    /* log_debug("workspace_file: %s", utstring_body(workspace_file)); */
 #if defined(DEBUG_TRACE)
     log_debug("bazel_pkg_root: %s", utstring_body(bazel_pkg_root));
     log_debug(CYN "build_bazel_file:" CRESET);
@@ -3050,13 +2926,6 @@ EXPORT void emit_build_bazel(// char *ws_name,
     if (rc == 0) {
         /* OK - file already exists*/
     }
-    /* **************************************************************** */
-    // now links
-    /* if (_pkg->entries != NULL) { */
-    /*     emit_pkg_symlinks(bazel_pkg_root, */
-    /*                       new_filedeps_path, */
-    /*                       pkg_name); */
-    /* } */
 
     /* if (rc < 0) { */
     /*     log_info("EMITTING: %s", utstring_body(build_bazel_file)); */
@@ -3092,7 +2961,7 @@ EXPORT void emit_build_bazel(// char *ws_name,
             return;
         }
 
-    fprintf(ostream, "## generated file - DO NOT EDIT\n");
+    fprintf(ostream, "## Y generated file - DO NOT EDIT\n");
 
     fprintf(ostream, "## original: %s\n\n", obzl_meta_package_src(_pkg));
 
@@ -3106,7 +2975,6 @@ EXPORT void emit_build_bazel(// char *ws_name,
     fprintf(ostream, "exports_files(glob([\"**\"]))\n\n");
 
     emit_bazel_hdr(ostream); //, 1, ocaml_ws, "lib", _pkg);
-
 
     /* special case */
     if ((strncmp(pkg_name, "ctypes", 6) == 0)
@@ -3268,7 +3136,17 @@ EXPORT void emit_build_bazel(// char *ws_name,
     /* if (_pkg_suffix == NULL) */
     /*     emit_workspace_file(workspace_file, pkg_name); */
 
-    // now links
+    /* **************************************************************** */
+    // now symlinks
+    /* if (_pkg->entries != NULL) { */
+        /* if (strncmp(pkg_name, _pkg_root, strlen(pkgname)) == 0) { */
+            /* symlinks only needed for base pkg, not subpkgs */
+    emit_pkg_symlinks(bazel_pkg_root, /* dest */
+                      new_filedeps_path, /* src */
+                      pkg_name);
+        /* } */
+    /* } */
+
     if (_pkg->entries != NULL) {
         /* emit_pkg_symlinks(bazel_pkg_root, */
         /*                   new_filedeps_path, */

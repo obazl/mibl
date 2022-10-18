@@ -83,8 +83,8 @@
     (dynlink . dynlink)
     (num . num/core)
     (ocamldoc . ocamldoc)
-    (stdlib . stdlib)
-    (:stdlib . stdlib)
+    ;; (stdlib . stdlib)
+    ;; (:stdlib . stdlib)
     (str . str)
     (threads . threads)
     (unix . unix)))
@@ -142,13 +142,12 @@
                             (let ((segs (string-split (format #f "~A" key) ".")))
                               (format #t "~A: ~A~%" (ured "unresolved; assume opam") key)
                               (if (= 1 (length segs))
-                                  (string->symbol (format #f "@~A//lib/~A" dep dep))
-                                  (string->symbol (format #f "@~A//lib/~{~A~^/~}" (car segs) (cdr segs)))))))))))))
+                                  (string->symbol (format #f "@opam_~A//lib/~A" dep dep))
+                                  (string->symbol (format #f "@opam_~A//lib/~{~A~^/~}" (car segs) (cdr segs)))))))))))))
 
 (define (-fixup-conditionals! ws pkg stanza)
-
   (format #t "~A: ~A\n" (bgblue "-fixup-conditionals!") stanza)
-  (if (not (eq? :menhir (car stanza)))
+  (if (not (member (car stanza) '(:diff :menhir)))
       (if-let ((conditionals (if-let ((dc
                                        (assoc-in '(:deps :conditionals)
                                                  (cdr stanza))))
@@ -178,7 +177,7 @@
                                                               (format #f "~A"
                                                                       (assoc-val :tgt resolution)))
                                                              (string->symbol
-                                                              (format #f "@~A//lib/~A"
+                                                              (format #f "@opam_~A//lib/~A"
                                                                       (car selector) (car selector)))))))
                                             ;; (set-car! selector (format #f "//bzl/import:~A" (car selector)))
                                             )
@@ -259,8 +258,12 @@
                  ;; (error 'fixme "STOP labels")
                  ))
 
-              ((:rule)
-               (format #t "~A: ~A~%" (ublue "fixup :rule") stanza-alist)
+              ;; ((:diff)
+              ;;  (error 'FIXME
+              ;;         (format #f "unhandled labels :diff" )))
+
+              ((:rule :diff :node :ocamlc)
+               (format #t "~A: ~A, ~A~%" (ublue "fixup") (car stanza) stanza-alist)
                (let* ((targets (assoc-val :outputs stanza-alist))
                       (_ (format #t "targets: ~A~%" targets))
                       (deps (if-let ((deps (assoc :deps stanza-alist)))
@@ -448,7 +451,9 @@
               ;;        (deps (assoc-val :deps stanza-alist)))
               ;;    (format #t "library deps: ~A~%" deps)))
 
-              ((:ocamllex :ocamlyacc :menhir :env :testsuite :tuareg :alias) (values))
+              ((:ocamllex :ocamlyacc :menhir :env
+                          :exec-libs :testsuite :tuareg :alias)
+               (values))
 
               (else
                (error 'fixme

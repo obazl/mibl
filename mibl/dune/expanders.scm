@@ -449,7 +449,7 @@
                 ;; move it from (:deps) to (deps ::tools)
                 (set-cdr! deps
                           (append
-                           (list (list ::Tools
+                           (list (list ::tools
                                        (list tool-kw
                                              (cons :pkg pkg-path)
                                              (cons :tgt tool))))
@@ -714,18 +714,19 @@
       (find-sigfile-in-pkg-files!? arg deps pkg))
 
      (else
-
-      (if (string? arg)
-          ;; assume not a file to generate
-          (begin
-            (format #t "~A: ~A~%" (bgyellow "arg is string") arg)
-            #f)
-          ;; else search :files
-          (let ((f (find-file-in-pkg-files!? arg deps pkg)))
-            (format #t "~A: ~A~%" (red "found file in pkg files?") f)
-            (if f
-                (update-tagged-label-list! arg deps pkg)
-                #f)))))))
+      (let ((f (find-file-in-pkg-files!? arg deps pkg)))
+        (format #t "~A: ~A~%" (red "found file in pkg files?") f)
+        (if f
+            (update-tagged-label-list! arg deps pkg)
+                #f))
+      ;; (if (string? arg)
+      ;;     ;; assume not a file to generate
+      ;;     (begin
+      ;;       (format #t "~A: ~A~%" (bgyellow "arg is string") arg)
+      ;;       #f)
+      ;;     ;; else search :files
+      ;;     )
+      ))))
 
 ;; string args may include suffixed vars, e.g. %{test}.corrected
 (define expand-string-arg

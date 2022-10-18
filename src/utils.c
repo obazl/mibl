@@ -21,12 +21,11 @@
 #include <sys/stat.h>
 
 /* #include "ini.h" */
-#include "log.h"
-#if EXPORT_INTERFACE
-/* #include "s7.h" */
-#include "utarray.h"
-#include "utstring.h"
-#endif
+/* #include "log.h" */
+/* #if EXPORT_INTERFACE */
+/* #include "utarray.h" */
+/* #include "utstring.h" */
+/* #endif */
 
 #include "utils.h"
 

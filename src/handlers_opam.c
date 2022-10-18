@@ -15,13 +15,14 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#if INTERFACE
-#include "utarray.h"
-#include "utstring.h"
-#endif
+/* #if INTERFACE */
+/* #include "utarray.h" */
+/* #include "utstring.h" */
+/* #endif */
 
-#include "log.h"
-#include "libfindlib.h"
+/* #include "log.h" */
+
+/* #include "libfindlib.h" */
 #include "handlers_opam.h"
 
 UT_array  *segs;
@@ -31,12 +32,12 @@ int opam_dune_package_ct = 0;
 int opam_opam_file_ct = 0;
 int opam_meta_ct = 0;
 
-void _indent(int i)
-{
-    /* printf("_indent: %d\n", i); */
-    /* for (; i > 0; i--) */
-    /*     printf("    "); */
-}
+/* void _indent(int i) */
+/* { */
+/*     /\* printf("_indent: %d\n", i); *\/ */
+/*     /\* for (; i > 0; i--) *\/ */
+/*     /\*     printf("    "); *\/ */
+/* } */
 
 char *ext;
 
@@ -46,42 +47,42 @@ UT_string *dunefile_name;
 
 /* s7_pointer g_dunefile_port; */
 
-bool _is_ws_root(FTSENT *ftsentry)
-{
-#if defined(DEBUG_TRACE)
-    if (trace)
-        log_trace("_is_ws_root: %s", ftsentry->fts_path);
-#endif
+/* bool _is_ws_root(FTSENT *ftsentry) */
+/* { */
+/* #if defined(DEBUG_TRACE) */
+/*     if (trace) */
+/*         log_trace("_is_ws_root: %s", ftsentry->fts_path); */
+/* #endif */
 
-    UT_string *pathdir;
-    utstring_new(pathdir);
-    utstring_printf(pathdir, "%s", ftsentry->fts_path);
-    utstring_printf(pathdir, "%s", "/WORKSPACE.bazel");
-    /* log_trace("accessing %s", utstring_body(pathdir)); */
-    int rc = access(utstring_body(pathdir), R_OK);
-    /* log_debug("RC: %d", rc); */
-    if (!rc) {
-#if defined(DEBUG_TRACE)
-        if (trace) log_trace("true");
-#endif
-        return true;
-    } else {
-        utstring_new(pathdir);
-        utstring_printf(pathdir, "%s", ftsentry->fts_path);
-        utstring_printf(pathdir, "%s", "/WORKSPACE");
-        rc = access(utstring_body(pathdir), R_OK);
-        if (!rc) {
-#if defined(DEBUG_TRACE)
-            if (trace) log_trace("true");
-#endif
-            return true;
-        }
-    }
-#if defined(DEBUG_TRACE)
-    if (trace) log_trace("false");
-#endif
-    return false;
-}
+/*     UT_string *pathdir; */
+/*     utstring_new(pathdir); */
+/*     utstring_printf(pathdir, "%s", ftsentry->fts_path); */
+/*     utstring_printf(pathdir, "%s", "/WORKSPACE.bazel"); */
+/*     /\* log_trace("accessing %s", utstring_body(pathdir)); *\/ */
+/*     int rc = access(utstring_body(pathdir), R_OK); */
+/*     /\* log_debug("RC: %d", rc); *\/ */
+/*     if (!rc) { */
+/* #if defined(DEBUG_TRACE) */
+/*         if (trace) log_trace("true"); */
+/* #endif */
+/*         return true; */
+/*     } else { */
+/*         utstring_new(pathdir); */
+/*         utstring_printf(pathdir, "%s", ftsentry->fts_path); */
+/*         utstring_printf(pathdir, "%s", "/WORKSPACE"); */
+/*         rc = access(utstring_body(pathdir), R_OK); */
+/*         if (!rc) { */
+/* #if defined(DEBUG_TRACE) */
+/*             if (trace) log_trace("true"); */
+/* #endif */
+/*             return true; */
+/*         } */
+/*     } */
+/* #if defined(DEBUG_TRACE) */
+/*     if (trace) log_trace("false"); */
+/* #endif */
+/*     return false; */
+/* } */
 
 LOCAL bool _this_is_hidden(FTSENT *ftsentry)
 {
@@ -158,33 +159,33 @@ void handle_dir(FTS* tree, FTSENT *ftsentry)
     /* _indent(ftsentry->fts_level); */
 }
 
-static char principal[256];
+/* static char principal[256]; */
 
-LOCAL char *_module_name(FTSENT *ftsentry, char *ext)
-{
-    strlcpy(principal, ftsentry->fts_name, 256);
-    principal[ext - ftsentry->fts_name] = '\0';
-    principal[0] = toupper(principal[0]);
-    return (char *)principal;
-}
+/* LOCAL char *_module_name(FTSENT *ftsentry, char *ext) */
+/* { */
+/*     strlcpy(principal, ftsentry->fts_name, 256); */
+/*     principal[ext - ftsentry->fts_name] = '\0'; */
+/*     principal[0] = toupper(principal[0]); */
+/*     return (char *)principal; */
+/* } */
 
-LOCAL char *_principal_name(FTSENT *ftsentry, char *ext)
-{
-    strlcpy(principal, ftsentry->fts_name, 256);
-    principal[ext - ftsentry->fts_name] = '\0';
-    /* principal[0] = toupper(principal[0]); */
-    return (char *)principal;
-}
+/* LOCAL char *_principal_name(FTSENT *ftsentry, char *ext) */
+/* { */
+/*     strlcpy(principal, ftsentry->fts_name, 256); */
+/*     principal[ext - ftsentry->fts_name] = '\0'; */
+/*     /\* principal[0] = toupper(principal[0]); *\/ */
+/*     return (char *)principal; */
+/* } */
 
-LOCAL bool _exclusions(FTSENT *ftsentry, char *ext)
-{
-    if (ext == NULL) {
-    } else {
-        if (strncmp(ext, ".gitignore", 10) == 0)
-            return true;
-    }
-    return false;
-}
+/* LOCAL bool _exclusions(FTSENT *ftsentry, char *ext) */
+/* { */
+/*     if (ext == NULL) { */
+/*     } else { */
+/*         if (strncmp(ext, ".gitignore", 10) == 0) */
+/*             return true; */
+/*     } */
+/*     return false; */
+/* } */
 
 void handle_ml_file(FTSENT *ftsentry, char *ext)
 {

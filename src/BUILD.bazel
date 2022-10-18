@@ -1,9 +1,33 @@
-exports_files([
-    "log.c", "log.h",
-    "utarray.h", "uthash.h", "utstring.h",
-    "ansi_colors.h",
-    "utils.c"
-])
+exports_files(glob(["*.c", "*.h"]))
+#     "log.c", "log.h",
+#     "utarray.h", "utarray.c",
+#     "uthash.h", "utstring.h",
+#     "ansi_colors.h",
+#     "utils.c"
+# ])
+
+filegroup(
+    name = "mkhdrs_srcs",
+    srcs = glob(
+        ["*.c"],
+        exclude = ["log.c", "utarray.c"]
+    ),
+    visibility = ["//visibility:public"]
+)
+
+filegroup(
+    name = "mkhdrs_xsrcs",
+    srcs = ["log.c", "utarray.c"],
+    visibility = ["//visibility:public"]
+)
+
+filegroup(
+    name = "mkhdrs_hdrs",
+    srcs = glob(
+        ["*.h"]
+    ),
+    visibility = ["//visibility:public"]
+)
 
 MIBL_SRCS = [
     "load_dune.c",
@@ -11,44 +35,61 @@ MIBL_SRCS = [
     "config_bazel.c",
     "config_mibl.c",
     "config_opam.c",
-    "config_s7.c",
-    "error_handler.c",
+    "config_s7_dune.c",
+    "error_handler_dune.c",
     # "fs.c",
+    "log.c", "log.h",
     "utils.c",
 ]
 
 ##########
 cc_library(
     name  = "mibl",
-    alwayslink = True,
-    # linkstatic = 1,
     srcs = MIBL_SRCS + [
-        "load_dune.h",
-        "config.h",
-        "config_bazel.h",
-        "config_mibl.h",
-        "config_opam.h",
-        "config_s7.h",
-        "error_handler.h",
+        "//src/hdrs:load_dune.h",
+        "//src/hdrs:config.h",
+        "//src/hdrs:config_bazel.h",
+        "//src/hdrs:config_mibl.h",
+        "//src/hdrs:config_opam.h",
+        "//src/hdrs:config_s7_dune.h",
+        "//src/hdrs:error_handler_dune.h",
         # "fs.h",
-        "utils.h"
+        "//src/hdrs:utils.h",
+
+        "utarray.c",
+        "utarray.h",
+        "utstring.c",
+        "//src/hdrs:utstring.h",
+
+        "@libs7//src:s7",
     ] + select({
         "//bzl/host:linux": [
-            "//src/linux:strlcat.c", "//src/linux:strlcpy.c", "//src/linux:strnstr.c"],
+            "//src/linux:strlcat.c",
+            "//src/linux:strlcpy.c",
+            "//src/linux:strnstr.c"
+        ],
         "//conditions:default":   []
     }) + select({
         "//compilation_mode:dbg?": [
-            "debug.c", "debug.h",
-            "debug_mibl.c", "debug_mibl.h",
-            # "debug_findlib.c", "debug_findlib.h"
+            "debug_s7.c",
+            "//src/hdrs:debug_s7.h"
         ],
         "//conditions:default": []
-    }) + [
-        "log.c",
-        # "uthash.h", "utarray.h", "utstring.h"
-        "@uthash//:include"
-    ],
-    hdrs = ["mibl.h", "log.h"],
+    }),
+
+    # }) + select({
+    #     "//compilation_mode:dbg?": [
+    #         "debug.c", "debug.h",
+    #         "debug_mibl.c", "debug_mibl.h",
+    #         "debug_s7.c", "debug_s7.h"
+    #     ],
+    #     "//conditions:default": []
+    # }) + [
+    #     # "log.c",
+    #     # "uthash.h", "utarray.h", "utstring.h"
+    #     # "@uthash//:include"
+    # ],
+    hdrs = ["//src/hdrs:libmibl.h"], ## "log.h"],
     data = [
         "//mibl:srcs",
         "//mibl/dune:srcs",
@@ -87,17 +128,29 @@ cc_library(
         "-I$(GENDIR)/src",
         "-I$(GENDIR)/external/mibl/src",
 
+        "-I$(GENDIR)/src/hdrs",
+        "-I$(GENDIR)/external/mibl/src/hdrs",
+
         "-Iexternal/libs7/src",
 
         "-Iexternal/libinih",
         # "-Iexternal/logc/src",
         "-Iexternal/uthash/include",
     ],
+    alwayslink = False, # True,
+    linkstatic = True,
+    # linkopts = [
+    #     "-ls7",
+    # ],
     deps = [
         "//external/libinih:inih",
         "@libs7//src:s7",
         "@libs7//vendored/linenoise",
-    ],
+    ] + select({
+        # sigh. fixme: s7 v. non-s7 :debug target
+        "//compilation_mode:dbg?": [":debug"],
+        "//conditions:default": []
+    }),
     visibility = ["//visibility:public"]
 )
 
@@ -116,38 +169,64 @@ cc_binary(
 )
 
 ########
-genrule(
-    name = "mkhdrs",
-    srcs = MIBL_SRCS + ["ansi_colors.h"],
-    outs = [
-        "load_dune.h",
-        # "config_mibl.h",
-        # "config_opam.h",
-        "config_s7.h",
-        "error_handler.h",
-        # "fs.h",
-    ],
-    cmd = CMD_HDR + "$(location :makeheaders) "
-    + "$(SRCS); cp $${SRCDIR1}/*.h $(@D)",
-    tools = [":makeheaders"],
-    visibility = ["//visibility:public"]
-)
+# genrule(
+#     name = "mkhdrs",
+#     srcs = MIBL_SRCS + [
+#         "ansi_colors.h",
+#         "utarray.c",
+#         "utarray.h",
+#         "uthash.h",
+#         "utstring.h",
+#         "debug_s7.c"
+#     ],
+#     outs = [
+#         "load_dune.h",
+#         "config_s7_dune.h",
+#         "error_handler_dune.h",
+#     ],
+#     cmd = " ".join([
+#         "SRC1=$(location load_dune.c);",
+#         "SRCDIR1=`dirname $$SRC1`;",
+#         "$(location :makeheaders)",
+#         "$(location load_dune.c)",
+#         "$(location config_s7_dune.c)",
+#         "$(location error_handler_dune.c)",
+#         # do not emit headers:
+#         "$(location debug_s7.c):",
+#         "$(location config.c):",
+#         "$(location config_bazel.c):",
+#         "$(location config_mibl.c):",
+#         "$(location config_opam.c):",
+#         "$(location ansi_colors.h)",
+#         "$(location log.c):",
+#         "$(location log.h)",
+#         "$(location utarray.c):",
+#         "$(location utarray.h)",
+#         "$(location uthash.h)",
+#         "$(location utstring.h)",
+#         "$(location utils.c): ;",
 
-########
-genrule(
-    name = "mkhdrs-export",
-    srcs = MIBL_SRCS + [
-        "ansi_colors.h",
-        "uthash.h", "utarray.h", "utstring.h"
-    ],
-    outs = ["mibl.h"],
-    cmd = CMD_HDR
-    + "$(location :makeheaders) -H "
-    + "$(SRCS)"
-    + " > $@",
-    tools = [":makeheaders"],
-    visibility = ["//visibility:public"]
-)
+#         "cp $${SRCDIR1}/*.h $(@D)",
+#     ]),
+#     tools = [":makeheaders"],
+#     visibility = ["//visibility:public"]
+# )
+
+# ########
+# genrule(
+#     name = "mkhdrs-export",
+#     srcs = MIBL_SRCS + [
+#         "ansi_colors.h",
+#         "uthash.h", "utarray.h", "utstring.h"
+#     ],
+#     outs = ["mibl.h"],
+#     cmd = CMD_HDR
+#     + "$(location :makeheaders) -H "
+#     + "$(SRCS)"
+#     + " > $@",
+#     tools = [":makeheaders"],
+#     visibility = ["//visibility:public"]
+# )
 
 config_setting(
     name = "dbg_mode",
@@ -161,43 +240,60 @@ cc_library(
     name = "treewalker",
     srcs = [
         "treewalker.c",
-        "treewalker.h",
-        "handlers_findlib.c",
-        "handlers_findlib.h",
+        "//src/hdrs:treewalker.h",
+
+        "handlers.c",
+        "//src/hdrs:handlers.h",
+
+        # "handlers_findlib.c",
+        "//src/hdrs:handlers_findlib.h",
+
         "handlers_opam.c",
-        "handlers_opam.h",
-        "//src:config.c",
-        "//src:config.h",
-        "//src:config_bazel.c",
-        "//src:config_bazel.h",
-        "//src:config_mibl.c",
-        "//src:config_mibl.h",
-        "//src:config_opam.c",
-        "//src:config_opam.h",
-        "//src:utils.c",
-        "//src:utils.h",
-        "//src:log.c",
-        "//src:log.h",
-        "//src:utarray.h",
-        "//src:uthash.h",
-        "//src:utstring.h",
+        "//src/hdrs:handlers_opam.h",
+
+        "config.c",
+        "//src/hdrs:config.h",
+        "config_bazel.c",
+        "//src/hdrs:config_bazel.h",
+        "config_mibl.c",
+        "//src/hdrs:config_mibl.h",
+        "config_opam.c",
+        "//src/hdrs:config_opam.h",
+        "config_s7.c",
+        "//src/hdrs:config_s7.h",
+        "error_handler.c",
+        "//src/hdrs:error_handler.h",
+        "utils.c",
+        "//src/hdrs:utils.h",
+        "log.c",
+        "log.h",
+        # "//src:utarray.h",
+        # "//src:uthash.h",
+        "utstring.c",
+        "//src/hdrs:utstring.h",
     ] + select({
         "//bzl/host:linux": [
             "//src/linux:strlcat.c", "//src/linux:strlcpy.c", "//src/linux:strnstr.c"],
         "//conditions:default":   []
     }),
     hdrs = [
-        "libtreewalker.h",
-        "log.h",
+        # "libtreewalker.h",
+        # "@libs7//src:s7.h",
+        # "log.h",
     ],
     copts = [
         "-Isrc",
         "-I$(GENDIR)/src",
-        "-I$(GENDIR)/src/findlib",
-
         "-Iexternal/mibl/src",
         "-I$(GENDIR)/external/mibl/src",
 
+        "-I$(GENDIR)/src/hdrs",
+        "-I$(GENDIR)/external/mibl/src/hdrs",
+
+        "-I$(GENDIR)/src/dune",
+        "-I$(GENDIR)/external/mibl/src/dune",
+
+        "-I$(GENDIR)/src/findlib",
         "-I$(GENDIR)/external/mibl/src/findlib",
 
         "-Iexternal/libs7/src",
@@ -208,9 +304,10 @@ cc_library(
         "//conditions:default":   []
     }),
     deps = [
+        "//src/dune",
         "//src/findlib",
         # "//src:mibl",
-        # "@libs7//src:s7",
+        "@libs7//src:s7",
         "//external/libinih:inih",
     ] + select({
         "//compilation_mode:dbg?": [":debug"],
@@ -219,107 +316,80 @@ cc_library(
     visibility = ["//visibility:public"]
 )
 
-genrule(
-    name = "mkhdrs_treewalker",
+################
+cc_library(
+    name = "treewalker_project",
     srcs = [
-        "treewalker.c",
-        "config.c",
-        "config_mibl.c",
-        "config_bazel.c",
-        "handlers_findlib.c",
+        "treewalker_project.c",
+        "//src/hdrs:treewalker_project.h",
+        # "handlers_findlib.c",
+        "//src/hdrs:handlers_findlib.h",
         "handlers_opam.c",
-        "utils.c",
-        "ansi_colors.h",
-    ] + select({
-        "//compilation_mode:dbg?": [
-            "debug.c", "debug_mibl.c", "debug_findlib.c"
-        ],
-        "//conditions:default": []
-    }),
-    outs = [
-        "treewalker.h",
-        "handlers_findlib.h",
-        "handlers_opam.h",
-        # "config_bazel.h",
-        # "config_mibl.h"
-    ],
-    cmd = "\n".join([
-        "SRC1=$(location treewalker.c)",
-        "SRCDIR1=`dirname $$SRC1`;",
-        "$(location :makeheaders) \\",
-        "$(SRCS);",
-        "cp $${SRCDIR1}/*.h $(@D)",
-        # "> $@"
-    ]),
-    tools = [":makeheaders"],
-    visibility = ["//visibility:private"]
-)
-
-genrule(
-    name = "mkhdrs_libtreewalker",
-    srcs = [
-        "treewalker.c",
-        "handlers_findlib.c",
-        "handlers_opam.c",
-        "//src:config.c",
-        "//src:config_mibl.c",
-        "//src:config_bazel.c",
-        "//src:config_opam.c",
-        "//src:utils.c",
-        "ansi_colors.h",
-    ] + select({
-        "//compilation_mode:dbg?": [
-            "debug.c", "debug_mibl.c", "debug_findlib.c"
-        ],
-        "//conditions:default": []
-    }),
-    outs = [
-        "libtreewalker.h",
-    ],
-    cmd = "\n".join([
-        "SRC1=$(location treewalker.c)",
-        "SRCDIR1=`dirname $$SRC1`;",
-        "$(location :makeheaders) -H \\",
-        "$(SRCS) \\",
-        # "cp $${SRCDIR1}/*.h $(@D)",
-        "> $@"
-    ]),
-    tools = [":makeheaders"],
-    visibility = ["//visibility:private"]
-)
-
-genrule(
-    name = "mkhdrs_config",
-    srcs = [
+        "//src/hdrs:handlers_opam.h",
         "config.c",
+        "//src/hdrs:config.h",
         "config_bazel.c",
+        "//src/hdrs:config_bazel.h",
         "config_mibl.c",
+        "//src/hdrs:config_mibl.h",
         "config_opam.c",
-        # "config_s7.c",
-        "utils.c"
+        "//src/hdrs:config_opam.h",
+        "config_s7.c",
+        "//src/hdrs:config_s7.h",
+        "config_s7_dune.c",
+        "//src/hdrs:config_s7_dune.h",
+        "error_handler.c",
+        "//src/hdrs:error_handler.h",
+        "utils.c",
+        "//src/hdrs:utils.h",
+        "log.c",
+        "log.h",
+        # "//src:utarray.h",
+        # "//src:uthash.h",
+        "utstring.c",
+        "//src/hdrs:utstring.h",
     ] + select({
-        "//compilation_mode:dbg?": [
-            "debug.c", "debug_mibl.c", "debug_findlib.c"
-        ],
+        "//bzl/host:linux": [
+            "//src/linux:strlcat.c", "//src/linux:strlcpy.c", "//src/linux:strnstr.c"],
+        "//conditions:default":   []
+    }),
+    hdrs = [
+        # "libtreewalker.h",
+        # "@libs7//src:s7.h",
+        # "log.h",
+    ],
+    copts = [
+        "-Isrc",
+        "-I$(GENDIR)/src",
+        "-Iexternal/mibl/src",
+        "-I$(GENDIR)/external/mibl/src",
+
+        "-I$(GENDIR)/src/hdrs",
+        "-I$(GENDIR)/external/mibl/src/hdrs",
+
+        "-I$(GENDIR)/src/dune",
+        "-I$(GENDIR)/external/mibl/src/dune",
+
+        "-I$(GENDIR)/src/findlib",
+        "-I$(GENDIR)/external/mibl/src/findlib",
+
+        "-Iexternal/libs7/src",
+        "-Iexternal/libinih",
+    ],
+    defines = select({
+        "//compilation_mode:dbg?": ["DEBUG_TRACE", "DEBUG_MIBL"],
+        "//conditions:default":   []
+    }),
+    deps = [
+        "//src/dune",
+        "//src/findlib",
+        # "//src:mibl",
+        "@libs7//src:s7",
+        "//external/libinih:inih",
+    ] + select({
+        "//compilation_mode:dbg?": [":debug"],
         "//conditions:default": []
     }),
-    outs = [
-        "config.h",
-        "config_bazel.h",
-        "config_mibl.h",
-        "config_opam.h",
-        # "config_s7.h",
-        "utils.h"
-    ],
-    cmd = "\n".join([
-        "SRC1=$(location config_bazel.c)",
-        "SRCDIR1=`dirname $$SRC1`;",
-        "$(location :makeheaders) \\",
-        "$(SRCS); \\",
-        "cp $${SRCDIR1}/*.h $(@D)",
-        # "> $@"
-    ]),
-    tools = [":makeheaders"],
     visibility = ["//visibility:public"]
 )
 
@@ -328,11 +398,11 @@ cc_library(
     name = "debug",
     srcs = [
         "debug.c",
-        "debug.h",
+        "//src/hdrs:debug.h",
         "debug_findlib.c",
-        "debug_findlib.h",
+        "//src/hdrs:debug_findlib.h",
         "debug_mibl.c",
-        "debug_mibl.h",
+        "//src/hdrs:debug_mibl.h",
         # "debug_opam.c",
         # "debug_opam.h",
         # "//src:utils.c",
@@ -344,17 +414,22 @@ cc_library(
         # "//src:utstring.h",
     ] + select({
         "//bzl/host:linux": [
-            "//src/linux:strlcat.c", "//src/linux:strlcpy.c", "//src/linux:strnstr.c"],
+            "//src/linux:strlcat.c",
+            "//src/linux:strlcpy.c",
+            "//src/linux:strnstr.c"
+        ],
         "//conditions:default":   []
     }),
-    # hdrs = [
-    #     "libtreewalker.h",
-    #     "log.h",
-    # ],
+    hdrs = [
+        # "libdebug.h",
+    ],
     copts = [
         "-Isrc",
         "-I$(GENDIR)/src",
         "-I$(GENDIR)/src/findlib",
+
+        "-I$(GENDIR)/src/hdrs",
+        "-I$(GENDIR)/external/mibl/src/hdrs",
 
         "-Iexternal/mibl/src",
         "-I$(GENDIR)/external/mibl/src",
@@ -375,29 +450,4 @@ cc_library(
     #     "//external/libinih:inih",
     # ],
     visibility = ["//visibility:public"]
-)
-
-genrule(
-    name = "mkhdrs_debug",
-    srcs = [
-        "debug.c",
-        "config_mibl.c",
-        "debug_mibl.c",
-        "debug_findlib.c",
-    ],
-    outs = [
-        "debug.h",
-        "debug_mibl.h",
-        "debug_findlib.h",
-    ],
-    cmd = "\n".join([
-        "SRC1=$(location debug.c)",
-        "SRCDIR1=`dirname $$SRC1`;",
-        "$(location :makeheaders) \\",
-        "$(SRCS); \\",
-        "cp $${SRCDIR1}/*.h $(@D)",
-        # "> $@"
-    ]),
-    tools = [":makeheaders"],
-    visibility = ["//visibility:private"]
 )

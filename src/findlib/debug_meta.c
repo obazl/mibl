@@ -1,5 +1,6 @@
-#include "log.h"
-#include "utarray.h"
+/* #include "log.h" */
+/* #include "utarray.h" */
+
 #include "debug_meta.h"
 
 static int indent = 2;

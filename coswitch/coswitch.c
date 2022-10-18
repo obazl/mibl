@@ -12,8 +12,8 @@
 
 #include <unistd.h>
 
-#include "log.h"
-#include "utarray.h"
+/* #include "log.h" */
+/* #include "utarray.h" */
 /* #include "utstring.h" */
 
 /* #if INTERFACE */
@@ -24,13 +24,17 @@
 /* #include "opam_lex.h" */
 
 /* #include "mibl.h" */
-#include "libtreewalker.h"
-#include "walk_test.h"
+/* #include "libtreewalker.h" */
 
-extern bool debug = false;
-extern bool debug_findlib = false;
-extern bool trace = false;
-extern bool verbose = false;
+#include "coswitch.h"
+
+
+#if defined(DEBUG_TRACE)
+extern bool debug;
+extern bool debug_findlib;
+extern bool trace;
+#endif
+extern bool verbose;
 
 char *pkg_path = NULL;
 
@@ -53,13 +57,17 @@ int main(int argc, char *argv[])
             /* utstring_printf(opam_file, "%s", optarg); */
             break;
         case 'd':
+#if defined(DEBUG_TRACE)
             debug = true;
+#endif
             break;
         case 'h':
             log_info("Help: ");
             exit(EXIT_SUCCESS);
         case 'm':
+#if defined(DEBUG_TRACE)
             debug_findlib = true;
+#endif
             break;
         case 'p':               /* pkg name, not path */
             printf("PKG: %s\n", optarg);
@@ -73,7 +81,9 @@ int main(int argc, char *argv[])
             /* validate - no abs paths, may start with '//" */
             break;
         case 't':
+#if defined(DEBUG_TRACE)
             trace = true;
+#endif
             break;
         case 'v':
             verbose = true;
@@ -86,7 +96,7 @@ int main(int argc, char *argv[])
 
     bazel_configure();
 
-    // bazel_configure does chdir to ws root
+    chdir(bws_root);            /* always run from base ws root */
 
     // opam_configure must be run from root ws to account for local switches
     // sets global opam_switch_* vars
@@ -96,6 +106,8 @@ int main(int argc, char *argv[])
         opam_configure("");
 
     mibl_configure();
+
+    mibl_s7_init();
 
     /* char *wd = getenv("BUILD_WORKING_DIRECTORY"); */
     /* if (wd) { */
@@ -111,6 +123,8 @@ int main(int argc, char *argv[])
 
     /* UT_array *result = sealark_lex_string("'hello'\n#cmt1\n"); */
 
-    log_debug("exiting walk_test");
+#if defined(DEBUG_TRACE)
+    log_debug("exiting coswitch");
+#endif
     /* dump_nodes(result); */
 }

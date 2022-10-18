@@ -1,0 +1,44 @@
+# load("@rules_cc//cc:defs.bzl", "cc_library")
+
+load("//src:BUILD.bzl", "CMD_FLAGS")
+
+exports_files(["coswitch.c"]) # for makeheaders
+
+################################################################
+cc_binary(
+    name  = "coswitch",
+    srcs  = [
+        # "coswitch_cli.c",
+        # "coswitch_cli.h",
+        "coswitch.c",
+        "//src/hdrs:coswitch.h",
+    ],
+    copts = CMD_FLAGS + [
+
+        "-Isrc",
+        "-Icoswitch",
+        "-Iexternal/mibl/coswitch",
+        "-I$(GENDIR)/external/mibl/coswitch",
+
+        "-I$(GENDIR)/src/hdrs",
+        "-I$(GENDIR)/external/mibl/src/hdrs",
+
+        "-I$(GENDIR)/src",
+        "-I$(GENDIR)/src/opam",
+        "-I$(GENDIR)/test/opam",
+
+        "-Iexternal/mibl/src",
+        "-I$(GENDIR)/external/mibl/src",
+
+        "-Iexternal/libs7/src",
+    ],
+    defines = select({
+        "//compilation_mode:dbg?": ["DEBUG_TRACE", "DEBUG_MIBL"],
+        "//conditions:default":   []
+    }),
+    deps = [
+        "//src:treewalker",
+        # "//src/opam:opam_lexer"
+    ],
+    linkstatic = 1
+)

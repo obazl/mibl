@@ -201,7 +201,10 @@
                                             (_ (format #t "~A: ~A~%" (ured "stanza-alist") stanza-alist))
                                             (old-manifest (assoc ':manifest stanza-alist))
                                             (mmods (assoc-in '(:manifest :raw) stanza-alist))
-                                            (manifest (x-get-manifest pkg #t stanza-alist (cadr mmods))))
+                                            (manifest
+                                             (get-manifest pkg :lib #t stanza-alist) ;; (cadr mmods))
+                                             ;;(x-get-manifest pkg #t stanza-alist (cadr mmods))
+                                             ))
                                        (format #t "~A: ~A~%" (ured "structures") (assoc :structures stanza-alist))
                                        (format #t "~A: ~A~%" (uyellow "mmods") mmods)
                                        (format #t "~A: ~A~%" (uyellow "old manifest") old-manifest)
@@ -712,7 +715,7 @@
                                    ,(cons :pkg (string->symbol pkg-path))
                                    ,(cons :tgt (string->symbol
                                                 (if exe
-                                                    (format #f "~A.exe.js" tgt)
+                                                    (format #f "~A.bc.js" tgt)
                                                     (format #f "~A.js" tgt)))))))
                            (hash-table-set! exports
                                             (string->symbol (format #f "~A.bc.js" tgt))

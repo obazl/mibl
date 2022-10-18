@@ -23,22 +23,29 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* a dynamic string implementation using macros
  */
-#ifndef UTSTRING_H
-#define UTSTRING_H
+/* #ifndef UTSTRING_H */
+/* #define UTSTRING_H */
 
 #define UTSTRING_VERSION 2.2.0
 
+#if INTERFACE
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdarg.h>
+#endif
 
+#include "utstring.h"
+
+#if INTERFACE
 #ifdef __GNUC__
 #define UTSTRING_UNUSED __attribute__((__unused__))
 #else
 #define UTSTRING_UNUSED
 #endif
+#endif
 
+#if EXPORT_INTERFACE
 #ifdef oom
 #error "The name of macro 'oom' has been changed to 'utstring_oom'. Please update your code."
 #define utstring_oom() oom()
@@ -129,6 +136,7 @@ do {                                                             \
 #define utstring_len(s) ((s)->i)
 
 #define utstring_body(s) ((s)->d)
+#endif
 
 UTSTRING_UNUSED static void utstring_printf_va(UT_string *s, const char *fmt, va_list ap) {
    int n;
@@ -152,17 +160,19 @@ UTSTRING_UNUSED static void utstring_printf_va(UT_string *s, const char *fmt, va
       else utstring_reserve(s,(s->n)*2);   /* 2x */
    }
 }
+
 #ifdef __GNUC__
 /* support printf format checking (2=the format string, 3=start of varargs) */
-static void utstring_printf(UT_string *s, const char *fmt, ...)
+void utstring_printf(UT_string *s, const char *fmt, ...)
   __attribute__ (( format( printf, 2, 3) ));
 #endif
-UTSTRING_UNUSED static void utstring_printf(UT_string *s, const char *fmt, ...) {
+UTSTRING_UNUSED EXPORT void utstring_printf(UT_string *s, const char *fmt, ...) {
    va_list ap;
    va_start(ap,fmt);
    utstring_printf_va(s,fmt,ap);
    va_end(ap);
 }
+
 
 /*******************************************************************************
  * begin substring search functions                                            *
@@ -404,4 +414,4 @@ UTSTRING_UNUSED static long utstring_findR(
  * end substring search functions                                              *
  ******************************************************************************/
 
-#endif /* UTSTRING_H */
+// #endif /* UTSTRING_H */

@@ -39,7 +39,10 @@
        ((libraries) (values)) ;; handled separately
        ((modules) (values)) ;; handled separately
        ((inline_tests) (values)) ;; handled separately
-        ;; (cons :inline-tests (-inline-tests->mibl ws pkg fld-assoc)))
+        ;; ((ilts (assoc-val 'inline_tests stanza-alist)))
+        ;; (cons :inline-tests (inline-tests->mibl ws pkg
+        ;;                                         (cdr fld-assoc)
+        ;;                                         stanza-alist)))
 
        ((preprocess) ;; NB: (preprocess pps) handled separately
         (if (equal? 'no_preprocessing (cadr fld-assoc))
@@ -100,7 +103,6 @@
      ) ;; end lamda
    stanza-alist))
 
-;; obsolete?
 (define (-lib-flds->mibl ws pkg stanza-alist wrapped?)
   (format #t "~A: ~A\n" (blue "-lib-flds->mibl") stanza-alist)
   (format #t "~A: ~A\n" (blue "pkg") pkg)
@@ -120,12 +122,14 @@
          ;; (_ (error 'tmp "tmp"))
 
          ;; FIXME: deal with private_modules too
-         (modules (get-manifest pkg wrapped? stanza-alist)) ;;  deps
+         (modules (get-manifest pkg :lib wrapped? stanza-alist)) ;;  deps
          (_ (format #t "~A: ~A\n" (red "lib get-modules") modules))
 
          (ppx (if-let ((ilts (assoc-val 'inline_tests stanza-alist)))
                       (inline-tests->mibl ws pkg ilts stanza-alist)
                       (lib-ppx->mibl stanza-alist)))
+
+         ;; (ppx (lib-ppx->mibl stanza-alist))
          ;;(preprocess-fld->mibl fld-assoc stanza-alist))
          (_ (format #t "~A: ~A~%" (bgyellow ":PPX") ppx))
 

@@ -1,13 +1,14 @@
 (define shell-tools
-  '(cat cp copy)) ;; etc
+  '(cat cp copy diff)) ;; etc
 
 (define shell-tool-kws
-  '(::cat ::cp ::copy)) ;; etc
+  '(::cat ::cp ::copy ::diff)) ;; etc
 
 (define shell-tool-map
   '((cat ::cat)
     (cp ::cp)
     (copy ::cp)
+    (diff ::diff)
     ;; etc
     ))
 

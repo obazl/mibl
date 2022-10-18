@@ -20,11 +20,11 @@
 #include <sys/stat.h>
 
 #include "ini.h"
-#include "log.h"
-#if EXPORT_INTERFACE
-#include "utarray.h"
-#include "utstring.h"
-#endif
+/* #include "log.h" */
+/* #if EXPORT_INTERFACE */
+/* #include "utarray.h" */
+/* #include "utstring.h" */
+/* #endif */
 
 #include "config_opam.h"
 
@@ -34,10 +34,16 @@ int rc;
 
 /* char *bazel_script_dir = NULL; */
 
-UT_string *opam_switch_id     = NULL;
-UT_string *opam_switch_prefix = NULL;
-UT_string *opam_switch_bin    = NULL;
-UT_string *opam_switch_lib    = NULL;
+UT_string *opam_switch_id       = NULL;
+
+UT_string *opam_switch_prefix   = NULL;
+UT_string *opam_coswitch_prefix = NULL;
+
+UT_string *opam_switch_bin      = NULL;
+UT_string *opam_coswitch_bin    = NULL;
+
+UT_string *opam_switch_lib      = NULL;
+UT_string *opam_coswitch_lib    = NULL;
 
 /* seets global opam_switch_* vars */
 EXPORT void opam_configure(char *_opam_switch)
@@ -58,8 +64,11 @@ EXPORT void opam_configure(char *_opam_switch)
 
     utstring_new(opam_switch_id);
     utstring_new(opam_switch_prefix);
+    utstring_new(opam_coswitch_prefix);
     utstring_new(opam_switch_bin);
+    utstring_new(opam_coswitch_bin);
     utstring_new(opam_switch_lib);
+    utstring_new(opam_coswitch_lib);
 
     /* FIXME: handle switch arg */
     /* FIXME: argv */
@@ -90,6 +99,8 @@ EXPORT void opam_configure(char *_opam_switch)
         exit(EXIT_FAILURE);
     } else {
         utstring_printf(opam_switch_prefix, "%s", result);
+        /* default: coswitch == switch */
+        utstring_printf(opam_coswitch_prefix, "%s", result);
 #if defined(DEBUG_TRACE)
         log_debug("cmd result: '%s'", utstring_body(opam_switch_bin));
 #endif
@@ -104,6 +115,8 @@ EXPORT void opam_configure(char *_opam_switch)
         exit(EXIT_FAILURE);
     } else {
         utstring_printf(opam_switch_bin, "%s", result);
+        /* default: coswitch == switch */
+        utstring_printf(opam_coswitch_bin, "%s", result);
 #if defined(DEBUG_TRACE)
         log_debug("cmd result: '%s'", utstring_body(opam_switch_bin));
 #endif
@@ -118,6 +131,8 @@ EXPORT void opam_configure(char *_opam_switch)
         exit(EXIT_FAILURE);
     } else {
         utstring_printf(opam_switch_lib, "%s", result);
+        /* default: coswitch == switch */
+        utstring_printf(opam_coswitch_lib, "%s", result);
 #if defined(DEBUG_TRACE)
         log_debug("cmd result: '%s'", utstring_body(opam_switch_lib));
 #endif

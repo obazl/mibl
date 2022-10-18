@@ -44,7 +44,7 @@
           ))
 
 (define (-trim-pkg! pkg)
-  (format #t "~A: ~A~%" (blue "-trim-pkg!") (assoc-val :pkg-path pkg))
+  (format #t "~A: ~A~%" (blue "-trim-pkg!") pkg) ;; (assoc-val :pkg-path pkg))
 
   ;; remove null lists from :dune alist
   (let ((dune (assoc :dune pkg)))
@@ -261,7 +261,7 @@
 
             (else
                ;; (format #t "~A: ~A\n" (red "unhandled") stanza)
-               (error 'fixme (format #f "~A: ~A~%" (red "unhandled stanza") stanza))))))
+               (error 'fixme (format #f "~A: ~A~%" (red "Unhandled stanza") stanza))))))
     ;; (format #t "~A: ~A\n" (uwhite "normalized pkg") pkg)
     ;; (format #t "~A~%" (bgred "UPKG-MODULES"))
     ;; (for-each (lambda (m) (format #t "\t~A~%" m)) (assoc-val :modules pkg))

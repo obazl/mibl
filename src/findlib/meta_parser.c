@@ -3,7 +3,8 @@
 #include <libgen.h>
 #include <stdio.h>
 
-#include "log.h"
+/* #include "log.h" */
+
 #include "meta_parser.h"
 
 struct obzl_meta_package *MAIN_PKG;

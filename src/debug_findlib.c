@@ -1,5 +1,6 @@
-#include "log.h"
-#include "utarray.h"
+#include <stdbool.h>
+/* #include "log.h" */
+/* #include "utarray.h" */
 
 #include "debug_findlib.h"
 

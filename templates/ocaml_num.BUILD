@@ -22,7 +22,7 @@ opam_import(
 opam_import(
     name       = "plugin",
     version    = "[distributed with OCaml]",
-    cmxs       = ["nums.cmxs"],
-    cma        = ["nums.cma"],
+    cmxs       = "nums.cmxs",
+    cma        = "nums.cma",
     visibility = ["//visibility:public"],
 );

@@ -1,12 +1,13 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-#if INTERFACE
-#include "utarray.h"
-#include "uthash.h"
-#endif
+/* #if INTERFACE */
+/* #include "utarray.h" */
+/* #include "uthash.h" */
+/* #endif */
 
-#include "log.h"
+/* #include "log.h" */
+
 #include "meta_settings.h"
 
 #if defined(DEBUG_PROPERTIES) || defined (DEBUG_TRACE)

@@ -80,6 +80,7 @@
             ;;   )
             )))
 
+;; rule stanza containing (alias) fld?
 ;; if alias name contains 'test' convert to :sh-test
 (define (-alias->miblark stanza)
   (format #t "~A: ~A~%" (ublue "-alias->miblark") stanza)
@@ -180,6 +181,7 @@
                                        (set-car! deps :srcs))
                                (set-car! stanza :ocamlc))
 
+                              ((::diff) (set-car! stanza :diff))
                               ((::node) (set-car! stanza :node))
                               (else ;; nop
                                '())))

@@ -30,7 +30,7 @@ ocaml_toolchain_adapter(
     vmruntime              = "@ocaml//bin:ocamlrun",
     vmruntime_debug        = "@ocaml//bin:ocamlrund",
     vmruntime_instrumented = "@ocaml//bin:ocamlruni",
-    vmlibs                 = "@stublibs//stublibs",
+    vmlibs                 = "@stublibs//lib/stublibs",
 )
 
 ########################
@@ -47,7 +47,7 @@ ocaml_toolchain_adapter(
     vmruntime              = "@ocaml//bin:ocamlrun",
     vmruntime_debug        = "@ocaml//bin:ocamlrund",
     vmruntime_instrumented = "@ocaml//bin:ocamlruni",
-    vmlibs                 = "@stublibs//stublibs",
+    vmlibs                 = "@stublibs//lib/stublibs",
 )
 
 ########################
@@ -64,7 +64,7 @@ ocaml_toolchain_adapter(
     vmruntime              = "@ocaml//bin:ocamlrun",
     vmruntime_debug        = "@ocaml//bin:ocamlrund",
     vmruntime_instrumented = "@ocaml//bin:ocamlruni",
-    vmlibs                 = "@stublibs//stublibs",
+    vmlibs                 = "@stublibs//lib/stublibs",
 )
 
 ########################
@@ -81,5 +81,5 @@ ocaml_toolchain_adapter(
     vmruntime              = "@ocaml//bin:ocamlrun",
     vmruntime_debug        = "@ocaml//bin:ocamlrund",
     vmruntime_instrumented = "@ocaml//bin:ocamlruni",
-    vmlibs                 = "@stublibs//stublibs",
+    vmlibs                 = "@stublibs//lib/stublibs",
 )

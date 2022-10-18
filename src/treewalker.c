@@ -15,14 +15,18 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#if INTERFACE
-#include "utarray.h"
-#include "utstring.h"
-/* #include "s7.h" */
-#endif
+/* #if INTERFACE */
+/* #include "utarray.h" */
+/* #include "utstring.h" */
+/* /\* #include "s7.h" *\/ */
+/* #endif */
 
-#include "log.h"
-#include "libfindlib.h"
+/* #include "log.h" */
+
+/* #include "libdune.h" */
+
+/* #include "libfindlib.h" */
+
 #include "treewalker.h"
 
 UT_array  *segs;
@@ -49,6 +53,38 @@ int fts_dot_ct  = 0;
 int fts_f_ct = 0;
 int fts_sl_ct = 0;
 
+char *toolchains[] = {
+    "@ocaml//toolchain/selectors/local:vmvm",
+    "@ocaml//toolchain/selectors/local:vmsys",
+    "@ocaml//toolchain/selectors/local:sysvm",
+    "@ocaml//toolchain/selectors/local:syssys",
+    "@ocaml//toolchain/selectors/local:default",
+    /* profiles - order matters */
+    "@ocaml//toolchain/profiles:sys-dev",
+    "@ocaml//toolchain/profiles:sys-dbg",
+    "@ocaml//toolchain/profiles:sys-opt",
+    "@ocaml//toolchain/profiles:vm-dev",
+    "@ocaml//toolchain/profiles:vm-dbg",
+    "@ocaml//toolchain/profiles:vm-opt",
+    /* default must come last, empty target_compatible_with */
+    "@ocaml//toolchain/profiles:default-dev",
+    "@ocaml//toolchain/profiles:default-dbg",
+    "@ocaml//toolchain/profiles:default-opt",
+
+    /* later, for cross-compilers: */
+    /* "@ocaml//toolchain/selectors/macos/x86_64:vm", */
+    /* "@ocaml//toolchain/selectors/macos/x86_64:macos_x86_64", */
+    /* "@ocaml//toolchain/selectors/macos/x86_64:linux_x86_64", */
+
+    /* "@ocaml//toolchain/selectors/linux/x86_64:vm", */
+    /* "@ocaml//toolchain/selectors/linux/x86_64:linux_x86_64", */
+    /* "@ocaml//toolchain/selectors/linux/x86_64:macos_x86_64", */
+
+    "" /* do not remove terminating null */
+};
+char **tc;
+
+/* FIXME: common to both walkers */
 LOCAL bool _this_is_hidden(FTSENT *ftsentry)
 {
     if (ftsentry->fts_name[0] == '.') {
@@ -72,93 +108,6 @@ LOCAL bool _exclusions(FTSENT *ftsentry, char *ext)
         return true;
     else
         return false;
-}
-
-/* control traversal order */
-int _compare(const FTSENT** one, const FTSENT** two)
-{
-    return (strcmp((*one)->fts_name, (*two)->fts_name));
-}
-
-bool _include_this(FTSENT *ftsentry)
-{
-#if defined(DEBUG_TRACE)
-    if (trace)
-        log_trace(MAG "_include_this?" CRESET " %s (%s)",
-                  ftsentry->fts_name, ftsentry->fts_path);
-#endif
-
-    /* if (debug) { */
-    /*     dump_mibl_config(); */
-    /* } */
-
-    if (ftsentry->fts_name[0] == '.') {
-        if (ftsentry->fts_path[0] == '.') {
-            if (strlen(ftsentry->fts_path) == 1) {
-                return true;
-            }
-        }
-    }
-    /* exclusions override inclusiongs */
-    /* if exclude return false */
-    /* otherwise, if include return true else false */
-
-    /* for exclusions we want an exact match */
-
-    /* discard leading "./" */
-    char *ptr = NULL;
-    if (ftsentry->fts_path[0] == '.' & ftsentry->fts_path[1] == '/')
-        ptr = ftsentry->fts_path+2;
-    else
-        ptr = ftsentry->fts_path;
-
-#if defined(DEBUG_TRACE)
-    if (debug) log_debug("srch ptr: %s", ptr);
-#endif
-    char **p;
-    p = NULL;
-    p = utarray_find(mibl_config.exclude_dirs,
-                     &ptr,
-                     /* &ftsentry->fts_path, */
-                     strsort);
-    if  (p != NULL) {
-        if (verbose) { // & (verbosity > 2)) {
-            log_info(RED "Excluding:" CRESET " '%s'", ftsentry->fts_path);
-        }
-        return false;
-    }
-
-    /* for inclusions:
-       if include_dirs is empty, default to ./ - include everything
-       otherwise, iterate over include_dirs
-       include if tbl contains prefix of fts_path
-    */
-
-    if (utarray_len(mibl_config.include_dirs) > 0) {
-        p = NULL;
-        while ( (p=(char**)utarray_next(mibl_config.include_dirs, p))) {
-#if defined(DEBUG_TRACE)
-            if (debug) {
-                log_debug("inclusion test pfx: '%s', path: '%s'",
-                          *p, ftsentry->fts_path);
-                log_debug("result: %d\n",
-                          strncmp(*p, ftsentry->fts_path, strlen(*p)));
-            }
-#endif
-            if (strncmp(*p, ftsentry->fts_path, strlen(*p)) < 1) {
-                if (verbose) { // & verbosity > 2) {
-                    log_info("Include! '%s'", ftsentry->fts_path);
-                }
-                return true;
-            };
-        }
-        if (verbose) { // & verbosity > 2) {
-            log_debug("Include? '%s': %d", ftsentry->fts_path, false);
-        }
-        return false;
-    } else {
-        return true;
-    }
 }
 
 LOCAL void _walk_opam(char *opam_switch)
@@ -192,7 +141,7 @@ LOCAL void _walk_opam(char *opam_switch)
                     | FTS_PHYSICAL,
                     /* | FTS_SEEDOT, // handle foo/. and foo/.. */
                     // NULL
-                    &_compare
+                    &compare_fts
                     );
     if (errno != 0) {
         log_error("fts_open error: %s", strerror(errno));
@@ -342,7 +291,7 @@ LOCAL void _walk_findlib_all(char *opam_switch)
                     | FTS_PHYSICAL,
                     /* | FTS_SEEDOT, // handle foo/. and foo/.. */
                     // NULL
-                    &_compare
+                    &compare_fts
                     );
     if (errno != 0) {
         log_error("fts_open error: %s", strerror(errno));
@@ -514,6 +463,11 @@ EXPORT void convert_findlib_pkgs(UT_array *opam_pending_deps)
     utstring_new(workspace_file);
     bazel_ws_root = utstring_body(opam_switch_lib); /* dst dir == src dir */
 
+    /* **************************************************************** */
+    /* First do @ocaml */
+    emit_ocaml_workspace(bazel_ws_root);
+
+    /* **************************************************************** */
     /* Then do requested opam pkgs */
     UT_array *opam_completed_deps;
     utarray_new(opam_completed_deps, &ut_str_icd);
@@ -535,23 +489,75 @@ EXPORT void convert_findlib_pkgs(UT_array *opam_pending_deps)
             utarray_push_back(opam_completed_deps, &next);
 
         handle_findlib_pkg(next, opam_pending_deps, opam_completed_deps);
-        /* while ( (p=(char**)utarray_next(opam_pending_deps, p))) { */
-        /*     log_info("opam pkg: %s", *p); */
-        /* } */
+
         free(next);
     }
     log_debug("done");
     log_debug("completed:");
+    UT_string *dune_pkg_file;    /* FIXME: free */
+    utstring_new(dune_pkg_file); /* global, in emit_pkg_bindir.c */
     while ( (p=(char**)utarray_next(opam_completed_deps, p))) {
         log_info("  %s", *p);
+        emit_pkg_bindir(*p);
     }
     log_debug("pending:");
     while ( (p=(char**)utarray_next(opam_pending_deps, p))) {
         log_info("  %s", *p);
     }
 
-    /* First do @ocaml */
-    emit_ocaml_workspace(bazel_ws_root);
+    /* **************************************************************** */
+    /* finally write WORKSPACE.opam.bzl to import deps repos */
+    UT_string *opam_bzl_file;
+    utstring_new(opam_bzl_file);
+    utstring_printf(opam_bzl_file, "%s/WORKSPACE.opam.bzl", bws_root);
+    log_debug("writing %s", utstring_body(opam_bzl_file));
+
+    FILE *ostream = fopen(utstring_body(opam_bzl_file), "w");
+    if (ostream == NULL) {
+        perror(utstring_body(opam_bzl_file));
+        log_error("fopen: %s: %s", strerror(errno),
+                  utstring_body(opam_bzl_file));
+        exit(EXIT_FAILURE);
+    }
+    fprintf(ostream, "## generated file - DO NOT EDIT\n\n");
+
+    fprintf(ostream, "def bootstrap():\n");
+
+    fprintf(ostream, "    native.local_repository(\n");
+    fprintf(ostream, "        name       = \"ocaml\",\n");
+
+    fprintf(ostream, "        path       = ");
+    fprintf(ostream, "\"%s/%s\",\n", bazel_ws_root, "ocaml");
+    fprintf(ostream, "    )\n\n");
+
+    /* we also always have lib/stublibs, which is not an OPAM pkg */
+    fprintf(ostream, "    native.local_repository(\n");
+    fprintf(ostream, "        name       = \"stublibs\",\n");
+
+    fprintf(ostream, "        path       = ");
+    fprintf(ostream, "\"%s/%s\",\n", bazel_ws_root, "stublibs");
+    fprintf(ostream, "    )\n\n");
+
+    p = NULL;
+    while ( (p=(char**)utarray_next(opam_completed_deps, p))) {
+        fprintf(ostream, "    native.local_repository(\n");
+        fprintf(ostream, "        name       = \"opam_%s\",\n", *p);
+        fprintf(ostream, "        path       = ");
+        fprintf(ostream, "\"%s/%s\",\n", bazel_ws_root, *p);
+        fprintf(ostream, "    )\n\n");
+    }
+
+    /* toolchains */
+    tc = toolchains;
+    while (*tc != "") {
+        fprintf(ostream,
+                "    native.register_toolchains(\"%s\")\n",
+                *tc++);
+    }
+
+    fclose(ostream);
+    utstring_free(opam_bzl_file);
+
 
     /* if (opam_switch_lib == NULL) { */
     /*     /\* _walk_project(pkg_name); *\/ */

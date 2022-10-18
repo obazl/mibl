@@ -206,11 +206,11 @@
      :include
      dune-alist)))
 
-(define (alias-stanza->alist pfx dune-alist)
-  (let ((m1 'A) (m2 'B) (m3 'C))
-    (list
-     :alias
-     dune-alist)))
+;; (define (alias-stanza->alist pfx dune-alist)
+;;   (let ((m1 'A) (m2 'B) (m3 'C))
+;;     (list
+;;      :alias
+;;      dune-alist)))
 
 (define (other-stanza->alist pfx dune-alist)
   (let ((m1 'A) (m2 'B) (m3 'C))

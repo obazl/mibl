@@ -23,6 +23,8 @@ cc_binary(
 
         "-Iexternal/mibl/opam/test",
         "-I$(GENDIR)/external/mibl/test/opam",
+
+        "-Iexternal/libs7/src",
     ],
     defines = ["DEBUG", "DEBUG_TRACE"],
     deps = [
@@ -100,13 +102,21 @@ cc_binary(
 ################################################################
 genrule(
     name = "mkhdrs",
-    srcs = ["opam_lex.c", "opam_parse.c",
-            "walk_test.c"],
+    srcs = [
+        "opam_lex.c", "opam_parse.c",
+        "walk_test.c",
+        "//src:utarray.c",
+        "//src:utarray.h",
+        "//src:utstring.h"
+    ],
     outs = ["opam_lex.h", "opam_parse.h", "walk_test.h"],
     cmd = "\n".join([
         "SRC1=$(location opam_lex.c)",
         "SRCDIR1=`dirname $$SRC1`",
         "$(location //src:makeheaders) \\",
+        "    $(location //src:utarray.c): \\",
+        "    $(location //src:utarray.h) \\",
+        "    $(location //src:utstring.h) \\",
         "    $(location opam_lex.c) \\",
         "    $(location opam_parse.c) \\",
         "    $(location walk_test.c) ",

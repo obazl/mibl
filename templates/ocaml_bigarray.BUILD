@@ -24,8 +24,8 @@ opam_import(
 opam_import(
     name       = "plugin",
     version    = "[distributed with OCaml]",
-    cmxs       = ["bigarray.cmxs"],
-    cma        = ["bigarray.cma"],
+    cmxs       = "bigarray.cmxs",
+    cma        = "bigarray.cma",
     deps       = ["@ocaml//unix"],
     visibility = ["//visibility:public"],
 );

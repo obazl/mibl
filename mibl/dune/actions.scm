@@ -252,10 +252,13 @@
   '()
   )
 
-(define (normalize-action-with-accepted-exit-codes-dsl item ws pkg targets deps)
-  (format #t "NORMALIZE-ACTION-WITH-ACCEPTED-EXIT-CODES-DSL ~A\n" item)
-  (error 'NOTYET
-         (format #f "not implemented: normalize-action-with-accepted-exit-codes-dsl"))
+;; (define (normalize-action-with-outputs-to-dsl ws pkg action-alist targets deps)
+(define (normalize-action-with-accepted-exit-codes-dsl
+           ws pkg action-alist targets deps)
+           ;; item ws pkg targets deps)
+  (format #t "~A: ~A\n"
+          (ublue "normalize-action-with-accepted-exit-codes-dsl")
+          action-alist)
   ;; e.g. jsoo compiler/tests-jsoo/bin/dune
   ;; (action
   ;;  (with-accepted-exit-codes
@@ -263,7 +266,43 @@
   ;;   (with-outputs-to
   ;;    %{target}
   ;;    (run node %{dep:error1.bc.js}))))
-   )
+  (let* ((action-assoc (car action-alist))
+         (_ (format #t "action-assoc: ~A\n" action-assoc))
+         (action (car action-assoc))
+         (_ (format #t "action: ~A\n" action))
+         (arg1 (cadr action-assoc))
+         (_ (format #t "arg1: ~A\n" arg1))
+         (subaction-alist (caddr action-assoc))
+         (_ (format #t "subaction-alist: ~A\n" subaction-alist))
+         (subaction (car subaction-alist))
+         (_ (format #t "subaction: ~A\n" subaction))
+         (cmd (if-let ((cmd-fn (assoc-val subaction
+                                          dune-action-cmds-no-dsl)))
+                      (let ((_ (format #t "found cmd-no-dsl\n"))
+                            (cmd-list (apply (car cmd-fn)
+                                             (list ws pkg
+                                                   subaction
+                                                   subaction-alist
+                                                   targets deps))))
+                        cmd-list)
+                      (if-let ((cmd-fn (assoc-val subaction
+                                                  dune-action-cmds-dsl)))
+                              (let ((_ (format #t "found cmd-dsl\n"))
+                                    (cmd-list (apply (car cmd-fn)
+                                                     (list ws pkg
+                                                           (list subaction-alist)
+                                                           targets deps))))
+                                ;; (format #t "~A: ~A~%" (bggreen "w/output cmd-list") cmd-list)
+                                ;; (error 'X "STOP cmd-list 3")
+                                cmd-list)
+                              (begin
+                                (format #t "UNHANDLED WST ACTION: ~A\n"
+                                        subaction)
+                                stanza))
+                      )))
+    (append cmd
+            `((:stdout ,(string->keyword
+                         (format #f "~A" arg1)))))))
 
 (define (normalize-action-with-outputs-to-dsl ws pkg action-alist targets deps)
   (format #t "~A: ~A\n" (ublue "normalize-action-with-outputs-to-dsl")

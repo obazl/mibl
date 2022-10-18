@@ -1,21 +1,23 @@
 /* globals */
 
 #include <stdbool.h>
-
-bool dev_mode = false;
-int  verbosity = 0;
-
 #include <unistd.h>
 
 /* #if EXPORT_INTERFACE */
-#include "utarray.h"
-#include "utstring.h"
-#include "log.h"
+/* #include "utarray.h" */
+/* #include "utstring.h" */
+/* #include "log.h" */
 /* #endif */
 
 #include "ini.h"
 
 #include "config_mibl.h"
+
+extern const UT_icd ut_str_icd;
+
+bool dev_mode = false;
+int  verbosity = 0;
+
 
 #if INTERFACE
 #define HOME_MIBL ".mibl"

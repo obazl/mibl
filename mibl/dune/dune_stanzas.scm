@@ -96,10 +96,10 @@
 ;;  (modules lexer_impl))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define (normalize-stanza-alias stanza)
-  ;; (display (format #f "dir: ~A" pfx)) (newline)
-  ;; (display (format #f "normalize-stanza-alias: ~A" stanza)) (newline)
-  (cons 'alias (list (cdr stanza))))
+;; (define (normalize-stanza-alias stanza)
+;;   ;; (display (format #f "dir: ~A" pfx)) (newline)
+;;   ;; (display (format #f "normalize-stanza-alias: ~A" stanza)) (newline)
+;;   (cons 'alias (list (cdr stanza))))
 
 (define (normalize-stanza-data_only_dirs stanza)
   ;; (display (format #f "dir: ~A" pfx)) (newline)

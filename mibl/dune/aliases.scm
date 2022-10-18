@@ -16,9 +16,69 @@
 ;; alias field instead.
 
 (define (dune-alias->mibl ws pkg stanza)
-  (format #t "~A: ~A\n" (blue "dune-alias->mibl") pkg)
-  (format #t "~A~%" (red "WARNING: unimplemented: alias stanzas"))
-  ;; (format #t "~A: ~A\n" (white "stanza") stanza)
-  ;;(list (cons ':alias (cdr stanza)))
-  (-alias->miblark stanza)
-  )
+  (format #t "~A: ~A\n" (blue "dune-alias->mibl") stanza)
+  ;; (if-let ((alias-assoc (assoc :alias (cdr stanza))))
+  (if (assoc-in '(:actions :cmd) (cdr stanza))
+      (let ((alias (cadr alias-assoc))
+            (cmd-ct (length (assoc-in* '(:actions :cmd) (cdr stanza))))
+            ;;FIXME assuming one cmd
+            (args (assoc-in '(:actions :cmd :args) (cdr stanza))))
+        (format #t "~A: ~A~%" (ured "ALIAS") alias)
+        (format #t "~A: ~A~%" (ured "cmd ct") cmd-ct)
+        (format #t "~A: ~A~%" (ured "args") args)
+        ;; if :args contains executable, mark as :test
+        (let ((tool-args (fold (lambda (arg accum)
+                                 (format #t "~A: ~A~%" (ured "arg") arg)
+                                 (let ((argstr (format #f "~A" arg)))
+                                   (format #t "~A: ~A~%" (ured "argstr") argstr)
+                                   ;; FIXME what about local sh scripts?
+                                   (cond
+                                    ((string-prefix? ":bin" argstr) (cons arg accum))
+                                    ((string-prefix? ":exe" argstr) (cons arg accum))
+                                    ((string-prefix? ":libexec" argstr) (cons arg accum))
+                                    ;; lib:<public-library-name>:<file>
+                                    ;; lib-private:<library-name>:<file>
+                                    ;; libexec-private:<library-name>:<file>
+                                    ((= 0 (fnmatch "*.sh" argstr 0)) (cons arg accum))
+                                    ((= 0 (fnmatch "*.py" argstr 0)) (cons arg accum))
+                                    ((= 0 (fnmatch "*.js" argstr 0)) (cons arg accum))
+                                    ;;FIXME others?
+                                    (else accum))))
+                               '() (cdr args))))
+          (if tool-args
+              (begin
+                (format #t "~A: ~A~%" (ured "found executable tool args") tool-args)
+                (if-let ((deps (assoc :deps (cdr stanza))))
+                        (let ((tool-deps (assoc ::tools (cdr deps))))
+                          (if tool-deps
+                              ;; append tools
+                              (format #t "~A: ~A~%" (ured "tool-deps") tool-deps)
+                              ;; add ::tools to (:deps ...)
+                              (let ((_ (format #t "~A: ~A~%" (ured "deps") deps))
+                                    (deps-list (cdr deps))
+                                    (tools (list (cons ::tools tool-args))))
+                                (set-cdr! deps (append tools deps-list)))
+                              ))
+                        ;; else no deps in stanza?
+                        (begin))
+                (set-cdr! stanza
+                          (acons :name
+                                 (format #f "~A_~A" alias -sh-test-id)
+                                 (cdr stanza)))
+                (set-car! stanza :sh-test)
+                (set! -sh-test-id (+ 1 -sh-test-id))
+                )
+              (begin
+                (format #t "~A: ~A~%" (ured "NO executable tools") tools)
+                (error 'FIXME "alias without run tool")))
+          ))
+      ;; else alias with no :actions
+      (begin
+        ;; ignore?
+        (list `(:alias ,@(cdr stanza)))
+        ;; (error 'fixme
+        ;;        (format #f "~A: ~A~%" (ured "ALIAS w/o actions") stanza))
+        )))
+          ;; (begin
+          ;;   (format #t "~A: ~A~%" (ured "NO ALIAS") stanza)
+          ;;   #| nop |#)))
