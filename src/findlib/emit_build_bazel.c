@@ -801,23 +801,31 @@ void emit_bazel_cc_imports(FILE* ostream,
 
 void emit_bazel_stublibs_attr(FILE* ostream,
                               int level, /* indentation control */
+                              char *_pkg_root,
                               char *_pkg_prefix,
                               char *_pkg_name,
+                              UT_string *_pkg_parent,
                               char *_filedeps_path, /* _lib */
                               obzl_meta_entries *_entries,
                               obzl_meta_package *_pkg)
 {
     /* here we read the symlinks in the coswitch not the opam switch */
+    log_debug("stublibs pkg root: %s\n", _pkg_root);
+    log_debug("stublibs pkg prefix: %s\n", _pkg_prefix);
+    log_debug("stublibs pkg name: %s\n", _pkg_name);
+    log_debug("stublibs pkg parent: %s\n", utstring_body(_pkg_parent));
+
     static UT_string *dname;
     utstring_new(dname);
-    utstring_printf(dname, "%s/%s/lib/%s",
-                    bazel_ws_root,
+    utstring_printf(dname, "%s/%s/lib",
+                    bazel_ws_root, /* e.g. <switch>/lib */
                     /* FIXME: what about multilevels, e.g.
                      @foo//lib/bar/baz/buz ? */
-                    (_pkg_prefix == NULL)
-                    ? _pkg_name
-                    : _pkg_prefix,
-                    _pkg_name);
+                    _pkg_root);
+    if (_pkg_parent != NULL)
+        utstring_printf(dname, "/%s", utstring_body(_pkg_parent));
+    utstring_printf(dname, "/%s", _pkg_name);
+
 #if defined(DEBUG_TRACE)
     log_debug("emit_bazel_stublibs_attr: %s", utstring_body(dname));
 #endif
@@ -828,7 +836,10 @@ void emit_bazel_stublibs_attr(FILE* ostream,
         fprintf(stderr,
                 "ERROR: bad opendir: %s\n", strerror(errno));
         fprintf(ostream, "## ERROR: bad opendir: %s\n", utstring_body(dname));
-        fprintf(ostream, "## ERROR: bad opendir: %s\n", strerror(errno));
+        fprintf(ostream, "## pkg root: %s\n", _pkg_root);
+        fprintf(ostream, "## pkg parent: %s\n", utstring_body(_pkg_parent));
+        fprintf(ostream, "## _pkg_prefix: %s\n", _pkg_prefix);
+        fprintf(ostream, "## _pkg_name: %s\n", _pkg_name);
         return;
     }
 
@@ -1341,9 +1352,11 @@ void emit_bazel_archive_rule(FILE* ostream,
                              int level,
                              /* char *ws_name, */
                              char *_filedeps_path, /* _lib/... */
+                             char *_pkg_root,
                              /* char *_pkg_path, */
                              char *_pkg_prefix,
                              char *_pkg_name,
+                             UT_string *pkg_parent,
                              obzl_meta_entries *_entries, //)
                              /* char *_subpkg_dir) */
                              obzl_meta_package *_pkg)
@@ -1410,8 +1423,10 @@ Note that "archive" should only be used for archive files that are intended to b
     fprintf(ostream, "    srcs     = glob([\"*.ml\", \"*.mli\"]),\n");
 
     emit_bazel_stublibs_attr(ostream, 1,
+                             _pkg_root,
                              _pkg_prefix,
                              _pkg_name,
+                             pkg_parent,
                              _filedeps_path,
                              _entries,
                              _pkg);
@@ -3061,8 +3076,10 @@ EXPORT void emit_build_bazel(// char *ws_name,
                                             /* ws_name, // ocaml_ws, */
                                             //_filedeps_path,
                                             utstring_body(new_filedeps_path),
+                                            _pkg_root,
                                             _pkg_suffix,
                                             pkg_name,
+                                            pkg_parent,
                                             entries, //);
                                             _pkg);
                     /* subpkg_dir); */
