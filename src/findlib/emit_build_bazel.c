@@ -807,26 +807,28 @@ void emit_bazel_stublibs_attr(FILE* ostream,
                               obzl_meta_entries *_entries,
                               obzl_meta_package *_pkg)
 {
+    /* here we read the symlinks in the coswitch not the opam switch */
     static UT_string *dname;
     utstring_new(dname);
-    utstring_concat(dname, bazel_pkg_root);
-    /* utstring_printf(dname, "/%s", _filedeps_path); */
-    /* char *dname = dirname(utstring_body(build_bazel_file)); */
+    utstring_printf(dname, "%s/%s/lib/%s",
+                    bazel_ws_root,
+                    /* FIXME: what about multilevels, e.g.
+                     @foo//lib/bar/baz/buz ? */
+                    (_pkg_prefix == NULL)
+                    ? _pkg_name
+                    : _pkg_prefix,
+                    _pkg_name);
 #if defined(DEBUG_TRACE)
     log_debug("emit_bazel_stublibs_attr: %s", utstring_body(dname));
 #endif
-    /* printf("emit_bazel_stublibs_attr: %s\n", utstring_body(dname)); */
-
-    /* log_debug("bazel_pkg_root: %s\n", utstring_body(bazel_pkg_root)); */
-    /* log_debug("_pkg_prefix: %s\n", _pkg_prefix); */
-    /* log_debug("_pkg_name: %s\n", _pkg_name); */
-    /* log_debug("_filedeps_path: %s\n", _filedeps_path); */
 
     errno = 0;
     DIR *d = opendir(utstring_body(dname));
     if (d == NULL) {
         fprintf(stderr,
                 "ERROR: bad opendir: %s\n", strerror(errno));
+        fprintf(ostream, "## ERROR: bad opendir: %s\n", utstring_body(dname));
+        fprintf(ostream, "## ERROR: bad opendir: %s\n", strerror(errno));
         return;
     }
 
@@ -2934,6 +2936,17 @@ EXPORT void emit_build_bazel(// char *ws_name,
     /*     return; */
     /* } */
 
+    /* **************************************************************** */
+    // first symlinks
+    /* if (_pkg->entries != NULL) { */
+        /* if (strncmp(pkg_name, _pkg_root, strlen(pkgname)) == 0) { */
+            /* symlinks only needed for base pkg, not subpkgs */
+    emit_pkg_symlinks(bazel_pkg_root, /* dest */
+                      new_filedeps_path, /* src */
+                      pkg_name);
+        /* } */
+    /* } */
+
     /* ################################################################ */
     /* emit_new_local_pkg_repo(bootstrap_FILE, */
     /*                         _pkg_suffix, */
@@ -3136,16 +3149,6 @@ EXPORT void emit_build_bazel(// char *ws_name,
     /* if (_pkg_suffix == NULL) */
     /*     emit_workspace_file(workspace_file, pkg_name); */
 
-    /* **************************************************************** */
-    // now symlinks
-    /* if (_pkg->entries != NULL) { */
-        /* if (strncmp(pkg_name, _pkg_root, strlen(pkgname)) == 0) { */
-            /* symlinks only needed for base pkg, not subpkgs */
-    emit_pkg_symlinks(bazel_pkg_root, /* dest */
-                      new_filedeps_path, /* src */
-                      pkg_name);
-        /* } */
-    /* } */
 
     if (_pkg->entries != NULL) {
         /* emit_pkg_symlinks(bazel_pkg_root, */
