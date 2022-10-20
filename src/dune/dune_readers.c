@@ -33,7 +33,8 @@ extern bool trace;
 
 #define TO_STR(x) s7_object_to_c_string(s7, x)
 
-s7_pointer read_dune_package(UT_string *dunefile_name)
+/* s7_pointer */
+void *read_dune_package(UT_string *dunefile_name)
 {
     //FIXME: this duplicates the code in load_dune:_read_dunefile
 #if defined(DEBUG_TRACE)
@@ -101,11 +102,13 @@ s7_pointer read_dune_package(UT_string *dunefile_name)
 }
 
 //s7_pointer
-EXPORT UT_array *get_pkg_executables(UT_string *dune_pkg_file)
+EXPORT UT_array *get_pkg_executables(void *_stanzas)
+/* UT_string *dune_pkg_file) */
 {
 #if defined(DEBUG_TRACE)
-    if (trace) log_trace("get_pkg_executables: %s", utstring_body(dune_pkg_file));
+    if (trace) log_trace("get_pkg_executables");
 #endif
+    s7_pointer stanzas = (s7_pointer) _stanzas;
     UT_string *outpath;
     UT_string *opam_bin;
     utstring_new(outpath);
@@ -114,11 +117,7 @@ EXPORT UT_array *get_pkg_executables(UT_string *dune_pkg_file)
     UT_array *bins;
     utarray_new(bins, &ut_str_icd);
 
-    s7_pointer stanzas = read_dune_package(dune_pkg_file);
-#if defined(DEBUG_TRACE)
-    /* if (debug) */
-    /*     log_debug("readed stanzas: %s", TO_STR(stanzas)); */
-#endif
+    /* s7_pointer stanzas = read_dune_package(dune_pkg_file); */
 
     s7_pointer iter, binfile;
 
@@ -128,20 +127,20 @@ EXPORT UT_array *get_pkg_executables(UT_string *dune_pkg_file)
                                             s7_make_symbol(s7, "stanzas"),
                                             stanzas)));
 
-    char * sexp =
+    char * exec_sexp =
         "(let ((files (assoc 'files (cdr stanzas))))"
         "  (if files"
         "      (let ((bin (assoc 'bin (cdr files))))"
         "          (if bin (cadr bin)))))";
 
-    s7_pointer executables = s7_eval_c_string_with_environment(s7, sexp, e);
+    s7_pointer executables = s7_eval_c_string_with_environment(s7, exec_sexp, e);
 
     if (executables == s7_unspecified(s7))
         return bins;
 
 #if defined(DEBUG_TRACE)
     if (debug) {
-        log_debug("Pkg: %s", utstring_body(dune_pkg_file));
+        /* log_debug("Pkg: %s", utstring_body(dune_pkg_file)); */
         log_debug(RED "executables" CRESET ": %s", TO_STR(executables));
     }
 #endif
@@ -149,9 +148,9 @@ EXPORT UT_array *get_pkg_executables(UT_string *dune_pkg_file)
     /* result is list of executables installed in $PREFIX/bin */
     if (s7_is_list(s7, executables)) {
         if (verbose) {
-            printf(GRN "EXECUTABLES:" CRESET
-                   " for %s: %s\n",
-                   utstring_body(dune_pkg_file),
+            printf(GRN "EXECUTABLES:" CRESET " %s\n",
+                   /* " for %s: %s\n", */
+                   /* utstring_body(dune_pkg_file), */
                    TO_STR(executables));
         }
     }
@@ -199,6 +198,84 @@ EXPORT UT_array *get_pkg_executables(UT_string *dune_pkg_file)
         /* fprintf(ostream, "## dst: %s\n", utstring_body(outpath)); */
     /* } */
     return bins;
+}
+
+EXPORT UT_array *get_pkg_stublibs(void *_stanzas)
+/* UT_string *dune_pkg_file) */
+{
+#if defined(DEBUG_TRACE)
+    if (trace) log_trace("get_pkg_stublibs");
+#endif
+    s7_pointer stanzas = (s7_pointer) _stanzas;
+/* #if defined(DEBUG_TRACE) */
+/*     log_debug("stanzas: %s", TO_STR(stanzas)); */
+/* #endif */
+
+    UT_string *outpath;
+    UT_string *opam_bin;
+    utstring_new(outpath);
+    utstring_new(opam_bin);
+
+    UT_array *stubs;
+    utarray_new(stubs, &ut_str_icd);
+
+    /* s7_pointer stanzas = read_dune_package(dune_pkg_file); */
+
+    s7_pointer iter, stublib_file;
+
+    s7_pointer e = s7_inlet(s7,
+                            s7_list(s7, 1,
+                                    s7_cons(s7,
+                                            s7_make_symbol(s7, "stanzas"),
+                                            stanzas)));
+
+    char * stublibs_sexp =
+        "(let ((files (assoc 'files (cdr stanzas))))"
+        "  (if files"
+        "      (let ((bin (assoc 'stublibs (cdr files))))"
+        "          (if bin (cadr bin)))))";
+
+    s7_pointer stublibs = s7_eval_c_string_with_environment(s7, stublibs_sexp, e);
+
+    if (stublibs == s7_unspecified(s7))
+        return stubs;
+
+#if defined(DEBUG_TRACE)
+    if (debug) {
+        /* log_debug("Pkg: %s", utstring_body(dune_pkg_file)); */
+        log_debug(RED "stublibs" CRESET ": %s", TO_STR(stublibs));
+    }
+#endif
+
+    /* result is list of stublibs installed in $PREFIX/bin */
+    if (s7_is_list(s7, stublibs)) {
+        if (verbose) {
+            printf(GRN "STUBLIBS:" CRESET " %s\n",
+                   /* " for %s: %s\n", */
+                   /* utstring_body(dune_pkg_file), */
+                   TO_STR(stublibs));
+        }
+    }
+    iter = s7_make_iterator(s7, stublibs);
+        //gc_loc = s7_gc_protect(s7, iter);
+    if (!s7_is_iterator(iter))
+        fprintf(stderr, "%d: %s is not an iterator\n",
+                __LINE__, TO_STR(iter));
+    if (s7_iterator_is_at_end(s7, iter))
+        fprintf(stderr, "%d: %s is prematurely done\n",
+                __LINE__, TO_STR(iter));
+
+    char *f;
+    while (true) {
+        stublib_file = s7_iterate(s7, iter);
+        if (s7_iterator_is_at_end(s7, iter)) break;
+#if defined(DEBUG_TRACE)
+        log_debug("\tstublib: %s", TO_STR(stublib_file));
+#endif
+        f = TO_STR(stublib_file);
+        utarray_push_back(stubs, &f);
+    }
+    return stubs;
 }
 
 char *dunefile_to_string(UT_string *dunefile_name)
