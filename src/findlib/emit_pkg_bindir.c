@@ -38,12 +38,12 @@ extern UT_string *opam_switch_lib;
 /* #define TO_STR(x) s7_object_to_c_string(s7, x) */
 
 static int level = 0;
-static int spfactor = 4;
-static char *sp = " ";
+extern int spfactor;
+extern char *sp;
 
 #if defined(DEBUG_TRACE)
-static int indent = 2;
-static int delta = 2;
+extern int indent;
+extern int delta;
 #endif
 
 bool stdlib_root = false;

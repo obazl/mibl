@@ -66,6 +66,7 @@ genrule(
         # "//src/linux:strnstr.c",
 
         "//src/findlib:emit_build_bazel.c",
+        "//src/findlib:emit_jsoo.c",
         "//src/findlib:emit_ocaml_repo.c",
         "//src/findlib:emit_pkg_bindir.c",
         "//src/findlib:handlers_findlib.c",
@@ -106,6 +107,7 @@ genrule(
         "handlers_opam.h",
 
         "emit_build_bazel.h",
+        "emit_jsoo.h",
         "emit_ocaml_repo.h",
         "emit_pkg_bindir.h",
         "meta_parser.h",
@@ -188,6 +190,7 @@ genrule(
         # "$(location //src/linux:strnstr.c)",
 
         "$(location //src/findlib:emit_build_bazel.c)",
+        "$(location //src/findlib:emit_jsoo.c)",
         "$(location //src/findlib:emit_ocaml_repo.c)",
         "$(location //src/findlib:emit_pkg_bindir.c)",
         "$(location //src/findlib:handlers_findlib.c)",
@@ -260,6 +263,7 @@ genrule(
         # "//src/linux:strnstr.c",
 
         "//src/findlib:emit_build_bazel.c",
+        "//src/findlib:emit_jsoo.c",
         "//src/findlib:emit_ocaml_repo.c",
         "//src/findlib:emit_pkg_bindir.c",
         "//src/findlib:handlers_findlib.c",
@@ -335,6 +339,7 @@ genrule(
         # "$(location //src/linux:strnstr.c)",
 
         "$(location //src/findlib:emit_build_bazel.c)",
+        "$(location //src/findlib:emit_jsoo.c)",
         "$(location //src/findlib:emit_ocaml_repo.c)",
         "$(location //src/findlib:emit_pkg_bindir.c)",
         "$(location //src/findlib:handlers_findlib.c)",

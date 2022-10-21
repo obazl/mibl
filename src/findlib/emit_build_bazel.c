@@ -14,6 +14,7 @@
 #else
 #include <limits.h>
 #endif
+#include <stdbool.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -36,12 +37,12 @@
 /* #define TO_STR(x) s7_object_to_c_string(s7, x) */
 
 static int level = 0;
-static int spfactor = 4;
-static char *sp = " ";
+int spfactor = 4;               /* FIXME: move to //constants.c? */
+char *sp = " ";                 /* FIXME: move to //constants.c? */
 
 #if defined(DEBUG_TRACE)
-static int indent = 2;
-static int delta = 2;
+int indent = 2;
+int delta = 2;
 #endif
 
 extern char *ocaml_ws;
@@ -371,7 +372,9 @@ void emit_bazel_hdr(FILE* ostream)
 //, int level, char *repo, char *pkg_prefix, obzl_meta_package *_pkg)
 {
     fprintf(ostream,
-            "load(\"@opam//build:rules.bzl\", \"opam_import\")\n\n");
+            "load(\"@opam//build:rules.bzl\", \"opam_import\")\n");
+    fprintf(ostream,
+            "load(\"@rules_jsoo//build:rules.bzl\", \"jsoo_library\", \"jsoo_import\")\n\n");
 }
 
 /* obzl_meta_values *resolve_setting_values(obzl_meta_setting *_setting, */
@@ -1384,6 +1387,16 @@ Note that "archive" should only be used for archive files that are intended to b
        BUT: just use pkg_prefix and pkg name?
      */
 
+    emit_bazel_jsoo(ostream, 1,
+                    _pkg_prefix,
+                    _pkg_name,
+                    /* for constructing import label: */
+                    _filedeps_path,
+                    /* _subpkg_dir, */
+                    _entries,
+                    "archive",
+                    _pkg);
+
     /* write scheme opam-resolver table */
     //FIXME: for here-switch only
     /* write_opam_resolver(_pkg_prefix, _pkg_name, _entries); */
@@ -1432,10 +1445,13 @@ Note that "archive" should only be used for archive files that are intended to b
                              _pkg);
 
     /* fprintf(ostream, "    all      = glob([\"*.\"]),\n"); */
-    emit_bazel_deps_attribute(ostream, 1, ocaml_ws, "lib", _pkg_name, _entries);
+    emit_bazel_deps_attribute(ostream, 1,
+                              false, /* not jsoo */
+                              ocaml_ws,
+                              "lib", _pkg_name, _entries);
 
     emit_bazel_ppx_codeps(ostream, 1, ocaml_ws, _pkg_name, "lib", _entries);
-    fprintf(ostream, "    visibility = [\"//visibility:public\"]\n");
+    /* fprintf(ostream, "    visibility = [\"//visibility:public\"]\n"); */
     fprintf(ostream, ")\n");
 }
 
@@ -1511,8 +1527,11 @@ void emit_bazel_plugin_rule(FILE* ostream, int level,
     /* fprintf(ostream, "    cmti   = glob([\"*.cmti\"]),\n"); */
     /* fprintf(ostream, "    srcs   = glob([\"*.ml\", \"*.mli\"]),\n"); */
 
-    emit_bazel_deps_attribute(ostream, 1, ocaml_ws, "lib", _pkg_name, _entries);
-    fprintf(ostream, "    visibility = [\"//visibility:public\"]\n");
+    emit_bazel_deps_attribute(ostream, 1,
+                              false, /* not jsoo */
+                              ocaml_ws,
+                              "lib", _pkg_name, _entries);
+    /* fprintf(ostream, "    visibility = [\"//visibility:public\"]\n"); */
     fprintf(ostream, ")\n");
 }
 
@@ -1541,7 +1560,7 @@ bool emit_special_case_rule(FILE* ostream,
         fprintf(ostream, "alias(\n"
                 "    name = \"bigarray\",\n"
                 "    actual = \"@ocaml//bigarray\",\n"
-                "    visibility = [\"//visibility:public\"]\n"
+                /* "    visibility = [\"//visibility:public\"]\n" */
                 ")\n");
         return true;
     }
@@ -1553,7 +1572,7 @@ bool emit_special_case_rule(FILE* ostream,
         fprintf(ostream, "alias(\n"
                 "    name = \"dynlink\",\n"
                 "    actual = \"@ocaml//dynlink\",\n"
-                "    visibility = [\"//visibility:public\"]\n"
+                /* "    visibility = [\"//visibility:public\"]\n" */
                 ")\n");
         return true;
     }
@@ -1572,7 +1591,7 @@ bool emit_special_case_rule(FILE* ostream,
         fprintf(ostream, "alias(\n"
                 "    name = \"compiler-libs\",\n"
                 "    actual = \"@ocaml//compiler-libs/common\",\n"
-                "    visibility = [\"//visibility:public\"]\n"
+                /* "    visibility = [\"//visibility:public\"]\n" */
                 ")\n");
         return true;
     }
@@ -1608,7 +1627,7 @@ bool emit_special_case_rule(FILE* ostream,
         fprintf(ostream, "alias(\n"
                 "    name = \"num\",\n"
                 "    actual = \"@ocaml//num/core\",\n"
-                "    visibility = [\"//visibility:public\"]\n"
+                /* "    visibility = [\"//visibility:public\"]\n" */
                 ")\n");
         return true;
     }
@@ -1620,7 +1639,7 @@ bool emit_special_case_rule(FILE* ostream,
         fprintf(ostream, "alias(\n"
                 "    name = \"ocamldoc\",\n"
                 "    actual = \"@ocaml//ocamldoc\",\n"
-                "    visibility = [\"//visibility:public\"]\n"
+                /* "    visibility = [\"//visibility:public\"]\n" */
                 ")\n");
         return true;
     }
@@ -1632,7 +1651,7 @@ bool emit_special_case_rule(FILE* ostream,
         fprintf(ostream, "alias(\n"
                 "    name = \"str\",\n"
                 "    actual = \"@ocaml//str\",\n"
-                "    visibility = [\"//visibility:public\"]\n"
+                /* "    visibility = [\"//visibility:public\"]\n" */
                 ")\n");
         return true;
     }
@@ -1644,7 +1663,7 @@ bool emit_special_case_rule(FILE* ostream,
         fprintf(ostream, "alias(\n"
                 "    name = \"threads\",\n"
                 "    actual = \"@ocaml//threads\",\n"
-                "    visibility = [\"//visibility:public\"]\n"
+                /* "    visibility = [\"//visibility:public\"]\n" */
                 ")\n");
         return true;
     }
@@ -1656,7 +1675,7 @@ bool emit_special_case_rule(FILE* ostream,
         fprintf(ostream, "alias(\n"
                 "    name = \"unix\",\n"
                 "    actual = \"@ocaml//unix\",\n"
-                "    visibility = [\"//visibility:public\"]\n"
+                /* "    visibility = [\"//visibility:public\"]\n" */
                 ")\n");
         return true;
     }
@@ -1708,6 +1727,7 @@ bool special_case_multiseg_dep(FILE* ostream,
 }
 
 void emit_bazel_deps_attribute(FILE* ostream, int level,
+                               bool jsoo,
                                char *repo, char *pkg, char *pkg_name,
                                obzl_meta_entries *_entries)
 /* obzl_meta_package *_pkg) */
@@ -1715,8 +1735,6 @@ void emit_bazel_deps_attribute(FILE* ostream, int level,
 
     //FIXME: skip if no 'requires' or requires == ''
     /* obzl_meta_entries *entries = obzl_meta_package_entries(_pkg); */
-
-    struct obzl_meta_property *deps_prop = NULL;
 
     /* char *kind = "library_kind"; */
     /* deps_prop = obzl_meta_entries_property(_entries, kind); */
@@ -1728,7 +1746,7 @@ void emit_bazel_deps_attribute(FILE* ostream, int level,
     /* } */
 
     char *pname = "requires";
-    deps_prop = NULL;
+    struct obzl_meta_property *deps_prop = NULL;
     deps_prop = obzl_meta_entries_property(_entries, pname);
     if ( deps_prop == NULL ) return;
     obzl_meta_value ds = obzl_meta_property_value(deps_prop);
@@ -1867,6 +1885,7 @@ void emit_bazel_deps_attribute(FILE* ostream, int level,
                         /* single-seg pkg, e.g. ptime  */
 
                         // handle core libs: dynlink, str, unix, etc.
+                        /* FIXME: obsolete? */
                         if ((strncmp(*dep_name, "bigarray", 8) == 0)
                             && strlen(*dep_name) == 8) {
                             fprintf(ostream, "%*s\"@ocaml//bigarray\",\n",
@@ -1884,10 +1903,11 @@ void emit_bazel_deps_attribute(FILE* ostream, int level,
                                 /*         (1+level)*spfactor, sp, */
                                 /*         *dep_name); */
                                 fprintf(ostream,
-                                        "%*s\"@opam_%s//lib/%s\",\n",
+                                        "%*s\"@opam_%s//lib/%s%s\",\n",
                                         /* "%*s\"@%s//:%s\",\n", */
                                         (1+level)*spfactor, sp,
-                                        *dep_name, *dep_name);
+                                        *dep_name, *dep_name,
+                                        jsoo? ":js" : "");
                             }
                         }
                     }
@@ -1898,12 +1918,13 @@ void emit_bazel_deps_attribute(FILE* ostream, int level,
                     else {
                         int repo_len = delim1 - (char*)*dep_name;
                         fprintf(ostream,
-                                "%*s\"@opam_%.*s//lib/%s\",\n",
+                                "%*s\"@opam_%.*s//lib/%s%s\",\n",
                                 /* "%*s\"@%.*s//%s\",\n", */
                                 (1+level)*spfactor, sp,
                                 repo_len,
                                 *dep_name,
-                                delim1+1);
+                                delim1+1,
+                                jsoo? ":js" : "");
                         /* (1+level)*spfactor, sp, repo, pkg, *dep_name); */
                     }
                 }
@@ -2259,12 +2280,14 @@ void emit_bazel_deps_target(FILE* ostream, int level,
     write_opam_resolver(_pkg_prefix, _pkg_name, _entries);
     */
 
+    fprintf(ostream, "## empty targets, in case they are deps of some other target\n");
+
     /* sorry, special findlib hack: */
     if (strncmp(_pkg_name, "findlib", 7) == 0) {
         fprintf(ostream, "\nalias(\n");
         fprintf(ostream, "    name   = \"findlib\",\n");
         fprintf(ostream, "    actual = \"@opam_findlib//lib/internal\",\n");
-        fprintf(ostream, "    visibility = [\"//visibility:public\"]\n");
+        /* fprintf(ostream, "    visibility = [\"//visibility:public\"]\n"); */
         fprintf(ostream, ")\n");
     } else {
         fprintf(ostream, "\nopam_import(\n");
@@ -2277,11 +2300,15 @@ void emit_bazel_deps_target(FILE* ostream, int level,
                              _repo, // "@ocaml",
                              /* _pkg_path, */
                              _entries, "description", "doc");
-        emit_bazel_deps_attribute(ostream, 1, ocaml_ws, "lib", _pkg_name, _entries);
+        emit_bazel_deps_attribute(ostream, 1,
+                                  false, /* not jsoo */
+                                  ocaml_ws, "lib", _pkg_name, _entries);
         /* emit_bazel_path_attrib(ostream, 1, ocaml_ws, _pkg_prefix, "lib", _entries); */
-        fprintf(ostream, "    visibility = [\"//visibility:public\"]\n");
+        /* fprintf(ostream, "    visibility = [\"//visibility:public\"]\n"); */
         fprintf(ostream, ")\n");
     }
+
+    fprintf(ostream, "\njsoo_library(name = \"js\")\n");
 }
 
 /*
@@ -2313,7 +2340,7 @@ void emit_bazel_error_target(FILE* ostream, int level,
                          /* _pkg_path, */
                          _entries, "error", "error");
 
-    fprintf(ostream, "    visibility = [\"//visibility:public\"]\n");
+    /* fprintf(ostream, "    visibility = [\"//visibility:public\"]\n"); */
     fprintf(ostream, ")\n");
 }
 
@@ -2989,7 +3016,7 @@ EXPORT void emit_build_bazel(// char *ws_name,
             return;
         }
 
-    fprintf(ostream, "## Y generated file - DO NOT EDIT\n");
+    fprintf(ostream, "## generated file - DO NOT EDIT\n");
 
     fprintf(ostream, "## original: %s\n\n", obzl_meta_package_src(_pkg));
 
@@ -3000,6 +3027,7 @@ EXPORT void emit_build_bazel(// char *ws_name,
       options: iterate over files and pick out executables; or parse
       the dune-package file.
     */
+    fprintf(ostream, "package(default_visibility=[\"//visibility:public\"])\n");
     fprintf(ostream, "exports_files(glob([\"**\"]))\n\n");
 
     emit_bazel_hdr(ostream); //, 1, ocaml_ws, "lib", _pkg);
@@ -3013,7 +3041,7 @@ EXPORT void emit_build_bazel(// char *ws_name,
                 "    name = \"libctypes\",\n"
                 "    srcs = glob([\"*.a\"]),\n"
                 "    hdrs = glob([\"*.h\"]),\n"
-                "    visibility = [\"//visibility:public\"],\n"
+                /* "    visibility = [\"//visibility:public\"],\n" */
                 ")\n");
     }
 
@@ -3062,6 +3090,7 @@ EXPORT void emit_build_bazel(// char *ws_name,
             */
 
             if (e->type == OMP_PROPERTY) {
+
                 /* if ((e->type == OMP_PROPERTY) || (e->type == OMP_PACKAGE)) { */
                 /* log_debug("\tOMP_PROPERTY"); */
 
@@ -3134,6 +3163,15 @@ EXPORT void emit_build_bazel(// char *ws_name,
                                            pkg_name, entries);
                     continue;
                 }
+
+                if (strncmp(e->property->name, "jsoo_runtime", 12) == 0) {
+                    obzl_meta_value ds = obzl_meta_property_value(e->property);
+                    fprintf(ostream, "\njsoo_import(\n");
+                    fprintf(ostream, "    name = \"jsoo_runtime\",\n");
+                    fprintf(ostream, "    src = \"%s\",\n", (char*)ds);
+                    fprintf(ostream, ")\n");
+                }
+
                 /* if (strncmp(_pkg->name, "ppx_fixed_literal", 17) == 0) */
                 /*     log_debug("PPX_fixed_literal, entry %d, name: %s, type %d", */
                 /*               i, e->property->name, e->type); */

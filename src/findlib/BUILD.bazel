@@ -33,6 +33,7 @@ cc_library(
     name = "findlib",
     srcs = [
         "emit_build_bazel.c",
+        "emit_jsoo.c",
         "emit_ocaml_repo.c",
         "emit_pkg_bindir.c",
         "handlers_findlib.c",
@@ -305,6 +306,7 @@ cc_library(
 
 FINDLIB_MKHDRS_SRCS = [
         "emit_build_bazel.c",
+        "emit_jsoo.c",
         "emit_ocaml_repo.c",
         "emit_pkg_bindir.c",
         "meta_parser.c",
@@ -331,6 +333,7 @@ FINDLIB_MKHDRS_SRCS = [
 
 FINDLIB_MKHDRS_LOCNS = " ".join([
     "$(location emit_build_bazel.c)",
+    "$(location emit_jsoo.c)",
     "$(location emit_ocaml_repo.c)",
     "$(location emit_pkg_bindir.c)",
     "$(location meta_parser.c)",

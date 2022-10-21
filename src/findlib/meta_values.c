@@ -10,9 +10,9 @@
 extern const UT_icd ut_str_icd;
 
 #if defined(DEBUG_PROPERTIES) || defined (DEBUG_TRACE)
-static int indent = 2;
-static int delta = 2;
-static char *sp = " ";
+extern int indent;
+extern int delta;
+extern char *sp;
 #endif
 
 #if EXPORT_INTERFACE
