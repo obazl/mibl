@@ -373,6 +373,8 @@ void emit_bazel_hdr(FILE* ostream)
 {
     fprintf(ostream,
             "load(\"@opam//build:rules.bzl\", \"opam_import\")\n");
+
+    //FIXME: only if --enable-jsoo passed
     fprintf(ostream,
             "load(\"@rules_jsoo//build:rules.bzl\", \"jsoo_library\", \"jsoo_import\")\n\n");
 }
@@ -867,6 +869,77 @@ void emit_bazel_stublibs_attr(FILE* ostream,
                 if (fnmatch("*stubs.so", direntry->d_name, 0) == 0) {
                     printf("FOUND SO LIB: %s\n", direntry->d_name);
             }
+                /* printf("skipping %s\n", direntry->d_name); */
+            }
+        }
+    }
+    closedir(d);
+}
+
+//FIXME: only if --enable-jsoo passed
+void emit_bazel_jsoo_runtime_attr(FILE* ostream,
+                                  int level, /* indentation control */
+                                  char *_pkg_root,
+                                  char *_pkg_prefix,
+                                  char *_pkg_name,
+                                  UT_string *_pkg_parent,
+                                  char *_filedeps_path, /* _lib */
+                                  obzl_meta_entries *_entries,
+                                  obzl_meta_package *_pkg)
+{
+    /* here we read the symlinks in the coswitch not the opam switch */
+    log_debug("stublibs pkg root: %s\n", _pkg_root);
+    log_debug("stublibs pkg prefix: %s\n", _pkg_prefix);
+    log_debug("stublibs pkg name: %s\n", _pkg_name);
+    log_debug("stublibs pkg parent: %s\n", utstring_body(_pkg_parent));
+
+    static UT_string *dname;
+    utstring_new(dname);
+    utstring_printf(dname, "%s/%s/lib",
+                    bazel_ws_root, /* e.g. <switch>/lib */
+                    /* FIXME: what about multilevels, e.g.
+                     @foo//lib/bar/baz/buz ? */
+                    _pkg_root);
+    if (_pkg_parent != NULL)
+        utstring_printf(dname, "/%s", utstring_body(_pkg_parent));
+    utstring_printf(dname, "/%s", _pkg_name);
+
+#if defined(DEBUG_TRACE)
+    log_debug("emit_bazel_stublibs_attr: %s", utstring_body(dname));
+#endif
+
+    errno = 0;
+    DIR *d = opendir(utstring_body(dname));
+    if (d == NULL) {
+        fprintf(stderr,
+                "ERROR: bad opendir: %s\n", strerror(errno));
+        fprintf(ostream, "## ERROR: bad opendir: %s\n", utstring_body(dname));
+        fprintf(ostream, "## pkg root: %s\n", _pkg_root);
+        fprintf(ostream, "## pkg parent: %s\n", utstring_body(_pkg_parent));
+        fprintf(ostream, "## _pkg_prefix: %s\n", _pkg_prefix);
+        fprintf(ostream, "## _pkg_name: %s\n", _pkg_name);
+        return;
+    }
+
+    /* bool wrote_loader = false; */
+
+    /* TODO: read jsoo_runtime property of META */
+
+    struct dirent *direntry;
+    while ((direntry = readdir(d)) != NULL) {
+        if ((direntry->d_type==DT_REG)
+            || (direntry->d_type==DT_LNK)) {
+            if (fnmatch("runtime.js", direntry->d_name, 0) == 0) {
+                fprintf(ostream, "%*sjsoo_runtime = \"%s\",\n",
+                        level*spfactor, sp, direntry->d_name);
+
+                /* fprintf(ostream, "cc_import(\n"); */
+                /* fprintf(ostream, "    name    = \"%s_stubs\",\n", */
+                /*         _pkg_name); */
+                /* fprintf(ostream, "    archive = \"%s\",\n", */
+                /*         direntry->d_name); */
+                /* fprintf(ostream, ")\n"); */
+            /* } */
                 /* printf("skipping %s\n", direntry->d_name); */
             }
         }
@@ -1387,6 +1460,7 @@ Note that "archive" should only be used for archive files that are intended to b
        BUT: just use pkg_prefix and pkg name?
      */
 
+    //FIXME: only if --enable-jsoo passed
     emit_bazel_jsoo(ostream, 1,
                     _pkg_prefix,
                     _pkg_name,
@@ -1431,10 +1505,20 @@ Note that "archive" should only be used for archive files that are intended to b
     fprintf(ostream, "    afiles   = glob([\"*.a\"], exclude=[\"*_stubs.a\"]),\n");
     fprintf(ostream, "    cmt      = glob([\"*.cmt\"]),\n");
     fprintf(ostream, "    cmti     = glob([\"*.cmti\"]),\n");
-    /* fprintf(ostream, "    cclibs   = glob([\"*_stubs.a\"]),\n"); */
     fprintf(ostream, "    vmlibs   = glob([\"dll*.so\"]),\n");
     fprintf(ostream, "    srcs     = glob([\"*.ml\", \"*.mli\"]),\n");
 
+    //FIXME: only if --enable-jsoo passed
+    emit_bazel_jsoo_runtime_attr(ostream, 1,
+                                 _pkg_root,
+                                 _pkg_prefix,
+                                 _pkg_name,
+                                 pkg_parent,
+                                 _filedeps_path,
+                                 _entries,
+                                 _pkg);
+
+    /* emit cc_deps attr with lib*stubs.a */
     emit_bazel_stublibs_attr(ostream, 1,
                              _pkg_root,
                              _pkg_prefix,
@@ -2308,6 +2392,7 @@ void emit_bazel_deps_target(FILE* ostream, int level,
         fprintf(ostream, ")\n");
     }
 
+    //FIXME: only if --enable-jsoo passed
     fprintf(ostream, "\njsoo_library(name = \"js\")\n");
 }
 
@@ -3164,6 +3249,7 @@ EXPORT void emit_build_bazel(// char *ws_name,
                     continue;
                 }
 
+                //FIXME: only if --enable-jsoo passed
                 if (strncmp(e->property->name, "jsoo_runtime", 12) == 0) {
                     obzl_meta_value ds = obzl_meta_property_value(e->property);
                     fprintf(ostream, "\njsoo_import(\n");
