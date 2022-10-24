@@ -186,6 +186,19 @@
                               (else ;; nop
                                '())))
                           ))))
+
+               ((:ns-archive)
+                ;; convert to archive if only one submodule
+                ;; AND submodule name = ns name
+                (if (= (length (cdr (assoc-in '(:manifest :modules) (cdr stanza))))
+                       1)
+                    (let ((mname (cdr (assoc-in '(:manifest :modules) (cdr stanza))))
+                          (ns (assoc-val :ns (cdr stanza))))
+                      (if (equal? mname ns)
+                          (begin
+                            (set-car! stanza :archive)
+                            (set-cdr! stanza (dissoc '(:ns) (cdr stanza))))))))
+
                ((:executable)
                 (format #t "~A: ~A~%" (uwhite "miblarkizing executable") (car stanza))
                 (let* ((stanza-alist (cdr stanza))

@@ -42,12 +42,28 @@
 ;; to use "(inline_tests)" and exec the test(s) by running 'dune runtests'".
 ;; (https://dune.readthedocs.io/en/stable/tests.html#inline-tests)
 
+;; "In order to tell Dune that our library contains inline tests, we have to add an inline_tests field:
+;; (library
+;;  (name foo)
+;;  (inline_tests)
+;;  (preprocess (pps ppx_inline_test)))"
+
 ;; but the ppx_inline_test docs say:
 ;; "Tests are only executed when both these conditions are met:
 ;;   the executable containing the tests is linked with ppx_inline_test.runner.lib
 ;;   the executable containing the tests is called with command line arguments:
 ;;       your.exe inline-test-runner libname [options]
 ;; (https://github.com/janestreet/ppx_inline_test)
+
+;; also: "Simply add ppx_expect to your list of PPX rewriters as follows:
+;; (library
+;;  (name foo)
+;;  (inline_tests)
+;;  (preprocess (pps ppx_expect)))
+
+;; the ppx_expect docs say: "Follow the same rules as for ppx_inline_test. Just make sure to include ppx_expect.evaluator as a dependency of the test runner."
+
+;; what shite!
 
 ;; so evidently, for each 'library' containing "(inline_tests)" (and
 ;; ppx_inline_test?), we need to both compile the modules with
@@ -58,8 +74,18 @@
 ;; ppx_tags - removed. was specific to ppx_inline_test. use ppx_args,
 ;; or 'runtime_args' attrib of ppx_executable.
 
+;; e.g. jsoo lib/deriving_json/tests:
+;; (library
+;;  (name deriving_expect_tests)
+;;  (libraries unix js_of_ocaml js_of_ocaml.deriving)
+;;  (inline_tests
+;;   (modes js))
+;;  (preprocess
+;;   (pps ppx_expect ppx_deriving_json)))
+
 ;; special cases:
 ;; ppx_inline_test: must add ppx_args=["-inline-test-lib", "foo"]
+;; ppx_expect implies ppx_inline_test?
 ;; dune doc: https://dune.readthedocs.io/en/stable/tests.html#inline-tests
 
 ;; -pps->mibl derives :ppx* flds for the stanza to be emitted

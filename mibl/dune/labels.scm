@@ -299,17 +299,21 @@
                                            (format #t "~A: ~A~%" (bgred "::TOOLS") (caadr dep))
                                            (cond
                                             ((eq? ::unresolved (cdadr dep))
-                                             (begin
+                                             (let* ((t (format #f "~A" (caadr dep)))
+                                                    (t (if (string-prefix? ":exe:" t)
+                                                           (string->symbol (string-append ":bin:" (string-drop t 5)))
+                                                           (caadr dep))))
                                                (format #t "~A~%" (bgred "IMPORT TOOL"))
                                                (format #t "~A~%" (red "export keys"))
+                                               ;; if tool = :exe:..., replace exe with bin before lookup
                                                ;; (for-each (lambda (k)
                                                ;;             (format #t "~A: ~A~%" (ured "key") k))
                                                ;;           (sort! (hash-table-keys exports) sym<?))
-                                               (if-let ((import (hash-table-ref exports (caadr dep))))
+                                               (if-let ((import (hash-table-ref exports t)))
                                                        (begin
                                                          (format #t "~A: ~A~%" (bgred "importing") import)
                                                          (list ::tools
-                                                               (cons (caadr dep)
+                                                               (cons (caadr dep) ;; use original :exe:, :bin: just for lookup
                                                                            (list (assoc :pkg import)
                                                                                  (assoc :tgt import))
                                                                            ;; (format #f "//~A:~A"
@@ -318,10 +322,10 @@
                                                                            ))
                                                          )
                                                        (begin
-                                                         (format #t "~A: ~A~%" (red "no import for tool") (caadr dep))
+                                                         (format #t "~A: ~A~%" (red "no import for tool") t) ;;  (caadr dep))
                                                          ;; (error 'STOP "STOP no import")
                                                          ;; assume (rashly) that form is e.g. :tools/version/gen/gen.exe
-                                                         (let* ((kw (caadr dep))
+                                                         (let* ((kw t) ;; (caadr dep))
                                                                 (t (keyword->symbol kw))
                                                                 (path (dirname t)))
                                                            `(::tools
