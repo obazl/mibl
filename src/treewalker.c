@@ -58,7 +58,8 @@ char *toolchains[] = {
     "@ocaml//toolchain/selectors/local:vmsys",
     "@ocaml//toolchain/selectors/local:sysvm",
     "@ocaml//toolchain/selectors/local:syssys",
-    "@ocaml//toolchain/selectors/local:default",
+    "@ocaml//toolchain/selectors/local:_vm", /* *>vm */
+    "@ocaml//toolchain/selectors/local:__",  /* *>* (default) */
     /* profiles - order matters */
     "@ocaml//toolchain/profiles:sys-dev",
     "@ocaml//toolchain/profiles:sys-dbg",

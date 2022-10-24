@@ -6,8 +6,16 @@ exports_files(glob(["*.bazel"]))
 
 ##########
 toolchain_selector(
-    name           = "default", # sys>sys
+    name           = "__", # *>*
     toolchain      = "@ocaml//toolchain/adapters/local:syssys",
+    visibility     = ["//visibility:public"],
+)
+
+##########
+toolchain_selector(
+    name           = "_vm", # *>vm
+    toolchain      = "@ocaml//toolchain/adapters/local:sysvm",
+    target_host_constraints  = ["@ocaml//platforms:vm?"],
     visibility     = ["//visibility:public"],
 )
 
