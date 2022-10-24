@@ -11,9 +11,11 @@
 
 #include "meta_flags.h"
 
+#if DEBUG_TRACE
 extern int indent;
 extern int delta;
 extern char *sp;
+#endif
 
 /* flag == findlib "predicate" */
 
@@ -324,7 +326,9 @@ bool obzl_meta_flags_to_selection_label(obzl_meta_flags *flags,
                 } else {
                     /* compound condition */
                     int ct = utarray_len(flags->list); // obzl_meta_flags_count(flags);
+#if DEBUG_TRACE
                     log_trace("%*sflags ct: %d", indent, sp, ct);
+#endif
                     /* char config_name[128]; */
                     /* config_name[0] = '\0'; */
                     UT_string *config_name;
@@ -367,7 +371,9 @@ bool obzl_meta_flags_to_selection_label(obzl_meta_flags *flags,
                         if (strncmp(a_flag->s, "mt", 2) == 0) return false;
 
                         if (i - saw_ppx_driver > 0) utstring_printf(config_name, "%s", "_"); // mystrcat(config_name, "_");
+#if DEBUG_TRACE
                         log_debug("%*s%s (polarity: %d)", delta+indent, sp, a_flag->s, a_flag->polarity);
+#endif
                         if ( !a_flag->polarity ) /* '-' prefix */
                             if (saw_ppx_driver == 0)
                                 utstring_printf(config_name, "%s", "no_"); // mystrcat(config_name, "no_");
@@ -464,7 +470,9 @@ bool obzl_meta_flags_to_cmtag(obzl_meta_flags *flags,
                 } else {
                     /* compound condition */
                     int ct = utarray_len(flags->list); // obzl_meta_flags_count(flags);
+#if DEBUG_TRACE
                     log_trace("%*sflags ct: %d", indent, sp, ct);
+#endif
                     /* char config_name[128]; */
                     /* config_name[0] = '\0'; */
                     UT_string *config_name;
@@ -507,7 +515,9 @@ bool obzl_meta_flags_to_cmtag(obzl_meta_flags *flags,
                         if (strncmp(a_flag->s, "mt", 2) == 0) return false;
 
                         if (i - saw_ppx_driver > 0) utstring_printf(config_name, "%s", "_"); // mystrcat(config_name, "_");
+#if DEBUG_TRACE
                         log_debug("%*s%s (polarity: %d)", delta+indent, sp, a_flag->s, a_flag->polarity);
+#endif
                         if ( !a_flag->polarity ) /* '-' prefix */
                             if (saw_ppx_driver == 0)
                                 utstring_printf(config_name, "%s", "no_"); // mystrcat(config_name, "no_");
