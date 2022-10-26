@@ -49,7 +49,7 @@
                   (format #t "~A:~%" (ugreen "pkg-structures") )
                   (if-let ((ss (assoc-in '(:structures :static) pkg)))
                           (begin
-                            (format #t "  raw: ~A~%" ss)
+                            ;; (format #t "  raw: ~A~%" ss)
                             (for-each (lambda (s)
                                         (format #t "  ~A: ~A~%" (ugreen "static") s))
                                       (cdr ss)))
@@ -63,6 +63,7 @@
                   (format #t "~A: ~A~%" (ugreen "pkg-signatures") (assoc-val :signatures pkg))
                   (format #t "~A: ~A~%" (ugreen "pkg-ocamllex") (assoc-val :ocamllex pkg))
                   (format #t "~A: ~A~%" (ugreen "pkg-ocamlyacc") (assoc-val :ocamlyacc pkg))
+                  (format #t "~A: ~A~%" (ugreen "pkg-cppo") (assoc-val :cppo pkg))
                   (format #t "~A: ~A~%" (ugreen "pkg-cc") (assoc-val :cc pkg))
                   (format #t "~A: ~A~%" (ugreen "pkg-ppx") (assoc-val :shared-ppx pkg))
                   (format #t "~A: ~A~%" (ugreen "pkg-files") (assoc-val :files pkg))

@@ -15,6 +15,13 @@
 ;; 2.0, so users must port their code to use the rule stanza with the
 ;; alias field instead.
 
+;; WARNING: plenty of packages still used dune 1.0, e.g.
+;; yojson/test/pretty:
+;; (alias
+;;  (name runtest)
+;;  (action
+;;   (diff test.expected test.output)))
+
 (define (dune-alias->mibl ws pkg stanza)
   (format #t "~A: ~A\n" (blue "dune-alias->mibl") stanza)
   ;; (if-let ((alias-assoc (assoc :alias (cdr stanza))))

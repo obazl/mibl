@@ -175,6 +175,7 @@
                               ((:write-file) ;;FIXME: what if we have write-file in an alias rule?
                                (format #t "~A: ~A~%" (red "miblarking") stanza)
                                (set-car! stanza :write-file))
+                              ((:cppo) (set-car! stanza :cppo))
 
                               ((::ocamlc)
                                (if-let ((deps (assoc :deps (cdr stanza))))

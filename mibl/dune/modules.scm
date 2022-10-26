@@ -35,6 +35,7 @@
 (define (get-manifest pkg kind wrapped? stanza-alist) ;;  deps
   (format #t "~A: ~A\n" (ublue "get-manifest") stanza-alist)
   (format #t "~A: ~A\n" "pkg" pkg)
+  (format #t "~A: ~A\n" "kind" kind)
   ;; (if deps
   (let* ((submods+sigs-list
           (modules-fld->submodules-fld

@@ -243,7 +243,7 @@
          (exec-lib (let* ((modules (assoc-val :modules (cdr pkg-manifest)))
                           (exec-lib (filter (lambda (m) (not (member m mains))) modules)))
                      (if (truthy? exec-lib)
-                         (cons :exec-lib exec-lib)
+                         (cons :exec-libs exec-lib)
                          #f)))
          (exec-lib (if (truthy? exec-lib) (sort! exec-lib sym<?) exec-lib))
          (_ (format #t "~A: ~A\n" (uwhite "exec-lib") exec-lib))

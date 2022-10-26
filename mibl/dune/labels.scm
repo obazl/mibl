@@ -424,6 +424,13 @@
                          ;; (error 'STOP "stop ppx")
                          )))))
 
+              ((:cppo)
+               (let ((deps (assoc :deps (cdr stanza))))
+                 (format #t "~A: ~A~%" (red "deps") deps)
+                 (set-cdr! deps (dissoc '(::tools) (cdr deps)))
+                 (format #t "~A: ~A~%" (red "deps after") deps))
+               )
+
               ;; ((:library)
               ;;  (format #t "~A~%" (ublue "fixup :library"))
               ;;  (let* ((deps (if-let ((deps (assoc-in '(:deps :remote) stanza-alist)))

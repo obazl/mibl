@@ -210,10 +210,27 @@
                         (dune-executable->mibl ws pkg :test stanza))))
 
             ((alias)
-             (set-cdr! nstanzas
-                       (append
-                        (cdr nstanzas)
-                        (dune-alias->mibl ws pkg stanza))))
+             (if (assoc 'action stanza-alist)
+                 (begin
+                   ;; action fld removed from alias stanza in dune 2.0
+
+                   ;; earlier versions may use it, so we convert to
+                   ;; std rule stanza with alias fld
+                   (format #t "~A: ~A~%" (red "stanza before") stanza)
+                   (let ((n (car (assoc-val 'name stanza-alist))))
+                     (set! stanza (cons :rule
+                                        `((alias ,n)
+                                          ,@(dissoc '(name) (cdr stanza))))))
+                   (format #t "~A: ~A~%" (red "stanza after") stanza)
+                   (set-cdr! nstanzas
+                             (append
+                              (cdr nstanzas)
+                              (dune-rule->mibl ws pkg stanza)))
+                   )
+                 (set-cdr! nstanzas
+                           (append
+                            (cdr nstanzas)
+                            (dune-alias->mibl ws pkg stanza)))))
 
             ((install)
              (set-cdr! nstanzas

@@ -296,10 +296,10 @@
           ;;(let ((arg-kw (string->keyword arg)))
           ;; move it from (:deps) to (:deps ::tools)
           (begin
-            (format #t "~A: ~A~%" (red "tool in deps") match)
+            (format #t "~A: ~A~%" (red "pct tool in deps") match)
             (set-cdr! deps
                       (append
-                       (list (list ::tooLS match
+                       (list (list ::tools match
                                    #| (list search-key ;; arg-kw
                                    (cons :pkg pkg-path)
                                    (cons :tgt arg))|# ))
@@ -445,12 +445,13 @@
                           (cdr deps)))))
           (if t
               (let ((tool-kw (string->keyword tool)))
-                (format #t "~A: ~A~%" (red "tool in deps") t)
+                (format #t "~A: ~A~%" (red "literal tool in deps") t)
+                (format #t "~A: ~A~%" (red "tool") tool)
                 ;; move it from (:deps) to (deps ::tools)
                 (set-cdr! deps
                           (append
                            (list (list ::tools
-                                       (list tool-kw
+                                       (list (car t) ;; tool-kw
                                              (cons :pkg pkg-path)
                                              (cons :tgt tool))))
                            (alist-delete (list tool-kw) (cdr deps))))

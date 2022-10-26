@@ -349,6 +349,25 @@
           ;; else (inline_tests) only, no (preprocess)
           #f))
 
+;; non-ppx prepocessing
+(define (lib-preproc->mibl stanza-alist)
+  (format #t "~A: ~A~%" (ublue "lib-preproc->mibl") stanza-alist)
+  (error 'X "not yet: lib-preproc-mibl")
+  (if-let ((pp-assoc (assoc-in '(preprocess action) stanza-alist)))
+          (begin
+            (format #t "~A: ~A~%" (blue "pp action") pp-assoc)
+            (if-let ((ppx (preprocess-fld->mibl pp-assoc stanza-alist)))
+                    (begin
+                      (format #t "~A: ~A~%" (bgyellow "ppx") ppx)
+                      `(:ppx ,@(cdr ppx)))
+                    ;; else no ppx in (preprocess)
+                    (begin
+                      #f)))
+          (if (assoc-in '(preprocess future_syntax) stanza-alist)
+              `(:future_syntax)
+              ;; else no_preprocessing?
+              #f)))
+
   ;; (if-let ((pp (assoc-val 'preprocess stanza-alist)))
   ;;         (begin
   ;;           (format #t "~A: ~A~%" (blue "pp") pp)

@@ -31,77 +31,83 @@
 
 (define (-map-lib-flds->mibl ws pkg stanza-alist)
   (format #t "~A: ~A~%" (blue "-map-lib-flds->mibl") stanza-alist)
-  (map
-   (lambda (fld-assoc)
-     (format #t "lib fld-assoc: ~A\n" fld-assoc)
-     (case (car fld-assoc)
+  (let ((result (map
+                 (lambda (fld-assoc)
+                   (format #t "lib fld-assoc: ~A\n" fld-assoc)
+                   (case (car fld-assoc)
 
-       ((libraries) (values)) ;; handled separately
-       ((modules) (values)) ;; handled separately
-       ((inline_tests) (values)) ;; handled separately
-        ;; ((ilts (assoc-val 'inline_tests stanza-alist)))
-        ;; (cons :inline-tests (inline-tests->mibl ws pkg
-        ;;                                         (cdr fld-assoc)
-        ;;                                         stanza-alist)))
+                     ((libraries) (values)) ;; handled separately
+                     ((modules) (values)) ;; handled separately
+                     ((inline_tests) (values)) ;; handled separately
+                     ;; ((ilts (assoc-val 'inline_tests stanza-alist)))
+                     ;; (cons :inline-tests (inline-tests->mibl ws pkg
+                     ;;                                         (cdr fld-assoc)
+                     ;;                                         stanza-alist)))
 
-       ((preprocess) ;; NB: (preprocess pps) handled separately
-        (if (equal? 'no_preprocessing (cadr fld-assoc))
-            (error 'PP "Unhandled pp: no_preprocess"))
-        (if (assoc 'action (cdr fld-assoc))
-            (error 'PP (format #f "Unhandled pp action: ~A" fld-assoc)))
-        ;; TODO: handle (preprocess (action)), (preprocess no_preprocessing),
-        ;; and (preprocess future_syntax)
-        (values))
+                     ((preprocess) ;; NB: (preprocess pps) handled separately
+                      ;; (if (equal? 'no_preprocessing (cadr fld-assoc))
+                      ;;     (error 'PP "Unhandled pp: no_preprocess"))
+                      ;; (if (equal? 'no_preprocessing (cadr fld-assoc))
+                      ;;     (error 'PP "Unhandled pp: no_preprocess"))
+                      ;; (if (assoc 'action (cdr fld-assoc))
+                      ;;     (error 'PP (format #f "Unhandled pp action: ~A" fld-assoc)))
+                      ;; TODO: handle (preprocess (action)), (preprocess no_preprocessing),
+                      ;; and (preprocess future_syntax)
+                      (values))
 
-       ((name) (cons :privname (cadr fld-assoc)))
-       ((public_name) (cons :pubname (cadr fld-assoc)))
+                     ((name) (cons :privname (cadr fld-assoc)))
+                     ((public_name) (cons :pubname (cadr fld-assoc)))
 
-       ((flags) (normalize-stanza-fld-flags fld-assoc :compile))
-       ((library_flags) (normalize-stanza-fld-flags fld-assoc :archive))
-       ((ocamlc_flags) (normalize-stanza-fld-flags fld-assoc :ocamlc))
-       ((ocamlopt_flags) (normalize-stanza-fld-flags fld-assoc :ocamlopt))
+                     ((flags) (normalize-stanza-fld-flags fld-assoc :compile))
+                     ((library_flags) (normalize-stanza-fld-flags fld-assoc :archive))
+                     ((ocamlc_flags) (normalize-stanza-fld-flags fld-assoc :ocamlc))
+                     ((ocamlopt_flags) (normalize-stanza-fld-flags fld-assoc :ocamlopt))
 
-       ((modules_without_implementation)
-        (cons :sigs (cdr fld-assoc)))
-       ((empty_module_interface_if_absent) (fld-error 'library fld-assoc))
-       ((private_modules) (fld-error 'library fld-assoc))
-       ((root_module) (fld-error 'library fld-assoc))
-       ((allow_overlapping_dependencies) (fld-error 'library fld-assoc))
+                     ((modules_without_implementation)
+                      (cons :sigs (cdr fld-assoc)))
+                     ((empty_module_interface_if_absent) (fld-error 'library fld-assoc))
+                     ((private_modules) (fld-error 'library fld-assoc))
+                     ((root_module) (fld-error 'library fld-assoc))
+                     ((allow_overlapping_dependencies) (fld-error 'library fld-assoc))
 
-       ((optional) (cons :optional #t))
-       ((preprocessor_deps) (fld-error 'library fld-assoc))
+                     ((optional) (cons :optional #t))
+                     ((preprocessor_deps) (fld-error 'library fld-assoc))
 
-       ((synopsis) (cons :docstring (cadr fld-assoc)))
+                     ((synopsis) (cons :docstring (cadr fld-assoc)))
 
-       ((virtual_deps) (fld-error 'library fld-assoc))
+                     ((virtual_deps) (fld-error 'library fld-assoc))
 
-       ((wrapped) (values))
+                     ((wrapped) (values))
 
-       ((js_of_ocaml) (fld-error 'library fld-assoc))
+                     ((js_of_ocaml) (fld-error 'library fld-assoc))
 
-       ;; cc
-       ((c_flags) (fld-error stanza-kind fld-assoc))
-       ((cxx_flags) (fld-error stanza-kind fld-assoc))
-       ((c_library_flags) (fld-error 'library fld-assoc))
-       ((c_types) (fld-error 'library fld-assoc))
-       ((install_c_headers) (fld-error 'library fld-assoc))
-       ((foreign_archives) (foreign-archives->mibl fld-assoc))
-       ((foreign_stubs) (foreign-stubs->mibl
-                         (car (assoc-val 'name stanza-alist))
-                         fld-assoc))
-       ;; ppx
-       ((kind) ;; ignore, not meaningful for obazl?
-        (values))
-       ((ppx_runtime_libraries) `(:ppx-codeps ,(cdr fld-assoc)))
+                     ;; cc
+                     ((c_flags) (fld-error stanza-kind fld-assoc))
+                     ((cxx_flags) (fld-error stanza-kind fld-assoc))
+                     ((c_library_flags) (fld-error 'library fld-assoc))
+                     ((c_types) (fld-error 'library fld-assoc))
+                     ((install_c_headers) (fld-error 'library fld-assoc))
+                     ((foreign_archives) (foreign-archives->mibl fld-assoc))
+                     ((foreign_stubs) (foreign-stubs->mibl
+                                       (if-let ((n (assoc-val 'name stanza-alist)))
+                                               (car n)
+                                               (car (assoc-val 'public_name stanza-alist)))
+                                       fld-assoc))
+                     ;; ppx
+                     ((kind) ;; ignore, not meaningful for obazl?
+                      (values))
+                     ((ppx_runtime_libraries) `(:ppx-codeps ,(cdr fld-assoc)))
 
-       ;; other
-       ((enabled_if) (fld-error 'library fld-assoc))
+                     ;; other
+                     ((enabled_if) (fld-error 'library fld-assoc))
 
-       (else (error 'FIXME
-                    (format #f "unhandled lib fld: ~A" fld-assoc)))
-       ) ;; end case
-     ) ;; end lamda
-   stanza-alist))
+                     (else (error 'FIXME
+                                  (format #f "unhandled lib fld: ~A" fld-assoc)))
+                     ) ;; end case
+                   ) ;; end lamda
+                 stanza-alist)))
+    ;; (format #t "~A: ~A~%" (red "REsult") result)
+    result))
 
 (define (-lib-flds->mibl ws pkg stanza-alist wrapped?)
   (format #t "~A: ~A\n" (blue "-lib-flds->mibl") stanza-alist)
@@ -125,9 +131,26 @@
          (modules (get-manifest pkg :lib wrapped? stanza-alist)) ;;  deps
          (_ (format #t "~A: ~A\n" (red "lib get-modules") modules))
 
+         ;; FIXME: separate handling of (inline_tests) toplevel fld and ppx
          (ppx (if-let ((ilts (assoc-val 'inline_tests stanza-alist)))
-                      (inline-tests->mibl ws pkg ilts stanza-alist)
-                      (lib-ppx->mibl stanza-alist)))
+                      (inline-tests->mibl ws pkg ilts stanza-alist)))
+
+         (ppx (if ppx ppx
+                  (let ((preproc (assoc-val 'preprocess stanza-alist)))
+                    (format #t "~A: ~A~%" (red "preproc") preproc)
+                    (if preproc
+                        (if (alist? preproc)
+                            (if (assoc-in '(preprocess pps) stanza-alist)
+                                (lib-ppx->mibl stanza-alist)
+                                (if (assoc-in '(preprocess staged-pps) stanza-alist)
+                                    (lib-ppx->mibl stanza-alist)
+                                    (lib-preproc->mibl stanza-alist)))
+                            (if (member 'future_syntax preproc)
+                                `(:future-syntax #t)
+                                (if (member 'no_preprocessing preproc)
+                                    #f
+                                    (error 'FIXME "bad (preprocessing) fld?"))))
+                        #f))))
 
          ;; (ppx (lib-ppx->mibl stanza-alist))
          ;;(preprocess-fld->mibl fld-assoc stanza-alist))
@@ -137,15 +160,18 @@
          (_ (format #t "lib-flds (mibl): ~A~%" lib-flds))
 
          (lib-flds (if wrapped?
-                       (append (list (cons :ns (assoc-val :privname lib-flds)))
-                                           ;; (if-let ((pn
-                                           ;;           (assoc-val :pubname lib-flds)))
-                                           ;;         pn
-                                           ;;         (assoc-val :privname lib-flds))
-                                           ;; ))
+                       (append (list (cons :ns ;;(assoc-val :privname lib-flds)))
+                                           (if-let ((pn
+                                                     (assoc-val :privname lib-flds)))
+                                                   pn
+                                                   (assoc-val :pubname lib-flds))
+                                           ))
                                lib-flds)
                        lib-flds))
+         (_ (format #t "lib-flds (2): ~A~%" lib-flds))
+         (_ (format #t "lib-flds ppx: ~A~%" ppx))
          (lib-flds (if ppx (append lib-flds (list ppx)) lib-flds))
+         (_ (format #t "lib-flds (3): ~A~%" lib-flds))
          ) ;; end let bindings
 
     ;; now handle modules (modules fld) and submodules (deps fld)
@@ -175,6 +201,7 @@
            )
       ;; (format #t "SUBMODS:: ~A\n" submods)
       ;; (format #t "SUBSIGS:: ~A\n" subsigs)
+
       (append lib-flds
               (remove '() (list depslist
                                 (cons
@@ -297,32 +324,35 @@
       ;; (ocaml_library) and remove (:ns . <nsname>) assoc. OOPS! This
       ;; does not work since at this stage we may miss generated
       ;; files. So this case must be handled during emit stage.
-      (let ((res
-             (if-let ((ns (assoc-val :ns mibl-stanza)))
-                     (begin
-                       (format #t "~A: ~A~%" (uwhite "ns") ns)
-                       (let ((submods (assoc-in '(:manifest :modules) mibl-stanza)))
-                         (if (= 1 (length (cdr submods)))
-                             (let ((submod (cadr submods))
-                                   (ns-mod (normalize-module-name ns)))
-                               (format #t "~A: ~A~%" (bgred "1 submod") submod)
-                               (format #t "~A: ~A~%" (uwhite "ns mod") ns-mod)
-                               (if (equal? ns-mod submod)
-                                   (begin
-                                     (format #t "~A: ~A~%" (bgred "converting to lib") mibl-stanza)
-                                     (list (cons :library
-                                                 (dissoc '(:ns) mibl-stanza))))
-                                   ;; else 1 submodule w/diff name from ns name
-                                   (list (cons kind mibl-stanza))))
-                             ;; else multiple submodules
-                             (list (cons kind mibl-stanza)))
-                         ))
-                     ;; else no nos
-                     (list (cons kind mibl-stanza)))))
-        (format #t "~A: ~A~%" (uwhite "lib result") res)
-        ;; (error 'STOP "STOP libs")
-        res)
-      ;; (list (cons kind mibl-stanza))
+
+      ;; NOPE - client code may assume this archive is namespaced, so
+      ;; we cannot simplify.
+      ;; (let ((res
+      ;;        (if-let ((ns (assoc-val :ns mibl-stanza)))
+      ;;                (begin
+      ;;                  (format #t "~A: ~A~%" (uwhite "ns") ns)
+      ;;                  (let ((submods (assoc-in '(:manifest :modules) mibl-stanza)))
+      ;;                    (if (= 1 (length (cdr submods)))
+      ;;                        (let ((submod (cadr submods))
+      ;;                              (ns-mod (normalize-module-name ns)))
+      ;;                          (format #t "~A: ~A~%" (bgred "1 submod") submod)
+      ;;                          (format #t "~A: ~A~%" (uwhite "ns mod") ns-mod)
+      ;;                          (if (equal? ns-mod submod)
+      ;;                              (begin
+      ;;                                (format #t "~A: ~A~%" (bgred "converting to lib") mibl-stanza)
+      ;;                                (list (cons :library
+      ;;                                            (dissoc '(:ns) mibl-stanza))))
+      ;;                              ;; else 1 submodule w/diff name from ns name
+      ;;                              (list (cons kind mibl-stanza))))
+      ;;                        ;; else multiple submodules
+      ;;                        (list (cons kind mibl-stanza)))
+      ;;                    ))
+      ;;                ;; else no nos
+      ;;                (list (cons kind mibl-stanza)))))
+      ;;   (format #t "~A: ~A~%" (uwhite "lib result") res)
+      ;;   ;; (error 'STOP "STOP libs")
+      ;;   res)
+      (list (cons kind mibl-stanza))
       )))
 
 ;; (display "loaded dune/dune_stanza_library.scm") (newline)

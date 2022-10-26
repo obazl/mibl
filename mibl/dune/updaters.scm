@@ -165,8 +165,18 @@
 
 ;; Stage 1 processing of aggregates resolves module deps with what's
 ;; avaiable in pkg modules and structs. but some dynamic files could
-;; be adeed by a later stanza. So we need to repeat the process after
+;; be added by a later stanza. So we need to repeat the process after
 ;; all dynamic files have been added to the pkg file fields.
+
+;; Only add dynamics.
+
+;; BUT: do this only for libs with default :standard modules (even
+;; with exclusions), not for those that explicitly list their
+;; manifests, e.g. (modules yojson).
+
+;; (even then this may not always work, e.g. given (modules foo bar)
+;; where bar is generated.
+
 (define (normalize-manifests! ws)
   (format #t "~A: ~A~%" (bgblue "normalize-manifests") ws)
   (let* ((@ws (assoc-val ws -mibl-ws-table))
@@ -202,7 +212,7 @@
                                             (old-manifest (assoc ':manifest stanza-alist))
                                             (mmods (assoc-in '(:manifest :raw) stanza-alist))
                                             (manifest
-                                             (get-manifest pkg :lib #t stanza-alist) ;; (cadr mmods))
+                                             (get-manifest pkg :lib #t (cons (cadr mmods) stanza-alist)) ;; (cadr mmods))
                                              ;;(x-get-manifest pkg #t stanza-alist (cadr mmods))
                                              ))
                                        (format #t "~A: ~A~%" (ured "structures") (assoc :structures stanza-alist))
@@ -229,6 +239,60 @@
               pkgs)
     (format #t "~A: ~A~%" (bgblue "//normalize-manifests") ws)
       ))
+
+;; normalize-rule-deps: in some rules the same resource may end up as both tool and dep, e.g. test.exe in yojson/test/pretty:
+;; (rule
+;;  (targets test.output)
+;;  (deps ./sample.json ./test.exe)
+;;  (action
+;;   (with-stdout-to
+;;    %{targets}
+;;    (run ./test.exe))))
+
+;; task: remove tool from deps list
+(define (normalize-rule-deps! ws)
+  (format #t "~A: ~A~%" (bgblue "normalize-rule-deps!") ws)
+  (let* ((@ws (assoc-val ws -mibl-ws-table))
+         (pkgs (car (assoc-val :pkgs @ws))))
+    (for-each (lambda (kv)
+                (let* ((pkg-key (car kv))
+                       (pkg (cdr kv))
+                       (stanzas (assoc-val :dune (cdr kv))))
+                  (format #t "~A: ~A~%" (bgcyan "pkg key") pkg-key)
+
+                  (if stanzas
+                      (for-each (lambda (stanza)
+                                  ;; (format #t "~A: ~A~%" (blue "stanza") stanza)
+                                  (case (car stanza)
+                                    ((:rule)
+                                     (format #t "~A: ~A~%" (ured "rule stanza") stanza)
+                                     (let* ((stanza-alist (cdr stanza))
+                                            (all-deps (assoc-val ':deps stanza-alist))
+                                            (_ (format #t "~A: ~A~%" (ured "all deps") all-deps))
+                                            (tools (assoc-val '::tools all-deps))
+                                            (_ (format #t "~A: ~A~%" (ured "tools") tools))
+                                            (deps (cdr all-deps))
+                                            (_ (format #t "~A: ~A~%" (ured "deps") deps)))
+                                       (if tools
+                                           (for-each (lambda (tool)
+                                                       (format #t "~A: ~A~%" (red "tool key") (car tool))
+                                                       ;;FIXME? we expect the entire list to match, e.g.
+                                                       ;; (:./test.exe (:pkg . "test/pretty") (:tgt . "test.exe"))
+                                                       ;; but what if only the key matches?
+                                                       (if (member tool deps)
+                                                           (let ((filtered-deps (dissoc (list (car tool)) deps)))
+                                                             (format #t "~A: ~A~%" (ured "filtered") filtered-deps)
+                                                             (set-cdr! all-deps filtered-deps))
+                                                           (format #t "~A: ~A~%" (bgred "MISS") tool))
+                                                       )
+                                                     tools))
+                                       (format #t "~A: ~A~%" (bgred "updated stanza") stanza)
+                                       (values)))
+                                    (else)))
+                                stanzas))))
+              pkgs)
+    (format #t "~A: ~A~%" (bgblue "//normalize-manifests") ws)
+    ))
 
   ;; (let* ((@ws (assoc-val ws -mibl-ws-table))
   ;;        (ws-path (car (assoc-val :path @ws)))
@@ -402,8 +466,8 @@
   (format #t "~A: ~A~%" (bgblue "pkg w/updated structs") pkg)
   pkg)
 
-(define (-update-pkg-files-with-sig pkg tgt)
-  (format #t "~A: ~A~%" (yellow "-update-pkg-files-with-sig") tgt)
+(define (-update-pkg-files-with-sig! pkg tgt)
+  (format #t "~A: ~A~%" (yellow "-update-pkg-files-with-sig!") tgt)
   ;; if we already have corresponding struct, move to :modules
   ;; else update :signatures
   (let* ((m-assoc (filename->module-assoc tgt))
@@ -559,7 +623,7 @@
 
         (if (not (null? sig-tgts))
             (for-each (lambda (tgt)
-                        (update-pkg-files-with-sig! pkg tgt))
+                        (-update-pkg-files-with-sig! pkg tgt))
                       sig-tgts))
 
         (if (not (null? struct-tgts))
@@ -619,7 +683,7 @@
 
       ;;              ((:sig)
       ;;               ;;(format #t ":sig tgt: ~A\n" tgt)
-      ;;               (-update-pkg-files-with-sig pkg tgt))
+      ;;               (-update-pkg-files-with-sig! pkg tgt))
 
       ;;              (else
       ;;               ;; (format #t ":other: ~A\n" tgt)
