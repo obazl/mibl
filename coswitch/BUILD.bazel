@@ -7,6 +7,7 @@ exports_files(["coswitch.c"]) # for makeheaders
 ################################################################
 cc_binary(
     name  = "coswitch",
+    visibility = ["//visibility:public"],
     srcs  = [
         # "coswitch_cli.c",
         # "coswitch_cli.h",

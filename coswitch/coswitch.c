@@ -1,3 +1,5 @@
+//FIXME: support -j (--jsoo-enable) flag
+
 #include <errno.h>
 #include <fcntl.h>
 #include <libgen.h>
@@ -44,7 +46,9 @@ int main(int argc, char *argv[])
 {
     int opt;
 
-    char *opts = "p:hdmtv";
+    extern bool enable_jsoo;
+
+    char *opts = "jp:hdmtv";
 
     char *opam_switch = NULL;
 
@@ -64,6 +68,9 @@ int main(int argc, char *argv[])
         case 'h':
             log_info("Help: ");
             exit(EXIT_SUCCESS);
+        case 'j':
+            enable_jsoo = true;
+            break;
         case 'm':
 #if defined(DEBUG_TRACE)
             debug_findlib = true;
