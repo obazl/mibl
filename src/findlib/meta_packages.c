@@ -222,7 +222,9 @@ EXPORT int pkg_deps(struct obzl_meta_package *_pkg,
     struct obzl_meta_property *deps_prop = NULL;
     deps_prop = obzl_meta_entries_property(entries, property);
     if ( deps_prop == NULL ) {
+#if defined(DEBUG_TRACE)
         log_warn("Prop '%s' not found for pkg: %s.", property, _pkg->name);
+#endif
         return 0;
     }
 

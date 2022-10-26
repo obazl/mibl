@@ -304,8 +304,10 @@ void handle_findlib_pkg(// char *opam_switch_lib,
                         UT_array *opam_pending_deps,
                         UT_array *opam_completed_deps)
 {
+#if defined(DEBUG_TRACE)
     log_trace(RED "handle_findlib_pkg:" CRESET " %s", pkg_name);
     log_trace("global opam_lib: %s", utstring_body(opam_switch_lib));
+#endif
 
     utstring_new(build_bazel_file);
     utstring_new(bazel_pkg_root);
@@ -350,8 +352,11 @@ void handle_findlib_pkg(// char *opam_switch_lib,
     struct obzl_meta_package *pkg = obzl_meta_parse_file(utstring_body(meta_path));
     if (pkg == NULL) {
         if (errno == -1) {
+#if defined(DEBUG_TRACE)
             log_warn("Empty META file: %s", utstring_body(meta_path));
+#endif
             /* check dune-package for installed executables */
+            chdir(old_cwd);
             return;
         } else
             if (errno == -2)

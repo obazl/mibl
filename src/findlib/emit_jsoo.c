@@ -62,9 +62,13 @@ void emit_bazel_jsoo(FILE* ostream,
     obzl_meta_settings *settings = obzl_meta_property_settings(deps_prop);
 
     int settings_ct = obzl_meta_settings_count(settings);
+#if defined(DEBUG_TRACE)
     log_info("settings count: %d", settings_ct);
+#endif
     if (settings_ct == 0) {
+#if defined(DEBUG_TRACE)
         log_info("No settings for %s", obzl_meta_property_name(deps_prop));
+#endif
         return;
     }
     UT_string *cmtag;  /* cma or cmxa */
@@ -77,7 +81,9 @@ void emit_bazel_jsoo(FILE* ostream,
 
     for (int i = 0; i < settings_ct; i++) {
         setting = obzl_meta_settings_nth(settings, i);
+#if defined(DEBUG_TRACE)
         log_debug("setting[%d]", i+1);
+#endif
         /* dump_setting(0, setting); */
 
         obzl_meta_flags *flags = obzl_meta_setting_flags(setting);
@@ -125,8 +131,10 @@ void emit_bazel_jsoo(FILE* ostream,
 
         for (int j = 0; j < obzl_meta_values_count(vals); j++) {
             archive_name = obzl_meta_values_nth(vals, j);
+#if defined(DEBUG_TRACE)
             log_info("prop[%d] '%s' == '%s'",
                      j, property, (char*)*archive_name);
+#endif
             utstring_clear(label);
             if (_pkg_prefix == NULL) {
                 utstring_printf(label,

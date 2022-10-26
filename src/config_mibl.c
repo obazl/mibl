@@ -68,7 +68,7 @@ LOCAL int _config_handler(void* config, const char* section, const char* name, c
     /* FIXME: normalize filepaths. remove leading ./ and embedded ../ */
     /* disallow leading / and ../ */
     if (MATCH("srcs", "exclude")) {
-        /* log_debug("section: srcs; entry: dirs"); */
+        log_debug("section: srcs; entry: exclude");
         /* log_debug("\t%s", value); */
         char *token, *sep = " ,\t";
         token = strtok((char*)value, sep);
@@ -210,6 +210,9 @@ EXPORT void mibl_configure(void)
             /* } else { */
             /*     log_debug("Config loaded from %s", utstring_body(obazl_ini_path)); */
         }
+        if (verbose)
+            log_info("loaded miblrc config file: %s",
+                     utstring_body(obazl_ini_path));
     }
 
     utarray_sort(mibl_config.include_dirs, strsort);

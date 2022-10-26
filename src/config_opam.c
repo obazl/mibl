@@ -34,6 +34,8 @@ int rc;
 
 /* char *bazel_script_dir = NULL; */
 
+bool enable_jsoo = true;
+
 UT_string *opam_switch_id       = NULL;
 
 UT_string *opam_switch_prefix   = NULL;

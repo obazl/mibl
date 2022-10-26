@@ -815,10 +815,12 @@ void emit_bazel_stublibs_attr(FILE* ostream,
                               obzl_meta_package *_pkg)
 {
     /* here we read the symlinks in the coswitch not the opam switch */
-    log_debug("stublibs pkg root: %s\n", _pkg_root);
-    log_debug("stublibs pkg prefix: %s\n", _pkg_prefix);
-    log_debug("stublibs pkg name: %s\n", _pkg_name);
-    log_debug("stublibs pkg parent: %s\n", utstring_body(_pkg_parent));
+#if defined(DEBUG_TRACE)
+    log_debug("stublibs pkg root: %s", _pkg_root);
+    log_debug("stublibs pkg prefix: %s", _pkg_prefix);
+    log_debug("stublibs pkg name: %s", _pkg_name);
+    log_debug("stublibs pkg parent: %s", utstring_body(_pkg_parent));
+#endif
 
     static UT_string *dname;
     utstring_new(dname);
@@ -888,10 +890,12 @@ void emit_bazel_jsoo_runtime_attr(FILE* ostream,
                                   obzl_meta_package *_pkg)
 {
     /* here we read the symlinks in the coswitch not the opam switch */
-    log_debug("stublibs pkg root: %s\n", _pkg_root);
-    log_debug("stublibs pkg prefix: %s\n", _pkg_prefix);
-    log_debug("stublibs pkg name: %s\n", _pkg_name);
-    log_debug("stublibs pkg parent: %s\n", utstring_body(_pkg_parent));
+#if defined(DEBUG_TRACE)
+    log_debug("stublibs pkg root: %s", _pkg_root);
+    log_debug("stublibs pkg prefix: %s", _pkg_prefix);
+    log_debug("stublibs pkg name: %s", _pkg_name);
+    log_debug("stublibs pkg parent: %s", utstring_body(_pkg_parent));
+#endif
 
     static UT_string *dname;
     utstring_new(dname);
@@ -980,9 +984,13 @@ void emit_bazel_archive_attr(FILE* ostream,
     obzl_meta_settings *settings = obzl_meta_property_settings(deps_prop);
 
     int settings_ct = obzl_meta_settings_count(settings);
+#if defined(DEBUG_TRACE)
     log_info("settings count: %d", settings_ct);
+#endif
     if (settings_ct == 0) {
+#if defined(DEBUG_TRACE)
         log_info("No settings for %s", obzl_meta_property_name(deps_prop));
+#endif
         return;
     }
     UT_string *cmtag;  /* cma or cmxa */
@@ -995,7 +1003,9 @@ void emit_bazel_archive_attr(FILE* ostream,
 
     for (int i = 0; i < settings_ct; i++) {
         setting = obzl_meta_settings_nth(settings, i);
+#if defined(DEBUG_TRACE)
         log_debug("setting[%d]", i+1);
+#endif
         /* dump_setting(0, setting); */
 
         obzl_meta_flags *flags = obzl_meta_setting_flags(setting);
@@ -1039,8 +1049,10 @@ void emit_bazel_archive_attr(FILE* ostream,
 
         for (int j = 0; j < obzl_meta_values_count(vals); j++) {
             archive_name = obzl_meta_values_nth(vals, j);
+#if defined(DEBUG_TRACE)
             log_info("prop[%d] '%s' == '%s'",
                      j, property, (char*)*archive_name);
+#endif
             utstring_clear(label);
             if (_pkg_prefix == NULL) {
                 utstring_printf(label,
@@ -1155,9 +1167,13 @@ void emit_bazel_cmxs_attr(FILE* ostream,
     obzl_meta_settings *settings = obzl_meta_property_settings(deps_prop);
 
     int settings_ct = obzl_meta_settings_count(settings);
+#if defined(DEBUG_TRACE)
     log_info("settings count: %d", settings_ct);
+#endif
     if (settings_ct == 0) {
+#if defined(DEBUG_TRACE)
         log_info("No settings for %s", obzl_meta_property_name(deps_prop));
+#endif
         return;
     }
 
@@ -1244,8 +1260,10 @@ void emit_bazel_cmxs_attr(FILE* ostream,
 
         for (int j = 0; j < obzl_meta_values_count(vals); j++) {
             archive_name = obzl_meta_values_nth(vals, j);
+#if defined(DEBUG_TRACE)
             log_info("\tprop[%d] '%s' == '%s'",
                      j, property, (char*)*archive_name);
+#endif
 
             /* char *s = (char*)*v; */
             /* while (*s) { */
@@ -1635,11 +1653,15 @@ void emit_bazel_plugin_rule(FILE* ostream, int level,
 bool emit_special_case_rule(FILE* ostream,
                             obzl_meta_package *_pkg)
 {
+#if defined(DEBUG_TRACE)
     log_trace("emit_special_case_rule pkg: %s", _pkg->name);
+#endif
 
     if ((strncmp(_pkg->name, "bigarray", 8) == 0)
         && strlen(_pkg->name) == 8) {
+#if defined(DEBUG_TRACE)
         log_trace("emit_special_case_rule: bigarrray");
+#endif
 
         fprintf(ostream, "alias(\n"
                 "    name = \"bigarray\",\n"
@@ -1651,7 +1673,9 @@ bool emit_special_case_rule(FILE* ostream,
 
     if ((strncmp(_pkg->name, "dynlink", 7) == 0)
         && strlen(_pkg->name) == 7) {
+#if defined(DEBUG_TRACE)
         log_trace("emit_special_case_rule: dynlink");
+#endif
 
         fprintf(ostream, "alias(\n"
                 "    name = \"dynlink\",\n"
@@ -1670,7 +1694,9 @@ bool emit_special_case_rule(FILE* ostream,
 
     if ((strncmp(_pkg->name, "compiler-libs", 13) == 0)
         && strlen(_pkg->name) == 13) {
+#if defined(DEBUG_TRACE)
         log_trace("emit_special_case_rule: compiler-libs");
+#endif
 
         fprintf(ostream, "alias(\n"
                 "    name = \"compiler-libs\",\n"
@@ -1706,7 +1732,9 @@ bool emit_special_case_rule(FILE* ostream,
 
     if ((strncmp(_pkg->name, "num", 3) == 0)
         && strlen(_pkg->name) == 3) {
+#if defined(DEBUG_TRACE)
         log_trace("emit_special_case_rule: num");
+#endif
 
         fprintf(ostream, "alias(\n"
                 "    name = \"num\",\n"
@@ -1718,7 +1746,9 @@ bool emit_special_case_rule(FILE* ostream,
 
     if ((strncmp(_pkg->name, "ocamldoc", 8) == 0)
         && strlen(_pkg->name) == 8) {
+#if defined(DEBUG_TRACE)
         log_trace("emit_special_case_rule: ocamldoc");
+#endif
 
         fprintf(ostream, "alias(\n"
                 "    name = \"ocamldoc\",\n"
@@ -1730,7 +1760,9 @@ bool emit_special_case_rule(FILE* ostream,
 
     if ((strncmp(_pkg->name, "str", 3) == 0)
         && strlen(_pkg->name) == 3) {
+#if defined(DEBUG_TRACE)
         log_trace("emit_special_case_rule: str");
+#endif
         /* fprintf(ostream, "xxxxxxxxxxxxxxxx"); */
         fprintf(ostream, "alias(\n"
                 "    name = \"str\",\n"
@@ -1742,7 +1774,9 @@ bool emit_special_case_rule(FILE* ostream,
 
     if ((strncmp(_pkg->name, "threads", 7) == 0)
         && strlen(_pkg->name) == 7) {
+#if defined(DEBUG_TRACE)
         log_trace("emit_special_case_rule: threads");
+#endif
 
         fprintf(ostream, "alias(\n"
                 "    name = \"threads\",\n"
@@ -1754,7 +1788,9 @@ bool emit_special_case_rule(FILE* ostream,
 
     if ((strncmp(_pkg->name, "unix", 4) == 0)
         && strlen(_pkg->name) == 4) {
+#if defined(DEBUG_TRACE)
         log_trace("emit_special_case_rule: unix");
+#endif
 
         fprintf(ostream, "alias(\n"
                 "    name = \"unix\",\n"
@@ -2097,8 +2133,10 @@ void emit_bazel_ppx_codeps(FILE* ostream, int level,
     struct obzl_meta_property *deps_prop = obzl_meta_entries_property(_entries, "ppx_runtime_deps");
     if ( deps_prop == NULL ) {
         /* char *pkg_name = obzl_meta_package_name(_pkg); */
+#if defined(DEBUG_TRACE)
         log_warn("Prop 'ppx_runtime_deps' not found for pkg: %s.",
                  _pkg_name);
+#endif
         return;
     }
 
@@ -2856,6 +2894,7 @@ EXPORT void emit_build_bazel(// char *ws_name,
 /* FILE *bootstrap_FILE) */
                              /* char *_subpkg_dir) */
 {
+#ifdef DEBUG_TRACE
     log_info("");
     log_info(BLU "EMIT_BUILD_BAZEL" CRESET " pkg: %s", obzl_meta_package_name(_pkg));
     /* log_info("\tws_name_name: %s", ws_name); */
@@ -2865,16 +2904,17 @@ EXPORT void emit_build_bazel(// char *ws_name,
     log_info("\tpkg_parent: '%s'", utstring_body(pkg_parent));
     log_info("\t_pkg_suffix: '%s'", _pkg_suffix);
     log_info("\t_filedeps_path: %s", _filedeps_path);
+#endif
     /* dump_package(0, _pkg); */
 
     int rc = pkg_deps(_pkg, opam_pending_deps, opam_completed_deps);
     char **p = NULL;
-    while ( (p=(char**)utarray_next(opam_completed_deps, p))) {
-        log_debug(RED "  completed dep:" CRESET " %s",*p);
-    }
-    while ( (p=(char**)utarray_next(opam_pending_deps, p))) {
-        log_debug(CYN "  pending dep:" CRESET " %s",*p);
-    }
+    /* while ( (p=(char**)utarray_next(opam_completed_deps, p))) { */
+    /*     log_debug(RED "  completed dep:" CRESET " %s",*p); */
+    /* } */
+    /* while ( (p=(char**)utarray_next(opam_pending_deps, p))) { */
+    /*     log_debug(CYN "  pending dep:" CRESET " %s",*p); */
+    /* } */
 
     /* if (strncmp(_pkg->name, "ppx_fixed_literal", 17) == 0) { */
     /*     log_debug("PPX_FIXED_LITERAL dump:"); */
@@ -3097,7 +3137,9 @@ EXPORT void emit_build_bazel(// char *ws_name,
         || ((strncmp(_pkg_suffix, "ocaml", 5) == 0) ))
             /* && (strlen(_pkg_suffix) == 5))) */
         if (emit_special_case_rule(ostream, _pkg)) {
+#if defined(DEBUG_TRACE)
             log_trace("emit_special_case_rule:TRUE %s", _pkg->name);
+#endif
             return;
         }
 
@@ -3276,7 +3318,9 @@ EXPORT void emit_build_bazel(// char *ws_name,
                     break;
                 }
 
+#if defined(DEBUG_TRACE)
                 log_warn("processing other property: %s", e->property->name);
+#endif
                 /* dump_entry(0, e); */
                 // push all flags to global pos_flags
             }
