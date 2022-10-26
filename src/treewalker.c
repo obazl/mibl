@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
+#include <dirent.h>
 #include <fnmatch.h>
 #include <fcntl.h>              /* open() */
 #if INTERFACE
@@ -455,10 +456,46 @@ EXPORT void convert_findlib_pkgs(UT_array *opam_pending_deps)
         log_debug("%-16s%s", "launch_dir:", launch_dir);
         log_debug("%-16s%s", "base ws:", bws_root);
         log_debug("%-16s%s", "effective ws:", ews_root);
+        log_debug("pendings ct: %d", utarray_len(opam_pending_deps));
+
 /* #endif */
     if (verbose) {
         log_debug("current dir: %s", getcwd(NULL, 0));
         /* printf(YEL "%-16s%s\n" CRESET, "pkg_name:", pkg_name); */
+    }
+
+    char **p = NULL;
+
+    if (utarray_len(opam_pending_deps) < 1) {
+        /* default: all pkgs in switch */
+        log_info("reading opam pkgs in %s", utstring_body(opam_switch_lib));
+        errno = 0;
+        DIR *switch_dir = opendir(utstring_body(opam_switch_lib));
+        if (switch_dir == NULL) {
+            log_error("ERROR: bad opendir: %s\n", strerror(errno));
+            fprintf(stderr, "ERROR: bad opendir: %s\n", strerror(errno));
+            return;
+        }
+        struct dirent *direntry;
+        char *s;
+        while ((direntry = readdir(switch_dir)) != NULL) {
+            /* log_debug("readed %s", direntry->d_name); */
+            if ('.' == direntry->d_name[0]) continue;
+            if (direntry->d_type != DT_DIR) continue;
+            s = strdup(direntry->d_name);
+            utarray_push_back(opam_pending_deps, &s);
+        }
+        closedir(switch_dir);
+
+        log_debug("pendings ct: %d", utarray_len(opam_pending_deps));
+
+        /* p = NULL; */
+        /* while ( (p=(char**)utarray_next(opam_pending_deps, p))) { */
+        /*     log_info("read:  %s", *p); */
+        /* } */
+
+        /* log_error("EXITING"); */
+        /* exit(0); */
     }
 
     utstring_new(workspace_file);
@@ -473,13 +510,14 @@ EXPORT void convert_findlib_pkgs(UT_array *opam_pending_deps)
     UT_array *opam_completed_deps;
     utarray_new(opam_completed_deps, &ut_str_icd);
 
-    char **p = NULL;
     char **this;
     char *next;
     while ( utarray_len(opam_pending_deps) > 0 ) {
         this = utarray_eltptr(opam_pending_deps, 0);
         next = strdup(*this);
+#if defined(DEBUG_TRACE)
         log_info("next pkg: %s", next);
+#endif
         utarray_erase(opam_pending_deps, 0, 1);
         /* handle_findlib_pkg will check completed_deps before adding
            new pkg to pending_deps */
@@ -493,18 +531,24 @@ EXPORT void convert_findlib_pkgs(UT_array *opam_pending_deps)
 
         free(next);
     }
+#if defined(DEBUG_TRACE)
     log_debug("done");
-    log_debug("completed:");
+#endif
+
     UT_string *dune_pkg_file;    /* FIXME: free */
     utstring_new(dune_pkg_file); /* global, in emit_pkg_bindir.c */
     while ( (p=(char**)utarray_next(opam_completed_deps, p))) {
+#if defined(DEBUG_TRACE)
         log_info("  %s", *p);
+#endif
         emit_pkg_bindir(*p);
     }
+#if defined(DEBUG_TRACE)
     log_debug("pending:");
     while ( (p=(char**)utarray_next(opam_pending_deps, p))) {
         log_info("  %s", *p);
     }
+#endif
 
     /* **************************************************************** */
     /* finally write WORKSPACE.opam.bzl to import deps repos */
@@ -547,6 +591,14 @@ EXPORT void convert_findlib_pkgs(UT_array *opam_pending_deps)
         fprintf(ostream, "\"%s/%s\",\n", bazel_ws_root, *p);
         fprintf(ostream, "    )\n\n");
     }
+
+    log_debug("pending ct: %d",  utarray_len(opam_pending_deps));
+    log_debug("completed ct: %d",  utarray_len(opam_completed_deps));
+    /* FIXME: free opam_completed_deps, opam_pending_deps */
+    /* while ( (p=(char**)utarray_next(opam_completed_deps, p))) { */
+    /* free(p); */
+    /* } */
+
 
     /* toolchains */
     tc = toolchains;
