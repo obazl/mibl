@@ -212,10 +212,10 @@ EXPORT int handle_findlib_meta(FTSENT *ftsentry) /* OBSOLETE */
     struct obzl_meta_package *pkg = obzl_meta_parse_file(utstring_body(buf));
     if (pkg == NULL) {
         if (errno == -1)
-            log_warn("Empty META file: %s", utstring_body(buf));
+            log_info("Empty META file: %s", utstring_body(buf));
         else
             if (errno == -2)
-                log_warn("META file contains only whitespace: %s", utstring_body(buf));
+                log_info("META file contains only whitespace: %s", utstring_body(buf));
             else
                 log_error("Error parsing %s", utstring_body(buf));
         emitted_bootstrapper = false;
@@ -340,9 +340,11 @@ void handle_findlib_pkg(// char *opam_switch_lib,
         /* log_info("accessible: %s", utstring_body(meta_path)); */
     } else {
         /* fail */
-        perror(utstring_body(meta_path));
-        log_fatal("FAILED access to: %s", utstring_body(meta_path));
-        exit(EXIT_FAILURE);
+        /* perror(utstring_body(meta_path)); */
+        log_info("%s: %s", strerror(errno), utstring_body(meta_path));
+        chdir(old_cwd);
+        return;
+        /* exit(EXIT_FAILURE); */
     }
 
     errno = 0;
@@ -406,6 +408,7 @@ void handle_findlib_pkg(// char *opam_switch_lib,
                      pkg,
                      opam_pending_deps,
                      opam_completed_deps);
+    chdir(old_cwd);
     return;
 }
 
