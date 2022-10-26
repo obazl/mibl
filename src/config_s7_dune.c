@@ -54,6 +54,7 @@ s7_pointer sigs_kw;
 s7_pointer structs_kw;
 s7_pointer mll_kw;
 s7_pointer mly_kw;
+s7_pointer cppo_kw;
 s7_pointer cc_kw;
 s7_pointer files_kw;
 s7_pointer scripts_kw;
@@ -987,6 +988,7 @@ EXPORT s7_scheme *s7_configure(void)
     structs_kw = s7_make_keyword(s7, "structures");
     mll_kw = s7_make_keyword(s7, "ocamllex");
     mly_kw = s7_make_keyword(s7, "ocamlyacc");
+    cppo_kw = s7_make_keyword(s7, "cppo");
     files_kw   = s7_make_keyword(s7, "files");
     static_kw  = s7_make_keyword(s7, "static");
     dynamic_kw = s7_make_keyword(s7, "dynamic");

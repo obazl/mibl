@@ -162,7 +162,6 @@ LOCAL s7_pointer _read_dunefile(char *path) //, char *fname)
 
             if (strstr(errmsg,
                        ";read-error (\"unexpected close paren:") != NULL) {
-                /* printf("XXXXXXXXXXXXXXXX\n"); */
             /* if (strstr(errmsg, "BADDOT") != NULL) { */
                 log_info(RED "fixing baddot in %s" CRESET,
                          utstring_body(dunefile_name));
@@ -476,6 +475,7 @@ LOCAL bool _exclusions(FTSENT *ftsentry, char *ext)
 #define TAG_ML_DYN  3
 #define TAG_MLL 4
 #define TAG_MLY 5
+#define TAG_CPPO 6
 
 /* char *_get_extension(char *filename) */
 /* { */
@@ -2021,6 +2021,257 @@ LOCAL void _update_mly(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
     free(ml_name);
 }
 
+LOCAL void _update_pkg_cppo_files(s7_pointer pkg_tbl,
+                                 char *pkg_name, char *mname,
+                                 char *fname, int ftype)
+{
+#if defined(DEBUG_TRACE)
+    if (verbose) {
+        log_trace(RED "_update_pkg_cppo_files" CRESET);
+    }
+    if (debug) {
+        log_debug("pkg_name: %s", pkg_name);
+        /* log_debug("pkg_tbl: %s", TO_STR(pkg_tbl)); */
+    }
+#endif
+    s7_pointer pkg_key = make_pkg_key(pkg_name);
+    //s7_make_string(s7, pkg_name);
+#if defined(DEBUG_TRACE)
+    if (debug) log_debug("pkg_key: %s", TO_STR(pkg_key));
+#endif
+
+    s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
+    /* if (debug) log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
+
+    if (pkg_alist == s7_f(s7)) {
+#if defined(DEBUG_TRACE)
+        if (debug)
+            log_debug("no dunefile in this directory");
+#endif
+    } else {
+        s7_pointer mname_sym   = s7_make_symbol(s7, mname);
+
+        s7_pointer assoc_in = _load_assoc_in();
+        s7_pointer keypath = s7_list(s7, 2, cppo_kw, static_kw);
+        s7_pointer ocppo_alist = s7_call(s7, assoc_in,
+                                        s7_list(s7, 2,
+                                                keypath,
+                                                pkg_alist));
+        /* = s7_call(s7, assoc_in, */
+        /*           s7_list(s7, 2, modules_kw, pkg_alist)); */
+#if defined(DEBUG_TRACE)
+        if (debug) log_debug("ocppo_alist %s", TO_STR(ocppo_alist));
+#endif
+
+        s7_pointer cppo_file = s7_make_symbol(s7, fname);
+
+        s7_pointer cppo_assoc = s7_list(s7, 2, mname_sym, cppo_file);
+        /* s7_pointer cppo_assoc = s7_cons(s7, mname_sym, cppo_file); */
+#if defined(DEBUG_TRACE)
+        if (debug) log_debug("cppo_assoc: %s", TO_STR(cppo_assoc));
+#endif
+
+        if (ocppo_alist == s7_f(s7)) {
+#if defined(DEBUG_TRACE)
+            if (debug)
+                log_debug("INITIALIZING :ocppo field");
+#endif
+
+            s7_pointer statics_assoc =
+                s7_list(s7, 2, static_kw, cppo_assoc);
+
+            s7_pointer ocppo_assoc = s7_list(s7, 2,
+                                            cppo_kw, statics_assoc);
+#if defined(DEBUG_TRACE)
+            if (debug) log_debug("ocppo_assoc: %s", TO_STR(ocppo_assoc));
+#endif
+
+            s7_pointer new_pkg_alist = s7_append(s7, pkg_alist,
+                                                 s7_list(s7, 1,
+                                                         ocppo_assoc));
+            /* if (debug) */
+            /*     log_debug("pkg_alist: %s", */
+            /*            TO_STR(new_pkg_alist)); */
+
+            s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg_alist);
+        } else {
+#if defined(DEBUG_TRACE)
+            if (debug) {
+                log_debug("UPDATING :signatures");
+                log_debug("ocppo_alist: %s", TO_STR(ocppo_alist));
+                log_debug("mname_sym: %s", TO_STR(mname_sym));
+            }
+#endif
+
+            s7_pointer keypath = s7_list(s7, 3,
+                                         cppo_kw,
+                                         static_kw,
+                                         mname_sym);
+#if defined(DEBUG_TRACE)
+            if (debug) {
+                /* log_debug("assoc-in: %s", TO_STR(assoc_in)); */
+                log_debug("keypath: %s", TO_STR(keypath));
+                /* log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
+            }
+#endif
+
+            s7_pointer cppo_alist = s7_call(s7, assoc_in,
+                                           s7_list(s7, 2,
+                                                   keypath,
+                                                   pkg_alist));
+
+#if defined(DEBUG_TRACE)
+            if (debug) {
+                log_debug("cppo_alist: %s", TO_STR(cppo_alist));
+            }
+#endif
+            if (cppo_alist == s7_f(s7)) {
+                /* new */
+#if defined(DEBUG_TRACE)
+                if (debug)
+                    log_debug(RED "ADDING" CRESET " sig %s to %s",
+                              TO_STR(mname_sym), TO_STR(ocppo_alist));
+                if (debug) log_debug("ocppo_alist: %s",
+                                     s7_object_to_c_string(s7,
+                                                           ocppo_alist));
+#endif
+
+                s7_pointer ocppo_alist_cdr = s7_cdr(ocppo_alist);
+#if defined(DEBUG_TRACE)
+                if (debug) {
+                    log_debug("ocppo_alist_cdr: %s",
+                       TO_STR(ocppo_alist_cdr));
+                }
+#endif
+
+                /* s7_pointer cppo_assoc = */
+                /*     s7_list(s7, 1, s7_list(s7, 2, mname_sym, cppo_file)); //cppo_assoc)); */
+                /* if (debug) log_debug("new cppo_assoc: %s", */
+                /*                      TO_STR(cppo_assoc)); */
+
+                s7_pointer new_ocppo_alist_cdr =
+                    s7_append(s7, ocppo_alist_cdr,
+                              s7_list(s7, 1, cppo_assoc));
+
+#if defined(DEBUG_TRACE)
+
+                if (debug)
+                    log_debug("new_ocppo_alist_cdr: %s",
+                       TO_STR(new_ocppo_alist_cdr));
+#endif
+
+                s7_pointer new_ocppo_alist
+                    = s7_set_cdr(ocppo_alist, new_ocppo_alist_cdr);
+#if defined(DEBUG_TRACE)
+                if (debug) {
+                    log_debug("new_ocppo_alist: %s",
+                              TO_STR(new_ocppo_alist));
+                }
+#endif
+            } else {
+                /* update */
+#if defined(DEBUG_TRACE)
+                if (debug) log_debug(RED "UPDATING" CRESET " cppo_alist: %s",
+                                     TO_STR(cppo_alist));
+#endif
+
+                s7_pointer ocppo_alist_cdr = s7_cdr(cppo_alist);
+#if defined(DEBUG_TRACE)
+                if (debug)
+                    log_debug("ocppo_alist_cdr: %s", TO_STR(ocppo_alist_cdr));
+                    log_debug("cppo_file: %s", TO_STR(cppo_file));
+#endif
+
+                s7_pointer msrcs = s7_append(s7,
+                                             ocppo_alist_cdr,
+                                             s7_list(s7, 1, cppo_file));
+                log_debug("msrcs: %s", TO_STR(msrcs));
+
+                s7_pointer new_ocppo_alist
+                    = s7_set_cdr(cppo_alist, msrcs);
+#if defined(DEBUG_TRACE)
+                if (debug) {
+                    log_debug("new_ocppo_alist: %s",
+                              TO_STR(new_ocppo_alist));
+                    log_debug("new pkgs: %s", TO_STR(pkg_alist));
+                }
+#endif
+            }
+        }
+    }
+}
+
+LOCAL void _update_cppo(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
+{
+#if defined(DEBUG_TRACE)
+    if (verbose) {
+        log_info(BLU "_update_cppo:" CRESET " %s; ", ftsentry->fts_name);
+    }
+#endif
+
+    char *pkg_name = dirname(ftsentry->fts_path);
+    char *mname = _module_name(ftsentry, ext);
+#if defined(DEBUG_TRACE)
+    if (trace) {
+        log_trace("module name: %s ", mname);
+        log_trace("pkg name: %s; fname: %s", pkg_name, ftsentry->fts_name);
+    }
+#endif
+
+    /* cppo emits .ml (or .mli) - if static cppol.mli found, update :modules
+       else update :structures */
+
+/*     char *ml_name = strdup(ftsentry->fts_name); */
+/*     ml_name[strlen(ftsentry->fts_name) - 1] = '\0'; */
+
+/*     char *mli_name = strdup(ftsentry->fts_name); */
+/*     mli_name[strlen(ftsentry->fts_name) - 1] = 'i'; */
+
+/*     /\* dirname may mutate its arg, use a copy *\/ */
+/*     char *dname = strdup(ftsentry->fts_path); */
+/*     UT_string *mli_test; */
+/*     utstring_new(mli_test); */
+/*     /\* add terminal 'i' with printf *\/ */
+/*     utstring_printf(mli_test, "%s/%s", dirname(dname), mli_name); */
+
+/* #if defined(DEBUG_TRACE) */
+/*     if (trace) { */
+/*         log_debug("Checking for companion .mli: %s", */
+/*                   utstring_body(mli_test)); */
+/*     } */
+/* #endif */
+
+/*     int rc = access(utstring_body(mli_test), F_OK); */
+/*     if (rc) { */
+/*         /\* companion mli file not found *\/ */
+/*         _update_pkg_structs(pkg_tbl, pkg_name, mname, */
+/*                             ml_name, // ftsentry->fts_name, */
+/*                             TAG_ML_DYN); */
+/*     } else { */
+/*         /\* _update_pkg_modules(pkg_tbl, pkg_name, mname, *\/ */
+/*         /\*                     ftsentry->fts_name, TAG_ML); *\/ */
+/*         _update_pkg_modules(pkg_tbl, pkg_name, mname, */
+/*                             ftsentry->fts_name, */
+/*                             TAG_CPPO); */
+/*         _update_pkg_modules(pkg_tbl, pkg_name, mname, */
+/*                             mli_name, // ftsentry->fts_name, */
+/*                             TAG_MLI); */
+/*         _update_pkg_modules(pkg_tbl, pkg_name, mname, */
+/*                             ml_name, // ftsentry->fts_name, */
+/*                             TAG_ML_DYN); */
+/*     } */
+
+    /* update pkg fld :cppo */
+    _update_pkg_cppo_files(pkg_tbl, pkg_name, mname,
+                          ftsentry->fts_name, TAG_CPPO);
+
+    /* free(mli_name); */
+    /* free(ml_name); */
+    /* free(dname); */
+    /* utstring_free(mli_test); */
+    /* exit(0); */
+}
+
 LOCAL void _update_mli(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 {
     /* printf("_update_mli: "); */
@@ -2111,14 +2362,32 @@ LOCAL void _handle_ml_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 
     if ((strncmp(ext, ".ml", 3) == 0)
         && (strlen(ext) == 3)) {
-        /* printf(":%-6s", "ml"); */
-        _update_ml(pkg_tbl, ftsentry, ext);
-        /* _update_pkg_deps(pkg_tbl, ftsentry, ext); */
+
+        int ln = strlen(ftsentry->fts_name);
+        if (ln > 7) {
+            if (strncmp((ftsentry->fts_name) + (ln-7), "cppo", 4) == 0) {
+                _update_cppo(pkg_tbl, ftsentry, ext);
+            } else {
+                _update_ml(pkg_tbl, ftsentry, ext);
+            }
+        } else {
+            _update_ml(pkg_tbl, ftsentry, ext);
+        }
     }
     else if ((strncmp(ext, ".mli", 4) == 0)
         && (strlen(ext) == 4)) {
-        /* printf("%s", "mli"); */
-        _update_mli(pkg_tbl, ftsentry, ext);
+
+        int ln = strlen(ftsentry->fts_name);
+        if (ln > 8) {
+            if (strncmp((ftsentry->fts_name) + (ln-8), "cppo", 4) == 0) {
+                _update_cppo(pkg_tbl, ftsentry, ext);
+            } else {
+                _update_mli(pkg_tbl, ftsentry, ext);
+            }
+        } else {
+            _update_mli(pkg_tbl, ftsentry, ext);
+        }
+        /* _update_mli(pkg_tbl, ftsentry, ext); */
     }
     /*  */
     else if ((strncmp(ext, ".mlt", 4) == 0)
