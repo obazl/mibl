@@ -379,6 +379,8 @@
                       (_ (format #t "~A: ~A~%" (blue "deps") deps))
                       (ppx (if-let ((ppx (assoc-val :ppx stanza-alist)))
                                    ppx #f))
+                      (ppxex (if-let ((ppxes (assoc-val :ppxes stanza-alist)))
+                                     ppxes #f))
                       (_ (format #t "~A: ~A~%" (ublue "ppx") ppx))
                       )
                  (if deps

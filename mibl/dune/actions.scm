@@ -81,17 +81,80 @@
   (error 'NOTYET
          (format #f "not implemented: normalize-action-pipe-stderr-dsl")))
 
-(define (normalize-action-pipe-stdout-dsl item ws pkg targets deps)
-  (format #t "NORMALIZE-ACTION-PIPE-STDOUT-DSL ~A\n" item)
-  (error 'NOTYET
-         (format #f "not implemented: normalize-action-pipe-stdout-dsl"))
-  ;; e.g. from jsoo compiler/tests-io/dune
-  ;; (with-stdout-to
-  ;;  %{target}
-  ;;  (pipe-stdout
-  ;;   (run printf "echo \\226\\152\\160")
-  ;;   (run node %{dep:./cat.bc.js})))
-  )
+;; yojson/bench/dune:
+;; (rule
+;;  (alias bench-generic-sexp)
+;;  (deps bench.json)
+;;  (action
+;;   (pipe-stdout
+;;    (run ./bench.exe generic -sexp)
+;;    (run ./conversions.exe -- generic))))
+;; jsoo compiler/tests-io/dune
+;; (with-stdout-to
+;;  %{target}
+;;  (pipe-stdout
+;;   (run printf "echo \\226\\152\\160")
+;;   (run node %{dep:./cat.bc.js})))
+
+(define (normalize-action-pipe-stdout-dsl ws pkg action-alist targets deps)
+  (format #t "~A: ~A~%" (ublue "normalize-action-pipe-stdout-dsl") action-alist)
+  (format #t "~A: ~A~%" (green "pkg") pkg)
+  (format #t "~A: ~A~%" (green "targets") targets)
+  (format #t "~A: ~A~%" (green "deps") deps)
+  (error 'x "unimplemented: normalize-action-pipe-stdout-dsl")
+  (let* ((progn-items (cdar action-alist))
+         (_ (format #t "progn-items: ~A\n" progn-items))
+
+         ;; (args (assoc-val 'write-file action-alist))
+         ;; (_ (format #t "args: ~A\n" args))
+
+         ;; (output (car args))
+         ;; (_ (format #t "~A: ~A~%" (white "output") output))
+
+         ;; (target (if (null? targets)
+         ;;             output
+         ;;             ;; get tagged-label from targets, for output
+         ;;             (if-let ((t (-find-item-in-targets output targets)))
+         ;;                     t
+         ;;                     (-infer-output! output targets pkg))))
+         ;; (_ (format #t "~A: ~A~%" (red "target") target))
+
+         (progns (map (lambda (item)
+                        (-handle-progn-item item ws pkg targets deps))
+                      progn-items)))
+  ;; (let recur ((progn-list progn-items)
+  ;;             (cmd-list '()))
+  ;;   ;; (format #t "progn cmdlist ~A\n" cmd-list)
+  ;;   (if (null? progn-list)
+  ;;       cmd-list
+  ;;       (let* ((progn (car progn-list))
+  ;;              (action (car progn))
+  ;;              (_ (format #t "progn action: ~A\n" action))
+  ;;              (args (cdr progn))
+  ;;              (_ (format #t "args: ~A\n" args))
+  ;;              (cmd (if-let ((cmd-fn (assoc-val action dune-action-cmds-no-dsl)))
+  ;;                           (let ((cmd-list (apply (car cmd-fn)
+  ;;                                                  (list ws pkg
+  ;;                                                        action
+  ;;                                                        (list progn)
+  ;;                                                        targets deps))))
+  ;;                             cmd-list)
+  ;;                           (if-let ((cmd-fn (assoc-val action
+  ;;                                                       dune-action-cmds-dsl)))
+  ;;                                   (let ((cmd-list (apply (car cmd-fn)
+  ;;                                                          (list ws pkg
+  ;;                                                                (list progn)
+  ;;                                                                ;;(list action-alist)
+  ;;                                                                targets deps))))
+  ;;                                     cmd-list)
+  ;;                                   (begin
+  ;;                                     (format #t "UNHANDLED PROGN ACTION: ~A\n"
+  ;;                                             action)
+  ;;                                     stanza)))))
+  ;;         (recur (cdr progn-list) (append cmd-list cmd)))))
+
+    (format #t "~A: ~A~%" (cyan "progns") progns)
+    (list (cons :progn progns))))
 
 (define (-handle-progn-item item ws pkg targets deps)
   (format #t "~A: ~A~%" (blue "-handle-progn-item") item)
@@ -657,6 +720,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define dune-action-cmds-no-dsl
   ;; primary cmds that do NOT take a DSL argument
+  ;; args: ws pkg subaction subaction-alist targets deps
   `((bash       ,normalize-action-shell-cmd) ;; (bash <cmd>)
     (cat        ,normalize-action-file-op)  ;; (cat <file>)
     (cmp        ,normalize-action-file-op) ;; (cmp <file1> <file2>)
@@ -671,6 +735,7 @@
 
 (define dune-action-cmds-dsl
   ;; primary cmds that DO take a DSL argument
+  ;; args ws pkg action-list targets deps
   `((chdir ,normalize-action-chdir-dsl) ;; (chdir <dir> <DSL>)
     ;; (ignore-<outputs> <DSL>)
     (ignore-outputs ,normalize-action-ignore-outputs-dsl)

@@ -79,8 +79,6 @@
 
                      ((wrapped) (values))
 
-                     ((js_of_ocaml) (fld-error 'library fld-assoc))
-
                      ;; cc
                      ((c_flags) (fld-error stanza-kind fld-assoc))
                      ((cxx_flags) (fld-error stanza-kind fld-assoc))
@@ -88,15 +86,22 @@
                      ((c_types) (fld-error 'library fld-assoc))
                      ((install_c_headers) (fld-error 'library fld-assoc))
                      ((foreign_archives) (foreign-archives->mibl fld-assoc))
+                     ((c_names) (c_names->mibl fld-assoc))
                      ((foreign_stubs) (foreign-stubs->mibl
                                        (if-let ((n (assoc-val 'name stanza-alist)))
                                                (car n)
                                                (car (assoc-val 'public_name stanza-alist)))
                                        fld-assoc))
+
+                     ((js_of_ocaml) (cons :jsoo (cdr fld-assoc)))
+
                      ;; ppx
                      ((kind) ;; ignore, not meaningful for obazl?
                       (values))
                      ((ppx_runtime_libraries) `(:ppx-codeps ,(cdr fld-assoc)))
+
+                     ((inline_tests.backend)
+                      (cons :inline-tests-backend (cdr fld-assoc)))
 
                      ;; other
                      ((enabled_if) (fld-error 'library fld-assoc))
@@ -106,7 +111,7 @@
                      ) ;; end case
                    ) ;; end lamda
                  stanza-alist)))
-    ;; (format #t "~A: ~A~%" (red "REsult") result)
+    (format #t "~A: ~A~%" (red "REsult") result)
     result))
 
 (define (-lib-flds->mibl ws pkg stanza-alist wrapped?)
@@ -135,16 +140,20 @@
          (ppx (if-let ((ilts (assoc-val 'inline_tests stanza-alist)))
                       (inline-tests->mibl ws pkg ilts stanza-alist)))
 
-         (ppx (if ppx ppx
+         (ppx (if ppx
+                  ppx
                   (let ((preproc (assoc-val 'preprocess stanza-alist)))
-                    (format #t "~A: ~A~%" (red "preproc") preproc)
+                    (format #t "~A: ~A~%" (red "lib preproc") preproc)
                     (if preproc
                         (if (alist? preproc)
                             (if (assoc-in '(preprocess pps) stanza-alist)
                                 (lib-ppx->mibl stanza-alist)
-                                (if (assoc-in '(preprocess staged-pps) stanza-alist)
-                                    (lib-ppx->mibl stanza-alist)
-                                    (lib-preproc->mibl stanza-alist)))
+                                (lib-preproc->mibl stanza-alist))
+
+                                ;; (if (assoc-in '(preprocess staged-pps) stanza-alist)
+                                ;;     (lib-ppx->mibl stanza-alist)
+                                ;;     (lib-preproc->mibl stanza-alist))
+                                ;; )
                             (if (member 'future_syntax preproc)
                                 `(:future-syntax #t)
                                 (if (member 'no_preprocessing preproc)
@@ -170,7 +179,12 @@
                        lib-flds))
          (_ (format #t "lib-flds (2): ~A~%" lib-flds))
          (_ (format #t "lib-flds ppx: ~A~%" ppx))
-         (lib-flds (if ppx (append lib-flds (list ppx)) lib-flds))
+         (lib-flds (if ppx
+                       (append lib-flds
+                               (if (alist? ppx)
+                                   ppx
+                                   (list ppx)))
+                       lib-flds))
          (_ (format #t "lib-flds (3): ~A~%" lib-flds))
          ) ;; end let bindings
 

@@ -592,10 +592,10 @@
 (define (handle-alias-rec-dep deplist)
   (format #t "handle-alias-rec-dep: ~A\n" deplist))
 
-(define (handle-source-tree-dep paths deplist)
+(define (handle-source-tree-dep ws paths file-fld)
   ;; (format #t "handle-source-tree-dep: ~A\n" deplist)
   (error 'unsupported
-         (string-append "Found a 'source_tree' dependency in pkg '"
+         (string-append "Unimplemented: 'source_tree' fld in pkg '"
                         (car (assoc-val :pkg-path paths))
                         "'.  A 'source_tree' dependency in a rule dep usually means the rule should be replaced by a cc_library rule or something from rules_foreign_cc. I can't automate that, sorry.")))
 

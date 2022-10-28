@@ -125,7 +125,8 @@
                             ;; ((c_flags) (normalize-stanza-fld-flags fld-assoc :archive))
                             ;; ((cxx_flags) (normalize-stanza-fld-flags fld-assoc :archive))
 
-                            ;; ((env-vars) (values))
+                            ((env-vars) (cons :env-vars
+                                              (cdr fld-assoc)))
                             ;; ((menhir_flags) (values))
 
                             ;; ((js_of_ocaml) (values))

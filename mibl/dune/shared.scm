@@ -1,3 +1,5 @@
+;; called by top-level convert routine
+;; goes through every stanza in pkg, to extract shared ppxes
 (define (-handle-pkg-shared-ppx pkg-kv)
   (format #t "~A: ~A~%" (ublue "-handle-pkg-shared-ppx") pkg-kv)
   (let* ((pkg (cdr pkg-kv))
@@ -8,11 +10,15 @@
                     (format #t "~A: ~A~%" (bgblue "stanza") stanza)
                     (let* ((shared-ct (length pkg-shared-ppx))
                            (ppx-fld (assoc :ppx (cdr stanza)))
-                           (ppx (if ppx-fld (cdr ppx-fld) #f)))
+                           (ppx (if ppx-fld (cdr ppx-fld) #f))
+                           (ppxes-fld (assoc :ppxes (cdr stanza)))
+                           (ppxes (if ppxes-fld (cdr ppxes-fld) #f))
+                           )
                       (format #t "~A: ~A~%" (uyellow "Ppx-fld") ppx-fld)
+                      (format #t "~A: ~A~%" (uyellow "Ppxes-fld") ppxes-fld)
                       (if ppx
                           (begin
-                            (format #t "~A: ~A~%" (bgred "pkg-shared-ppx") pkg-shared-ppx)
+                            (format #t "~A: ~A~%" (bgred "ppx for pkg-shared-ppx") pkg-shared-ppx)
                             (let ((shared (rassoc ppx pkg-shared-ppx)))
                               (if (null? shared)
                                   (begin
@@ -24,7 +30,28 @@
                                   ;; else
                                   (begin
                                     (format #t "~A: ~A~%" (bgred "found shared ppx") shared)
-                                    (set-cdr! ppx-fld shared-ct))))))))
+                                    (set-cdr! ppx-fld shared-ct))))))
+                      (if ppxes
+                          (begin
+                            (format #t "~A: ~A~%" (bgred "ppxes for pkg-shared-ppx") ppxes)
+                            (for-each (lambda (ppx-fld)
+                                        (format #t "~A: ~A~%" (red "a ppx fld") ppx-fld)
+                                        (let ((ppx (if ppx-fld (cdr ppx-fld) #f))
+                                              (shared (rassoc ppx pkg-shared-ppx)))
+                                          (if (null? shared)
+                                              (begin
+                                                (format #t "~A: ~A~%" (bgred "adding shared ppx") ppx)
+                                                (set! pkg-shared-ppx
+                                                      (append pkg-shared-ppx
+                                                              `((,(+ 1 shared-ct) . ,ppx))))
+                                                (set-cdr! ppx-fld (+ 1 shared-ct))
+                                                (set! shared-ct (+ 1 shared-ct)))
+                                              ;; else
+                                              (begin
+                                                (format #t "~A: ~A~%" (bgred "found shared ppx") shared)
+                                                (set-cdr! ppx-fld shared-ct)))))
+                                      ppxes)))
+                      ))
                   ;;                   (set-cdr! resolved (+ 1 shared-ct)))
                   ;;                 (begin
                   ;;                   ;; update stanza :ppxes with key

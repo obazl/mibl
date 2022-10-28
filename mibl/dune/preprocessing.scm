@@ -108,13 +108,14 @@
               (if (null? ppx-args)
                   (cons :ppx
                         (list ;; `(:name ,ppx-name)
-                              '(:scope :all)
+                              ;; '(:scope :all)
                               `(:manifest ,@(reverse ppx-libs))))
                   (cons :ppx
                         (list ;; `(:name ,ppx-name)
-                              '(:scope :all)
+                              ;; '(:scope :all)
                               `(:manifest ,@(reverse ppx-libs))
                               `(:args ,ppx-args))))
+              ;; SPECIAL CASE: ppx_inline_test
               (if (equal? 'ppx_inline_test (car ppx))
                   (begin
                     ;; ppx_inline_test implies fld (inline_tests),
@@ -161,6 +162,7 @@
                                  ppx-args))))))))))
 
 (define (analyze-pps-action ppx-action stanza-name)
+  (format #t "~A: ~A~%" (ublue "analyze-pps-action") stanza-name)
   (-pps->mibl stanza-name (cdr ppx-action)))
 
 (define (ppxmods->name ppx-modules)
@@ -195,7 +197,7 @@
   ;;  ((pps ppx3 -foo3 ppx4 -- -bar4 43) mod3 mod4))
   (let ((+documentation+ "(normalize-ppx-attrs-per_module ppx stanza-name) derives :ppx* flds for the stanza to be emitted"))
     (lambda (ppx-list stanza-name)
-      (format #t "NORMALIZE-PPX-ATTRS-PER_MODULE ~A\n" ppx-list)
+      (format #t "~A: ~A~%" (ublue "normalize-ppx-attrs-per_module") ppx-list)
       ;; stanza-alist)
       '()
       ;; ppx-list == list of lists
@@ -213,31 +215,33 @@
                        ;; ppx: ((<action> <modslist>))
                        (let* ((ppx-item (caar ppx))
                               (ppx-action (car ppx-item))
-                              (ppx-modules (cdr ppx-item)))
+                              (ppx-modules (map normalize-module-name (cdr ppx-item))))
                          (recur (cdr ppx) (- ppx-ct 1)
-                                (cons `((:actions ,ppx-action) (:scope ,ppx-modules))
+                                (cons `((:actions ,ppx-action) (:scope ,@ppx-modules))
                                       ppx-specs)))
                        ;; else ppx: (<action> <modslist>)
                        (let* ((ppx-item (car ppx))
                               (ppx-action (car ppx-item))
-                              (ppx-modules (cdr ppx-item)))
+                              (ppx-modules (map normalize-module-name (cdr ppx-item))))
                          (format #t "per-mod PPX-ACTION: ~A\n" ppx-action)
                          (recur (cdr ppx) (- ppx-ct 1)
                                 (cons
                                  (if (equal? (car ppx-action) 'pps)
                                      `(,@(analyze-pps-action
                                           ppx-action
-                                          (string-append
-                                           (symbol->string stanza-name)
-                                           "_"
-                                           (ppxmods->name ppx-modules)))
-                                       (:scope ,ppx-modules))
+                                          (symbol->string stanza-name)
+                                          ;; (string-append
+                                          ;;  (symbol->string stanza-name)
+                                          ;;  "_"
+                                          ;;  (ppxmods->name ppx-modules))
+                                          )
+                                       (:scope ,@ppx-modules))
                                      `((:actions ,ppx-action)
-                                       (:scope ,ppx-modules)))
+                                       (:scope ,@ppx-modules)))
                                  ppx-specs)
                                 ))
                        )))))
-        `(:ppx ,ppxes)))))
+        `(:ppxes ,@ppxes)))))
 
 (define normalize-ppx-attrs-staged
   (let ((+documentation+ "(normalize-ppx-attrs-staged ppx stanza-alist) derives :ppx* flds from Dune 'staged_pps' field."))
@@ -290,11 +294,10 @@
 ;; WARNING: must also handle (inline_tests)
 
 ;; returns (values flds ppx_stanza)
-(define preprocess-fld->mibl ;; OBSOLETE
+(define preprocess-fld->mibl ;; OBSOLETE??
   (let ((+documentation+ "(preprocess-fld->mibl pp-assoc stanza-alist) converts (preprocess ...) subfields 'pps' and 'per_module' to :ppx* flds for use in generating OBazl targets. Does not convert 'action' subfield, since it does not correspond to any OBazl rule attribute ('(action...)' generates a genrule."))
-
     (lambda (pp-assoc stanza-alist)
-      (format #t "~A: ~A\n" (blue "preprocess-fld->mibl") pp-assoc)
+      (format #t "~A: ~A\n" (ublue "preprocess-fld->mibl") pp-assoc)
       (let ((ppx-data (assoc-val 'preprocessor_deps stanza-alist))
             (ppx (map (lambda (pp)
                         (format #t "PP: ~A\n" pp)
@@ -309,31 +312,38 @@
                            ;;           (chdir %{workspace_root} <action>))))"
                            ;; So an action pp has no role in ocaml_module, we ignore it
                            ;; here; elsewhere we use it to generate a genrule
-                           (format #t "IGNORING pp action ~A\n" pp)
+                           (error 'PPX "unimplemented: (preprocess (pp...))")
                            '())
                           ((pps)
-                           ;; -pps->mibl result:
-                           ;;   ((:ppx ....) (:ppx-args ...))
                            (let ((nm (cadr (assoc 'name stanza-alist))))
-                             `,@(-pps->mibl (symbol->string nm) (cdr pp))))
+                             `,@(-pps->mibl (symbol->string nm) (cdr pp)))
+                           )
 
                           ((per_module)
-                           (let ((nm (cadr (assoc 'name stanza-alist))))
-                             (normalize-ppx-attrs-per_module (cdr pp) nm)))
+                           (let* ((nm (cadr (assoc 'name stanza-alist)))
+                                  (res (normalize-ppx-attrs-per_module (cdr pp) nm)))
+                             (format #t "~A: ~A~%" (cyan "per-mod") res)
+                             res))
 
                           ((staged_pps)
                            (normalize-ppx-attrs-staged (cdr pp) stanza-alist))
+
+                          ((no_preprocessing)
+                           '())
+
                           (else
                            (error 'bad-arg
                                   (format #f "unexpected 'preprocess' subfield: ~A\n"
                                           pp)))
                           ))
                       (cdr pp-assoc))))
+
         (if ppx-data
             (append ppx (list (cons :ppx-data ppx-data)))
             ppx)))))
 
 ;; pps without inline_tests
+;; FIXME: rename lib-pp
 (define (lib-ppx->mibl stanza-alist)
   (format #t "~A: ~A~%" (ublue "lib-ppx->mibl") stanza-alist)
   (if-let ((pp-assoc (assoc 'preprocess stanza-alist)))
@@ -341,7 +351,7 @@
             (format #t "~A: ~A~%" (blue "pp-assoc") pp-assoc)
             (if-let ((ppx (preprocess-fld->mibl pp-assoc stanza-alist)))
                     (begin
-                      (format #t "~A: ~A~%" (bgyellow "ppx") ppx)
+                      (format #t "~A: ~A~%" (bgyellow "mibl ppx") ppx)
                       `(:ppx ,@(cdr ppx)))
                     ;; else no ppx in (preprocess)
                     (begin
@@ -352,21 +362,37 @@
 ;; non-ppx prepocessing
 (define (lib-preproc->mibl stanza-alist)
   (format #t "~A: ~A~%" (ublue "lib-preproc->mibl") stanza-alist)
-  (error 'X "not yet: lib-preproc-mibl")
-  (if-let ((pp-assoc (assoc-in '(preprocess action) stanza-alist)))
+  (if-let ((pp-assoc (assoc 'preprocess stanza-alist)))
           (begin
-            (format #t "~A: ~A~%" (blue "pp action") pp-assoc)
+            (format #t "~A: ~A~%" (blue "pp-assoc") pp-assoc)
             (if-let ((ppx (preprocess-fld->mibl pp-assoc stanza-alist)))
                     (begin
-                      (format #t "~A: ~A~%" (bgyellow "ppx") ppx)
-                      `(:ppx ,@(cdr ppx)))
+                      (format #t "~A: ~A~%" (bgyellow "pp ppx") ppx)
+                      ;;`(:ppx ,@(cdr ppx))
+                      ppx)
                     ;; else no ppx in (preprocess)
                     (begin
                       #f)))
-          (if (assoc-in '(preprocess future_syntax) stanza-alist)
-              `(:future_syntax)
-              ;; else no_preprocessing?
-              #f)))
+          ;; else (inline_tests) only, no (preprocess)
+          #f))
+  ;; (if-let ((pp-assoc (assoc-in '(preprocess action) stanza-alist)))
+  ;;         (begin
+  ;;           (format #t "~A: ~A~%" (blue "pp action") pp-assoc)
+  ;;           (if-let ((ppx (preprocess-fld->mibl pp-assoc stanza-alist)))
+  ;;                   (begin
+  ;;                     (format #t "~A: ~A~%" (bgyellow "ppx") ppx)
+  ;;                     `(:ppx ,@(cdr ppx)))
+  ;;                   ;; else no ppx in (preprocess)
+  ;;                   (begin
+  ;;                     #f)))
+  ;;         (begin
+  ;;           (format #t "~A: ~A~%" (blue "no ppx") )
+  ;;           (if (assoc-in '(preprocess per_module) stanza-alist)
+  ;;             `(:future_syntax)
+  ;;             (if (assoc-in '(preprocess future_syntax) stanza-alist)
+  ;;                 `(:future_syntax)
+  ;;                 ;; else no_preprocessing?
+  ;;                 #f)))))
 
   ;; (if-let ((pp (assoc-val 'preprocess stanza-alist)))
   ;;         (begin

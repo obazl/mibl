@@ -818,67 +818,67 @@
     (format #t "  targets: ~A\n" targets)
     (format #t "  deps: ~A\n" deps)
 
-    (let ((result
-           (if (null? args)
-               (begin
-                 (format #t "~A, returning: ~A~%" "bottomed out" '())
-                 '())
+    (if (list? args)
+        (let ((result
+               (if (null? args)
+                   (begin
+                     (format #t "~A, returning: ~A~%" "bottomed out" '())
+                     '())
 
-               ;; (let ((arg (if (symbol? (car args))
-               ;;                (symbol->string (car args))
-               ;;                (car args))))
-               (let ((arg (car args)))
-                 (cond
-                  ((pair? arg) ;; e.g. (:_string "struct")
-                   (let ((subarg (expand-cmd-args* ws (car args) pkg targets deps)))
-                     (cons subarg
-                           (expand-cmd-args* ws (cdr args) pkg targets deps))))
-                  ;; (expand-cmd-args* pkg-path
-                  ;;                  target targets
-                  ;;                  (cdr args) filedeps vars)))
+                   ;; (let ((arg (if (symbol? (car args))
+                   ;;                (symbol->string (car args))
+                   ;;                (car args))))
+                   (let ((arg (car args)))
+                     (cond
+                      ((pair? arg) ;; e.g. (:_string "struct")
+                       (let ((subarg (expand-cmd-args* ws (car args) pkg targets deps)))
+                         (cons subarg
+                               (expand-cmd-args* ws (cdr args) pkg targets deps))))
+                      ;; (expand-cmd-args* pkg-path
+                      ;;                  target targets
+                      ;;                  (cdr args) filedeps vars)))
 
-                  ;; ((number? arg)
-                  ;;  (cons arg
-                  ;;        (expand-cmd-args* pkg-path
-                  ;;                         target targets
-                  ;;                         (cdr args) filedeps vars)))
+                      ((number? arg)
+                       (cons arg (expand-cmd-args* ws (cdr args) pkg targets deps)))
 
-                  ((symbol? arg)
-                   (format #t "~A: ~A~%" (red "arg is symbol") arg)
-                   (if (or (eq? arg '%{target}) (eq? arg '%{targets}))
-                       (cons :outputs
-                             (expand-cmd-args* ws (cdr args) pkg targets deps))
-                       (let ((arg-str (format #f "~A" arg)))
-                         (cond
-                          ((string-prefix? "%{" arg-str)
-                           ;; %{foo} or %{foo}.suffix
-                           (let* ((pkg-path (car (assoc-val :pkg-path pkg)))
-                                  (arg (-expand-pct-arg!? ws arg :arg pkg deps)))
-                             (format #t "~A: ~A~%" (uwhite "expanded arg") arg)
-                             (cons arg
-                                   (expand-cmd-args* ws (cdr args) pkg targets deps))))
-                          ( ;; else
-                           (expand-cmd-args* ws (cons arg-str (cdr args))
-                                             pkg targets deps))))))
-
-                  ((string? arg)
-                   (format #t "~A: ~A~%" (red "arg is string") arg)
-                   (if (char=? #\- (arg 0))
-                       (append (list arg)
+                      ((symbol? arg)
+                       (format #t "~A: ~A~%" (red "arg is symbol") arg)
+                       (if (or (eq? arg '%{target}) (eq? arg '%{targets}))
+                           (cons :outputs
                                  (expand-cmd-args* ws (cdr args) pkg targets deps))
-                       (let ((sarg (expand-string-arg ws arg pkg targets deps)))
-                         (append (list sarg)
-                                 (expand-cmd-args* ws (cdr args) pkg targets deps)))))
-                  ;; pkg-path target targets
-                  ;; (cdr args) filedeps vars)))))
+                           (let ((arg-str (format #f "~A" arg)))
+                             (cond
+                              ((string-prefix? "%{" arg-str)
+                               ;; %{foo} or %{foo}.suffix
+                               (let* ((pkg-path (car (assoc-val :pkg-path pkg)))
+                                      (arg (-expand-pct-arg!? ws arg :arg pkg deps)))
+                                 (format #t "~A: ~A~%" (uwhite "expanded arg") arg)
+                                 (cons arg
+                                       (expand-cmd-args* ws (cdr args) pkg targets deps))))
+                              ( ;; else
+                               (expand-cmd-args* ws (cons arg-str (cdr args))
+                                                 pkg targets deps))))))
 
-                  (else ; not number, pair, string
-                   (format #t
-                           "WARNING: not a nbr, pair, or string: ~A\n" arg)
-                   ))
-                 ))))
-      ;; (format #t "~A: ~A\n" (ucyan "expanded-cmd-args") result)
-      result)))
+                      ((string? arg)
+                       (format #t "~A: ~A~%" (red "arg is string") arg)
+                       (if (char=? #\- (arg 0))
+                           (append (list arg)
+                                   (expand-cmd-args* ws (cdr args) pkg targets deps))
+                           (let ((sarg (expand-string-arg ws arg pkg targets deps)))
+                             (append (list sarg)
+                                     (expand-cmd-args* ws (cdr args) pkg targets deps)))))
+                      ;; pkg-path target targets
+                      ;; (cdr args) filedeps vars)))))
+
+                      (else ; not number, pair, string
+                       (format #t
+                               "WARNING: not a nbr, pair, or string: ~A\n" arg)
+                       ))
+                     ))))
+          ;; (format #t "~A: ~A\n" (ucyan "expanded-cmd-args") result)
+          result)
+        (cons arg (expand-cmd-args* ws (car args) pkg targets deps)))
+        ))
 
 (define expand-targets
   (lambda (ws pkg targets deps)
