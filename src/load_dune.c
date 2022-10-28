@@ -139,14 +139,21 @@ LOCAL s7_pointer _read_dunefile(char *path) //, char *fname)
 #endif
     /* repeat until all objects read */
     while(true) {
-    /*     if (debug) log_trace("reading stanza"); */
+#if defined(DEBUG_TRACE)
+        if (debug) log_trace("reading stanza");
+#endif
 
         /* s7_show_stack(s7); */
         /* print_backtrace(s7); */
         s7_pointer stanza = s7_call(s7, mibl_read_thunk, s7_list(s7, 0));
+        if (stanza == s7_eof_object(s7)) {
+            break;
+        }
         /* s7_pointer stanza = s7_read(s7, dunefile_port); */
 
-        /* if (debug) log_debug("readed stanza: %s", TO_STR(stanza)); */
+#if defined(DEBUG_TRACE)
+        if (debug) log_debug("readed stanza: %s", TO_STR(stanza));
+#endif
         /* s7_show_stack(s7); */
         /* print_backtrace(s7); */
         /* errmsg = s7_get_output_string(s7, s7_current_error_port(s7)); */
@@ -266,8 +273,8 @@ LOCAL s7_pointer _read_dunefile(char *path) //, char *fname)
     if (debug)
         log_debug("finished reading dunefile: %s",
                   utstring_body(dunefile_name));
+    if (trace) log_debug("readed stanzas: %s", TO_STR(stanzas));
 #endif
-    /* if (trace) log_debug("readed stanzas: %s", TO_STR(stanzas)); */
 
     return stanzas;
     /* s7_close_input_port(s7, dunefile_port); */
@@ -3629,7 +3636,7 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
                     break;
                 }
         }
-        log_error("end while (ftsentry = fts_read(tree)) != NULL)");
+        log_info("end while: (ftsentry = fts_read(tree)) != NULL)");
         chdir(old_cwd);
         /* printf(RED "Restored cwd: %s\n" CRESET, getcwd(NULL, 0)); */
     } else {
