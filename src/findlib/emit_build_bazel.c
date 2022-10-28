@@ -618,7 +618,7 @@ void emit_bazel_attribute(FILE* ostream,
             if (rc == 0)    /* i.e. 'ocaml', 'ocaml/ocamldoc' */
                  /* special cases: unix, dynlink, etc. */
                 if (strlen(_filedeps_path) == 5) {
-                    utstring_printf(label, "@opam_%s//lib:%s",
+                    utstring_printf(label, "@%s//lib:%s",
                                     _filedeps_path, *archive_name);
                 } else {
                     rc = strncmp("ocaml-compiler-libs", _filedeps_path, 19);
@@ -642,7 +642,7 @@ void emit_bazel_attribute(FILE* ostream,
                 */
                 if (_pkg_prefix == NULL) {
                     utstring_printf(label,
-                                    "@opam_%s//%s", // filedeps path: %s",
+                                    "@%s//%s", // filedeps path: %s",
                                     /* _pkg_name, */
                                     _filedeps_path,
                                     *archive_name);
@@ -651,7 +651,7 @@ void emit_bazel_attribute(FILE* ostream,
                     int repo_len = start - (char*)_pkg_prefix;
                     if (start == NULL) {
                         utstring_printf(label,
-                                        "@opam_%.*s//%s:%s", // || PKG_pfx: %s",
+                                        "@%.*s//%s:%s", // || PKG_pfx: %s",
                                         repo_len,
                                         _pkg_prefix,
                                         _pkg_name,
@@ -660,7 +660,7 @@ void emit_bazel_attribute(FILE* ostream,
                     } else {
                         start++;
                         utstring_printf(label,
-                                        "@opam_%.*s//%s/%s:%s", // || PKG_pfx: %s",
+                                        "@%.*s//%s/%s:%s", // || PKG_pfx: %s",
                                         repo_len,
                                         _pkg_prefix,
                                         (char*)start,
@@ -2023,7 +2023,7 @@ void emit_bazel_deps_attribute(FILE* ostream, int level,
                                 /*         (1+level)*spfactor, sp, */
                                 /*         *dep_name); */
                                 fprintf(ostream,
-                                        "%*s\"@opam_%s//lib/%s%s\",\n",
+                                        "%*s\"@%s//lib/%s%s\",\n",
                                         /* "%*s\"@%s//:%s\",\n", */
                                         (1+level)*spfactor, sp,
                                         *dep_name, *dep_name,
@@ -2038,7 +2038,7 @@ void emit_bazel_deps_attribute(FILE* ostream, int level,
                     else {
                         int repo_len = delim1 - (char*)*dep_name;
                         fprintf(ostream,
-                                "%*s\"@opam_%.*s//lib/%s%s\",\n",
+                                "%*s\"@%.*s//lib/%s%s\",\n",
                                 /* "%*s\"@%.*s//%s\",\n", */
                                 (1+level)*spfactor, sp,
                                 repo_len,
@@ -2257,7 +2257,7 @@ void emit_bazel_ppx_codeps(FILE* ostream, int level,
                 /* if (delim1 == NULL) { */
                     int repo_len = strlen((char*)*v);
                     fprintf(ostream,
-                            "%*s\"@opam_%.*s//lib/%s\",\n",
+                            "%*s\"@%.*s//lib/%s\",\n",
                             (1+level)*spfactor, sp, repo_len,
                             *v, *v);
                     }
@@ -2270,7 +2270,7 @@ void emit_bazel_ppx_codeps(FILE* ostream, int level,
                         int repo_len = delim1 - (char*)*v;
                         /* fprintf(ostream, "%*s\"@%.*s//%s\",\n", */
                         fprintf(ostream,
-                                "%*s\"@opam_%.*s//lib",
+                                "%*s\"@%.*s//lib",
                                 (1+level)*spfactor, sp,
                                 repo_len, *v);
                         /* delim1+1); */
@@ -2408,7 +2408,7 @@ void emit_bazel_deps_target(FILE* ostream, int level,
     if (strncmp(_pkg_name, "findlib", 7) == 0) {
         fprintf(ostream, "\nalias(\n");
         fprintf(ostream, "    name   = \"findlib\",\n");
-        fprintf(ostream, "    actual = \"@opam_findlib//lib/internal\",\n");
+        fprintf(ostream, "    actual = \"@findlib//lib/internal\",\n");
         /* fprintf(ostream, "    visibility = [\"//visibility:public\"]\n"); */
         fprintf(ostream, ")\n");
     } else {
@@ -2758,7 +2758,7 @@ EXPORT void emit_workspace_file(UT_string *ws_file, char *repo_name)
     }
 
     fprintf(ostream, "## X generated file - DO NOT EDIT\n");
-    fprintf(ostream, "workspace( name = \"opam_%s\" )\n", repo_name);
+    fprintf(ostream, "workspace( name = \"%s\" )\n", repo_name);
 
     fclose(ostream);
 }

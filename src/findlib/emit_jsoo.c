@@ -10,10 +10,10 @@ extern char *sp;
  *    name = "js",
  *    srcs = ["base.cma"],
  *    deps = [
- *        "@opam_base//lib/base_internalhash_types:js",
- *        "@opam_base//lib/caml:js",
- *        "@opam_base//lib/shadow_stdlib:js",
- *        "@opam_sexplib0//lib/sexplib0:js",
+ *        "@base//lib/base_internalhash_types:js",
+ *        "@base//lib/caml:js",
+ *        "@base//lib/shadow_stdlib:js",
+ *        "@sexplib0//lib/sexplib0:js",
  *    ],
  * )
  * jsoo_import(

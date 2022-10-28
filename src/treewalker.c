@@ -586,7 +586,7 @@ EXPORT void convert_findlib_pkgs(UT_array *opam_pending_deps)
     p = NULL;
     while ( (p=(char**)utarray_next(opam_completed_deps, p))) {
         fprintf(ostream, "    native.local_repository(\n");
-        fprintf(ostream, "        name       = \"opam_%s\",\n", *p);
+        fprintf(ostream, "        name       = \"%s\",\n", *p);
         fprintf(ostream, "        path       = ");
         fprintf(ostream, "\"%s/%s\",\n", bazel_ws_root, *p);
         fprintf(ostream, "    )\n\n");

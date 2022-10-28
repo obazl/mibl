@@ -114,9 +114,9 @@ cc_library(
 #     name = "gen_opam_lexis",
 #     outs  = ["opam_lexis.c"],
 #     srcs = ["opam_lexis.re"],
-#     tools = ["@opam_re2c//:re2c"],
+#     tools = ["@re2c//:re2c"],
 #     cmd   = "\n".join([
-#         "for f in $(locations @opam_re2c//:re2c)",
+#         "for f in $(locations @re2c//:re2c)",
 #         "do",
 #         "    if [ -f $$f ]",
 #         "    then",

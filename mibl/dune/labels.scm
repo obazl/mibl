@@ -142,8 +142,8 @@
                             (let ((segs (string-split (format #f "~A" key) ".")))
                               (format #t "~A: ~A~%" (ured "unresolved; assume opam") key)
                               (if (= 1 (length segs))
-                                  (string->symbol (format #f "@opam_~A//lib/~A" dep dep))
-                                  (string->symbol (format #f "@opam_~A//lib/~{~A~^/~}" (car segs) (cdr segs)))))))))))))
+                                  (string->symbol (format #f "@~A//lib/~A" dep dep))
+                                  (string->symbol (format #f "@~A//lib/~{~A~^/~}" (car segs) (cdr segs)))))))))))))
 
 (define (-fixup-conditionals! ws pkg stanza)
   (format #t "~A: ~A\n" (bgblue "-fixup-conditionals!") stanza)
@@ -177,7 +177,7 @@
                                                               (format #f "~A"
                                                                       (assoc-val :tgt resolution)))
                                                              (string->symbol
-                                                              (format #f "@opam_~A//lib/~A"
+                                                              (format #f "@~A//lib/~A"
                                                                       (car selector) (car selector)))))))
                                             ;; (set-car! selector (format #f "//bzl/import:~A" (car selector)))
                                             )
