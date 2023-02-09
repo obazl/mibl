@@ -884,9 +884,18 @@ EXPORT void s7_shutdown(s7_scheme *s7)
     s7_quit(s7);
 }
 
-EXPORT void mibl_s7_init(void)
+void _mibl_s7_init(void)
 {
-    s7 = s7_init();
+    s7 = s7_init();             /* @libs7//src:s7.c */
+
+    s7_config_libc_s7(s7);      /* @libs7//src:s7.c*/
+    /* libc stuff is in *libc*, which is an environment
+     * (i.e. (let? *libc*) => #t)
+     * import the stuff we're likely to use into the root env:
+     * (varlet (rootlet 'regcomp (*libc* 'regcomp) ...)
+     */
+
+    /* exit(1); */
 
     /* trap error messages */
     /* close_error_config(); */
@@ -896,14 +905,16 @@ EXPORT void mibl_s7_init(void)
     /* tmp dir */
     char tplt[] = "/tmp/obazl.XXXXXXXXXX";
     char *tmpdir = mkdtemp(tplt);
-    printf("tmpdir: %s\n", tmpdir);
+    log_debug("tmpdir: %s", tmpdir);
     s7_define_variable(s7, "*tmp-dir*", s7_make_string(s7, tmpdir));
 }
 
 /* FIXME: rename s7_configure_for_dune */
 EXPORT s7_scheme *s7_configure(void)
 {
-    mibl_s7_init();
+    log_debug("s7_configure");
+
+    _mibl_s7_init();
 
     if (bws_root) {
         s7_define_variable(s7, "ws-root", s7_make_string(s7, bws_root));
@@ -967,7 +978,7 @@ EXPORT s7_scheme *s7_configure(void)
         _s7_exclusions = s7_cons(s7, s7_make_string(s7, *p), _s7_exclusions);
 
     }
-    printf("exclusions list: %s\n", TO_STR(_s7_exclusions));
+    log_debug("exclusions list: %s", TO_STR(_s7_exclusions));
     s7_define_variable(s7, "*scan-exclusions*", _s7_exclusions);
     /* p = utarray_find(mibl_config.exclude_dirs, */
     /*                  &ptr, */
@@ -1002,13 +1013,6 @@ EXPORT s7_scheme *s7_configure(void)
     set_load_path(); //callback_script_file);
 
     /* init_glob(s7); */
-
-    s7_config_libc_s7(s7);
-    /* libc stuff is in *libc*, which is an environment
-     * (i.e. (let? *libc*) => #t)
-     * import the stuff we're likely to use into the root env:
-     * (varlet (rootlet 'regcomp (*libc* 'regcomp) ...)
-     */
 
     /* s7_config_repl(s7); */
     /* s7_repl(s7); */

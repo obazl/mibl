@@ -87,180 +87,180 @@ char *toolchains[] = {
 char **tc;
 
 /* FIXME: common to both walkers */
-LOCAL bool _this_is_hidden(FTSENT *ftsentry)
-{
-    if (ftsentry->fts_name[0] == '.') {
-        /* process the "." passed to fts_open, skip any others */
-        if (ftsentry->fts_pathlen > 1) {
-            // do not process children of hidden dirs
-            /* if (trace) */
-            /*     log_trace(RED "Excluding" CRESET " hidden dir: %s\n", */
-            /*               ftsentry->fts_path); //, ftsentry->fts_name); */
-            return true;
-            /* } else { */
-            /*     printf("ROOT DOT dir\n"); */
-        }
-    }
-    return false;
-}
+/* LOCAL bool _this_is_hidden(FTSENT *ftsentry) */
+/* { */
+/*     if (ftsentry->fts_name[0] == '.') { */
+/*         /\* process the "." passed to fts_open, skip any others *\/ */
+/*         if (ftsentry->fts_pathlen > 1) { */
+/*             // do not process children of hidden dirs */
+/*             /\* if (trace) *\/ */
+/*             /\*     log_trace(RED "Excluding" CRESET " hidden dir: %s\n", *\/ */
+/*             /\*               ftsentry->fts_path); //, ftsentry->fts_name); *\/ */
+/*             return true; */
+/*             /\* } else { *\/ */
+/*             /\*     printf("ROOT DOT dir\n"); *\/ */
+/*         } */
+/*     } */
+/*     return false; */
+/* } */
 
-LOCAL bool _exclusions(FTSENT *ftsentry, char *ext)
-{
-    if (strncmp(ext, ".gitignore", 10) == 0)
-        return true;
-    else
-        return false;
-}
+/* LOCAL bool _exclusions(FTSENT *ftsentry, char *ext) */
+/* { */
+/*     if (strncmp(ext, ".gitignore", 10) == 0) */
+/*         return true; */
+/*     else */
+/*         return false; */
+/* } */
 
-LOCAL void _walk_opam(char *opam_switch)
-{
-    log_trace("walk_opam: %s", opam_switch);
-    log_trace("global opam_switch_lib: %s", utstring_body(opam_switch_lib));
+/* LOCAL void _walk_opam(char *opam_switch) */
+/* { */
+/*     log_trace("walk_opam: %s", opam_switch); */
+/*     log_trace("global opam_switch_lib: %s", utstring_body(opam_switch_lib)); */
 
-    char *old_cwd = getcwd(NULL, 0);
+/*     char *old_cwd = getcwd(NULL, 0); */
 
-    int rc = chdir(opam_switch);
+/*     int rc = chdir(opam_switch); (void)rc; */
 
-#if defined(DEBUG_TRACE)
-    if (debug) log_debug("%-16s%s", "cwd:",  getcwd(NULL, 0));
-#endif
-    log_debug("%-16s%s", "cwd:",  getcwd(NULL, 0));
+/* #if defined(DEBUG_TRACE) */
+/*     if (debug) log_debug("%-16s%s", "cwd:",  getcwd(NULL, 0)); */
+/* #endif */
+/*     log_debug("%-16s%s", "cwd:",  getcwd(NULL, 0)); */
 
-    FTS* tree = NULL;
-    FTSENT *ftsentry     = NULL;
+/*     FTS* tree = NULL; */
+/*     FTSENT *ftsentry     = NULL; */
 
-    errno = 0;
+/*     errno = 0; */
 
-    char *const _pkg_path[] = {
-        [0] = ".", // (char *const)opam_switch,
-        NULL
-    };
+/*     char *const _pkg_path[] = { */
+/*         [0] = ".", // (char *const)opam_switch, */
+/*         NULL */
+/*     }; */
 
-    errno = 0;
-    tree = fts_open(_pkg_path,
-                    FTS_COMFOLLOW
-                    | FTS_NOCHDIR
-                    | FTS_PHYSICAL,
-                    /* | FTS_SEEDOT, // handle foo/. and foo/.. */
-                    // NULL
-                    &compare_fts
-                    );
-    if (errno != 0) {
-        log_error("fts_open error: %s", strerror(errno));
-        return;
-        /* return s7_error(s7, s7_make_symbol(s7, "fts_open"), */
-        /*                 s7_list(s7, 2, */
-        /*                         s7_make_string(s7, strerror(errno)), */
-        /*                         s7_make_string(s7, _pkg_path[0]))); */
-    }
-    log_debug("fts_open ok\n");
-    if (verbose) {
-        log_info(GRN "Beginning traversal" CRESET " at %s",
-                 _pkg_path[0]);
-                 // resolved_troot);
-        log_info(GRN " with cwd:" CRESET " at %s", getcwd(NULL, 0));
-    }
+/*     errno = 0; */
+/*     tree = fts_open(_pkg_path, */
+/*                     FTS_COMFOLLOW */
+/*                     | FTS_NOCHDIR */
+/*                     | FTS_PHYSICAL, */
+/*                     /\* | FTS_SEEDOT, // handle foo/. and foo/.. *\/ */
+/*                     // NULL */
+/*                     &compare_fts */
+/*                     ); */
+/*     if (errno != 0) { */
+/*         log_error("fts_open error: %s", strerror(errno)); */
+/*         return; */
+/*         /\* return s7_error(s7, s7_make_symbol(s7, "fts_open"), *\/ */
+/*         /\*                 s7_list(s7, 2, *\/ */
+/*         /\*                         s7_make_string(s7, strerror(errno)), *\/ */
+/*         /\*                         s7_make_string(s7, _pkg_path[0]))); *\/ */
+/*     } */
+/*     log_debug("fts_open ok\n"); */
+/*     if (verbose) { */
+/*         log_info(GRN "Beginning traversal" CRESET " at %s", */
+/*                  _pkg_path[0]); */
+/*                  // resolved_troot); */
+/*         log_info(GRN " with cwd:" CRESET " at %s", getcwd(NULL, 0)); */
+/*     } */
 
-    if (NULL != tree) {
-        while( (ftsentry = fts_read(tree)) != NULL) {
-            /* if (ftsentry->fts_info == FTS_DP) { continue; } // do not process post-order visits */
+/*     if (NULL != tree) { */
+/*         while( (ftsentry = fts_read(tree)) != NULL) { */
+/*             /\* if (ftsentry->fts_info == FTS_DP) { continue; } // do not process post-order visits *\/ */
 
-#if defined(DEBUG_TRACE)
-            if (debug) {
-                printf("\n");
-                log_debug(CYN "iter ftsentry->fts_name: " CRESET "%s",
-                          ftsentry->fts_name);
-                log_debug("iter ftsentry->fts_path: %s", ftsentry->fts_path);
-                log_debug("iter ftsentry->fts_info: %d (%d)", ftsentry->fts_info, FTS_D);
-            }
-#endif
-            switch (ftsentry->fts_info)
-                {
-                case FTS_D : // dir visited in pre-order
-                    fts_d_ct++;
-                    opam_handle_fts_d(tree, ftsentry);
-                    break;
-                case FTS_DP:
-                    fts_dp_ct++;
-                    /* postorder directory - skip */
-                    break;
-                case FTS_DOT:
-                    /* log_debug("FTS_DOT ftsentry->fts_path: %s", ftsentry->fts_path); */
-                    /* log_debug("FTS_DOT ftsentry->fts_info: %d (%d)", ftsentry->fts_info, FTS_D); */
-                    fts_dot_ct++;
-                    break;
-                case FTS_F : // regular file
-                    fts_f_ct++;
-                    opam_handle_fts_f(tree, ftsentry);
-                    break;
-                case FTS_SL: // symlink
-                    fts_sl_ct++;
-                    opam_handle_symlink(tree, ftsentry);
-                    break;
-                case FTS_SLNONE:
-                    /* symlink to non-existent target */
-                    log_warn("FTS_SLNONE: %s", ftsentry->fts_path);
-                    break;
-                case FTS_ERR:
-                    log_error("FTS_ERR: %s", ftsentry->fts_path);
-                    log_error("  error: %d: %s", ftsentry->fts_errno,
-                              strerror(ftsentry->fts_errno));
-                    break;
-                case FTS_DC:
-                    /* dir causing a cycle dir */
-                    log_warn("FTS_DC: %s", ftsentry->fts_path);
-                    break;
-                case FTS_DNR:
-                    /* unreadable dir */
-                    log_warn("FTS_DNR: %s", ftsentry->fts_path);
-                    break;
-                case FTS_NS:
-                    /* no stat info, error */
-                    log_error("FTS_NS: %s", ftsentry->fts_path);
-                    log_error("  error: %d: %s", ftsentry->fts_errno,
-                              strerror(ftsentry->fts_errno));
-                    break;
-                case FTS_NSOK:
-                    /* no stat info, not an error */
-                    log_warn("FTS_NSOK: %s", ftsentry->fts_path);
-                    break;
-                case FTS_DEFAULT:
-                    log_warn("FTS_DEFAULT: %s", ftsentry->fts_path);
-                    break;
-                /* case FTS_DOT : // not specified to fts_open */
-                /*     // do not process children of hidden dirs */
-                /*     /\* fts_set(tree, ftsentry, FTS_SKIP); *\/ */
-                /*     break; */
-                default:
-                    log_error(RED "Unhandled FTS type %d\n",
-                              ftsentry->fts_info);
-                    exit(EXIT_FAILURE);
-                    break;
-                }
-        } /* end while */
-        /* chdir(old_cwd); */
-        /* printf(RED "Restored cwd: %s\n" CRESET, getcwd(NULL, 0)); */
-    }
-
-
-    fts_close(tree);
-    rc = chdir(old_cwd);
+/* #if defined(DEBUG_TRACE) */
+/*             if (debug) { */
+/*                 printf("\n"); */
+/*                 log_debug(CYN "iter ftsentry->fts_name: " CRESET "%s", */
+/*                           ftsentry->fts_name); */
+/*                 log_debug("iter ftsentry->fts_path: %s", ftsentry->fts_path); */
+/*                 log_debug("iter ftsentry->fts_info: %d (%d)", ftsentry->fts_info, FTS_D); */
+/*             } */
+/* #endif */
+/*             switch (ftsentry->fts_info) */
+/*                 { */
+/*                 case FTS_D : // dir visited in pre-order */
+/*                     fts_d_ct++; */
+/*                     opam_handle_fts_d(tree, ftsentry); */
+/*                     break; */
+/*                 case FTS_DP: */
+/*                     fts_dp_ct++; */
+/*                     /\* postorder directory - skip *\/ */
+/*                     break; */
+/*                 case FTS_DOT: */
+/*                     /\* log_debug("FTS_DOT ftsentry->fts_path: %s", ftsentry->fts_path); *\/ */
+/*                     /\* log_debug("FTS_DOT ftsentry->fts_info: %d (%d)", ftsentry->fts_info, FTS_D); *\/ */
+/*                     fts_dot_ct++; */
+/*                     break; */
+/*                 case FTS_F : // regular file */
+/*                     fts_f_ct++; */
+/*                     opam_handle_fts_f(tree, ftsentry); */
+/*                     break; */
+/*                 case FTS_SL: // symlink */
+/*                     fts_sl_ct++; */
+/*                     opam_handle_symlink(tree, ftsentry); */
+/*                     break; */
+/*                 case FTS_SLNONE: */
+/*                     /\* symlink to non-existent target *\/ */
+/*                     log_warn("FTS_SLNONE: %s", ftsentry->fts_path); */
+/*                     break; */
+/*                 case FTS_ERR: */
+/*                     log_error("FTS_ERR: %s", ftsentry->fts_path); */
+/*                     log_error("  error: %d: %s", ftsentry->fts_errno, */
+/*                               strerror(ftsentry->fts_errno)); */
+/*                     break; */
+/*                 case FTS_DC: */
+/*                     /\* dir causing a cycle dir *\/ */
+/*                     log_warn("FTS_DC: %s", ftsentry->fts_path); */
+/*                     break; */
+/*                 case FTS_DNR: */
+/*                     /\* unreadable dir *\/ */
+/*                     log_warn("FTS_DNR: %s", ftsentry->fts_path); */
+/*                     break; */
+/*                 case FTS_NS: */
+/*                     /\* no stat info, error *\/ */
+/*                     log_error("FTS_NS: %s", ftsentry->fts_path); */
+/*                     log_error("  error: %d: %s", ftsentry->fts_errno, */
+/*                               strerror(ftsentry->fts_errno)); */
+/*                     break; */
+/*                 case FTS_NSOK: */
+/*                     /\* no stat info, not an error *\/ */
+/*                     log_warn("FTS_NSOK: %s", ftsentry->fts_path); */
+/*                     break; */
+/*                 case FTS_DEFAULT: */
+/*                     log_warn("FTS_DEFAULT: %s", ftsentry->fts_path); */
+/*                     break; */
+/*                 /\* case FTS_DOT : // not specified to fts_open *\/ */
+/*                 /\*     // do not process children of hidden dirs *\/ */
+/*                 /\*     /\\* fts_set(tree, ftsentry, FTS_SKIP); *\\/ *\/ */
+/*                 /\*     break; *\/ */
+/*                 default: */
+/*                     log_error(RED "Unhandled FTS type %d\n", */
+/*                               ftsentry->fts_info); */
+/*                     exit(EXIT_FAILURE); */
+/*                     break; */
+/*                 } */
+/*         } /\* end while *\/ */
+/*         /\* chdir(old_cwd); *\/ */
+/*         /\* printf(RED "Restored cwd: %s\n" CRESET, getcwd(NULL, 0)); *\/ */
+/*     } */
 
 
-#if defined(DEBUG_TRACE)
-    log_debug("fts_d_ct: %d", fts_d_ct);
-    log_debug("fts_dp_ct: %d", fts_dp_ct);
-    log_debug("fts_dot_ct: %d", fts_dot_ct);
-    log_debug("fts_f_ct: %d", fts_f_ct);
-    log_debug("fts_sl_ct: %d", fts_sl_ct);
-    log_debug("opam_opam_file_ct: %d", opam_opam_file_ct);
-    log_debug("opam_meta_ct: %d", opam_meta_ct);
-    log_debug("opam_dune_package_ct: %d", opam_dune_package_ct);
-    log_debug("traversal root: %s", opam_switch);
-    log_debug("cwd: %s", getcwd(NULL, 0));
-#endif
+/*     fts_close(tree); */
+/*     rc = chdir(old_cwd); */
 
-}
+
+/* #if defined(DEBUG_TRACE) */
+/*     log_debug("fts_d_ct: %d", fts_d_ct); */
+/*     log_debug("fts_dp_ct: %d", fts_dp_ct); */
+/*     log_debug("fts_dot_ct: %d", fts_dot_ct); */
+/*     log_debug("fts_f_ct: %d", fts_f_ct); */
+/*     log_debug("fts_sl_ct: %d", fts_sl_ct); */
+/*     log_debug("opam_opam_file_ct: %d", opam_opam_file_ct); */
+/*     log_debug("opam_meta_ct: %d", opam_meta_ct); */
+/*     log_debug("opam_dune_package_ct: %d", opam_dune_package_ct); */
+/*     log_debug("traversal root: %s", opam_switch); */
+/*     log_debug("cwd: %s", getcwd(NULL, 0)); */
+/* #endif */
+
+/* } */
 
 LOCAL void _walk_findlib_all(char *opam_switch)
 {
@@ -269,7 +269,7 @@ LOCAL void _walk_findlib_all(char *opam_switch)
 
     char *old_cwd = getcwd(NULL, 0);
 
-    int rc = chdir(opam_switch);
+    int rc = chdir(opam_switch); (void)rc;
 
 #if defined(DEBUG_TRACE)
     if (debug) log_debug("%-16s%s", "cwd:",  getcwd(NULL, 0));
@@ -464,7 +464,7 @@ EXPORT void convert_findlib_pkgs(UT_array *opam_pending_deps)
         /* printf(YEL "%-16s%s\n" CRESET, "pkg_name:", pkg_name); */
     }
 
-    char **p = NULL;
+    const char **p = NULL;
 
     if (utarray_len(opam_pending_deps) < 1) {
         /* default: all pkgs in switch */
@@ -537,7 +537,7 @@ EXPORT void convert_findlib_pkgs(UT_array *opam_pending_deps)
 
     UT_string *dune_pkg_file;    /* FIXME: free */
     utstring_new(dune_pkg_file); /* global, in emit_pkg_bindir.c */
-    while ( (p=(char**)utarray_next(opam_completed_deps, p))) {
+    while ( (p=(const char**)utarray_next(opam_completed_deps, p))) {
 #if defined(DEBUG_TRACE)
         log_info("  %s", *p);
 #endif
@@ -545,7 +545,7 @@ EXPORT void convert_findlib_pkgs(UT_array *opam_pending_deps)
     }
 #if defined(DEBUG_TRACE)
     log_debug("pending:");
-    while ( (p=(char**)utarray_next(opam_pending_deps, p))) {
+    while ( (p=(const char**)utarray_next(opam_pending_deps, p))) {
         log_info("  %s", *p);
     }
 #endif
@@ -568,23 +568,24 @@ EXPORT void convert_findlib_pkgs(UT_array *opam_pending_deps)
 
     fprintf(ostream, "def bootstrap():\n");
 
-    fprintf(ostream, "    native.local_repository(\n");
-    fprintf(ostream, "        name       = \"ocaml\",\n");
+    /* fprintf(ostream, "    native.local_repository(\n"); */
+    /* fprintf(ostream, "        name       = \"ocaml\",\n"); */
 
-    fprintf(ostream, "        path       = ");
-    fprintf(ostream, "\"%s/%s\",\n", bazel_ws_root, "ocaml");
-    fprintf(ostream, "    )\n\n");
+    /* fprintf(ostream, "        path       = "); */
+    /* fprintf(ostream, "\"%s/%s\",\n", bazel_ws_root, "ocaml"); */
+    /* fprintf(ostream, "    )\n\n"); */
 
-    /* we also always have lib/stublibs, which is not an OPAM pkg */
-    fprintf(ostream, "    native.local_repository(\n");
-    fprintf(ostream, "        name       = \"stublibs\",\n");
+    /* /\* we also always have lib/stublibs, which is not an OPAM pkg *\/ */
+    /* fprintf(ostream, "    native.local_repository(\n"); */
+    /* fprintf(ostream, "        name       = \"stublibs\",\n"); */
 
-    fprintf(ostream, "        path       = ");
-    fprintf(ostream, "\"%s/%s\",\n", bazel_ws_root, "stublibs");
-    fprintf(ostream, "    )\n\n");
+    /* fprintf(ostream, "        path       = "); */
+    /* fprintf(ostream, "\"%s/%s\",\n", bazel_ws_root, "stublibs"); */
+    /* fprintf(ostream, "    )\n\n"); */
 
     p = NULL;
-    while ( (p=(char**)utarray_next(opam_completed_deps, p))) {
+    while ( (p=(const char**)utarray_next(opam_completed_deps, p))) {
+        log_info("importing opam pkg: %s", *p);
         fprintf(ostream, "    native.local_repository(\n");
         fprintf(ostream, "        name       = \"%s\",\n", *p);
         fprintf(ostream, "        path       = ");
@@ -602,7 +603,7 @@ EXPORT void convert_findlib_pkgs(UT_array *opam_pending_deps)
 
     /* toolchains */
     tc = toolchains;
-    while (*tc != "") {
+    while (strlen(*tc) != 0) { // *tc != "") {
         fprintf(ostream,
                 "    native.register_toolchains(\"%s\")\n",
                 *tc++);

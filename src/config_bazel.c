@@ -160,6 +160,8 @@ EXPORT void bazel_configure(void) // char *_exec_root)
 #endif
     launch_dir = getcwd(NULL, 0);
 
+    /* NB: the Bazel cc toolchain always sets -DBAZEL_CURRENT_REPOSITORY */
+    log_debug("BAZEL_CURRENT_REPOSITORY: %s", BAZEL_CURRENT_REPOSITORY);
     build_wd = getenv("BUILD_WORKING_DIRECTORY");
 
     utstring_new(runfiles_root);
@@ -168,6 +170,14 @@ EXPORT void bazel_configure(void) // char *_exec_root)
     log_debug("runfiles_root: %s", utstring_body(runfiles_root));
 #endif
 
+    /* RUNFILES_MANIFEST_FILE and RUNFILES_DIR are only set for 'bazel
+       test' runs.
+    char *runfiles_manifest = getenv("RUNFILES_MANIFEST_FILE");
+    log_debug("RUNFILES_MANIFEST_FILE: %s", runfiles_manifest);
+
+    char *runfiles_dir = getenv("RUNFILES_DIR");
+    log_debug("RUNFILES_DIR: %s", runfiles_dir);
+    */
 
 #if defined(DEBUG_TRACE)
     if (debug) log_debug("BUILD_WORKING_DIRECTORY: %s", build_wd);

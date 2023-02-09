@@ -311,7 +311,7 @@ char *dunefile_to_string(UT_string *dunefile_name)
 #endif
 
     if (fileSize > BUFSZ) {
-        printf(RED "ERROR:" CRESET " dune file size (%d) > BUFSZ (%d)\n", fileSize, BUFSZ);
+        printf(RED "ERROR:" CRESET " dune file size (%llu) > BUFSZ (%d)\n", fileSize, BUFSZ);
         log_error("dune file size (%d) > BUFSZ (%d)", fileSize, BUFSZ);
         exit(EXIT_FAILURE);     /* FIXME: exit gracefully */
     }
@@ -396,6 +396,7 @@ char *dunefile_to_string(UT_string *dunefile_name)
 /*             if (debug) log_debug("remainder: '%s'", inptr); */
 /* #endif */
             size_t ct = strlcpy(outptr, (const char*)inptr, fileSize); // strlen(outptr));
+            (void)ct;           /* prevent -Wunused-variable */
 /* #if defined(DEBUG_TRACE) */
 /*             if (debug) log_debug("concatenated: '%s'", outptr); */
 /* #endif */

@@ -37,7 +37,7 @@ extern UT_string *opam_switch_lib;
 /* /\* const char *errmsg = NULL; *\/ */
 /* #define TO_STR(x) s7_object_to_c_string(s7, x) */
 
-static int level = 0;
+/* static int level = 0; */
 extern int spfactor;
 extern char *sp;
 
@@ -58,7 +58,7 @@ FILE *opam_resolver;
 extern UT_string *repo_name;
 
 /* FIXME: same in mibl/error_handler.c */
-void emit_opam_pkg_bindir(char *pkg) // UT_string *dune_pkg_file)
+void emit_opam_pkg_bindir(const char *pkg) // UT_string *dune_pkg_file)
                           /* char *switch_lib, */
                           /* char *pkg, */
                           /* char *obazl, */
@@ -306,7 +306,7 @@ void emit_opam_pkg_bindir(char *pkg) // UT_string *dune_pkg_file)
 UT_string *dune_pkg_file;
 
 /* pkg always relative to (global) opam_switch_lib */
-EXPORT void emit_pkg_bindir(char *pkg)
+EXPORT void emit_pkg_bindir(const char *pkg)
 {
 #if defined(DEBUG_TRACE)
     if (trace) log_trace("emit_pkg_bindir");

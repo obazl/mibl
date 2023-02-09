@@ -318,13 +318,14 @@ void handle_findlib_pkg(// char *opam_switch_lib,
     char *old_cwd = getcwd(NULL, 0);
 
     int rc = chdir(utstring_body(opam_switch_lib));
+    (void)rc;
 
 #if defined(DEBUG_TRACE)
     if (debug) log_debug("%-16s%s", "cwd:",  getcwd(NULL, 0));
 #endif
 
-    FTS* tree = NULL;
-    FTSENT *ftsentry     = NULL;
+    /* FTS* tree = NULL; */
+    /* FTSENT *ftsentry     = NULL; */
 
     errno = 0;
 

@@ -875,7 +875,7 @@ void libc_s7_init(s7_scheme *sc);
 /* } */
 
 /* defined in s7.c, we need the prototype */
-void s7_config_libc_s7(s7_scheme *sc);
+/* void s7_config_libc_s7(s7_scheme *sc); */
 
 EXPORT void s7_shutdown(s7_scheme *s7)
 {
@@ -895,7 +895,7 @@ EXPORT void mibl_s7_init(void)
     /* tmp dir */
     char tplt[] = "/tmp/obazl.XXXXXXXXXX";
     char *tmpdir = mkdtemp(tplt);
-    printf("tmpdir: %s\n", tmpdir);
+    /* printf("tmpdir: %s\n", tmpdir); */
     s7_define_variable(s7, "*tmp-dir*", s7_make_string(s7, tmpdir));
 }
 

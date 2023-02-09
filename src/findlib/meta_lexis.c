@@ -74,7 +74,8 @@ int get_next_meta_token(struct meta_lexer_s *lexer, union meta_token *mtok)
     /* const char *txt1, *txt2; */
 
     /* mtags */
-    int f1, f2;                /* flags */
+    int f1; (void)f1;
+    int f2; (void)f2;
     /* int dep1, dep2; */
     /* const char *vtok1, *vtok2; */
 

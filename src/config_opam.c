@@ -76,7 +76,6 @@ EXPORT void opam_configure(char *_opam_switch)
     /* FIXME: argv */
     char *exe = NULL, *result = NULL;
     if (strlen(_opam_switch) == 0) {
-        log_info("opam: using current switch");
 
         exe = "opam";
         /* char *argv[] = {"opam", "var", "switch",NULL}; */
@@ -87,6 +86,8 @@ EXPORT void opam_configure(char *_opam_switch)
             fprintf(stderr, "FAIL: run_cmd 'opam var ocaml:version'\n");
         } else {
             utstring_printf(opam_switch_id, "%s", result);
+            log_info("opam: using current switch: %s", result);
+
 #if defined(DEBUG_TRACE)
             log_debug("cmd result: '%s'", utstring_body(opam_switch_id));
 #endif

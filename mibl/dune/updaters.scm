@@ -864,6 +864,7 @@
 
 (define (update-stanza-deps pkg fname mdeps)
   (format #t "~A: ~A~%" (ublue "update-stanza-deps") (assoc-val :pkg-path pkg))
+  (format #t "~A: ~A~%" (blue "pkg") pkg)
   (format #t "~A: ~A~%" (blue "fname") fname)
   (format #t "~A: ~A~%" (blue "mdeps") mdeps)
   (let ((mname (filename->module-name fname)))

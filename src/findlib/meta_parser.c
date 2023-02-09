@@ -75,6 +75,7 @@ EXPORT struct obzl_meta_package *obzl_meta_parse_file(char *_fname)
     fseek(f, 0, SEEK_SET);
     char *buffer = (char*) malloc(fsize + 1);
     size_t read_ct = fread(buffer, 1, fsize, f);
+    (void)read_ct;              /* prevent -Wunused-variable */
 #if defined(DEBUG_TRACE)
     /* log_info("readed: %d", read_ct); */
 #endif

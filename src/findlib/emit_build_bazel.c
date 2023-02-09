@@ -2743,7 +2743,7 @@ The variable "directory" redefines the location of the package directory. Normal
     /* } */
 }
 
-EXPORT void emit_workspace_file(UT_string *ws_file, char *repo_name)
+EXPORT void emit_workspace_file(UT_string *ws_file, const char *repo_name)
 {
 #if defined(DEBUG_TRACE)
     log_debug("emit_workspace_file: %s", utstring_body(ws_file));
@@ -2908,7 +2908,7 @@ EXPORT void emit_build_bazel(// char *ws_name,
     /* dump_package(0, _pkg); */
 
     int rc = pkg_deps(_pkg, opam_pending_deps, opam_completed_deps);
-    char **p = NULL;
+    /* char **p = NULL; */
     /* while ( (p=(char**)utarray_next(opam_completed_deps, p))) { */
     /*     log_debug(RED "  completed dep:" CRESET " %s",*p); */
     /* } */

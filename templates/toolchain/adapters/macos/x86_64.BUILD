@@ -4,7 +4,7 @@ exports_files(["BUILD.bazel"])
 
 ## toolchains where buildhost == macos/x86_64
 
-load("@rules_ocaml//toolchain:adapter.bzl", "ocaml_toolchain_adapter")
+load("@rules_ocaml//toolchain:BUILD.bzl", "ocaml_toolchain_adapter")
 
 ######## toolchain adapters ########
 

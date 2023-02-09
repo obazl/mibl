@@ -2,7 +2,7 @@
 
 exports_files(["BUILD.bazel"])
 
-load("@rules_ocaml//toolchain:adapter.bzl", "ocaml_toolchain_adapter")
+load("@rules_ocaml//toolchain:BUILD.bzl", "ocaml_toolchain_adapter")
 
 ########################
 ocaml_toolchain_adapter(

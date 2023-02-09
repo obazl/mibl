@@ -189,23 +189,23 @@ EXPORT char * run_cmd(char *executable, char **argv)
     return buffer;
 }
 
-LOCAL char principal[256];
+/* LOCAL char principal[256]; */
 
-LOCAL char *_module_name(FTSENT *ftsentry, char *ext)
-{
-    strlcpy(principal, ftsentry->fts_name, 256);
-    principal[ext - ftsentry->fts_name] = '\0';
-    principal[0] = toupper(principal[0]);
-    return (char *)principal;
-}
+/* LOCAL char *_module_name(FTSENT *ftsentry, char *ext) */
+/* { */
+/*     strlcpy(principal, ftsentry->fts_name, 256); */
+/*     principal[ext - ftsentry->fts_name] = '\0'; */
+/*     principal[0] = toupper(principal[0]); */
+/*     return (char *)principal; */
+/* } */
 
-LOCAL char *_principal_name(FTSENT *ftsentry, char *ext)
-{
-    strlcpy(principal, ftsentry->fts_name, 256);
-    principal[ext - ftsentry->fts_name] = '\0';
-    /* principal[0] = toupper(principal[0]); */
-    return (char *)principal;
-}
+/* LOCAL char *_principal_name(FTSENT *ftsentry, char *ext) */
+/* { */
+/*     strlcpy(principal, ftsentry->fts_name, 256); */
+/*     principal[ext - ftsentry->fts_name] = '\0'; */
+/*     /\* principal[0] = toupper(principal[0]); *\/ */
+/*     return (char *)principal; */
+/* } */
 
 EXPORT int copyfile(char *fromfile, char *tofile) {
     char ch;// source_file[20], target_file[20];

@@ -189,13 +189,16 @@ void emit_bazel_jsoo(FILE* ostream,
             }
         }
         utstring_free(label);
-    _next: ;
+    /* _next: ; */
         ;
     }
     /* emit 'deps = [...]' attribute */
-    emit_bazel_deps_attribute(ostream, 1, ocaml_ws,
+    emit_bazel_deps_attribute(ostream, 1,
                               true, /* jsoo */
-                              "lib", _pkg_name, _entries);
+                              ocaml_ws, /* repo */
+                              "lib",    /* pkg */
+                              _pkg_name, /* pkg_name */
+                              _entries);
 
     /* no need for ppx_codeps, they're only needed for ocaml compilation */
 

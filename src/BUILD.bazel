@@ -115,6 +115,7 @@ cc_library(
         "//conditions:default":   []
     }),
     copts = [
+        "-x", "c",
         "-std=c11",
         "-g",
         "-Wall",

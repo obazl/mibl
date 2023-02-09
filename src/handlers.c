@@ -169,22 +169,22 @@ bool _is_ws_root(FTSENT *ftsentry)
     return false;
 }
 
-LOCAL bool _this_is_hidden(FTSENT *ftsentry)
-{
-    if (ftsentry->fts_name[0] == '.') {
-        /* process the "." passed to fts_open, skip any others */
-        if (ftsentry->fts_pathlen > 1) {
-            // do not process children of hidden dirs
-            /* if (trace) */
-            /*     log_trace(RED "Excluding" CRESET " hidden dir: %s\n", */
-            /*               ftsentry->fts_path); //, ftsentry->fts_name); */
-            return true;
-            /* } else { */
-            /*     printf("ROOT DOT dir\n"); */
-        }
-    }
-    return false;
-}
+/* LOCAL bool _this_is_hidden(FTSENT *ftsentry) */
+/* { */
+/*     if (ftsentry->fts_name[0] == '.') { */
+/*         /\* process the "." passed to fts_open, skip any others *\/ */
+/*         if (ftsentry->fts_pathlen > 1) { */
+/*             // do not process children of hidden dirs */
+/*             /\* if (trace) *\/ */
+/*             /\*     log_trace(RED "Excluding" CRESET " hidden dir: %s\n", *\/ */
+/*             /\*               ftsentry->fts_path); //, ftsentry->fts_name); *\/ */
+/*             return true; */
+/*             /\* } else { *\/ */
+/*             /\*     printf("ROOT DOT dir\n"); *\/ */
+/*         } */
+/*     } */
+/*     return false; */
+/* } */
 
 /* LOCAL s7_pointer make_pkg_key(char *path) */
 /* { */
@@ -245,33 +245,33 @@ LOCAL bool _this_is_hidden(FTSENT *ftsentry)
 /*     _indent(ftsentry->fts_level); */
 /* } */
 
-static char principal[256];
+/* static char principal[256]; */
 
-LOCAL char *_module_name(FTSENT *ftsentry, char *ext)
-{
-    strlcpy(principal, ftsentry->fts_name, 256);
-    principal[ext - ftsentry->fts_name] = '\0';
-    principal[0] = toupper(principal[0]);
-    return (char *)principal;
-}
+/* LOCAL char *_module_name(FTSENT *ftsentry, char *ext) */
+/* { */
+/*     strlcpy(principal, ftsentry->fts_name, 256); */
+/*     principal[ext - ftsentry->fts_name] = '\0'; */
+/*     principal[0] = toupper(principal[0]); */
+/*     return (char *)principal; */
+/* } */
 
-LOCAL char *_principal_name(FTSENT *ftsentry, char *ext)
-{
-    strlcpy(principal, ftsentry->fts_name, 256);
-    principal[ext - ftsentry->fts_name] = '\0';
-    /* principal[0] = toupper(principal[0]); */
-    return (char *)principal;
-}
+/* LOCAL char *_principal_name(FTSENT *ftsentry, char *ext) */
+/* { */
+/*     strlcpy(principal, ftsentry->fts_name, 256); */
+/*     principal[ext - ftsentry->fts_name] = '\0'; */
+/*     /\* principal[0] = toupper(principal[0]); *\/ */
+/*     return (char *)principal; */
+/* } */
 
-LOCAL bool _exclusions(FTSENT *ftsentry, char *ext)
-{
-    if (ext == NULL) {
-    } else {
-        if (strncmp(ext, ".gitignore", 10) == 0)
-            return true;
-    }
-    return false;
-}
+/* LOCAL bool _exclusions(FTSENT *ftsentry, char *ext) */
+/* { */
+/*     if (ext == NULL) { */
+/*     } else { */
+/*         if (strncmp(ext, ".gitignore", 10) == 0) */
+/*             return true; */
+/*     } */
+/*     return false; */
+/* } */
 
 /* void handle_ml_file(FTSENT *ftsentry, char *ext) */
 /* { */

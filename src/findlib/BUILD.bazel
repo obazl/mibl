@@ -138,6 +138,8 @@ cc_library(
         "//templates:ocaml_str.BUILD",
 
         "//templates/platforms:BUILD.bazel",
+        "//templates/platforms/build:BUILD.bazel",
+        "//templates/platforms/target:BUILD.bazel",
 
         "//templates:toolchain/adapters/local.BUILD",
         "//templates:toolchain/adapters/linux/x86_64.BUILD",

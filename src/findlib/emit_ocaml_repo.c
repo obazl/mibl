@@ -544,10 +544,23 @@ void emit_ocaml_platform_buildfiles(char *bzl_switch_lib)
     /* platform definitions */
     utstring_new(ocaml_file);
     /* utstring_concat(ocaml_file, bzl_switch_pfx); */
+
     utstring_printf(ocaml_file, "%s/ocaml/platforms", bzl_switch_lib);
     mkdir_r(utstring_body(ocaml_file));
     utstring_printf(ocaml_file, "/BUILD.bazel");
     _copy_buildfile("platforms/BUILD.bazel", ocaml_file);
+
+    utstring_renew(ocaml_file);
+    utstring_printf(ocaml_file, "%s/ocaml/platforms/build", bzl_switch_lib);
+    mkdir_r(utstring_body(ocaml_file));
+    utstring_printf(ocaml_file, "/BUILD.bazel");
+    _copy_buildfile("platforms/build/BUILD.bazel", ocaml_file);
+
+    utstring_renew(ocaml_file);
+    utstring_printf(ocaml_file, "%s/ocaml/platforms/target", bzl_switch_lib);
+    mkdir_r(utstring_body(ocaml_file));
+    utstring_printf(ocaml_file, "/BUILD.bazel");
+    _copy_buildfile("platforms/target/BUILD.bazel", ocaml_file);
 
     utstring_free(ocaml_file);
 }
@@ -562,14 +575,14 @@ void emit_ocaml_toolchain_buildfiles(char *bzl_switch_lib)
 
     /* platform definitions */
     utstring_new(ocaml_file);
-    utstring_new(ocaml_file);
+    /* utstring_new(ocaml_file); */
     utstring_printf(ocaml_file, "%s/ocaml/toolchain/selectors/local",
                     bzl_switch_lib);
     mkdir_r(utstring_body(ocaml_file));
     utstring_printf(ocaml_file, "/BUILD.bazel");
     _copy_buildfile("toolchain/selectors/local.BUILD", ocaml_file);
 
-    utstring_new(ocaml_file);
+    utstring_renew(ocaml_file);
     utstring_printf(ocaml_file, "%s/ocaml/toolchain/selectors/macos/x86_64",
                     bzl_switch_lib);
     mkdir_r(utstring_body(ocaml_file));

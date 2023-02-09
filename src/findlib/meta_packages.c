@@ -265,7 +265,8 @@ EXPORT int pkg_deps(struct obzl_meta_package *_pkg,
         /* int flags_ct; // = 0; */
         if (flags != NULL) {
             /* register_flags(flags); // why? */
-            int flags_ct = obzl_meta_flags_count(flags);
+            //int flags_ct =   /* -Wunused-variable */
+            obzl_meta_flags_count(flags);
             /* log_debug("flags_ct: %d", flags_ct); */
         }
 
@@ -276,8 +277,10 @@ EXPORT int pkg_deps(struct obzl_meta_package *_pkg,
         bool has_conditions;
         if (flags == NULL)
             utstring_printf(condition_name, "//conditions:default");
-        else
+        else {
             has_conditions = obzl_meta_flags_to_selection_label(flags, condition_name);
+            (void)has_conditions; /* prevent [-Wunused-but-set-variable] */
+        }
 
         char *condition_comment = obzl_meta_flags_to_comment(flags);
         /* log_debug("condition_comment: %s", condition_comment); */
@@ -332,7 +335,7 @@ EXPORT int pkg_deps(struct obzl_meta_package *_pkg,
             /* log_debug("DEP DESEGMENTED: '%s'", s); */
 
             p = NULL;
-            p = (const char**)utarray_find(completed_deps, &s, strsort);
+            p = (char**)utarray_find(completed_deps, &s, strsort);
             if (p != NULL) {
 /* #if defined(DEBUG_TRACE) */
 /*                 if (debug) */
@@ -340,7 +343,7 @@ EXPORT int pkg_deps(struct obzl_meta_package *_pkg,
 /* #endif */
             } else {
                 utarray_sort(pending_deps,strsort); /* FIXME: can we avoid this? */
-                p = (const char**)utarray_find(pending_deps, &s, strsort);
+                p = (char**)utarray_find(pending_deps, &s, strsort);
                 if (p != NULL) {
 /* #if defined(DEBUG_TRACE) */
 /*                     if (debug) */

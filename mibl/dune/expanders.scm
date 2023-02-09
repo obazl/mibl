@@ -33,7 +33,7 @@
                   (cdr deps)))
        ::node)
 
-      ((%{deps}) ::deps)
+      ((%{deps}) :deps) ;; ::deps
        ;; (set-cdr! deps
        ;;           (append
        ;;            (list (cons ::tools
@@ -217,7 +217,7 @@
   (case arg
     ((%{deps})
       ;; special case
-     ::deps)
+     :deps) ;; ::deps
 
     (else
      (let-values (((sym pfx sfx) (parse-pct-var arg)))
