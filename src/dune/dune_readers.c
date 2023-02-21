@@ -285,7 +285,8 @@ char *dunefile_to_string(UT_string *dunefile_name)
         log_trace("dunefile_to_string: %s", utstring_body(dunefile_name));
 #endif
     /* core/dune file size: 45572 */
-#define BUFSZ 65536
+    // 2K
+#define BUFSZ 131072
     static char inbuf[BUFSZ];
     memset(inbuf, '\0', BUFSZ);
     static char outbuf[BUFSZ + 20];
@@ -311,7 +312,7 @@ char *dunefile_to_string(UT_string *dunefile_name)
 #endif
 
     if (fileSize > BUFSZ) {
-        printf(RED "ERROR:" CRESET " dune file size (%llu) > BUFSZ (%d)\n", fileSize, BUFSZ);
+        printf(RED "ERROR:" CRESET " dune file '%s' size (%llu) > BUFSZ (%d)\n", utstring_body(dunefile_name), fileSize, BUFSZ);
         log_error("dune file size (%d) > BUFSZ (%d)", fileSize, BUFSZ);
         exit(EXIT_FAILURE);     /* FIXME: exit gracefully */
     }
