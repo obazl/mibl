@@ -937,6 +937,7 @@ void _symlink_ocaml_bigarray(char *tgtdir)
 }
 
 /* **************************************************************** */
+/* for <switch>/lib/ocaml/compiler-libs */
 void emit_ocaml_compiler_libs_pkg(char *bzl_switch_lib)
 {
 #if defined(DEBUG_TRACE)
@@ -991,6 +992,59 @@ void emit_ocaml_compiler_libs_pkg(char *bzl_switch_lib)
     utstring_free(ocaml_file);
 }
 
+/* for <switch>/lib/compiler-libs */
+void emit_compiler_libs_pkg(char *bzl_switch_lib)
+{
+#if defined(DEBUG_TRACE)
+    if (trace) log_debug("emit_compiler_libs_pkg");
+#endif
+
+    UT_string *ocaml_file;
+    utstring_new(ocaml_file);
+    /* utstring_concat(ocaml_file, bzl_switch_pfx); */
+    utstring_printf(ocaml_file, "%s/compiler-libs/lib/compiler-libs", bzl_switch_lib);
+    mkdir_r(utstring_body(ocaml_file));
+
+    /* _symlink_ocaml_compiler_libs(utstring_body(ocaml_file)); */
+
+    utstring_printf(ocaml_file, "/BUILD.bazel");
+    _copy_buildfile("compiler_libs/common.BUILD", ocaml_file);
+
+    utstring_renew(ocaml_file);
+    /* utstring_concat(ocaml_file, bzl_switch_pfx); */
+    utstring_printf(ocaml_file, "%s/compiler-libs/lib/common",
+                    bzl_switch_lib);
+    mkdir_r(utstring_body(ocaml_file));
+    utstring_printf(ocaml_file, "/BUILD.bazel");
+    _copy_buildfile("compiler_libs/common.BUILD", ocaml_file);
+
+    utstring_renew(ocaml_file);
+    /* utstring_concat(ocaml_file, bzl_switch_pfx); */
+    utstring_printf(ocaml_file, "%s/compiler-libs/lib/bytecomp",
+                    bzl_switch_lib);
+    mkdir_r(utstring_body(ocaml_file));
+    utstring_printf(ocaml_file, "/BUILD.bazel");
+    _copy_buildfile("compiler_libs/bytecomp.BUILD", ocaml_file);
+
+    utstring_renew(ocaml_file);
+    /* utstring_concat(ocaml_file, bzl_switch_pfx); */
+    utstring_printf(ocaml_file, "%s/compiler-libs/lib/optcomp",
+                    bzl_switch_lib);
+    mkdir_r(utstring_body(ocaml_file));
+    utstring_printf(ocaml_file, "/BUILD.bazel");
+    _copy_buildfile("compiler_libs/optcomp.BUILD", ocaml_file);
+
+    utstring_renew(ocaml_file);
+    /* utstring_concat(ocaml_file, bzl_switch_pfx); */
+    utstring_printf(ocaml_file, "%s/compiler-libs/lib/toplevel",
+                    bzl_switch_lib);
+    mkdir_r(utstring_body(ocaml_file));
+    utstring_printf(ocaml_file, "/BUILD.bazel");
+    _copy_buildfile("compiler_libs/toplevel.BUILD", ocaml_file);
+
+    utstring_free(ocaml_file);
+}
+
 void _symlink_ocaml_compiler_libs(char *tgtdir)
 {
 #if defined(DEBUG_TRACE)
@@ -1030,9 +1084,9 @@ void _symlink_ocaml_compiler_libs(char *tgtdir)
             utstring_renew(dst);
             utstring_printf(dst, "%s/%s",
                             tgtdir, direntry->d_name);
-            /* log_debug("symlinking %s to %s\n", */
-            /*           utstring_body(src), */
-            /*           utstring_body(dst)); */
+            log_debug("symlinking %s to %s\n",
+                      utstring_body(src),
+                      utstring_body(dst));
             rc = symlink(utstring_body(src),
                          utstring_body(dst));
             if (rc != 0) {
@@ -1806,6 +1860,7 @@ EXPORT void emit_ocaml_workspace(char *bzl_switch_lib)  // dest
     emit_ocaml_stublibs(bzl_switch_lib);
     emit_lib_stublibs(bzl_switch_lib);
 
+    emit_compiler_libs_pkg(bzl_switch_lib);
     emit_ocaml_compiler_libs_pkg(bzl_switch_lib);
 
     emit_ocaml_bigarray_pkg(bzl_switch_lib);

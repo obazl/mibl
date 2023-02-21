@@ -784,7 +784,7 @@ void emit_bazel_cc_imports(FILE* ostream,
     while ((direntry = readdir(d)) != NULL) {
         if ((direntry->d_type==DT_REG)
             || (direntry->d_type==DT_LNK)) {
-            if (fnmatch("*stubs.a", direntry->d_name, 0) == 0) {
+            if (fnmatch("lib*stubs.a", direntry->d_name, 0) == 0) {
                 /* printf("FOUND STUBLIB: %s\n", direntry->d_name); */
 
                 fprintf(ostream, "cc_import(\n");
@@ -803,6 +803,8 @@ void emit_bazel_cc_imports(FILE* ostream,
     }
     closedir(d);
 }
+
+UT_array *cc_stubs;
 
 void emit_bazel_stublibs_attr(FILE* ostream,
                               int level, /* indentation control */
@@ -852,29 +854,50 @@ void emit_bazel_stublibs_attr(FILE* ostream,
 
     /* bool wrote_loader = false; */
 
-    /* RASH ASSUMPTION: only one stublib per directory */
+    utarray_new(cc_stubs, &ut_str_icd);
+    char *s;
+    /* s = "hello"; utarray_push_back(cc_stubs, &s); */
+    /* s = "world"; utarray_push_back(cc_stubs, &s); */
+
+    char strbuf[128];
+    char *sbuf = &strbuf;
+    char *foo = "foo";
     struct dirent *direntry;
+
     while ((direntry = readdir(d)) != NULL) {
         if ((direntry->d_type==DT_REG)
             || (direntry->d_type==DT_LNK)) {
-            if (fnmatch("*stubs.a", direntry->d_name, 0) == 0) {
-                fprintf(ostream, "%*scc_deps   = [\":_%s\"],\n",
-                        level*spfactor, sp, direntry->d_name);
+            if (fnmatch("lib*stubs.a", direntry->d_name, 0) == 0) {
 
-                /* fprintf(ostream, "cc_import(\n"); */
-                /* fprintf(ostream, "    name    = \"%s_stubs\",\n", */
-                /*         _pkg_name); */
-                /* fprintf(ostream, "    archive = \"%s\",\n", */
-                /*         direntry->d_name); */
-                /* fprintf(ostream, ")\n"); */
+                /* fprintf(ostream, "%*scc_deps   = [\":_%s\"],\n", */
+                /*         level*spfactor, sp, direntry->d_name); */
+
+                (void)strncpy(strbuf, direntry->d_name, direntry->d_namlen);
+                strbuf[direntry->d_namlen] = '\0';
+                /* fprintf(ostream, "X %s\n", strbuf); */
+
+                /* printf("STUBLIB: %s\n", strbuf); */
+                /* printf("stublib: %s\n", direntry->d_name); */
+                utarray_push_back(cc_stubs, &sbuf);
+
             } else {
                 if (fnmatch("*stubs.so", direntry->d_name, 0) == 0) {
-                    printf("FOUND SO LIB: %s\n", direntry->d_name);
+                    printf("FOUND SO STUBLIB: %s\n", direntry->d_name);
             }
                 /* printf("skipping %s\n", direntry->d_name); */
             }
         }
     }
+    char **p;
+    p = NULL;
+    fprintf(ostream, "%*scc_deps   = [\n", level*spfactor, sp);
+    while ( (p=(char**)utarray_next(cc_stubs, p)) ) {
+        fprintf(ostream, "        \":_%s\",\n", *p);
+    }
+    fprintf(ostream, "%*],\n", level*spfactor, sp);
+
+    utarray_free(cc_stubs);
+
     closedir(d);
 }
 
@@ -961,7 +984,7 @@ void emit_bazel_archive_attr(FILE* ostream,
                              char *_filedeps_path, /* _lib */
                              /* char *_subpkg_dir, */
                              obzl_meta_entries *_entries,
-                             char *property, /* = 'archive' or 'plugin' */
+                             char *property, /* always 'archive' */
                              obzl_meta_package *_pkg)
 {
 #if defined(DEBUG_TRACE)
@@ -980,6 +1003,10 @@ void emit_bazel_archive_attr(FILE* ostream,
         log_warn("Prop '%s' not found: %s.", property); //, pkg_name);
         return;
     }
+    /*
+      archive(byte) = "oUnit.cma"
+      archive(native) = "oUnit.cmxa"
+    */
 
     obzl_meta_settings *settings = obzl_meta_property_settings(deps_prop);
 
@@ -1001,6 +1028,10 @@ void emit_bazel_archive_attr(FILE* ostream,
     obzl_meta_values *vals;
     obzl_meta_value *archive_name = NULL;
 
+    /* lhs */
+    fprintf(ostream, "%*s%s  =  select({\n", level*spfactor, sp, "archive");
+
+    /* iter over archive(byte), archive(native) */
     for (int i = 0; i < settings_ct; i++) {
         setting = obzl_meta_settings_nth(settings, i);
 #if defined(DEBUG_TRACE)
@@ -1009,6 +1040,7 @@ void emit_bazel_archive_attr(FILE* ostream,
         /* dump_setting(0, setting); */
 
         obzl_meta_flags *flags = obzl_meta_setting_flags(setting);
+        /* for archive: 'byte', 'native' */
 
         /* skip any setting with deprecated flag, e.g. 'vm' */
         if (obzl_meta_flags_deprecated(flags)) {
@@ -1026,15 +1058,23 @@ void emit_bazel_archive_attr(FILE* ostream,
             utstring_printf(cmtag, "//conditions:default");
         else
             /* updates cmtag */
+            /* maps: 'byte' => 'cma'; 'native' => 'cmxa' */
             has_conditions = obzl_meta_flags_to_cmtag(flags, cmtag);
 
         if (!has_conditions) {
             goto next;          /* continue does not seem to exit loop */
         }
         if (settings_ct > 1) {
-            fprintf(ostream, "%*s%s", level*spfactor, sp,
-                    utstring_body(cmtag));
+            if (strncmp(utstring_body(cmtag), "cma", 4) == 0)
+                fprintf(ostream, "%*s\"%s\":", level*spfactor + 4, sp, "@ocaml//platforms/target:vm?");
+            else
+                fprintf(ostream, "%*s\"%s\":    ", level*spfactor + 4, sp, "//conditions:default");
+
+            /* fprintf(ostream, "%*s%s", level*spfactor, sp, "archive"); */
+            /* fprintf(ostream, "%*s%s", level*spfactor, sp, */
+            /*         utstring_body(cmtag)); */
         }
+        //else???
 
         /* now we handle UPDATE settings */
         vals = resolve_setting_values(setting, flags, settings);
@@ -1047,6 +1087,7 @@ void emit_bazel_archive_attr(FILE* ostream,
         UT_string *label;
         utstring_new(label);
 
+        /* for archive, should be only 1 value */
         for (int j = 0; j < obzl_meta_values_count(vals); j++) {
             archive_name = obzl_meta_values_nth(vals, j);
 #if defined(DEBUG_TRACE)
@@ -1098,11 +1139,12 @@ void emit_bazel_archive_attr(FILE* ostream,
             if (strncmp(utstring_body(cmtag), "cmxa", 4) == 0)
                 indent--;
             if (settings_ct > 1) {
-                    fprintf(ostream, "%*s = \"%s\",\n",
-                                        /* "@%.*s//%s/%s:%s", */
-                            indent, sp, utstring_body(label));
+                    fprintf(ostream, " \"%s\",\n",
+                            /* %*s */
+                            /* indent, sp, */
+                            utstring_body(label));
             } else {
-                    fprintf(ostream, "%*s = \"%s\",\n",
+                    fprintf(ostream, "5) %*s = \"%s\",\n",
                             indent, sp, utstring_body(label));
             }
         }
@@ -1110,6 +1152,7 @@ void emit_bazel_archive_attr(FILE* ostream,
     next:
         ;
     }
+    fprintf(ostream, "    }),\n");
 }
 
 void emit_bazel_cmxs_attr(FILE* ostream,
@@ -1504,6 +1547,8 @@ Note that "archive" should only be used for archive files that are intended to b
                          /* _filedeps_path, */
                          _entries, "description", "doc");
 
+    fprintf(ostream, "    sigs     = glob([\"*.cmi\"]),\n");
+
     emit_bazel_archive_attr(ostream, 1,
                             /* ws_name, // ocaml_ws, */
                             /* _pkg_path, */
@@ -1516,13 +1561,24 @@ Note that "archive" should only be used for archive files that are intended to b
                             "archive",
                             _pkg);
 
-    fprintf(ostream, "    cmi      = glob([\"*.cmi\"]),\n");
-    fprintf(ostream, "    cmo      = glob([\"*.cmo\"]),\n");
-    fprintf(ostream, "    cmx      = glob([\"*.cmx\"]),\n");
-    fprintf(ostream, "    ofiles   = glob([\"*.o\"]),\n");
+    /* fprintf(ostream, "    astructs    = select({\n" */
+    /*         "        \"@ocaml//platforms/target:vm?\": glob([\"*.cmo\"]),\n" */
+    /*         "        \"//conditions:default\": glob([\"*.cmx\"])\n" */
+    /*         "    }),\n"), */
+
+
+    /* FIXME: only .a stem matching archive stem  */
     fprintf(ostream, "    afiles   = glob([\"*.a\"], exclude=[\"*_stubs.a\"]),\n");
-    fprintf(ostream, "    cmt      = glob([\"*.cmt\"]),\n");
-    fprintf(ostream, "    cmti     = glob([\"*.cmti\"]),\n");
+
+    /* FIXME: 'structs', not 'astructs' -  bazel rule decides what to do */
+    fprintf(ostream, "    astructs = glob([\"*.cmx\"]),\n");
+
+    /* fprintf(ostream, "    cmo      = glob([\"*.cmo\"]),\n"); */
+    /* fprintf(ostream, "    cmx      = glob([\"*.cmx\"]),\n"); */
+    /* FIXME: ofiles are never present? */
+    fprintf(ostream, "    ofiles   = glob([\"*.o\"]),\n");
+    fprintf(ostream, "    cmts     = glob([\"*.cmt\"]),\n");
+    fprintf(ostream, "    cmtis    = glob([\"*.cmti\"]),\n");
     fprintf(ostream, "    vmlibs   = glob([\"dll*.so\"]),\n");
     fprintf(ostream, "    srcs     = glob([\"*.ml\", \"*.mli\"]),\n");
 
@@ -1625,8 +1681,8 @@ void emit_bazel_plugin_rule(FILE* ostream, int level,
     /* fprintf(ostream, "    cmx    = glob([\"*.cmx\"]),\n"); */
     /* fprintf(ostream, "    ofiles = glob([\"*.o\"]),\n"); */
     /* fprintf(ostream, "    afiles = glob([\"*.a\"]),\n"); */
-    /* fprintf(ostream, "    cmt    = glob([\"*.cmt\"]),\n"); */
-    /* fprintf(ostream, "    cmti   = glob([\"*.cmti\"]),\n"); */
+    /* fprintf(ostream, "    cmts   = glob([\"*.cmt\"]),\n"); */
+    /* fprintf(ostream, "    cmtis  = glob([\"*.cmti\"]),\n"); */
     /* fprintf(ostream, "    srcs   = glob([\"*.ml\", \"*.mli\"]),\n"); */
 
     emit_bazel_deps_attribute(ostream, 1,
@@ -1666,7 +1722,7 @@ bool emit_special_case_rule(FILE* ostream,
         fprintf(ostream, "alias(\n"
                 "    name = \"bigarray\",\n"
                 "    actual = \"@ocaml//bigarray\",\n"
-                /* "    visibility = [\"//visibility:public\"]\n" */
+                "    visibility = [\"//visibility:public\"]\n"
                 ")\n");
         return true;
     }
@@ -1680,7 +1736,7 @@ bool emit_special_case_rule(FILE* ostream,
         fprintf(ostream, "alias(\n"
                 "    name = \"dynlink\",\n"
                 "    actual = \"@ocaml//dynlink\",\n"
-                /* "    visibility = [\"//visibility:public\"]\n" */
+                "    visibility = [\"//visibility:public\"]\n"
                 ")\n");
         return true;
     }
@@ -1701,7 +1757,7 @@ bool emit_special_case_rule(FILE* ostream,
         fprintf(ostream, "alias(\n"
                 "    name = \"compiler-libs\",\n"
                 "    actual = \"@ocaml//compiler-libs/common\",\n"
-                /* "    visibility = [\"//visibility:public\"]\n" */
+                "    visibility = [\"//visibility:public\"]\n"
                 ")\n");
         return true;
     }
@@ -1739,7 +1795,7 @@ bool emit_special_case_rule(FILE* ostream,
         fprintf(ostream, "alias(\n"
                 "    name = \"num\",\n"
                 "    actual = \"@ocaml//num/core\",\n"
-                /* "    visibility = [\"//visibility:public\"]\n" */
+                "    visibility = [\"//visibility:public\"]\n"
                 ")\n");
         return true;
     }
@@ -1753,7 +1809,7 @@ bool emit_special_case_rule(FILE* ostream,
         fprintf(ostream, "alias(\n"
                 "    name = \"ocamldoc\",\n"
                 "    actual = \"@ocaml//ocamldoc\",\n"
-                /* "    visibility = [\"//visibility:public\"]\n" */
+                "    visibility = [\"//visibility:public\"]\n"
                 ")\n");
         return true;
     }
@@ -1767,7 +1823,7 @@ bool emit_special_case_rule(FILE* ostream,
         fprintf(ostream, "alias(\n"
                 "    name = \"str\",\n"
                 "    actual = \"@ocaml//str\",\n"
-                /* "    visibility = [\"//visibility:public\"]\n" */
+                "    visibility = [\"//visibility:public\"]\n"
                 ")\n");
         return true;
     }
@@ -1781,7 +1837,7 @@ bool emit_special_case_rule(FILE* ostream,
         fprintf(ostream, "alias(\n"
                 "    name = \"threads\",\n"
                 "    actual = \"@ocaml//threads\",\n"
-                /* "    visibility = [\"//visibility:public\"]\n" */
+                "    visibility = [\"//visibility:public\"]\n"
                 ")\n");
         return true;
     }
@@ -1795,7 +1851,7 @@ bool emit_special_case_rule(FILE* ostream,
         fprintf(ostream, "alias(\n"
                 "    name = \"unix\",\n"
                 "    actual = \"@ocaml//unix\",\n"
-                /* "    visibility = [\"//visibility:public\"]\n" */
+                "    visibility = [\"//visibility:public\"]\n"
                 ")\n");
         return true;
     }
@@ -2771,14 +2827,14 @@ void emit_pkg_symlinks(UT_string *dst_dir,
     if (debug)
         log_debug("emit_symlinks for pkg: %s", pkg_name);
 #endif
-    if ((strncmp(pkg_name, "dune", 4) == 0)
-        || (strncmp(utstring_body(src_dir), "dune/configurator", 17) == 0)) {
-#if defined(DEBUG_TRACE)
-        if (debug)
-            log_debug("Skipping 'dune' stuff\n");
-#endif
-        return;
-    }
+/*     if ((strncmp(pkg_name, "dune", 4) == 0)) { */
+/*         || (strncmp(utstring_body(src_dir), "dune/configurator", 17) == 0)) { */
+/* #if defined(DEBUG_TRACE) */
+/*         if (debug) */
+/*             log_debug("Skipping 'dune' stuff\n"); */
+/* #endif */
+/*         return; */
+/*     } */
 #if defined(DEBUG_TRACE)
     if (debug) {
         log_debug("\tpkg_symlinks src_dir: %s", utstring_body(src_dir));
@@ -2906,6 +2962,11 @@ EXPORT void emit_build_bazel(// char *ws_name,
     log_info("\t_filedeps_path: %s", _filedeps_path);
 #endif
     /* dump_package(0, _pkg); */
+
+    if (strncmp(_pkg->name, "compiler-libs", 13) == 0) {
+        /* handled separately */
+        return;
+    }
 
     int rc = pkg_deps(_pkg, opam_pending_deps, opam_completed_deps);
     /* char **p = NULL; */
@@ -3165,8 +3226,21 @@ EXPORT void emit_build_bazel(// char *ws_name,
         fprintf(ostream,
                 "load(\"@rules_cc//cc:defs.bzl\", \"cc_library\")\n"
                 "cc_library(\n"
-                "    name = \"libctypes\",\n"
-                "    srcs = glob([\"*.a\"]),\n"
+                "    name = \"hdrs\",\n"
+                /* "    srcs = glob([\"*.a\"]),\n" */
+                "    hdrs = glob([\"*.h\"]),\n"
+                /* "    visibility = [\"//visibility:public\"],\n" */
+                ")\n");
+    }
+
+    /* special case */
+    if ((strncmp(pkg_name, "cstubs", 6) == 0)
+        && strlen(pkg_name) == 6) {
+        fprintf(ostream,
+                "load(\"@rules_cc//cc:defs.bzl\", \"cc_library\")\n"
+                "cc_library(\n"
+                "    name = \"hdrs\",\n"
+                /* "    srcs = glob([\"*.a\"]),\n" */
                 "    hdrs = glob([\"*.h\"]),\n"
                 /* "    visibility = [\"//visibility:public\"],\n" */
                 ")\n");
