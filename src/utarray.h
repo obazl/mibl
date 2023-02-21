@@ -1,3 +1,4 @@
+
 /*
 Copyright (c) 2008-2020, Troy D. Hanson   http://troydhanson.github.com/uthash/
 All rights reserved.
@@ -110,7 +111,7 @@ typedef struct {
   utarray_reserve(a,1);                                                       \
   if ((a)->icd.copy) { (a)->icd.copy( _utarray_eltptr(a,(a)->i++), p); }      \
   else { memcpy(_utarray_eltptr(a,(a)->i++), p, (a)->icd.sz); };              \
-} while(0)
+  } while(0)
 
 #define utarray_pop_back(a) do {                                              \
   if ((a)->icd.dtor) { (a)->icd.dtor( _utarray_eltptr(a,--((a)->i))); }       \

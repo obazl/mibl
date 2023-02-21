@@ -622,11 +622,11 @@ LOCAL void _update_pkg_files(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
     }
 }
 
-LOCAL void _update_cc_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
+LOCAL void _update_cc_src_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 {
 #if defined(DEBUG_TRACE)
     if (debug)
-        log_debug("_update_cc_file: %s, ext: %s",
+        log_debug("_update_cc_src_file: %s, ext: %s",
                   ftsentry->fts_name, ext);
 #endif
 
@@ -661,7 +661,7 @@ LOCAL void _update_cc_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 #endif
     } else {
         s7_pointer assoc_in = _load_assoc_in();
-        s7_pointer keypath = s7_list(s7, 2, cc_kw, static_kw);
+        s7_pointer keypath = s7_list(s7, 2, cc_srcs_kw, static_kw);
         s7_pointer cc_assoc = s7_call(s7, assoc_in,
                                          s7_list(s7, 2,
                                                  keypath,
@@ -688,7 +688,139 @@ LOCAL void _update_cc_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 
             s7_pointer cc_list =
                 s7_list(s7, 1, s7_list(s7, 2,
-                                       cc_kw,
+                                       cc_srcs_kw,
+                                       static_assoc
+                                       ));
+#if defined(DEBUG_TRACE)
+            if (debug)
+                log_debug("cc_list: %s", TO_STR(cc_list));
+#endif
+
+            s7_pointer new_pkg = s7_append(s7,
+                                           pkg_alist,
+                                           cc_list);
+#if defined(DEBUG_TRACE)
+            if (debug)
+                log_debug("new pkg: %s", TO_STR(new_pkg));
+#endif
+
+            s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg);
+
+        } else {
+            /* assoc-in '(:cc :static) returns assoc (:static ...),
+               but we need the alist */
+            s7_pointer cc_alist = s7_cdr(cc_assoc);
+
+            /* if (debug) { */
+            /*     log_debug("updating :cc"); */
+            /*     log_debug("cc_alist: %s", TO_STR(cc_alist)); */
+            /* } */
+
+            /* s7_pointer cc_pair = */
+            /*     s7_list(s7, 2, */
+            /*             s7_make_keyword(s7, cc_ext), */
+            /*             s7_make_string(s7, ftsentry->fts_name)); */
+            /* log_debug("new cc_pair: %s", TO_STR(cc_pair)); */
+
+            s7_pointer new_cc_alist =
+                s7_append(s7,
+                /* s7_list(s7, 2, */
+                /* s7_cons(s7, */
+                          cc_alist,
+                          s7_list(s7, 1,
+                                  s7_make_string(s7, ftsentry->fts_name))
+                        /* cc_pair, */
+                          );
+            /* log_debug("new cc_alist: %s", */
+            /*            TO_STR(new_cc_alist)); */
+
+            /* s7_pointer sort      = _load_sort(); */
+            /* s7_pointer string_lt = _load_string_lt(); */
+            /* s7_pointer sorted */
+            /*     = s7_call(s7, sort, s7_list(s7, 2, */
+            /*                                 new_cc_alist, */
+            /*                                 string_lt)); */
+
+            /* log_debug("new cc_alist sorted: %s", */
+            /*           TO_STR(sorted)); */
+
+            s7_set_cdr(cc_assoc, new_cc_alist);
+            /* log_debug("cc_assoc: %s", */
+            /*           TO_STR(cc_assoc)); */
+
+            /* s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg); */
+
+        }
+    }
+}
+
+LOCAL void _update_cc_hdr_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
+{
+#if defined(DEBUG_TRACE)
+    if (debug)
+        log_debug("_update_cc_hdr_file: %s, ext: %s",
+                  ftsentry->fts_name, ext);
+#endif
+
+    if (_exclusions(ftsentry, ext)) {
+#if defined(DEBUG_TRACE)
+        if (debug)
+            log_warn("excluding %s", ftsentry->fts_name);
+#endif
+        return;
+    }
+
+    /* s7_pointer pkg_tbl = s7_name_to_value(s7, "pkg-tbl"); */
+    /* if (debug) */
+    /*     log_debug("pkg_tbl: %s", TO_STR(pkg_tbl)); */
+
+    char *pkg_name = dirname(ftsentry->fts_path);
+
+    /* s7_pointer pkg_key = s7_make_string(s7, pkg_name); */
+    s7_pointer pkg_key = make_pkg_key(pkg_name);
+    s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
+    /* if (debug) */
+    /*     log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
+
+    char *cc_ext =  strrchr(ftsentry->fts_name, '.');
+    cc_ext++; // exclude dot
+
+    if (pkg_alist == s7_f(s7)) {
+        // FIXME: should not happen, we always add a pkg entry first
+#if defined(DEBUG_TRACE)
+        if (debug)
+            log_debug("no entry for this pkg: %s", pkg_name);
+#endif
+    } else {
+        s7_pointer assoc_in = _load_assoc_in();
+        s7_pointer keypath = s7_list(s7, 2, cc_hdrs_kw, static_kw);
+        s7_pointer cc_assoc = s7_call(s7, assoc_in,
+                                         s7_list(s7, 2,
+                                                 keypath,
+                                                 pkg_alist));
+#if defined(DEBUG_TRACE)
+        if (debug) log_debug("cc_assoc %s", TO_STR(cc_assoc));
+#endif
+
+        if (cc_assoc == s7_f(s7)) {
+#if defined(DEBUG_TRACE)
+            if (debug)
+                log_debug("initializing (:cc (:static (:type . fname))) list");
+#endif
+
+            /* s7_pointer cc_pair = */
+            /*     s7_list(s7, 1, */
+            /*             /\* s7_make_keyword(s7, cc_ext), *\/ */
+            /*             s7_make_string(s7, ftsentry->fts_name)); */
+
+            s7_pointer static_assoc = s7_list(s7, 2,
+                                              static_kw,
+                                              s7_make_string(s7, ftsentry->fts_name));
+                                              /* cc_pair); */
+
+            s7_pointer cc_list =
+                s7_list(s7, 1, s7_list(s7, 2,
+                                       cc_hdrs_kw,
                                        static_assoc
                                        ));
 #if defined(DEBUG_TRACE)
@@ -2320,13 +2452,14 @@ LOCAL void _update_ml(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
     /* printf("_update_ml: "); */
     char *pkg_name = dirname(ftsentry->fts_path);
     char *mname = _module_name(ftsentry, ext);
+#if defined(DEBUG_TRACE)
     if (verbose) {
         log_info(BLU "_update_ml:" CRESET " %s; ", mname);
         log_info("pkg name: %s; fname: %s", pkg_name, ftsentry->fts_name);
         log_info("fts_path: %s\n", ftsentry->fts_path);
         log_info("fts_accpath: %s\n", ftsentry->fts_accpath);
     }
-
+#endif
     char *ml_name = strdup(ftsentry->fts_name);
 
     /* dirname may mutate its arg, use a copy */
@@ -2847,7 +2980,7 @@ LOCAL void _handle_cc_file(s7_pointer pkg_tbl,
     /* _indent(ftsentry->fts_level); */
     /* printf("%d. %s\n", ftsentry->fts_level, ftsentry->fts_name); */
 
-    _update_cc_file(pkg_tbl, ftsentry, ext);
+    _update_cc_src_file(pkg_tbl, ftsentry, ext);
 }
 
 LOCAL void _handle_symlink(s7_pointer pkg_tbl, FTS *tree, FTSENT *ftsentry)
@@ -3547,11 +3680,13 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
                         }
                         else if ((strncmp(ext, ".c", 2) == 0)
                                  && (strlen(ext) == 2)) {
-                            _handle_cc_file(pkg_tbl, ftsentry, ext);
+                            _update_cc_src_file(pkg_tbl, ftsentry, ext);
+                            /* _handle_cc_file(pkg_tbl, ftsentry, ext); */
                         }
                         else if ((strncmp(ext, ".h", 2) == 0)
                                  && (strlen(ext) == 2)) {
-                            _handle_cc_file(pkg_tbl, ftsentry, ext);
+                            _update_cc_hdr_file(pkg_tbl, ftsentry, ext);
+                            /* _handle_cc_file(pkg_tbl, ftsentry, ext); */
                         }
                         else if ((strncmp(ext, ".cc", 3) == 0)
                                  && (strlen(ext) == 3)) {

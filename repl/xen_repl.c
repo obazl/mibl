@@ -6,7 +6,7 @@
 #include "log.h"
 #include "s7.h"
 /* #include "s7_config.h" */
-#include "mibl.h"
+/* #include "mibl.h" */
 #include "xen_repl.h"
 
 extern s7_scheme *s7;

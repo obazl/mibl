@@ -31,9 +31,9 @@
         `(:cc-stubs (:name . ,name) ,@(dissoc '(:cc) res))
         `(:foreign-stubs (:name . ,name) ,res))))
 
-(define (c_names->mibl fld)
+(define (c_names->mibl stanza-name fld)
   (format #t "~A: ~A~%" (bgblue "c_names->mibl") fld)
-  `(:cc-stubs (:name "foo") (:c-srcs ,fld)))
+  `(:cc-stubs (:name ,stanza-name) (:c-srcs ,fld)))
   ;; (let ((lang (car (assoc 'language (cdr fld))))
   ;;       (res (map (lambda (fld)
   ;;                   (case (car fld)

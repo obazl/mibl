@@ -17,7 +17,7 @@
 /* #include "bazel_config.h" */
 /* #include "s7_config.h" */
 
-#include "mibl.h"
+/* #include "mibl.h" */
 #include "repl.h"
 
 extern s7_scheme *s7;

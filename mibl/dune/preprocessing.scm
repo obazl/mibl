@@ -110,11 +110,13 @@
                         (list ;; `(:name ,ppx-name)
                               ;; '(:scope :all)
                               `(:manifest ,@(reverse ppx-libs))))
-                  (cons :ppx
-                        (list ;; `(:name ,ppx-name)
-                              ;; '(:scope :all)
-                              `(:manifest ,@(reverse ppx-libs))
-                              `(:args ,ppx-args))))
+                  (let ((ppx-args (map (lambda (x) (format #f "~A" x))
+                                       ppx-args)))
+                    (cons :ppx
+                          (list ;; `(:name ,ppx-name)
+                           ;; '(:scope :all)
+                           `(:manifest ,@(reverse ppx-libs))
+                           `(:args ,ppx-args)))))
               ;; SPECIAL CASE: ppx_inline_test
               (if (equal? 'ppx_inline_test (car ppx))
                   (begin

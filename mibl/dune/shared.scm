@@ -1,5 +1,6 @@
 ;; called by top-level convert routine
 ;; goes through every stanza in pkg, to extract shared ppxes
+;; updates pkg-level :shared-ppx alist
 (define (-handle-pkg-shared-ppx pkg-kv)
   (format #t "~A: ~A~%" (ublue "-handle-pkg-shared-ppx") pkg-kv)
   (let* ((pkg (cdr pkg-kv))
@@ -68,6 +69,8 @@
     ;; (format #t "~A: ~A~%" (bgred "shared deps") pkg-shared-ppx)
     ))
 
+;;FIXME: currently sharing is scoped to pkg level.
+;;TODO: repo scoping: share ppxes across pkgs within repo
 (define (handle-shared-ppx ws)
   (format #t "~A: ~A~%" (ublue "handle-shared-ppx") ws)
   (let* ((@ws (assoc-val ws -mibl-ws-table))

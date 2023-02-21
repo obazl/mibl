@@ -274,6 +274,8 @@
 
             ((data_only_dirs) (values)) ;;FIXME
 
+            ((documentation) (values)) ;;FIXME
+
             ((:sh-test) ;; ???
              (values))
 

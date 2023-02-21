@@ -56,6 +56,8 @@ s7_pointer mll_kw;
 s7_pointer mly_kw;
 s7_pointer cppo_kw;
 s7_pointer cc_kw;
+s7_pointer cc_srcs_kw;
+s7_pointer cc_hdrs_kw;
 s7_pointer files_kw;
 s7_pointer scripts_kw;
 s7_pointer static_kw;
@@ -1008,7 +1010,8 @@ EXPORT s7_scheme *s7_configure(void)
 
     scripts_kw = s7_make_keyword(s7, "scripts");
     cc_kw = s7_make_keyword(s7, "cc");
-    /* srcs_kw    = s7_make_keyword(s7, "srcs"); */
+    cc_srcs_kw = s7_make_keyword(s7, "cc-srcs");
+    cc_hdrs_kw = s7_make_keyword(s7, "cc-hdrs");
 
     set_load_path(); //callback_script_file);
 

@@ -1,3 +1,19 @@
+(define (detect-ppx-inline f)
+  (let ((is-ppx-inline #f)
+        (is-ppx-expect #f))
+    (call-with-input-file f
+      (lambda (file)
+        (let loop ((line (read-line file #t)))
+          (or is-ppx-inline
+              (eof-object? line)
+              ;; ppx_inline_test ops: let%test, let%test_unit, let%test_module
+	      (let ((pos (or (string-position "let%test_module " line)
+                             (string-position "let%test_unit " line)
+                             (string-position "let%test " line))))
+	        (if pos (set! is-ppx-inline #t))))
+	  (loop (read-line file #t)))))
+    is-ppx-inline))
+
 ;; arg:  normalized module name
 (define (find-module-in-pkg module pkg)
   (format #t "~A: ~A~%" (ublue "find-module-in-pkg") module)
@@ -270,7 +286,8 @@
                               (begin
                                 (format #t "~A ~A to ~A~%" (bgyellow "updating stanza :deps") mdeps fname)
                                 ;; (format #t "~A: ~A~%" (uyellow "in pkg") pkg)
-                                (update-stanza-deps pkg fname mdeps)
+                                (if (assoc-val :dune pkg)
+                                    (update-stanza-deps pkg fname mdeps))
                                 (format #t "~A: ~A~%" (red "pkg (after)") pkg)
                                 ))
 

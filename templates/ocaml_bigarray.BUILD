@@ -5,15 +5,20 @@ load("@opam//build:rules.bzl", "opam_import")
 opam_import(
     name       = "bigarray",
     version    = "[distributed with OCaml]",
-    cma        = "bigarray.cma",
-    cmxa       = "bigarray.cmxa",
-    cmi        = glob(["*.cmi"]),
-    cmo        = glob(["*.cmo"]),
-    cmx        = glob(["*.cmx"]),
-    ofiles     = glob(["*.o"]),
+    sigs       = glob(["*.cmi"]),
+    archive    =  select({
+        "@ocaml//platforms/target:vm?": "bigarray.cma",
+        "//conditions:default":         "bigarray.cmxa",
+    }),
     afiles     = glob(["*.a"]),
-    cmt        = glob(["*.cmt"]),
-    cmti       = glob(["*.cmti"]),
+    astructs   = glob(["*.cmx"]),
+    # cma        = "bigarray.cma",
+    # cmxa       = "bigarray.cmxa",
+    # cmo        = glob(["*.cmo"]),
+    # cmx        = glob(["*.cmx"]),
+    ofiles     = glob(["*.o"]),
+    cmts       = glob(["*.cmt"]),
+    cmtis      = glob(["*.cmti"]),
     srcs       = glob(["*.ml", "*.mli"]),
     all        = glob(["bigarray.*"]),
 
@@ -24,8 +29,12 @@ opam_import(
 opam_import(
     name       = "plugin",
     version    = "[distributed with OCaml]",
-    cmxs       = "bigarray.cmxs",
-    cma        = "bigarray.cma",
+    plugin     =  select({
+        "@ocaml//platforms/target:vm?": "bigarray.cma",
+        "//conditions:default":         "bigarray.cmxs",
+    }),
+    # cmxs       = "bigarray.cmxs",
+    # cma        = "bigarray.cma",
     deps       = ["@ocaml//unix"],
     visibility = ["//visibility:public"],
 );

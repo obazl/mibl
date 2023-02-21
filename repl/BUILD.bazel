@@ -9,6 +9,8 @@ cc_binary(
         "xen_repl.c", "xen_repl.h",
         # "//src:opam_config.h",
         # "//src:bazel_config.h"
+        "//vendored/logc:log.c",
+        "//vendored/logc:log.h"
     ],
     defines = select({
         "//bzl/host:debug": ["DEBUG_TRACE"],
@@ -39,6 +41,9 @@ cc_binary(
         "-Ivendored/uthash",
         "-Iexternal/vendored/uthash",
 
+        "-Ivendored/logc",
+        "-Iexternal/mibl/vendored/logc",
+
         # "-Iexternal/libinih",
         "-Iexternal/logc/src",
 
@@ -59,7 +64,7 @@ cc_binary(
         "//src:mibl",
         # "//external/libinih:inih",
         "//vendored/uthash",
-        "@logc//:logc",
+        # "@logc//:logc",
         "@libs7//src:s7",
         "@libs7//src:c_s7",
         # "@libs7//vendored/linenoise",

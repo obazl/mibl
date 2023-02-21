@@ -24,6 +24,14 @@
 (define (normalize-instrumentation fld-assoc)
   (format #t "normalize-instrumentation: ~A\n" fld-assoc))
 
+(define (fld-warning stanza-sym fld-assoc)
+  (format #t "~A - ~A ~A ~A: ~A~%"
+          (ured "WARNING")
+          (red "unhandled fld in")
+          (ured stanza-sym)
+          (red "stanza")
+          fld-assoc))
+
 (define (fld-error stanza-sym fld-assoc)
   (stacktrace)
   (error 'FIXME (format #f "~A ~A: ~A~%"
@@ -31,7 +39,8 @@
 
 (define (-map-lib-flds->mibl ws pkg stanza-alist)
   (format #t "~A: ~A~%" (blue "-map-lib-flds->mibl") stanza-alist)
-  (let ((result (map
+  (let* ((stanza-name (car (assoc-val 'name stanza-alist)))
+         (result (map
                  (lambda (fld-assoc)
                    (format #t "lib fld-assoc: ~A\n" fld-assoc)
                    (case (car fld-assoc)
@@ -71,22 +80,23 @@
                      ((allow_overlapping_dependencies) (fld-error 'library fld-assoc))
 
                      ((optional) (cons :optional #t))
-                     ((preprocessor_deps) (fld-error 'library fld-assoc))
+                     ((preprocessor_deps) `(:unhandled ,@fld-assoc))
 
                      ((synopsis) (cons :docstring (cadr fld-assoc)))
 
-                     ((virtual_deps) (fld-error 'library fld-assoc))
+                     ((virtual_deps) `(:unhandled ,@fld-assoc))
 
                      ((wrapped) (values))
 
                      ;; cc
-                     ((c_flags) (fld-error stanza-kind fld-assoc))
-                     ((cxx_flags) (fld-error stanza-kind fld-assoc))
-                     ((c_library_flags) (fld-error 'library fld-assoc))
+                     ((c_flags) `(:unhandled ,@fld-assoc))
+
+                     ((cxx_flags) (fld-error 'library fld-assoc))
+                     ((c_library_flags) `(:unhandled ,@fld-assoc))
                      ((c_types) (fld-error 'library fld-assoc))
                      ((install_c_headers) (fld-error 'library fld-assoc))
                      ((foreign_archives) (foreign-archives->mibl fld-assoc))
-                     ((c_names) (c_names->mibl fld-assoc))
+                     ((c_names) (c_names->mibl stanza-name (cdr fld-assoc)))
                      ((foreign_stubs) (foreign-stubs->mibl
                                        (if-let ((n (assoc-val 'name stanza-alist)))
                                                (car n)
@@ -104,10 +114,12 @@
                       (cons :inline-tests-backend (cdr fld-assoc)))
 
                      ;; other
-                     ((enabled_if) (fld-error 'library fld-assoc))
+                     ((lint) (fld-warning 'library fld-assoc)
+                      `(:unhandled ,fld-assoc))
 
-                     (else (error 'FIXME
-                                  (format #f "unhandled lib fld: ~A" fld-assoc)))
+                     ;; ((enabled_if) (fld-error 'library fld-assoc))
+
+                     (else  (fld-error (car fld-assoc) fld-assoc))
                      ) ;; end case
                    ) ;; end lamda
                  stanza-alist)))
