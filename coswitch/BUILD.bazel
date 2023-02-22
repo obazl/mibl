@@ -38,8 +38,9 @@ cc_binary(
         "//conditions:default":   []
     }),
     deps = [
-        "//src:treewalker",
+        "//src:opam_switch_converter",
         # "//src/opam:opam_lexer"
     ],
     linkstatic = 1
 )
+

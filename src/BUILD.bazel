@@ -235,13 +235,13 @@ config_setting(
 )
 
 ################################################################
-####    OPAM Loader
+####    OPAM Converter
 ################################################################
 cc_library(
-    name = "treewalker",
+    name = "opam_switch_converter",
     srcs = [
-        "treewalker.c",
-        "//src/hdrs:treewalker.h",
+        "opam_switch_converter.c",
+        "//src/hdrs:opam_switch_converter.h",
 
         "handlers.c",
         "//src/hdrs:handlers.h",
@@ -278,7 +278,7 @@ cc_library(
         "//conditions:default":   []
     }),
     hdrs = [
-        # "libtreewalker.h",
+        # "libopam_switch_converter.h",
         # "@libs7//src:s7.h",
         # "log.h",
     ],
@@ -355,7 +355,7 @@ cc_library(
         "//conditions:default":   []
     }),
     hdrs = [
-        # "libtreewalker.h",
+        # "libopam_switch_converter.h",
         # "@libs7//src:s7.h",
         # "log.h",
     ],

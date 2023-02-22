@@ -46,7 +46,7 @@ genrule(
         "//src:handlers_opam.c",
 
         "//src:load_dune.c",
-        "//src:treewalker.c",   # FIXME: rename
+        "//src:opam_switch_converter.c",   # FIXME: rename
         "//src:treewalker_project.c", # FIXME: rename
         "//src:utils.c",
 
@@ -100,7 +100,7 @@ genrule(
         "debug_mibl.h",
         "debug_s7.h",
 
-        "treewalker.h",
+        "opam_switch_converter.h",
         "treewalker_project.h",
         "handlers.h",
         "handlers_findlib.h",
@@ -171,7 +171,7 @@ genrule(
 
         "$(location //src:load_dune.c)",
 
-        "$(location //src:treewalker.c)",
+        "$(location //src:opam_switch_converter.c)",
         "$(location //src:treewalker_project.c)",
         "$(location //src:utils.c)",
 
@@ -243,7 +243,7 @@ genrule(
         "//src:handlers_opam.c",
 
         "//src:load_dune.c",
-        "//src:treewalker.c",
+        "//src:opam_switch_converter.c",
         "//src:treewalker_project.c",
         "//src:utils.c",
 
@@ -320,7 +320,7 @@ genrule(
 
         "$(location //src:load_dune.c)",
 
-        "$(location //src:treewalker.c)",
+        "$(location //src:opam_switch_converter.c)",
         "$(location //src:treewalker_project.c)",
         "$(location //src:utils.c)",
 
