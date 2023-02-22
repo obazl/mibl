@@ -86,7 +86,8 @@ char *toolchains[] = {
 };
 char **tc;
 
-EXPORT void convert_findlib_pkgs(UT_array *opam_pending_deps)
+EXPORT void convert_findlib_pkgs(UT_array *opam_pending_deps,
+                                 UT_array *opam_exclude_pkgs)
 {
 /* #if defined(DEBUG_TRACE) */
         log_debug(BLU "convert_findlib_pkgs" CRESET);
@@ -101,6 +102,8 @@ EXPORT void convert_findlib_pkgs(UT_array *opam_pending_deps)
         log_debug("current dir: %s", getcwd(NULL, 0));
         /* printf(YEL "%-16s%s\n" CRESET, "pkg_name:", pkg_name); */
     }
+
+    /* first: construct list of dirs to convert */
 
     const char **p = NULL;
 
@@ -226,14 +229,23 @@ EXPORT void convert_findlib_pkgs(UT_array *opam_pending_deps)
     /* fprintf(ostream, "\"%s/%s\",\n", bazel_ws_root, "stublibs"); */
     /* fprintf(ostream, "    )\n\n"); */
 
+    utarray_sort(opam_exclude_pkgs, strsort);
+    char **q = NULL;
     p = NULL;
     while ( (p=(const char**)utarray_next(opam_completed_deps, p))) {
-        log_info("importing opam pkg: %s", *p);
-        fprintf(ostream, "    native.local_repository(\n");
-        fprintf(ostream, "        name       = \"%s\",\n", *p);
-        fprintf(ostream, "        path       = ");
-        fprintf(ostream, "\"%s/%s\",\n", bazel_ws_root, *p);
-        fprintf(ostream, "    )\n\n");
+
+        q = (const char**)utarray_find(opam_exclude_pkgs, p, strsort);
+
+        if (q == NULL) {
+            log_info("Importing opam pkg: %s", *p);
+            fprintf(ostream, "    native.local_repository(\n");
+            fprintf(ostream, "        name       = \"%s\",\n", *p);
+            fprintf(ostream, "        path       = ");
+            fprintf(ostream, "\"%s/%s\",\n", bazel_ws_root, *p);
+            fprintf(ostream, "    )\n\n");
+        } else {
+            log_info(RED "Excluding opam pkg: %s" CRESET, *p);
+        }
     }
 
     log_debug("pending ct: %d",  utarray_len(opam_pending_deps));

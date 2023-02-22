@@ -40,7 +40,8 @@ extern bool verbose;
 
 char *pkg_path = NULL;
 
-UT_array *opam_pkgs;
+UT_array *opam_include_pkgs;
+UT_array *opam_exclude_pkgs;
 
 int main(int argc, char *argv[])
 {
@@ -48,11 +49,12 @@ int main(int argc, char *argv[])
 
     extern bool enable_jsoo;
 
-    char *opts = "jp:hdmtv";
+    char *opts = "jp:hdmtvx:";
 
     char *opam_switch = NULL;
 
-    utarray_new(opam_pkgs,&ut_str_icd);
+    utarray_new(opam_include_pkgs,&ut_str_icd);
+    utarray_new(opam_exclude_pkgs,&ut_str_icd);
 
     while ((opt = getopt(argc, argv, opts)) != -1) {
         switch (opt) {
@@ -78,7 +80,7 @@ int main(int argc, char *argv[])
             break;
         case 'p':               /* pkg name, not path */
             printf("PKG: %s\n", optarg);
-            utarray_push_back(opam_pkgs, &optarg);
+            utarray_push_back(opam_include_pkgs, &optarg);
             /* pkg_path = strdup(optarg); */
             /* /\* remove trailing '/' *\/ */
             /* int len = strlen(pkg_path); */
@@ -94,10 +96,15 @@ int main(int argc, char *argv[])
             break;
         case 'v':
             verbose = true;
+            break;
+        case 'x':
+            printf("EXCL %s\n", optarg);
+            utarray_push_back(opam_exclude_pkgs, &optarg);
+            break;
         default:
             ;
-            /* log_error("Usage: %s [-f] [opamfile]", argv[0]); */
-            /* exit(EXIT_FAILURE); */
+            log_error("Usage: %s [-f] [opamfile]", argv[0]);
+            exit(EXIT_FAILURE);
         }
     }
 
@@ -124,11 +131,13 @@ int main(int argc, char *argv[])
 
     /* walk_tree(opam_lib, pkg_path); */
 
-    convert_findlib_pkgs(opam_pkgs);
+    convert_findlib_pkgs(opam_include_pkgs, opam_exclude_pkgs);
 
     /* UT_array *result = opam_lex_file(utstring_body(opam_file)); */
 
     /* UT_array *result = sealark_lex_string("'hello'\n#cmt1\n"); */
+
+    /* FIXME: free opam_include_pkgs, opam_exclude_pkgs */
 
 #if defined(DEBUG_TRACE)
     log_debug("exiting coswitch");
