@@ -502,11 +502,7 @@ EXPORT void convert_findlib_pkgs(UT_array *opam_pending_deps)
     bazel_ws_root = utstring_body(opam_switch_lib); /* dst dir == src dir */
 
     /* **************************************************************** */
-    /* First do @ocaml */
-    emit_ocaml_workspace(bazel_ws_root);
-
-    /* **************************************************************** */
-    /* Then do requested opam pkgs */
+    /* Then do requested opam pkgs FIRST */
     UT_array *opam_completed_deps;
     utarray_new(opam_completed_deps, &ut_str_icd);
 
@@ -531,6 +527,11 @@ EXPORT void convert_findlib_pkgs(UT_array *opam_pending_deps)
 
         free(next);
     }
+
+    /* **************************************************************** */
+    /* Do @ocaml last, since it creates dirs */
+    emit_ocaml_workspace(bazel_ws_root);
+
 #if defined(DEBUG_TRACE)
     log_debug("done");
 #endif

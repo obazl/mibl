@@ -3164,17 +3164,6 @@ EXPORT void emit_build_bazel(// char *ws_name,
     /*     return; */
     /* } */
 
-    /* **************************************************************** */
-    // first symlinks
-    /* if (_pkg->entries != NULL) { */
-        /* if (strncmp(pkg_name, _pkg_root, strlen(pkgname)) == 0) { */
-            /* symlinks only needed for base pkg, not subpkgs */
-    emit_pkg_symlinks(bazel_pkg_root, /* dest */
-                      new_filedeps_path, /* src */
-                      pkg_name);
-        /* } */
-    /* } */
-
     /* ################################################################ */
     /* emit_new_local_pkg_repo(bootstrap_FILE, */
     /*                         _pkg_suffix, */
@@ -3203,6 +3192,16 @@ EXPORT void emit_build_bazel(// char *ws_name,
 #endif
             return;
         }
+
+    /* **************************************************************** */
+    /* if (_pkg->entries != NULL) { */
+        /* if (strncmp(pkg_name, _pkg_root, strlen(pkgname)) == 0) { */
+            /* symlinks only needed for base pkg, not subpkgs */
+    emit_pkg_symlinks(bazel_pkg_root, /* dest */
+                      new_filedeps_path, /* src */
+                      pkg_name);
+        /* } */
+    /* } */
 
     fprintf(ostream, "## generated file - DO NOT EDIT\n");
 

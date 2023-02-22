@@ -106,6 +106,7 @@
             (if resolved
                 (let* ((pkg (assoc-val :pkg resolved))
                        (_ (format #t "~A: ~A~%" (ured "pkg") pkg))
+                       (_ (format #t "~A: ~A~%" (ured "pkg-path") pkg-path))
                        (tgt (assoc-val :tgt resolved))
                        (_ (format #t "~A: ~A~%" (ured "tgt") tgt)))
                   ;;(cons dep resolved)
@@ -382,6 +383,9 @@
                       (ppxex (if-let ((ppxes (assoc-val :ppxes stanza-alist)))
                                      ppxes #f))
                       (_ (format #t "~A: ~A~%" (ublue "ppx") ppx))
+                      (ppx-codeps (if-let ((ppx-codeps (assoc
+                                                        :ppx-codeps stanza-alist)))
+                                          ppx-codeps #f))
                       )
                  (if deps
                      (begin
@@ -424,7 +428,31 @@
                          (set-cdr! ppx-deps fixppx)
                          ;; (set-car! ppx-deps :resolved)
                          ;; (error 'STOP "stop ppx")
-                         )))))
+                         )))
+                 (if ppx-codeps
+                     (begin
+                       (format #t "~A: ~A~%" (ured "resolving ppx-codeps") ppx-codeps)
+                       (let* ((exports (car (assoc-val :exports ws)))
+                              ;; (ppx-deps (assoc :manifest ppx))
+                              ;; (_ (format #t "~A: ~A~%" (bgred "ppx-deps") ppx-deps))
+                              (fixppx
+                               (map (lambda (dep)
+                                      (format #t "~A: ~A~%" (uwhite "fixup ppx-dep") dep)
+                                      (cond
+                                       ((list? dep)
+                                        ;; std dep form: (:foo (:pkg...)(:tgt...))
+                                        (-fixup-std-dep-form ws pkg dep exports))
+                                       ((symbol? dep)
+                                        (-fixup-dep-sym ws-id dep pkg-path exports))
+                                       (else (error 'fixme
+                                                    (format #f "~A: ~A~%" (bgred "unrecognized ppx-dep type") dep)))))
+                                    (cdr ppx-codeps))))
+                         (format #t "~A: ~A~%" (ured "fixed-up ppx-codeps") fixppx)
+                         (set-cdr! ppx-codeps fixppx)
+                         ;; (set-car! ppx-deps :resolved)
+                         ;; (error 'STOP "stop ppx")
+                         )))
+                 ))
 
               ((:cppo)
                (let ((deps (assoc :deps (cdr stanza))))

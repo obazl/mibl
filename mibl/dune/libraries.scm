@@ -106,9 +106,12 @@
                      ((js_of_ocaml) (cons :jsoo (cdr fld-assoc)))
 
                      ;; ppx
-                     ((kind) ;; ignore, not meaningful for obazl?
-                      (values))
-                     ((ppx_runtime_libraries) `(:ppx-codeps ,(cdr fld-assoc)))
+                     ((kind) (if (eq? 'ppx_rewriter (cadr fld-assoc))
+                                 `(:ppx-rewriter . #t)
+                                 (if (eq? 'ppx_deriver (cadr fld-assoc))
+                                     `(:ppx-deriver . #t))))
+
+                     ((ppx_runtime_libraries) `(:ppx-codeps ,@(cdr fld-assoc)))
 
                      ((inline_tests.backend)
                       (cons :inline-tests-backend (cdr fld-assoc)))

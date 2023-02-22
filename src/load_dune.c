@@ -579,10 +579,18 @@ LOCAL void _update_pkg_files(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
                but we need the alist */
             s7_pointer files_alist = s7_cdr(files_assoc);
 
-            /* if (debug) { */
-            /*     log_debug("updating :files"); */
-            /*     log_debug("files_alist: %s", TO_STR(files_alist)); */
-            /* } */
+#if defined(DEBUG_TRACE)
+            if (debug) {
+                log_debug("updating :files");
+                log_debug("files_alist: %s", TO_STR(files_alist));
+                log_debug("files_alist is pair?: %d",
+                          (s7_is_pair(files_alist)? 1 : 0));
+                log_debug("files_alist is list?: %d",
+                          (s7_is_list(s7, files_alist)? 1 : 0));
+                log_debug("files_alist length: %d",
+                          s7_list_length(s7, files_alist));
+            }
+#endif
 
             /* s7_pointer file_pair = */
             /*     s7_list(s7, 2, */
@@ -590,17 +598,21 @@ LOCAL void _update_pkg_files(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
             /*             s7_make_string(s7, ftsentry->fts_name)); */
             /* log_debug("new file_pair: %s", TO_STR(file_pair)); */
 
+            s7_pointer addition = s7_list(s7, 1,
+                                          s7_make_string(s7, ftsentry->fts_name));
+            log_debug("addition: %s",
+                       TO_STR(addition));
+
             s7_pointer new_files_alist =
                 s7_append(s7,
                 /* s7_list(s7, 2, */
                 /* s7_cons(s7, */
                           files_alist,
-                          s7_list(s7, 1,
-                                  s7_make_string(s7, ftsentry->fts_name))
+                          addition
                         /* file_pair, */
                           );
-            /* log_debug("new files_alist: %s", */
-            /*            TO_STR(new_files_alist)); */
+            log_debug("new files_alist: %s",
+                       TO_STR(new_files_alist));
 
             /* s7_pointer sort      = _load_sort(); */
             /* s7_pointer string_lt = _load_string_lt(); */
@@ -2582,8 +2594,10 @@ LOCAL void _handle_ml_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 
 LOCAL void _handle_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 {
-    /* if (debug) */
-    /*     log_debug("_handle_file %s, %s\n", ftsentry->fts_name, ext); */
+#if defined(DEBUG_TRACE)
+    if (debug)
+        log_debug("_handle_file %s, %s", ftsentry->fts_name, ext);
+#endif
     /* printf("    pkg: %s\n", dirname(ftsentry->fts_path)); */
 
     /* _indent(ftsentry->fts_level); */
@@ -3595,6 +3609,11 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
                                      ftsentry->fts_name, 0) == 0) {
                         fts_set(tree, ftsentry, FTS_SKIP);
                         /* break; */
+                    }
+                    else if (fnmatch("_opam",
+                                     ftsentry->fts_name, 0) == 0) {
+                        fts_set(tree, ftsentry, FTS_SKIP);
+                        /* break; */
                     } else {
                         if (_include_this(ftsentry)) {
 #if defined(DEBUG_TRACE)
@@ -3650,7 +3669,10 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
                     ext = strrchr(ftsentry->fts_name, '.');
 
                     if (ext) {
-                        if ((strncmp(ext, ".ml", 3) == 0)) {
+                        if ((strncmp(ext, ".cm", 3) == 0)) {
+                            log_debug("skipping .cm? file : %s", ftsentry->fts_name);
+                        }
+                        else if ((strncmp(ext, ".ml", 3) == 0)) {
                             _handle_ml_file(pkg_tbl, ftsentry, ext);
                         }
                         else if ((strncmp(ext, ".md", 3) == 0)
@@ -3715,8 +3737,7 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
                         else {
                             _handle_file(pkg_tbl, ftsentry, ext);
                         }
-                    }
-                    else {
+                    } else {
                         /* no extension */
                         if (strstr(ftsentry->fts_name, "opam")) {
                             _handle_opam_file(pkg_tbl, ftsentry);
