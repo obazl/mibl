@@ -81,7 +81,8 @@ s7_pointer _s7_read_thunk_catcher(s7_scheme *s7, s7_pointer args)
         s7_write(s7,
                  /* s7_make_string(s7, s7_car(args)), */
                  // s7_string(s7_car(args)),
-                 TO_STR(s7_car(args)),
+                 /* TO_STR(s7_car(args)), */
+                 s7_car(args),
                  s7_current_error_port(s7));
         fprintf(stdout, "[end error context]" CRESET "\n");
 
@@ -90,6 +91,7 @@ s7_pointer _s7_read_thunk_catcher(s7_scheme *s7, s7_pointer args)
         /* init_error_handlers(); */
         /* s7_quit(s7); */
         /* exit(EXIT_FAILURE); */
+        return NULL;
     }
 }
 
@@ -135,7 +137,8 @@ s7_pointer _s7_error_handler(s7_scheme *s7, s7_pointer args)
         s7_write(s7,
                  /* s7_make_string(s7, s7_car(args)), */
                  // s7_string(s7_car(args)),
-                 TO_STR(s7_car(args)),
+                 /* TO_STR(s7_car(args)), */
+                 s7_car(args),
                  s7_current_error_port(s7));
         fprintf(stdout, "[end error context]" CRESET "\n");
 
@@ -293,7 +296,7 @@ char *dunefile_to_string(UT_string *dunefile_name)
     int rc = regcomp(&re, "\\. *)", REG_EXTENDED);
     assert(rc == 0);
 
-    regmatch_t matches[1];
+    /* regmatch_t matches[1]; */
 
     while (true) {
         /* printf(RED "bptr:\n" CRESET " %s\n", bptr); */
@@ -316,11 +319,13 @@ char *dunefile_to_string(UT_string *dunefile_name)
 
 
         if (cursor == NULL) {
-            size_t ct = strlcpy(fptr, (const char*)bptr, strlen(bptr));
+            size_t ct = strlcpy(fptr, (const char*)bptr, strlen(fptr));
+            (void)ct;
             break;
         } else {
             /* log_debug("FOUND \".)\" at pos: %d", cursor - buffer); */
             size_t ct = strlcpy(fptr, (const char*)bptr, cursor - bptr);
+            (void)ct;
             if (ct >= BUFSZ) {
                 // output string has been truncated
             }

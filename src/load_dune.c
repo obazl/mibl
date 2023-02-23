@@ -1013,14 +1013,14 @@ LOCAL void _update_pkg_script_files(s7_pointer pkg_tbl,
 LOCAL void _update_pkg_deps(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 {
     char *pkg_name = dirname(ftsentry->fts_path);
-    char *fname = ftsentry->fts_name;
+    /* char *fname = ftsentry->fts_name; */
     char *mname = _module_name(ftsentry, ext);
     if (verbose) {
         log_info(BLU "_update_pkg_deps:" CRESET " %s; ", mname);
         log_info("pkg name: %s; fname: %s", pkg_name, ftsentry->fts_name);
     }
 
-    char *ml_name = strdup(ftsentry->fts_name);
+    /* char *ml_name = strdup(ftsentry->fts_name); */
 
     s7_pointer pkg_key = make_pkg_key(pkg_name);
     //s7_make_string(s7, pkg_name);
@@ -1029,6 +1029,7 @@ LOCAL void _update_pkg_deps(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 #endif
 
     s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
+    (void)pkg_alist;
 #if defined(DEBUG_TRACE)
     if (debug) log_debug("pkg_alist: %s", TO_STR(pkg_alist));
 #endif
@@ -1238,7 +1239,7 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
 
                 s7_pointer new_modules_alist
                     = s7_set_cdr(modules_alist, new_modules_alist_cdr);
-
+                (void)new_modules_alist;
 #if defined(DEBUG_TRACE)
                 if (debug) {
                     log_debug("new_modules_alist: %s",
@@ -1270,7 +1271,7 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
 
                 s7_pointer new_modules_alist
                     = s7_set_cdr(module_alist, msrcs);
-
+                (void)new_modules_alist;
 #if defined(DEBUG_TRACE)
                if (debug) {
                     log_debug("new_modules_alist: %s",
@@ -1432,6 +1433,7 @@ LOCAL void _update_pkg_sigs(s7_pointer pkg_tbl,
 
                 s7_pointer new_sigs_alist
                     = s7_set_cdr(sigs_alist, new_sigs_alist_cdr);
+                (void)new_sigs_alist;
 #if defined(DEBUG_TRACE)
                 if (debug) {
                     log_debug("new_sigs_alist: %s",
@@ -1455,9 +1457,9 @@ LOCAL void _update_pkg_sigs(s7_pointer pkg_tbl,
                 s7_pointer msrcs = s7_append(s7,
                                              sigs_alist_cdr,
                                              s7_list(s7, 1, mli_file)); //mli_assoc));
-
                 s7_pointer new_sigs_alist
                     = s7_set_cdr(sig_alist, msrcs);
+                (void)new_sigs_alist;
 #if defined(DEBUG_TRACE)
                 if (debug) {
                     log_debug("new_sigs_alist: %s",
@@ -1586,14 +1588,15 @@ LOCAL void _update_pkg_structs(s7_pointer pkg_tbl,
                 s7_pointer new_structures_alist_cdr =
                     s7_append(s7, structures_alist_cdr,
                               s7_list(s7, 1, new_struct_assoc));
+                (void)new_structures_alist_cdr;
 #if defined(DEBUG_TRACE)
                 if (debug)
                     log_debug("new_structures_alist_cdr: %s",
                        TO_STR(new_structures_alist_cdr));
 #endif
 
-                s7_pointer new_structures_alist
-                    = s7_set_cdr(structures_alist, new_structures_alist_cdr);
+                /* s7_pointer new_structures_alist */
+                /*     = s7_set_cdr(structures_alist, new_structures_alist_cdr); */
             }
         } else {
 #if defined(DEBUG_TRACE)
@@ -1663,6 +1666,7 @@ LOCAL void _update_pkg_structs(s7_pointer pkg_tbl,
 
                 s7_pointer new_structs_alist
                     = s7_set_cdr(structs_alist, new_structs_alist_cdr);
+                (void)new_structs_alist;
 #if defined(DEBUG_TRACE)
                 if (debug) {
                     log_debug("new_structs_alist: %s",
@@ -1686,9 +1690,9 @@ LOCAL void _update_pkg_structs(s7_pointer pkg_tbl,
                 s7_pointer msrcs =
                     s7_append(s7, structs_alist_cdr,
                               s7_list(s7, 1, s7_make_symbol(s7, fname))); //ml_assoc));
-
                 s7_pointer new_structs_alist
                     = s7_set_cdr(struct_alist, msrcs);
+                (void)new_structs_alist;
 #if defined(DEBUG_TRACE)
                 if (debug) {
                     log_debug("new_structs_alist: %s",
@@ -1842,6 +1846,7 @@ LOCAL void _update_pkg_mll_files(s7_pointer pkg_tbl,
 
                 s7_pointer new_ocamllex_alist
                     = s7_set_cdr(ocamllex_alist, new_ocamllex_alist_cdr);
+                (void)new_ocamllex_alist;
 #if defined(DEBUG_TRACE)
                 if (debug) {
                     log_debug("new_ocamllex_alist: %s",
@@ -1868,6 +1873,7 @@ LOCAL void _update_pkg_mll_files(s7_pointer pkg_tbl,
 
                 s7_pointer new_ocamllex_alist
                     = s7_set_cdr(mll_alist, msrcs);
+                (void)new_ocamllex_alist;
 #if defined(DEBUG_TRACE)
                 if (debug) {
                     log_debug("new_ocamllex_alist: %s",
@@ -2092,6 +2098,7 @@ LOCAL void _update_pkg_mly_files(s7_pointer pkg_tbl,
 
                 s7_pointer new_ocamlyacc_alist
                     = s7_set_cdr(ocamlyacc_alist, new_ocamlyacc_alist_cdr);
+                (void)new_ocamlyacc_alist;
 #if defined(DEBUG_TRACE)
                 if (debug) {
                     log_debug("new_ocamlyacc_alist: %s",
@@ -2118,6 +2125,7 @@ LOCAL void _update_pkg_mly_files(s7_pointer pkg_tbl,
 
                 s7_pointer new_ocamlyacc_alist
                     = s7_set_cdr(mly_alist, msrcs);
+                (void)new_ocamlyacc_alist;
 #if defined(DEBUG_TRACE)
                 if (debug) {
                     log_debug("new_ocamlyacc_alist: %s",
@@ -2313,6 +2321,7 @@ LOCAL void _update_pkg_cppo_files(s7_pointer pkg_tbl,
 
                 s7_pointer new_ocppo_alist
                     = s7_set_cdr(ocppo_alist, new_ocppo_alist_cdr);
+                (void)new_ocppo_alist;
 #if defined(DEBUG_TRACE)
                 if (debug) {
                     log_debug("new_ocppo_alist: %s",
@@ -2340,6 +2349,7 @@ LOCAL void _update_pkg_cppo_files(s7_pointer pkg_tbl,
 
                 s7_pointer new_ocppo_alist
                     = s7_set_cdr(cppo_alist, msrcs);
+                (void)new_ocppo_alist;
 #if defined(DEBUG_TRACE)
                 if (debug) {
                     log_debug("new_ocppo_alist: %s",
@@ -3050,7 +3060,7 @@ LOCAL const char *_get_path_dir(s7_pointer arg)
         log_trace("_get_path_dir: %s", TO_STR(arg));
 #endif
 
-    char *pathdir = s7_string(arg);
+    char *pathdir = (char*)s7_string(arg);
 
     if (pathdir[0] == '/') {
         log_error("Path arg must be relative");
@@ -3265,8 +3275,8 @@ EXPORT s7_pointer g_load_dune(s7_scheme *s7,  s7_pointer args)
             pathdir = _get_path_dir(arg);
             /* s7_pointer q = s7_name_to_value(s7, "quote"); */
             if (pathdir) {
-                s7_pointer _pkg_tbl =
-                    load_dune(rootdir, pathdir);
+                /* s7_pointer _pkg_tbl = */
+                /*     load_dune(rootdir, pathdir); */
 #if defined(DEBUG_TRACE)
                 if (trace)
                     printf(RED "LOADED DUNE 2" CRESET "\n");

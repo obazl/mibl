@@ -772,14 +772,15 @@ bazel run is similar, but not identical, to directly invoking the binary built b
            ensures a pristine runtime env. The user can always add
            directories to load-path. The only exception is the
            project-local script directory in <projroot>/.mibl . */
-        s7_pointer lp = s7_load_path(s7);
-#if defined(DEBUG_TRACE)
-        if (debug) {
-            log_debug("1 *LOAD-PATH*: %s", TO_STR(lp));
-        }
-#endif
+/*         s7_pointer lp = s7_load_path(s7); */
+/* #if defined(DEBUG_TRACE) */
+/*         if (debug) { */
+/*             log_debug("1 *LOAD-PATH*: %s", TO_STR(lp)); */
+/*         } */
+/* #endif */
         _config_s7_load_path_bazel_runfiles(manifest);
-        lp = s7_load_path(s7);
+        s7_pointer lp = s7_load_path(s7);
+        (void)lp;
 #if defined(DEBUG_TRACE)
         if (debug) {
             log_debug("2 *LOAD-PATH*: %s", TO_STR(lp));

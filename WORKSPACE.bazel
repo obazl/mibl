@@ -18,11 +18,11 @@ bazel_skylib_workspace()
 ################################################################
 ## META parser tools
 
-load("//:WORKSPACE.bzl", "cc_fetch_repos")
-cc_fetch_repos()
+load("//:WORKSPACE.bzl", "fetch_repos")
+fetch_repos()
 
-load("@libs7//:WORKSPACE.bzl", "cc_fetch_repos")
-cc_fetch_repos()
+load("@libs7//:WORKSPACE.bzl", libs7_fetch_repos = "fetch_repos")
+libs7_fetch_repos()
 
 load("@rules_foreign_cc//foreign_cc:repositories.bzl", "rules_foreign_cc_dependencies")
 

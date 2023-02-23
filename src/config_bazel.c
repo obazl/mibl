@@ -160,8 +160,12 @@ EXPORT void bazel_configure(void) // char *_exec_root)
 #endif
     launch_dir = getcwd(NULL, 0);
 
-    /* NB: the Bazel cc toolchain always sets -DBAZEL_CURRENT_REPOSITORY */
+    /* NB: the Bazel cc toolchain _may_ set
+       -DBAZEL_CURRENT_REPOSITORY, not sure when.
+     */
+#ifdef BAZEL_CURRENT_REPOSITORY
     log_debug("BAZEL_CURRENT_REPOSITORY: %s", BAZEL_CURRENT_REPOSITORY);
+#endif
     build_wd = getenv("BUILD_WORKING_DIRECTORY");
 
     utstring_new(runfiles_root);
