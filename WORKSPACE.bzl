@@ -20,9 +20,7 @@ def fetch_repos():
         git_repository,
         name = "libs7",
         remote = "https://github.com/obazl/libs7",
-        branch = "main"
-        # commit = "bb528f3edac6c00953010e28d51e4a52da7555aa",
-        # shallow_since = "1618495335 -0500"
+        branch = "alpha"
     )
 
     # maybe(
