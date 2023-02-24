@@ -234,7 +234,7 @@ EXPORT void convert_findlib_pkgs(UT_array *opam_pending_deps,
     p = NULL;
     while ( (p=(const char**)utarray_next(opam_completed_deps, p))) {
 
-        q = (const char**)utarray_find(opam_exclude_pkgs, p, strsort);
+        q = (char**)utarray_find(opam_exclude_pkgs, p, strsort);
 
         if (q == NULL) {
             log_info("Importing opam pkg: %s", *p);

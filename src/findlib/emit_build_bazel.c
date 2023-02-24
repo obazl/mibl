@@ -855,13 +855,13 @@ void emit_bazel_stublibs_attr(FILE* ostream,
     /* bool wrote_loader = false; */
 
     utarray_new(cc_stubs, &ut_str_icd);
-    char *s;
+    /* char *s; */
     /* s = "hello"; utarray_push_back(cc_stubs, &s); */
     /* s = "world"; utarray_push_back(cc_stubs, &s); */
 
     char strbuf[128];
-    char *sbuf = &strbuf;
-    char *foo = "foo";
+    char *sbuf = (char*)&strbuf;
+    /* char *foo = "foo"; */
     struct dirent *direntry;
 
     while ((direntry = readdir(d)) != NULL) {
@@ -894,7 +894,7 @@ void emit_bazel_stublibs_attr(FILE* ostream,
     while ( (p=(char**)utarray_next(cc_stubs, p)) ) {
         fprintf(ostream, "        \":_%s\",\n", *p);
     }
-    fprintf(ostream, "%*],\n", level*spfactor, sp);
+    fprintf(ostream, "%*s],\n", level*spfactor, sp);
 
     utarray_free(cc_stubs);
 

@@ -144,7 +144,7 @@ cc_library(
     #     "-ls7",
     # ],
     deps = [
-        "//external/libinih:inih",
+        "//vendored/libinih:inih",
         "@libs7//src:s7",
         "@libs7//vendored/linenoise",
     ] + select({
@@ -309,7 +309,7 @@ cc_library(
         "//src/findlib",
         # "//src:mibl",
         "@libs7//src:s7",
-        "//external/libinih:inih",
+        "//vendored/libinih:inih",
     ] + select({
         "//compilation_mode:dbg?": [":debug"],
         "//conditions:default": []
@@ -375,7 +375,7 @@ cc_library(
         "-I$(GENDIR)/external/mibl/src/findlib",
 
         "-Iexternal/libs7/src",
-        "-Iexternal/libinih",
+        # "-Iexternal/libinih",
     ],
     defines = select({
         "//compilation_mode:dbg?": ["DEBUG_TRACE", "DEBUG_MIBL"],
@@ -386,7 +386,7 @@ cc_library(
         "//src/findlib",
         # "//src:mibl",
         "@libs7//src:s7",
-        "//external/libinih:inih",
+        "//vendored/libinih:inih",
     ] + select({
         "//compilation_mode:dbg?": [":debug"],
         "//conditions:default": []
@@ -438,7 +438,7 @@ cc_library(
         "-I$(GENDIR)/external/mibl/src/findlib",
 
         "-Iexternal/libs7/src",
-        "-Iexternal/libinih",
+        # "-Iexternal/libinih",
     ],
     defines = select({
         "//compilation_mode:dbg?": ["DEBUG_TRACE", "DEBUG_MIBL"],

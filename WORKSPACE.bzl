@@ -7,6 +7,16 @@ all_content = """filegroup(name = "all", srcs = glob(["**"]), visibility = ["//v
 def fetch_repos():
 
     maybe(
+        http_archive,
+        name = "bazel_skylib",
+        sha256 = "b8a1527901774180afc798aeb28c4634bdccf19c4d98e7bdd1ce79d1fe9aaad7",
+        urls = [
+            "https://mirror.bazel.build/github.com/bazelbuild/bazel-skylib/releases/download/1.4.1/bazel-skylib-1.4.1.tar.gz",
+            "https://github.com/bazelbuild/bazel-skylib/releases/download/1.4.1/bazel-skylib-1.4.1.tar.gz",
+        ],
+    )
+
+    maybe(
         git_repository,
         name = "libs7",
         remote = "https://github.com/obazl/libs7",
@@ -15,14 +25,14 @@ def fetch_repos():
         # shallow_since = "1618495335 -0500"
     )
 
-    maybe(
-        git_repository,
-        name = "rules_cc",
-        remote = "https://github.com/bazelbuild/rules_cc",
-        commit = "b1c40e1de81913a3c40e5948f78719c28152486d",
-        shallow_since = "1605101351 -0800"
-        # branch = "master"
-    )
+    # maybe(
+    #     git_repository,
+    #     name = "rules_cc",
+    #     remote = "https://github.com/bazelbuild/rules_cc",
+    #     commit = "b1c40e1de81913a3c40e5948f78719c28152486d",
+    #     shallow_since = "1605101351 -0800"
+    #     # branch = "master"
+    # )
 
     ## logc vendored
 #     maybe(
