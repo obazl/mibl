@@ -60,16 +60,26 @@ def fetch_repos():
     ######
     maybe(
         http_archive,
-        name = "libre2c",
+        name = "re2c",
         urls = [
-            "https://github.com/skvadrik/re2c/archive/refs/tags/2.1.1.zip"
+            "https://github.com/skvadrik/re2c/archive/refs/tags/3.0.zip",
         ],
-        strip_prefix = "re2c-2.1.1",
-        sha256 = "080931d214943ea021fa9360a4694e824674e5c0f2e880153e8cb41982453aa6",
-        build_file = "//external/re2c:BUILD.bazel"
-        # build_file_content = all_content,
-        # workspace_file_content = "workspace( name = \"opam-re2c\" )"
+        strip_prefix = "re2c-3.0",
+        sha256 = "5824ec24047b43beac19d9976c99d4761bdc9aaebef6e32a96c88d36bb28c9dd",
+        build_file = "//vendored/re2c:BUILD.bazel"
     )
+    # "https://github.com/skvadrik/re2c/archive/refs/tags/2.1.1.zip"
+    # strip_prefix = "re2c-2.1.1",
+    # sha256 = "080931d214943ea021fa9360a4694e824674e5c0f2e880153e8cb41982453aa6",
+
+
+    maybe( ## for re2c
+        http_archive,
+        name = "rules_foreign_cc",
+        sha256 = "2a4d07cd64b0719b39a7c12218a3e507672b82a97b98c6a89d38565894cf7c51",
+        strip_prefix = "rules_foreign_cc-0.9.0",
+        url = "https://github.com/bazelbuild/rules_foreign_cc/archive/refs/tags/0.9.0.tar.gz",
+        )
 
     ######
     maybe(
