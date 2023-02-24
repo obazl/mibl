@@ -277,15 +277,13 @@ cc_library(
 ## by the newly generated version.
 # genrule(
 #     name = "gen_meta_lexis",
+#     outs  = ["meta_lexis.c"],
 #     srcs = [
 #         "meta_lexis.re",
 #     ],
-#     tools = ["@libre2c//:re2c"],
-#     outs  = [
-#         "meta_lexis.c"
-#     ],
+#     tools = ["@re2c//:re2c"],
 #     cmd   = "\n".join([
-#         "for f in $(locations @libre2c//:re2c)",
+#         "for f in $(locations @re2c//:re2c)",
 #         "do",
 #         "    if [ -f $$f ]",
 #         "    then",
