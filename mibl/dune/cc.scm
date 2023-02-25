@@ -1,9 +1,11 @@
 (define (foreign-archives->mibl fld)
-  (format #t "~A: ~A~%" (bgblue "foreign-archives->mibl") fld)
+  (if *debugging*
+      (format #t "~A: ~A~%" (bgblue "foreign-archives->mibl") fld))
   `(:cc-archives ,fld))
 
 (define (foreign-stubs->mibl name fld)
-  (format #t "~A: ~A~%" (bgblue "foreign-stubs->mibl") fld)
+  (if *debugging*
+      (format #t "~A: ~A~%" (bgblue "foreign-stubs->mibl") fld))
   (let ((lang (car (assoc 'language (cdr fld))))
         (res (map (lambda (fld)
                     (case (car fld)
@@ -32,7 +34,8 @@
         `(:foreign-stubs (:name . ,name) ,res))))
 
 (define (c_names->mibl stanza-name fld)
-  (format #t "~A: ~A~%" (bgblue "c_names->mibl") fld)
+  (if *debugging*
+      (format #t "~A: ~A~%" (bgblue "c_names->mibl") fld))
   `(:cc-stubs (:name ,stanza-name) (:c-srcs ,fld)))
   ;; (let ((lang (car (assoc 'language (cdr fld))))
   ;;       (res (map (lambda (fld)

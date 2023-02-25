@@ -1,13 +1,17 @@
 (define (-fixup-progn-cmd! ws c targets deps)
-  (format #t "~A: ~A\n" (ublue "-fixup-progn-cmd!") c)
+  (if *debugging*
+      (format #t "~A: ~A\n" (ublue "-fixup-progn-cmd!") c))
   c)
 
 (define (-module->filename m pkg)
-  (format #t "~A: ~A~%" (blue "-module->filename") m)
+  (if *debugging*
+      (format #t "~A: ~A~%" (blue "-module->filename") m))
   (let ((pkg-modules (assoc-val :modules pkg))
         (pkg-structs (assoc-val :structures pkg)))
-    (format #t "~A: ~A~%" (white "pkg-modules") pkg-modules)
-    (format #t "~A: ~A~%" (white "pkg-structs") pkg-structs))
+    (if *debugging*
+        (begin
+          (format #t "~A: ~A~%" (white "pkg-modules") pkg-modules)
+          (format #t "~A: ~A~%" (white "pkg-structs") pkg-structs))))
   "mytest.ml")
 
 ;; (define (-resolve-module-deps m stanza pkg)
@@ -16,7 +20,7 @@
 ;;   (let* ((m-fname (-module->filename m pkg))
 ;;          (pkg-path (car (assoc-val :pkg-path pkg)))
 ;;          (cmd (format #f "ocamldep -modules ~A/~A" pkg-path m-fname))
-;;          (_ (format #t "~A: ~A~%" (green "cmd") cmd))
+;;          (_ (if *debugging* (format #t "~A: ~A~%" (green "cmd") cmd)))
 ;;          (ocamldeps
 ;;           (system cmd #t)))
 ;;     (format #t "~A: '~A'~%" (red "ocamldeps") ocamldeps)
@@ -26,23 +30,27 @@
 ;;     (list m '(:deps (:foo :bar)))))
 
 (define (-fixup-std-dep-form ws pkg dep exports)
-  (format #t "~A: ~A~%" (ublue "-fixup-std-dep-form") dep)
+  (if *debugging*
+      (format #t "~A: ~A~%" (ublue "-fixup-std-dep-form") dep))
   (case (cdr dep)
     ((::unresolved ::opam-pkg)
      ;; (if (eq? ::import (last dep))
      (let ((exp (hash-table-ref exports
                                 (car dep))))
-       (format #t "~A: ~A~%" (ured "XP") exp)
+       (if *debugging*
+           (format #t "~A: ~A~%" (ured "XP") exp))
        (if exp
            (let* ((pkg (assoc-val :pkg exp))
-                  (_ (format #t "~A: ~A~%" (ured "pkg") pkg))
+                  (_ (if *debugging* (format #t "~A: ~A~%" (ured "pkg") pkg)))
                   (tgt (assoc-val :tgt exp))
-                  (_ (format #t "~A: ~A~%" (ured "tgt") tgt)))
+                  (_ (if *debugging* (format #t "~A: ~A~%" (ured "tgt") tgt))))
              (cons (car dep) exp))
            ;; else try std ocaml pkgs
            (begin
-             (format #t "~A: ~A~%" (bgred "ocaml-std-pkgs") ocaml-std-pkgs)
-             (format #t "~A: ~A~%" (bgred "dep key") (car dep))
+             (if *debugging*
+                 (begin
+                   (format #t "~A: ~A~%" (bgred "ocaml-std-pkgs") ocaml-std-pkgs)
+                   (format #t "~A: ~A~%" (bgred "dep key") (car dep))))
              (if-let ((x (assoc-val (car dep) ocaml-std-pkgs)))
                      ;; (format #f "@ocaml//lib/~A" (car dep))
                      (cons (car dep)
@@ -61,9 +69,9 @@
     ;;          exports)
     ;;  (let* ((exp (hash-table-ref exports
     ;;                              (car dep)))
-    ;;         (_ (format #t "~A: ~A~%" (yellow "exp") exp))
+    ;;         (_ (if *debugging* (format #t "~A: ~A~%" (yellow "exp") exp)))
     ;;         (-pkg (assoc-val :pkg exp))
-    ;;         (_ (format #t "~A: ~A~%" (yellow "pkg") -pkg))
+    ;;         (_ (if *debugging* (format #t "~A: ~A~%" (yellow "pkg") -pkg)))
     ;;         (pkg-path (assoc-val :pkg-path pkg))
     ;;         )
     ;;    (update-filegroups-table! ;; ws pkg-path tgt pattern
@@ -90,7 +98,8 @@
     (unix . unix)))
 
 (define (-fixup-dep-sym ws-id dep pkg-path exports)
-  (format #t "~A: ~A~%" (bgblue "-fixup-dep-sym") dep)
+  (if *debugging*
+      (format #t "~A: ~A~%" (bgblue "-fixup-dep-sym") dep))
   ;; possible keys for dep 'foo:
   ;; 'foo, :foo, :lib:foo, :exe:foo, etc.
   ;; assume ref is to lib, so search for :lib:foo
@@ -101,14 +110,14 @@
           ;; try :lib:foo
           (let* ((key (string->keyword
                        (format #f "lib:~A" dep)))
-                 (_ (format #t "~A: ~A~%" (uwhite "trying") key))
+                 (_ (if *debugging* (format #t "~A: ~A~%" (uwhite "trying") key)))
                  (resolved (hash-table-ref exports key)))
             (if resolved
                 (let* ((pkg (assoc-val :pkg resolved))
-                       (_ (format #t "~A: ~A~%" (ured "pkg") pkg))
-                       (_ (format #t "~A: ~A~%" (ured "pkg-path") pkg-path))
+                       (_ (if *debugging* (format #t "~A: ~A~%" (ured "pkg") pkg)))
+                       (_ (if *debugging* (format #t "~A: ~A~%" (ured "pkg-path") pkg-path)))
                        (tgt (assoc-val :tgt resolved))
-                       (_ (format #t "~A: ~A~%" (ured "tgt") tgt)))
+                       (_ (if *debugging* (format #t "~A: ~A~%" (ured "tgt") tgt))))
                   ;;(cons dep resolved)
                   ;;(string->symbol (format #f "BBBB//~A:~A" pkg tgt)))
                   (if (equal? pkg pkg-path)
@@ -117,37 +126,39 @@
                 ;; else :foo
                 (let* ((key (string->keyword
                              (format #f "~A" dep)))
-                       (_ (format #t "~A: ~A~%" (uwhite "trying2") key))
-                       ;; (_ (format #t "~A: ~A~%" (bgblue "exports") exports))
+                       (_ (if *debugging* (format #t "~A: ~A~%" (uwhite "trying2") key)))
+                       ;; (_ (if *debugging* (format #t "~A: ~A~%" (bgblue "exports") exports)))
                        ;; (_ (debug-print-exports-table ws-id))
                        (resolved (hash-table-ref exports key)))
                   (if resolved
                       (let* ((pkg (assoc-val :pkg resolved))
-                             (_ (format #t "~A: ~A~%" (ured "pkg") pkg))
+                             (_ (if *debugging* (format #t "~A: ~A~%" (ured "pkg") pkg)))
                              (tgt (assoc-val :tgt resolved))
-                             (_ (format #t "~A: ~A~%" (ured "tgt") tgt)))
+                             (_ (if *debugging* (format #t "~A: ~A~%" (ured "tgt") tgt))))
                         (if (equal? pkg pkg-path)
                             (string->symbol (format #f ":~A" tgt))
                             (string->symbol (format #f "//~A:~A" pkg tgt))))
                       ;; else 'foo
                       (let* ((key (string->symbol
                                    (format #f "~A" dep)))
-                             (_ (format #t "~A: ~A~%" (uwhite "trying3") key))
+                             (_ (if *debugging* (format #t "~A: ~A~%" (uwhite "trying3") key)))
                              (resolved (hash-table-ref exports key)))
                         (if resolved
                             (let* ((pkg (assoc-val :pkg resolved))
-                                   (_ (format #t "~A: ~A~%" (ured "pkg") pkg))
+                                   (_ (if *debugging* (format #t "~A: ~A~%" (ured "pkg") pkg)))
                                    (tgt (assoc-val :tgt resolved))
-                                   (_ (format #t "~A: ~A~%" (ured "tgt") tgt)))
+                                   (_ (if *debugging* (format #t "~A: ~A~%" (ured "tgt") tgt))))
                               (cons dep resolved))
                             (let ((segs (string-split (format #f "~A" key) ".")))
-                              (format #t "~A: ~A~%" (ured "unresolved; assume opam") key)
+                              (if *debugging*
+                                  (format #t "~A: ~A~%" (ured "unresolved; assume opam") key))
                               (if (= 1 (length segs))
                                   (string->symbol (format #f "@~A//lib/~A" dep dep))
                                   (string->symbol (format #f "@~A//lib/~{~A~^/~}" (car segs) (cdr segs)))))))))))))
 
 (define (-fixup-conditionals! ws pkg stanza)
-  (format #t "~A: ~A\n" (bgblue "-fixup-conditionals!") stanza)
+  (if *debugging*
+      (format #t "~A: ~A\n" (bgblue "-fixup-conditionals!") stanza))
   (if (not (member (car stanza) '(:diff :menhir)))
       (if-let ((conditionals (if-let ((dc
                                        (assoc-in '(:deps :conditionals)
@@ -155,18 +166,22 @@
                                      dc #f)))
               (if (truthy? conditionals)
                   (begin
-                    (format #t "~A: ~A~%" (blue "conditionals") (cdr conditionals))
+                    (if *debugging*
+                        (format #t "~A: ~A~%" (blue "conditionals") (cdr conditionals)))
                     (for-each (lambda (conditional)
-                                (format #t "~A: ~A~%" (bgblue "conditional")
-                                        conditional)
+                                (if *debugging*
+                                    (format #t "~A: ~A~%" (bgblue "conditional")
+                                            conditional))
 
                                 ;;FIXME: selectors are always external pkgs (i.e. with '@')?
                                 ;; even for proj libs?
                                 (for-each (lambda (selector)
-                                            (format #t "~A: ~A~%" (bgblue "selector")
-                                                    selector)
+                                            (if *debugging*
+                                                (format #t "~A: ~A~%" (bgblue "selector")
+                                                        selector))
                                             (let ((resolution (find-in-exports ws (car selector))))
-                                              (format #t "~A: ~A~%" (bgblue "selector resolution") resolution)
+                                              (if *debugging*
+                                                  (format #t "~A: ~A~%" (bgblue "selector resolution") resolution))
                                               (set-cdr! selector
                                                         (list
                                                          (cdr selector)
@@ -188,7 +203,8 @@
 
 ;; FIXME: rename
 (define (-fixup-stanza! ws-id pkg stanza)
-  (format #t "~A: ~A\n" (bgblue "-fixup-stanza!") stanza)
+  (if *debugging*
+      (format #t "~A: ~A\n" (bgblue "-fixup-stanza!") stanza))
   (case (car stanza)
     ((:install) (values))
     (else (let* ((ws (assoc-val ws-id -mibl-ws-table))
@@ -202,24 +218,29 @@
             (case (car stanza)
 
               ((:executable :test)
-               (format #t "~A: ~A~%" (ublue "fixup") (car stanza))
+               (if *debugging*
+                   (format #t "~A: ~A~%" (ublue "fixup") (car stanza)))
                ;; FIXME: also handle :dynamic
                (let (;; (modules (assoc-in '(:compile :manifest :modules) stanza-alist))
                      (compile-deps (assoc-in '(:deps :remote) stanza-alist))
                      (stanza-deps (assoc-in '(:deps :remote) stanza-alist)))
                  ;; (format #t "x compile modules: ~A~%" modules)
-                 (format #t "x compile deps: ~A~%" compile-deps)
-                 (format #t "x stanza deps: ~A~%" stanza-deps)
+                 (if *debugging*
+                     (begin
+                       (format #t "x compile deps: ~A~%" compile-deps)
+                       (format #t "x stanza deps: ~A~%" stanza-deps)))
                  (if compile-deps ;; (not (null? compile-deps))
                      (begin
-                       (format #t "~A: ~A~%" (ured "resolving dep labels 1") compile-deps)
+                       (if *debugging*
+                           (format #t "~A: ~A~%" (ured "resolving dep labels 1") compile-deps))
                        (let* ((exports (car (assoc-val :exports ws)))
                               (ppx (if-let ((ppx (assoc-val :ppx stanza-alist)))
                                            ppx #f))
-                              (_ (format #t "~A: ~A~%" (ublue "ppx") ppx))
+                              (_ (if *debugging* (format #t "~A: ~A~%" (ublue "ppx") ppx)))
                               (fixdeps
                                (map (lambda (dep)
-                                      (format #t "~A: ~A~%" (uwhite "fixup dep A") dep)
+                                      (if *debugging*
+                                          (format #t "~A: ~A~%" (uwhite "fixup dep A") dep))
                                       (cond
                                        ((list? dep)
                                         ;; std dep form: (:foo (:pkg...)(:tgt...))
@@ -229,7 +250,8 @@
                                        (else (error 'fixme
                                                     (format #f "~A: ~A~%" (bgred "unrecognized :archive dep type") dep)))))
                                     (cdr compile-deps))))
-                         (format #t "~A: ~A~%" (ured "fixed-up compile-deps") fixdeps)
+                         (if *debugging*
+                             (format #t "~A: ~A~%" (ured "fixed-up compile-deps") fixdeps))
                          (set-cdr! compile-deps fixdeps)
                          (set-car! compile-deps :resolved)))
 
@@ -264,25 +286,28 @@
               ;;         (format #f "unhandled labels :diff" )))
 
               ((:rule :diff :node :ocamlc)
-               (format #t "~A: ~A, ~A~%" (ublue "fixup") (car stanza) stanza-alist)
+               (if *debugging*
+                   (format #t "~A: ~A, ~A~%" (ublue "fixup") (car stanza) stanza-alist))
                (let* ((targets (assoc-val :outputs stanza-alist))
-                      (_ (format #t "targets: ~A~%" targets))
+                      (_ (if *debugging* (format #t "targets: ~A~%" targets)))
                       (deps (if-let ((deps (assoc :deps stanza-alist)))
                                     ;; (if (null? deps) '() (car deps))
                                     deps
                                     #f))
-                      (_ (format #t "deps: ~A~%" deps))
+                      (_ (if *debugging* (format #t "deps: ~A~%" deps)))
                       (action (if-let ((action (assoc-val :actions stanza-alist)))
                                       action
                                       (if-let ((action
                                                 (assoc-val :progn stanza-alist)))
                                               action
                                               (error 'bad-action "unexpected action in :rule"))))
-                      (_ (format #t "action: ~A~%" action))
+                      (_ (if *debugging* (format #t "action: ~A~%" action)))
                       (tool (assoc-in '(:actions :cmd :tool) stanza-alist)))
-                 (format #t "Tool: ~A~%" tool)
-                 (format #t "Action: ~A~%" action)
-                 (format #t "stanza-alist: ~A~%" stanza-alist)
+                 (if *debugging*
+                     (begin
+                       (format #t "Tool: ~A~%" tool)
+                       (format #t "Action: ~A~%" action)
+                       (format #t "stanza-alist: ~A~%" stanza-alist)))
 
                  ;; fixup-deps
                  ;; (if-let ((deps (if-let ((deps (assoc :deps stanza-alist)))
@@ -290,29 +315,35 @@
                  ;;                     deps #f)))
                  (if deps
                      (begin
-                       (format #t "~A: ~A~%" (ured "resolving dep labels 2") deps)
+                       (if *debugging*
+                           (format #t "~A: ~A~%" (ured "resolving dep labels 2") deps))
                        (let ((exports (car (assoc-val :exports ws)))
                              (fixdeps
                               (map (lambda (dep)
-                                     (format #t "~A: ~A~%" (uwhite "fixup dep B") dep)
+                                     (if *debugging*
+                                         (format #t "~A: ~A~%" (uwhite "fixup dep B") dep))
                                      (if (eq? (car dep) ::tools)
                                          (begin
-                                           (format #t "~A: ~A~%" (bgred "::TOOLS") (caadr dep))
+                                           (if *debugging*
+                                               (format #t "~A: ~A~%" (bgred "::TOOLS") (caadr dep)))
                                            (cond
                                             ((eq? ::unresolved (cdadr dep))
                                              (let* ((t (format #f "~A" (caadr dep)))
                                                     (t (if (string-prefix? ":exe:" t)
                                                            (string->symbol (string-append ":bin:" (string-drop t 5)))
                                                            (caadr dep))))
-                                               (format #t "~A~%" (bgred "IMPORT TOOL"))
-                                               (format #t "~A~%" (red "export keys"))
+                                               (if *debugging*
+                                                   (begin
+                                                     (format #t "~A~%" (bgred "IMPORT TOOL"))
+                                                     (format #t "~A~%" (red "export keys"))))
                                                ;; if tool = :exe:..., replace exe with bin before lookup
                                                ;; (for-each (lambda (k)
                                                ;;             (format #t "~A: ~A~%" (ured "key") k))
                                                ;;           (sort! (hash-table-keys exports) sym<?))
                                                (if-let ((import (hash-table-ref exports t)))
                                                        (begin
-                                                         (format #t "~A: ~A~%" (bgred "importing") import)
+                                                         (if *debugging*
+                                                             (format #t "~A: ~A~%" (bgred "importing") import))
                                                          (list ::tools
                                                                (cons (caadr dep) ;; use original :exe:, :bin: just for lookup
                                                                            (list (assoc :pkg import)
@@ -323,7 +354,8 @@
                                                                            ))
                                                          )
                                                        (begin
-                                                         (format #t "~A: ~A~%" (red "no import for tool") t) ;;  (caadr dep))
+                                                         (if *debugging*
+                                                             (format #t "~A: ~A~%" (red "no import for tool") t))
                                                          ;; (error 'STOP "STOP no import")
                                                          ;; assume (rashly) that form is e.g. :tools/version/gen/gen.exe
                                                          (let* ((kw t) ;; (caadr dep))
@@ -342,7 +374,8 @@
                                          ;; else std dep form: (:foo (:pkg...)(:tgt...))
                                          (-fixup-std-dep-form ws-id pkg dep exports)))
                                    (cdr deps))))
-                         (format #t "~A: ~A~%" (ured "fixed-up deps") fixdeps)
+                             (if *debugging*
+                                 (format #t "~A: ~A~%" (ured "fixed-up deps") fixdeps))
                          (set-cdr! deps fixdeps))))
                  ;; (format #t "~A: ~A~%" (ured "reset deps") deps)
 
@@ -350,50 +383,57 @@
                  (if (assoc :actions stanza-alist)
                      (begin
                        (for-each (lambda (c)
-                                   (format #t "PROGN cmd: ~A~%" c)
+                                   (if *debugging*
+                                       (format #t "PROGN cmd: ~A~%" c))
                                    (-fixup-progn-cmd! ws c targets deps))
                                  action))
                      ;; else? actions always have a :cmd?
                      (begin
-                       (format #t "rule action: ~A~%" action)
-                       (format #t "rule tool: ~A~%" tool)
-                       (format #t "rule targets: ~A~%" targets)
-                       (format #t "rule deps: ~A~%" deps)
-                       (error 'unhandled action "unhandled action")
+                       (if *debugging*
+                           (begin
+                             (format #t "rule action: ~A~%" action)
+                             (format #t "rule tool: ~A~%" tool)
+                             (format #t "rule targets: ~A~%" targets)
+                             (format #t "rule deps: ~A~%" deps)
+                             (error 'unhandled action "unhandled action")
+                             ))
                        ;; (if-let ((tool-label (hash-table-ref exports (cadr tool))))
-                       ;;         (let* ((_ (format #t "tool-label: ~A~%" tool-label))
+                       ;;         (let* ((_ (if *debugging* (format #t "tool-label: ~A~%" tool-label)))
                        ;;                (pkg (car (assoc-val :pkg tool-label)))
                        ;;                (tgt (car (assoc-val :tgt tool-label)))
                        ;;                (label (format #f "//~A:~A" pkg tgt))
-                       ;;                (_ (format #t "tool-label: ~A\n" tool-label)))
+                       ;;                (_ (if *debugging* (format #t "tool-label: ~A\n" tool-label))))
                        ;;           (set-cdr! tool (list label)))
                        ;;         ;; FIXME: handle deps
                        ;;         '())
                        ))))
 
               ((:archive :ns-archive :library :ns-library)
-               (format #t "~A: ~A~%" (blue "fixup") (car stanza))
+               (if *debugging*
+                   (format #t "~A: ~A~%" (blue "fixup") (car stanza)))
                ;; (let ((deps (assoc-val :deps stanza-alist)))
                ;;   (format #t "archive deps: ~A~%" deps)))
                (let* ((deps (if-let ((deps (assoc-in '(:deps :remote) stanza-alist)))
                                     deps #f))
-                      (_ (format #t "~A: ~A~%" (blue "deps") deps))
+                      (_ (if *debugging* (format #t "~A: ~A~%" (blue "deps") deps)))
                       (ppx (if-let ((ppx (assoc-val :ppx stanza-alist)))
                                    ppx #f))
                       (ppxex (if-let ((ppxes (assoc-val :ppxes stanza-alist)))
                                      ppxes #f))
-                      (_ (format #t "~A: ~A~%" (ublue "ppx") ppx))
+                      (_ (if *debugging* (format #t "~A: ~A~%" (ublue "ppx") ppx)))
                       (ppx-codeps (if-let ((ppx-codeps (assoc
                                                         :ppx-codeps stanza-alist)))
                                           ppx-codeps #f))
                       )
                  (if deps
                      (begin
-                       (format #t "~A: ~A~%" (ured "resolving dep labels 3") deps)
+                       (if *debugging*
+                           (format #t "~A: ~A~%" (ured "resolving dep labels 3") deps))
                        (let ((exports (car (assoc-val :exports ws)))
                              (fixdeps
                               (map (lambda (dep)
-                                     (format #t "~A: ~A~%" (uwhite "fixup dep") dep)
+                                     (if *debugging*
+                                         (format #t "~A: ~A~%" (uwhite "fixup dep") dep))
                                      (cond
                                       ((list? dep)
                                        ;; std dep form: (:foo (:pkg...)(:tgt...))
@@ -403,18 +443,21 @@
                                       (else (error 'fixme
                                                    (format #f "~A: ~A~%" (bgred "unrecognized :archive dep type") dep)))))
                                    (cdr deps))))
-                         (format #t "~A: ~A~%" (ured "fixed-up deps") fixdeps)
+                         (if *debugging*
+                             (format #t "~A: ~A~%" (ured "fixed-up deps") fixdeps))
                          (set-cdr! deps fixdeps)
                          (set-car! deps :resolved))))
                  (if ppx
                      (begin
-                       (format #t "~A: ~A~%" (ured "resolving ppx") ppx)
+                       (if *debugging*
+                           (format #t "~A: ~A~%" (ured "resolving ppx") ppx))
                        (let* ((exports (car (assoc-val :exports ws)))
                               (ppx-deps (assoc :manifest ppx))
-                              (_ (format #t "~A: ~A~%" (bgred "ppx-deps") ppx-deps))
+                              (_ (if *debugging* (format #t "~A: ~A~%" (bgred "ppx-deps") ppx-deps)))
                               (fixppx
                                (map (lambda (dep)
-                                      (format #t "~A: ~A~%" (uwhite "fixup ppx-dep") dep)
+                                      (if *debugging*
+                                          (format #t "~A: ~A~%" (uwhite "fixup ppx-dep") dep))
                                       (cond
                                        ((list? dep)
                                         ;; std dep form: (:foo (:pkg...)(:tgt...))
@@ -424,20 +467,23 @@
                                        (else (error 'fixme
                                                     (format #f "~A: ~A~%" (bgred "unrecognized ppx-dep type") dep)))))
                                     (cdr ppx-deps))))
-                         (format #t "~A: ~A~%" (ured "fixed-up ppx-deps") fixppx)
+                         (if *debugging*
+                             (format #t "~A: ~A~%" (ured "fixed-up ppx-deps") fixppx))
                          (set-cdr! ppx-deps fixppx)
                          ;; (set-car! ppx-deps :resolved)
                          ;; (error 'STOP "stop ppx")
                          )))
                  (if ppx-codeps
                      (begin
-                       (format #t "~A: ~A~%" (ured "resolving ppx-codeps") ppx-codeps)
+                       (if *debugging*
+                           (format #t "~A: ~A~%" (ured "resolving ppx-codeps") ppx-codeps))
                        (let* ((exports (car (assoc-val :exports ws)))
                               ;; (ppx-deps (assoc :manifest ppx))
-                              ;; (_ (format #t "~A: ~A~%" (bgred "ppx-deps") ppx-deps))
+                              ;; (_ (if *debugging* (format #t "~A: ~A~%" (bgred "ppx-deps") ppx-deps)))
                               (fixppx
                                (map (lambda (dep)
-                                      (format #t "~A: ~A~%" (uwhite "fixup ppx-dep") dep)
+                                      (if *debugging*
+                                          (format #t "~A: ~A~%" (uwhite "fixup ppx-dep") dep))
                                       (cond
                                        ((list? dep)
                                         ;; std dep form: (:foo (:pkg...)(:tgt...))
@@ -447,7 +493,8 @@
                                        (else (error 'fixme
                                                     (format #f "~A: ~A~%" (bgred "unrecognized ppx-dep type") dep)))))
                                     (cdr ppx-codeps))))
-                         (format #t "~A: ~A~%" (ured "fixed-up ppx-codeps") fixppx)
+                         (if *debugging*
+                             (format #t "~A: ~A~%" (ured "fixed-up ppx-codeps") fixppx))
                          (set-cdr! ppx-codeps fixppx)
                          ;; (set-car! ppx-deps :resolved)
                          ;; (error 'STOP "stop ppx")
@@ -456,16 +503,18 @@
 
               ((:cppo)
                (let ((deps (assoc :deps (cdr stanza))))
-                 (format #t "~A: ~A~%" (red "deps") deps)
+                 (if *debugging*
+                     (format #t "~A: ~A~%" (red "deps") deps))
                  (set-cdr! deps (dissoc '(::tools) (cdr deps)))
-                 (format #t "~A: ~A~%" (red "deps after") deps))
+                 (if *debugging*
+                     (format #t "~A: ~A~%" (red "deps after") deps)))
                )
 
               ;; ((:library)
               ;;  (format #t "~A~%" (ublue "fixup :library"))
               ;;  (let* ((deps (if-let ((deps (assoc-in '(:deps :remote) stanza-alist)))
               ;;                       deps #f))
-              ;;         (_ (format #t "deps: ~A~%" deps))
+              ;;         (_ (if *debugging* (format #t "deps: ~A~%" deps)))
               ;;         )
               ;;    (if deps
               ;;        (begin
@@ -507,22 +556,25 @@
         (+signature+ '(resolve-labels! workspace)))
     (lambda (ws-id)
       (let ((ws (assoc-val ws-id -mibl-ws-table)))
-        (format #t "~%~A for ws: ~A\n"
-                (bgred "resolve-labels!") (assoc :name ws))
+        (if *debugging*
+            (format #t "~%~A for ws: ~A\n"
+                (bgred "resolve-labels!") (assoc :name ws)))
         ;; (assoc-val 'name ws))
         (let* ((pkgs (car (assoc-val :pkgs ws)))
-               ;; (_ (format #t "PKGS: ~A\n" pkgs))
+               ;; (_ (if *debugging* (format #t "PKGS: ~A\n" pkgs)))
                (exports (car (assoc-val :exports ws))))
           ;; (format #t "resolving labels for pkgs: ~A\n" (hash-table-keys pkgs))
           ;; (format #t "exports: ~A\n" exports)
           (for-each (lambda (kv)
-                      (format #t "~A: ~A~%" (ublue "resolving pkg") (car kv))
+                      (if *debugging*
+                          (format #t "~A: ~A~%" (ublue "resolving pkg") (car kv)))
                       ;; (format #t "pkg: ~A~%" (cdr kv))
                       (let ((pkg (cdr kv)))
                         (if-let ((stanzas (assoc-val :dune (cdr kv))))
                                 (for-each (lambda (stanza)
                                             (-fixup-stanza! ws-id pkg stanza)
-                                            (format #t "stanza: ~A~%" stanza))
+                                            (if *debugging*
+                                                (format #t "stanza: ~A~%" stanza)))
                                           stanzas)))
                       )
                     pkgs)

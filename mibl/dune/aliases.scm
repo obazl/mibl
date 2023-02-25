@@ -23,21 +23,26 @@
 ;;   (diff test.expected test.output)))
 
 (define (dune-alias->mibl ws pkg stanza)
-  (format #t "~A: ~A\n" (blue "dune-alias->mibl") stanza)
+  (if *debugging*
+      (format #t "~A: ~A\n" (blue "dune-alias->mibl") stanza))
   ;; (if-let ((alias-assoc (assoc :alias (cdr stanza))))
   (if (assoc-in '(:actions :cmd) (cdr stanza))
       (let ((alias (cadr alias-assoc))
             (cmd-ct (length (assoc-in* '(:actions :cmd) (cdr stanza))))
             ;;FIXME assuming one cmd
             (args (assoc-in '(:actions :cmd :args) (cdr stanza))))
-        (format #t "~A: ~A~%" (ured "ALIAS") alias)
-        (format #t "~A: ~A~%" (ured "cmd ct") cmd-ct)
-        (format #t "~A: ~A~%" (ured "args") args)
+        (if *debugging*
+            (begin
+              (format #t "~A: ~A~%" (ured "ALIAS") alias)
+              (format #t "~A: ~A~%" (ured "cmd ct") cmd-ct)
+              (format #t "~A: ~A~%" (ured "args") args)))
         ;; if :args contains executable, mark as :test
         (let ((tool-args (fold (lambda (arg accum)
-                                 (format #t "~A: ~A~%" (ured "arg") arg)
+                                 (if *debugging*
+                                     (format #t "~A: ~A~%" (ured "arg") arg))
                                  (let ((argstr (format #f "~A" arg)))
-                                   (format #t "~A: ~A~%" (ured "argstr") argstr)
+                                   (if *debugging*
+                                       (format #t "~A: ~A~%" (ured "argstr") argstr))
                                    ;; FIXME what about local sh scripts?
                                    (cond
                                     ((string-prefix? ":bin" argstr) (cons arg accum))
@@ -54,14 +59,16 @@
                                '() (cdr args))))
           (if tool-args
               (begin
-                (format #t "~A: ~A~%" (ured "found executable tool args") tool-args)
+                (if *debugging*
+                    (format #t "~A: ~A~%" (ured "found executable tool args") tool-args))
                 (if-let ((deps (assoc :deps (cdr stanza))))
                         (let ((tool-deps (assoc ::tools (cdr deps))))
                           (if tool-deps
                               ;; append tools
-                              (format #t "~A: ~A~%" (ured "tool-deps") tool-deps)
+                              (if *debugging*
+                                  (format #t "~A: ~A~%" (ured "tool-deps") tool-deps))
                               ;; add ::tools to (:deps ...)
-                              (let ((_ (format #t "~A: ~A~%" (ured "deps") deps))
+                              (let ((_ (if *debugging* (format #t "~A: ~A~%" (ured "deps") deps)))
                                     (deps-list (cdr deps))
                                     (tools (list (cons ::tools tool-args))))
                                 (set-cdr! deps (append tools deps-list)))
@@ -76,7 +83,8 @@
                 (set! -sh-test-id (+ 1 -sh-test-id))
                 )
               (begin
-                (format #t "~A: ~A~%" (ured "NO executable tools") tools)
+                (if *debugging*
+                    (format #t "~A: ~A~%" (ured "NO executable tools") tools))
                 (error 'FIXME "alias without run tool")))
           ))
       ;; else alias with no :actions

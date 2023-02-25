@@ -24,20 +24,24 @@
 ;; e.g. gen/bip39_generator.exe
 ;; FIXME: rename, works for any file, not just tools
 (define (normalize-toolname pkg-path tool)
-  (format #t "normalize-toolname: ~A\n" tool)
+  (if *debugging*
+      (format #t "normalize-toolname: ~A\n" tool))
   (let* ((segs (string-split tool #\/))
          (seg-ct (length segs)))
     (let recur ((segs segs)
                 (result pkg-path))
-      (format #t "recur segs: ~A, result: ~A\n" segs result)
+      (if *debugging*
+          (format #t "recur segs: ~A, result: ~A\n" segs result))
       (if (null? segs)
           result
           (cond
             ((equal? (car segs) ".")
-             (format #t "~A\n" "tool DOT seg")
+             (if *debugging*
+                 (format #t "~A\n" "tool DOT seg"))
              (recur (cdr segs) result))
             ((equal? (car segs) "..")
-             (format #t "~A\n" "tool DOTDOT seg")
+             (if *debugging*
+                 (format #t "~A\n" "tool DOTDOT seg"))
              (let ((last-slash (string-index-right result
                                                    (lambda (ch)
                                                      (char=? ch #\/)))))
@@ -52,7 +56,8 @@
                ;;                           (- (length result) last-slash)))
                ))
             (else
-             (format #t "ELSE car segs: ~A\n" (car segs))
+             (if *debugging*
+                 (format #t "ELSE car segs: ~A\n" (car segs)))
              (if (null? (cdr segs))
                  (recur (cdr segs) (string-append result "/" (car segs)))
                  (recur (cdr segs)
@@ -63,8 +68,10 @@
   ;;                       exe)
 
 (define (resolve-local-toolname pkg-path toolname action stanza)
-  (format #t "RESOLVE-local-toolname: ~A:: ~A\n" pkg-path toolname)
-  (format #t " stanza: ~A\n" stanza)
+  (if *debugging*
+      (begin
+        (format #t "RESOLVE-local-toolname: ~A:: ~A\n" pkg-path toolname)
+        (format #t " stanza: ~A\n" stanza)))
   (let ((deps (assoc 'deps (cdr stanza))))
     ;; (format #t "deps: ~A\n" deps)
     (cond
@@ -80,7 +87,8 @@
      (else
       (if deps
           (begin
-            (format #t "rlt DEPS:: ~A\n" deps)
+            (if *debugging*
+                (format #t "rlt DEPS:: ~A\n" deps))
             ;; e.g. (deps (:exe gen/bip39_generator.exe) ...)
             ;; e.g. (deps (:gen gen.exe))
             (let ((deps-list (cdr deps)))
@@ -89,7 +97,8 @@
                   (if (equal? (string-append ":" toolname)
                               (symbol->string (caar deps-list)))
                       (let ((exe (symbol->string (cadr (car deps-list)))))
-                        (format #t "pkg ~A;  exe: ~A\n" pkg-path exe)
+                        (if *debugging*
+                            (format #t "pkg ~A;  exe: ~A\n" pkg-path exe))
                         (normalize-toolname pkg-path exe)
                         ;; (if (string-prefix? "./" exe)
                         ;;     (string-append ":" (substring exe 2))
@@ -208,8 +217,10 @@
 ;; etc.
 (define (run-action->deps pkg-path tool rule-alist)
   ;; if the tool is listed in the deps, remove it
-  (format #t "RUN-ACTION->DEPS: ~A\n" pkg-path)
-  (format #t "rule-alist: ~A\n" rule-alist)
+  (if *debugging*
+      (begin
+        (format #t "RUN-ACTION->DEPS: ~A\n" pkg-path)
+        (format #t "rule-alist: ~A\n" rule-alist)))
 
   (define resolve-depvar
     ;; e.g. (:exe gen/bip39_generator.exe)
@@ -226,7 +237,8 @@
     (if-let ((deps (assoc-val 'deps rule-alist)))
             (let recur ((deps deps)
                         (result '()))
-              (format #t "deps: ~A\n" (if (null? deps) '() deps))
+              (if *debugging*
+                  (format #t "deps: ~A\n" (if (null? deps) '() deps)))
               ;; (format #t "result: ~A\n" result)
               (if (null? deps)
                   (reverse result)
@@ -240,7 +252,8 @@
                         ;;  (recur (cdr deps) (cons (car deps) result)))
 
                         ((glob_files)
-                         (format #t "GLOB dep: ~A\n" (car deps))
+                         (if *debugging*
+                             (format #t "GLOB dep: ~A\n" (car deps)))
                          (recur (cdr deps) (cons (car deps) result)))
 
                         ((file)
@@ -254,7 +267,8 @@
                         ;;  (format #t "UNIVERSE dep: ~A\n" (car deps))
                         ;;  (recur (cdr deps) (cons (car deps) result)))
                         ((package)
-                         (format #t "WARNING: dep fld 'package' not yet supported: ~A\n" (car deps))
+                         (if *debugging*
+                             (format #t "WARNING: dep fld 'package' not yet supported: ~A\n" (car deps)))
                          (recur (cdr deps) (cons (car deps) result)))
                         ;; ((env_var)
                         ;;  (format #t "ENV_VAR dep: ~A\n" (car deps))
@@ -296,44 +310,45 @@
 
 ;; (define (normalize-run-action pkg-path action stanza srcfiles)
 (define (normalize-run-action pkg action-alist targets deps)
-  (format #t "NORMALIZE-run-action: ~A\n" action-alist)
+  (if *debugging*
+      (format #t "NORMALIZE-run-action: ~A\n" action-alist))
   (let* ((stanza-type :run-cmd)
          ;; (rule-alist stanza-alist) ;; (cdr stanza))
          ;; (action-alist (assoc-val 'action rule-alist))
-         (_ (format #t "action-alist: ~A\n" action-alist))
+         (_ (if *debugging* (format #t "action-alist: ~A\n" action-alist)))
          (run-alist (assoc-val 'run action-alist))
-         (_ (format #t "run-alist: ~A\n" run-alist))
+         (_ (if *debugging* (format #t "run-alist: ~A\n" run-alist)))
 
          (pkg-path (assoc-val :pkg-path pkg))
-         ;; (_ (format #t "pkg-path: ~A\n" pkg-path))
+         ;; (_ (if *debugging* (format #t "pkg-path: ~A\n" pkg-path)))
 
          (tool (run-action->toolname pkg-path run-alist))
-         (_ (format #t "TOOL: ~A\n" tool))
+         (_ (if *debugging* (format #t "TOOL: ~A\n" tool)))
 
          ;; (tool-tag (normalize-tool-tag (cadadr action)))
-         ;; (_ (format #t "TOOL-TAG: ~A\n" tool-tag))
+         ;; (_ (if *debugging* (format #t "TOOL-TAG: ~A\n" tool-tag)))
 
          ;; (run-list (cadr action)) ;; (run <tool> <arg1> ...)
-         ;; ;; (_ (format #t "run-list: ~A\n" run-list))
+         ;; ;; (_ (if *debugging* (format #t "run-list: ~A\n" run-list)))
 
          ;; (target (if-let ((target (assoc 'target rule-alist)))
          ;;                 (cadr target) #f))
-         ;; ;; (_ (format #t "target: ~A\n" target))
+         ;; ;; (_ (if *debugging* (format #t "target: ~A\n" target)))
          ;; (targets (if-let ((targets (assoc 'targets rule-alist)))
          ;;                  (cadr targets)
          ;;                  #f))
-         ;; ;; (_ (format #t "targets: ~A\n" targets))
+         ;; ;; (_ (if *debugging* (format #t "targets: ~A\n" targets)))
 
          ;; ;;FIXME: run actions for "alias runtest" etc. have no target(s) fld
          ;; (outfile (if target target
          ;;              (if targets targets
          ;;                  '())))
 
-         ;; ;; (_ (format #t "outfile: ~A\n" outfile))
+         ;; ;; (_ (if *debugging* (format #t "outfile: ~A\n" outfile)))
 
          (args (cdr run-alist))
           ;;(run-action->args pkg-path action run-list))
-         (_ (format #t "CMD ARGS: ~A\n" args))
+         (_ (if *debugging* (format #t "CMD ARGS: ~A\n" args)))
 
          ;; (dsl run-list)
 
@@ -341,7 +356,7 @@
          ;;  (expand-rule-deps pkg stanza-alist)
          ;;  ;;(run-action->deps pkg-path tool rule-alist)
          ;;  )
-         (_ (format #t "CMD DEPS: ~A\n" deps))
+         (_ (if *debugging* (format #t "CMD DEPS: ~A\n" deps)))
 
          ;; ;;        (dsl (cadr (cdadr action)))
          ;; ;;        ;; dsl may contain embedded actions, e.g. 'chdir', 'setenv', etc.

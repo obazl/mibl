@@ -1,4 +1,5 @@
-;; (format #t "loading dune/fields.scm\n")
+(if *debugging*
+    (format #t "loading dune/fields.scm\n"))
 
 ;; mv select targets to pkg :modules
 ;; rm select apodoses from pkg :structures, :signatures
@@ -16,30 +17,37 @@
   (let ((+documentation+ "convert 'libraries' field of dune library stanza to mibl format. libdeps is a pair (fldname val)")
         (+signature+ '(dune-libraries-fld->mibl libdeps pkg)))
     (lambda (libdeps pkg)
-      (format #t "~A: ~A\n" (ublue "dune-libraries-fld->mibl") libdeps)
+      (if *debugging*
+          (format #t "~A: ~A\n" (ublue "dune-libraries-fld->mibl") libdeps))
       (let-values (((directs seldeps conditionals) ;; modules)
                     (analyze-libdeps libdeps)))
-        (format #t "~A: ~A\n" (blue ">LIBDEPS DIRECTS") directs)
-        (format #t "~A: ~A\n" (blue ">LIBDEPS SELDEPS") seldeps)
-        (format #t "~A: ~A\n" (blue ">LIBDEPS CONDITIONALS") conditionals)
-        ;; (format #t "~A: ~A\n" (blue ">LIBDEPS MODULES") modules)
-
+        (if *debugging*
+            (begin
+              (format #t "~A: ~A\n" (blue ">LIBDEPS DIRECTS") directs)
+              (format #t "~A: ~A\n" (blue ">LIBDEPS SELDEPS") seldeps)
+              (format #t "~A: ~A\n" (blue ">LIBDEPS CONDITIONALS") conditionals)
+              ;; (format #t "~A: ~A\n" (blue ">LIBDEPS MODULES") modules)
+              ))
         ;; if conditionals: update :structures or :signatures pkg flds
         ;; FIXME: we can do this later
         (if conditionals
             (let (;;(ctargets (conditional-targets conditionals))
-                  (_ (format #t "~A~%" (uwhite "updating conditionals")))
+                  (_ (if *debugging* (format #t "~A~%" (uwhite "updating conditionals"))))
                   (ctargets (fold (lambda (conditional accum)
-                                    (format #t
-                                            "conditional ~A\n" conditional)
+                                    (if *debugging*
+                                        (format #t "conditional ~A\n" conditional))
                                     (let ((newpkg (update-pkg-conditionals! pkg conditional)))
-                                      (format #t "~A: ~A~%" (bgred "newpkg") newpkg)
+                                      (if *debugging*
+                                          (format #t "~A: ~A~%" (bgred "newpkg") newpkg))
                                       (set! pkg newpkg)
-                                      (format #t "~A: ~A~%" (bgred "conditional") conditional)
+                                      (if *debugging*
+                                          (format #t "~A: ~A~%" (bgred "conditional") conditional))
                                       (cons (assoc-val :target conditional) accum)))
                                   '() conditionals)))
-              (format #t "~A: ~A\n" (uwhite "ctargets") ctargets)
-              (format #t "~A: ~A\n" (uwhite "updated pkg") pkg)
+              (if *debugging*
+                  (begin
+                    (format #t "~A: ~A\n" (uwhite "ctargets") ctargets)
+                    (format #t "~A: ~A\n" (uwhite "updated pkg") pkg)))
               ;; (error 'tmp "tmp")
 
               (let* ((deps (if (null? directs) '() directs))
@@ -52,4 +60,5 @@
                                              (cons :conditionals conditionals))))))
                 (filter (lambda (d) (not (null? d))) deps))))))))
 
-;; (format #t "loaded dune/fields.scm\n")
+(if *debugging*
+    (format #t "loaded dune/fields.scm\n"))

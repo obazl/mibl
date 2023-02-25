@@ -1,4 +1,5 @@
-;; (display "loading dune/expanders.scm\n")
+(if *debugging*
+    (format #t "loading dune/expanders.scm\n"))
 
 (load "dune/api_utils.scm")
 
@@ -19,8 +20,10 @@
 ;; (action (run %{deps} --test))
 (define expand-run-tool
   (lambda (ws tool pkg targets deps)
-    (format #t "~A: ~A (~A)~%" (ublue "expand-run-tool") tool (type-of tool))
-    (format #t "~A: ~A~%" (green "deps") deps)
+    (if *debugging*
+        (begin
+          (format #t "~A: ~A (~A)~%" (ublue "expand-run-tool") tool (type-of tool))
+          (format #t "~A: ~A~%" (green "deps") deps)))
 
     (case tool
       ((%{bin:ocamlc}) ::ocamlc)
@@ -56,29 +59,36 @@
            (let ((tmp (-expand-literal-tool!? ws
                        (car (assoc-val :pkg-path pkg))
                        tool deps)))
-             (format #t "~A: ~A~%" (ured "TMP") tmp)
-             (format #t "~A: ~A~%" (ured "DEPS") deps)
+             (if *debugging*
+                 (begin
+                   (format #t "~A: ~A~%" (ured "TMP") tmp)
+                   (format #t "~A: ~A~%" (ured "DEPS") deps)))
              ;; (error 'X "STOP expand-run-tool")
             tmp))))))))
 
 (define (find-in-exports ws search-key)
-  (format #t "~A: ~A~%" (ublue "find-in-exports") search-key)
+  (if *debugging*
+      (format #t "~A: ~A~%" (ublue "find-in-exports") search-key))
   (let* ((exports (car (assoc-val :exports
                                   (assoc-val ws -mibl-ws-table)))))
     ;; (format #t "~A: ~A~%" (bgblue "exports") exports)
     (hash-table-ref exports search-key)))
 
 (define (-find-executable-for-name nm pkg)
-  (format #t "~A: ~A pkg: ~A~%" (ublue "-find-executable-for-name") nm (assoc-val :pkg-path pkg))
+  (if *debugging*
+      (format #t "~A: ~A pkg: ~A~%" (ublue "-find-executable-for-name") nm (assoc-val :pkg-path pkg)))
   (let ((nm (if (keyword? nm) (keyword->symbol nm)))
         (stanzas (assoc-val :dune pkg)))
-    (format #t "~A: ~A~%" (blue "stanzas") stanzas)
+    (if *debugging*
+        (format #t "~A: ~A~%" (blue "stanzas") stanzas))
     (find-if (lambda (stanza)
-               (format #t "~A: ~A~%" (blue "stanza") stanza)
+               (if *debugging*
+                   (format #t "~A: ~A~%" (blue "stanza") stanza))
                (if (equal? (car stanza) :executable)
                    (let* ((stanza-alist (cdr stanza))
                           (privname (assoc-val :privname stanza-alist)))
-                     (format #t "~A: ~A =? ~A~%" (cyan "testing") nm privname)
+                     (if *debugging*
+                         (format #t "~A: ~A =? ~A~%" (cyan "testing") nm privname))
                      (cond
                       ((equal? nm privname) #t)
 
@@ -93,19 +103,24 @@
              stanzas)))
 
 (define (-match-dep pfx key dep)
-  (format #t "~A: ~A/~A ? ~A~%" (ublue "-match-dep") pfx key dep)
+  (if *debugging*
+      (format #t "~A: ~A/~A ? ~A~%" (ublue "-match-dep") pfx key dep))
 )
 
 ;; may update :deps
 (define (-find-in-deps!? nm deps pkg)
-  (format #t "~A: ~A~%" (ublue "-find-in-deps") nm)
-  (format #t "~A: ~A~%" (blue "deps") deps)
+  (if *debugging*
+      (begin
+        (format #t "~A: ~A~%" (ublue "-find-in-deps") nm)
+        (format #t "~A: ~A~%" (blue "deps") deps)))
   (let ((d (find-if (lambda (dep)
-                      (format #t "~A: ~A~%" (blue "dep") dep)
+                      (if *debugging*
+                          (format #t "~A: ~A~%" (blue "dep") dep))
                       ;;FIXME: special tags ::tools, ::opam-pkgs, ::unresolved, etc.
                       (cond
                        ((equal? (car dep) nm)
-                        (format #t "~A: ~A~%" (uwhite "matched?") dep)
+                        (if *debugging*
+                            (format #t "~A: ~A~%" (uwhite "matched?") dep))
                         #t)
                        ((member (cdr dep) '(::unresolved ::opam-pkg)) #f)
                        (else #f)))
@@ -115,7 +130,8 @@
         (if-let ((matching-exe (-find-executable-for-name nm pkg)))
                 (let ((tgt (format #f "~A.exe" (assoc-val :privname (cdr matching-exe)))))
                   ;; TODO: update :deps for stanza
-                  (format #t "~A: ~A~%" (bggreen "pctvar resolved") tgt)
+                  (if *debugging*
+                      (format #t "~A: ~A~%" (bggreen "pctvar resolved") tgt))
                   (let ((newdep (list (cons nm (list `(:pkg . ,(car (assoc-val :pkg-path pkg))) `(:tgt . ,tgt))))))
                     (set-cdr! deps (append (cdr deps) newdep))
                     #t)
@@ -124,8 +140,9 @@
 
 ;; may update :deps
 (define (-expand-dep-pct-var!? ws pfx sym deps pkg)
-  (format #t "~A: pfx: ~A; sym: ~A~%"
-          (ublue "-expand-dep-pct-var!?") pfx sym)
+  (if *debugging*
+      (format #t "~A: pfx: ~A; sym: ~A~%"
+          (ublue "-expand-dep-pct-var!?") pfx sym))
   ;; arg form:  dep:<path>
   ;; search deps for <path>
   ;; if not found, search pkg files? no need?
@@ -133,9 +150,10 @@
   ;; add it to :deps
   (let* ((pkg-path (car (assoc-val :pkg-path pkg)))
          (search-key (symbol->keyword sym))
-         (_ (format #t "~A: ~A~%" (yellow "searching deps") deps))
+         (_ (if *debugging* (format #t "~A: ~A~%" (yellow "searching deps") deps)))
          (d (-find-in-deps!? search-key deps pkg)))
-    (format #t "~A: ~A~%" (yellow "found?") d)
+    (if *debugging*
+        (format #t "~A: ~A~%" (yellow "found?") d))
 
     (if d
         search-key
@@ -146,7 +164,7 @@
         ;; 4. mark it ::unresolved and let a later pass resolve it
 
         (let ((v (format #f "~A" sym))
-              (_ (format #t "~A: ~A~%" (yellow "searching pkg files") deps))
+              (_ (if *debugging* (format #t "~A: ~A~%" (yellow "searching pkg files") deps)))
               (expanded
                ;; FIXME: already searched :deps, no need for this:
                (if-let ((tag (deps->tag-for-file deps search-key)))
@@ -159,8 +177,8 @@
                                  (-infer-dep! ws sym #|search-key|# deps pkg)))
                                inferred-dep
                                (begin
-                                 (format #t "~A: ~A~%"
-                                         (red "unresolved") search-key)
+                                 (if *debugging*
+                                     (format #t "~A: ~A~%" (red "unresolved") search-key))
 
                                  ;; first search exports tbl
                                  ;;FIXME: this is pointless since the exports tbl is incomplete
@@ -169,13 +187,16 @@
                                          (let* ((pkg (assoc-val :pkg found))
                                                 (tgt (assoc-val :tgt found))
                                                 (entry `((,search-key (:pkg . ,pkg) (:tgt . ,tgt)))))
-                                           (format #t "~A: ~A~%" (red "found") found)
+                                           (if *debugging*
+                                               (format #t "~A: ~A~%" (red "found") found))
                                            ;; (error 'STOP "STOP exp")
                                            (set-cdr! deps (append (cdr deps) entry))
                                            entry)
                                          (let ((x (handle-filename-literal-arg ws sym pkg)))
-                                           (format #t "~A: ~A~%" (bgred "RESOLVED") x)
-                                           (format #t "~A: ~A~%" (red "deps") deps)
+                                           (if *debugging*
+                                               (begin
+                                                 (format #t "~A: ~A~%" (bgred "RESOLVED") x)
+                                                 (format #t "~A: ~A~%" (red "deps") deps)))
                                            (set-cdr! deps (append (cdr deps) x))
                                            x))
                                  ))))
@@ -210,9 +231,11 @@
 ;;  %{lib:tezos-protocol-demo-noops:raw/TEZOS_PROTOCOL})
 ;;      =>(:deps (::lib tezos...))
 (define (-expand-pct-arg!? ws arg kind pkg deps)
-  (format #t "~A: ~A (type: ~A)~%" (ublue "-expand-pct-arg!?")
-          arg (type-of arg))
-  (format #t "~A: ~A~%" (uwhite "deps") deps)
+  (if *debugging*
+      (begin
+        (format #t "~A: ~A (type: ~A)~%" (ublue "-expand-pct-arg!?")
+                arg (type-of arg))
+        (format #t "~A: ~A~%" (uwhite "deps") deps)))
 
   (case arg
     ((%{deps})
@@ -221,15 +244,18 @@
 
     (else
      (let-values (((sym pfx sfx) (parse-pct-var arg)))
-       (format #t "~A: ~A, ~A: ~A~%"
-               (uwhite "arg pfx") pfx (uwhite "sfx") sfx)
+       (if *debugging*
+           (format #t "~A: ~A, ~A: ~A~%"
+               (uwhite "arg pfx") pfx (uwhite "sfx") sfx))
 
        (if pfx
            (if (equal? :dep pfx)
                (begin
-                 (format #t "~A: ~A~%" (uwhite ":dep pfx") arg)
+                 (if *debugging*
+                     (format #t "~A: ~A~%" (uwhite ":dep pfx") arg))
                  (let ((x (-expand-dep-pct-var!? ws pfx sfx deps pkg)))
-                   (format #t "~A: ~A~%" (uwhite "dep pctvar") x)
+                   (if *debugging*
+                       (format #t "~A: ~A~%" (uwhite "dep pctvar") x))
                    ;; (set-cdr! deps
                    ;;           (append
                    ;;            (cdr deps)))
@@ -237,29 +263,33 @@
                (begin
                  ;; prefixed pctvars will never be already in :deps?
                  ;; e.g. lib:foo, bin:foo, etc.
-                 (format #t "~A: ~A~%" (ured "deps before") deps)
+                 (if *debugging*
+                     (format #t "~A: ~A~%" (ured "deps before") deps))
                  (set-cdr! deps
                            (append
                             (list (list (symbol->keyword sym)
                                         ;;(symbol->keyword pfx)
                                         ::unresolved))
                             (cdr deps)))
-                 (format #t "~A: ~A~%" (ured "deps after") deps)
+                 (if *debugging*
+                     (format #t "~A: ~A~%" (ured "deps after") deps))
                  (symbol->keyword sym)))
            ;; else no pfx
            (let* ((search-key (pct-var->keyword arg))
-                  (_ (format #t "~A: ~A~%" (yellow "search-key") search-key))
+                  (_ (if *debugging* (format #t "~A: ~A~%" (yellow "search-key") search-key)))
 
                   ;; special case: %{deps}
 
                   (match
                    ;; find arg in deps
                    (find-if (lambda (dep)
-                              (format #t "~A: ~A~%" (yellow "checking dep") dep)
+                              (if *debugging*
+                                  (format #t "~A: ~A~%" (yellow "checking dep") dep))
                               ;; if dep == (::opam-pkgs ...) ?
                               (equal? (car dep) search-key))
                             (cdr deps))))
-             (format #t "~A: ~A~%" (yellow "match?") match)
+             (if *debugging*
+                 (format #t "~A: ~A~%" (yellow "match?") match))
              (if match
                  search-key
                  ;; else not in :deps
@@ -269,34 +299,40 @@
 
 ;; may update deps
 (define (-expand-pct-tool!? ws arg kind pkg deps)
-  (format #t "~A: ~A (~A)~%" (ublue "-expand-pct-tool!?")
-          arg (type-of arg))
-  (format #t "deps: ~A~%" deps)
+  (if *debugging*
+      (begin
+        (format #t "~A: ~A (~A)~%" (ublue "-expand-pct-tool!?")
+                arg (type-of arg))
+        (format #t "deps: ~A~%" deps)))
 
   (let-values (((sym pfx sfx) (parse-pct-var arg)))
-    (format #t "~A: ~A, ~A: ~A~%"
-            (uwhite "arg pfx") pfx (uwhite "sfx") sfx)
+    (if *debugging*
+        (format #t "~A: ~A, ~A: ~A~%"
+                (uwhite "arg pfx") pfx (uwhite "sfx") sfx))
 
     ;; find arg in deps (assumption: pfx is not :deps)
     (let* ((search-key (if (equal? pfx :dep)
                            (symbol->keyword sfx)
                            (symbol->keyword sym))) ;; (pct-var->keyword arg))
-           (_ (format #t "~A: ~A (kw? ~A)~%" (yellow "search-key")
-                      search-key (keyword? search-key)))
+           (_ (if *debugging* (format #t "~A: ~A (kw? ~A)~%" (yellow "search-key")
+                      search-key (keyword? search-key))))
            ;; (_ (if (equal? pfx :dep) (error 'STOP "STOP pct-tool")))
            (match (find-if (lambda (dep)
-                             (format #t "~A: ~A (~A)~%"
-                                     (yellow "testing dep") dep (type-of (car dep)))
+                             (if *debugging*
+                                 (format #t "~A: ~A (~A)~%"
+                                     (yellow "testing dep") dep (type-of (car dep))))
                              ;; (format #t "~A: ~A~%" (yellow "kw?") (keyword?
                              ;;                                       (car dep)))
                              (equal? (car dep) search-key))
                            (cdr deps))))
-      (format #t "~A: ~A~%" (yellow "match?") match)
+      (if *debugging*
+          (format #t "~A: ~A~%" (yellow "match?") match))
       (if match
           ;;(let ((arg-kw (string->keyword arg)))
           ;; move it from (:deps) to (:deps ::tools)
           (begin
-            (format #t "~A: ~A~%" (red "pct tool in deps") match)
+            (if *debugging*
+                (format #t "~A: ~A~%" (red "pct tool in deps") match))
             (set-cdr! deps
                       (append
                        (list (list ::tools match
@@ -308,11 +344,14 @@
           ;; else infer it must be imported from exports tbl
           ;; FIXME FIXME: only works after first pass adds everything to exports tbl
           (begin
-            (format #t "~A: ~A, ~A~%" (red "tool NOT in deps") sym deps) ;; t)
+            (if *debugging*
+                (format #t "~A: ~A, ~A~%" (red "tool NOT in deps") sym deps))
             (if-let ((found (find-in-exports ws (symbol->keyword sym))))
                     (begin
-                      (format #t "~A: ~A~%" (bgred "kw") (symbol->keyword sym))
-                      (format #t "~A: ~A~%" (bgred "found") found)
+                      (if *debugging*
+                          (begin
+                            (format #t "~A: ~A~%" (bgred "kw") (symbol->keyword sym))
+                            (format #t "~A: ~A~%" (bgred "found") found)))
                       (set-cdr! deps
                                 (append
                                  (list (cons ::tools
@@ -378,7 +417,7 @@
     ;;                        (alist-delete (list arg-kw) (cdr deps))))
     ;;             (car t))
     ;;           ;; else
-    ;;           (let ((_ (format #t "~A: ~A~%" (red "arg not in deps") arg))
+    ;;           (let ((_ (if *debugging* (format #t "~A: ~A~%" (red "arg not in deps") arg)))
     ;;                 (arg-kw (string->keyword arg)))
     ;;             (set-cdr! deps
     ;;                       (append
@@ -392,16 +431,18 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; may update deps
 (define (-expand-literal-tool!? ws pkg-path tool deps)
-  (format #t "~A: ~A (~A)~%" (ublue "-expand-literal-tool!?")
-          tool (type-of tool))
-  (format #t "deps: ~A~%" deps)
+  (if *debugging*
+      (begin
+        (format #t "~A: ~A (~A)~%" (ublue "-expand-literal-tool!?")
+                tool (type-of tool))
+        (format #t "deps: ~A~%" deps)))
 
   (let ((tool (if (string-prefix? "./" tool)
                   (string-drop tool 2) tool)))
     (if (null? (cdr deps)) ;; meaning?
         ;; infer dep for tool
         (let* ((tool-kw (string->keyword (format #f "~A" tool)))
-               (_ (format #t "~A: ~A~%" (white "inferring ::unresolved for tool") tool-kw))
+               (_ (if *debugging* (format #t "~A: ~A~%" (white "inferring ::unresolved for tool") tool-kw)))
                )
           (set-cdr! deps
                     (list (cons ::tools
@@ -415,18 +456,22 @@
         (let ((tool (format #f "~A" tool))
               (t
                (begin
-                 (format #t "~A: ~A~%" (green "searching deps") (cdr deps))
+                 (if *debugging*
+                     (format #t "~A: ~A~%" (green "searching deps") (cdr deps)))
                  (find-if (lambda (dep)
-                            (format #t "~A: ~A~%" (green "checking dep") dep)
+                            (if *debugging*
+                                (format #t "~A: ~A~%" (green "checking dep") dep))
                             ;; dep forms:  (:<kw> (:pkg ...) (:tgt ...))
                             ;; or (foo ::unresolved), (foo ::opam-pkg)
                             ;; or
                             (cond
                               ((member (cdr dep) '(::unresolved))
-                               (format #t "~A: ~A~%" (ured "::UNRESOLVED") dep)
+                               (if *debugging*
+                                   (format #t "~A: ~A~%" (ured "::UNRESOLVED") dep))
                                #f)
                               ((member (cdr dep) '(::opam-pkg))
-                               (format #t "~A: ~A~%" (ured "::opam-pkgs") dep)
+                               (if *debugging*
+                                   (format #t "~A: ~A~%" (ured "::opam-pkgs") dep))
                                #f)
                              ((alist? (cdr dep))
                               (let* ((lbl-list (cdr dep))
@@ -436,8 +481,10 @@
                                                   (if-let ((tgts (assoc-val #|:tgts|# :glob lbl-list)))
                                                           (equal? tool tgts)
                                                           (error 'fixme "missing :tgt and :tgts in dep")))))
-                                (format #t "~A: ~A~%" (uwhite "lbl-list") lbl-list)
-                                (format #t "~A: ~A~%" (uwhite "tgt") lbl-tgt)
+                                (if *debugging*
+                                    (begin
+                                      (format #t "~A: ~A~%" (uwhite "lbl-list") lbl-list)
+                                      (format #t "~A: ~A~%" (uwhite "tgt") lbl-tgt)))
                                 lbl-tgt))
                              (else
                               (error 'fixme
@@ -445,8 +492,10 @@
                           (cdr deps)))))
           (if t
               (let ((tool-kw (string->keyword tool)))
-                (format #t "~A: ~A~%" (red "literal tool in deps") t)
-                (format #t "~A: ~A~%" (red "tool") tool)
+                (if *debugging*
+                    (begin
+                      (format #t "~A: ~A~%" (red "literal tool in deps") t)
+                      (format #t "~A: ~A~%" (red "tool") tool)))
                 ;; move it from (:deps) to (deps ::tools)
                 (set-cdr! deps
                           (append
@@ -461,7 +510,8 @@
 
                ;; else fs path to some other pkg, like ../../foo/bar
               (begin
-               (format #t "~A: ~A~%" (blue "TOOL NOT in deps") tool)
+                (if *debugging*
+                    (format #t "~A: ~A~%" (blue "TOOL NOT in deps") tool))
                ;; inference: must(?) be a path ref to sth in another pkg
                ;; e.g. ../gen_stubs/gen_stubs.exe
                ;; task: normalize path, split into pkg and tgt for label
@@ -473,9 +523,11 @@
                             (canonical-path (->canonical-path full-path))
                             (pkg (dirname canonical-path))
                             (tgt (basename canonical-path)))
-                       (format #t "~A: ~A~%" (blue "pkg-path") pkg-path)
-                       (format #t "~A: ~A~%" (blue "full-path") full-path)
-                       (format #t "~A: ~A~%" (blue "canonical-path") canonical-path)
+                       (if *debugging*
+                           (begin
+                             (format #t "~A: ~A~%" (blue "pkg-path") pkg-path)
+                             (format #t "~A: ~A~%" (blue "full-path") full-path)
+                             (format #t "~A: ~A~%" (blue "canonical-path") canonical-path)))
                        ;; (error 'X "STOP expand-literal-tool")
                        (set-cdr! deps
                                  (append
@@ -488,7 +540,8 @@
                        tool-kw))
                    ;; else must be in cwd, or in exports table to be resolved in separate pass
                    (begin
-                     (format #t "~A: ~A~%" (yellow "tool runresolved") tool)
+                     (if *debugging*
+                         (format #t "~A: ~A~%" (yellow "tool runresolved") tool))
                      (set-cdr! deps
                                (append
                                 `((::tools
@@ -499,8 +552,10 @@
 
 ;; may update deps
 (define (find-sigfile-in-pkg-files!? arg deps pkg)
-  (format #t "~A: ~A~%" (blue "find-sigfile-in-pkg-files") arg)
-  (format #t "~A: ~A~%" (red ":signatures") (assoc-val :signatures pkg))
+  (if *debugging*
+      (begin
+        (format #t "~A: ~A~%" (blue "find-sigfile-in-pkg-files") arg)
+        (format #t "~A: ~A~%" (red ":signatures") (assoc-val :signatures pkg))))
 
   (let ((sig
          (find-if (lambda (f-assoc)
@@ -514,10 +569,12 @@
                   (if-let ((sigs (assoc-val :signatures pkg)))
                           sigs
                           '()))))
-    (format #t "~A: ~A~%" (white "sig") sig)
+    (if *debugging*
+        (format #t "~A: ~A~%" (white "sig") sig))
     (if sig
         (let ((key (string->keyword arg)))
-          (format #t "~A: ~A~%" (magenta "sigfile INFERRED dep") sig)
+          (if *debugging*
+              (format #t "~A: ~A~%" (magenta "sigfile INFERRED dep") sig))
           (set-cdr! deps (cons (cons key
                                      (list (cons :pkg (assoc-val :pkg-path pkg))
                                            (cons :tgt arg)))
@@ -526,11 +583,14 @@
         ;; else search :modules
         (let ((sig
                (find-if (lambda (m-assoc)
-                          (format #t "~A: ~A~%" (white "m-assoc") m-assoc)
+                          (if *debugging*
+                              (format #t "~A: ~A~%" (white "m-assoc") m-assoc))
                           (find-if (lambda (m)
-                                     (format #t "~A: ~A (~A)~%" (white "m") (cdr m) (type-of (cdr m)))
+                                     (if *debugging*
+                                         (format #t "~A: ~A (~A)~%" (white "m") (cdr m) (type-of (cdr m))))
                                      (let ((ml (cdr m)))
-                                       (format #t "~A: ~A~%" (white "(cdr m)") ml)
+                                       (if *debugging*
+                                           (format #t "~A: ~A~%" (white "(cdr m)") ml))
                                        (equal? (format #f "~A" arg)
                                                (format #f "~A" ml))))
                                    (cdr m-assoc)))
@@ -539,7 +599,8 @@
                                 '()))))
           (if sig
               (let ((key (string->keyword arg)))
-                (format #t "~A: ~A~%" (magenta "sig INFERRED DEP") sig)
+                (if *debugging*
+                    (format #t "~A: ~A~%" (magenta "sig INFERRED DEP") sig))
                 (set-cdr! deps (cons (cons key
                                            (list (cons :pkg (assoc-val :pkg-path pkg))
                                                  (cons :tgt arg)))
@@ -549,47 +610,57 @@
 
 ;; may update deps
 (define (find-structfile-in-pkg-files!? arg deps pkg)
-  (format #t "~A: ~A~%" (blue "find-structfile-in-pkg-files") arg)
-  (format #t "~A: ~A~%" (red ":structures") (assoc-val :structures pkg))
-  (format #t "~A: ~A~%" (red ":modules") (assoc-val :modules pkg))
+  (if *debugging*
+      (begin
+        (format #t "~A: ~A~%" (blue "find-structfile-in-pkg-files") arg)
+        (format #t "~A: ~A~%" (red ":structures") (assoc-val :structures pkg))
+        (format #t "~A: ~A~%" (red ":modules") (assoc-val :modules pkg))))
 
   (let* ((struct-files (if-let ((files (assoc :structures pkg)))
                                (cdr files) '()))
-         (_ (format #t "~A: ~A~%" (magenta "pkg struct-files") struct-files))
+         (_ (if *debugging* (format #t "~A: ~A~%" (magenta "pkg struct-files") struct-files)))
          (struct-files (append
                         (if-let ((sfiles (assoc-val :static struct-files)))
                                 sfiles '())
                         (if-let ((dfiles (assoc-val :dynamic struct-files)))
                                 dfiles '())))
-         (_ (format #t "~A: ~A~%" (cyan "combined struct-files") struct-files))
-         (_ (format #t "~A~%" (uwhite "searching struct-files")))
+         (_ (if *debugging*
+                (begin
+                  (format #t "~A: ~A~%" (cyan "combined struct-files") struct-files)
+                  (format #t "~A~%" (uwhite "searching struct-files")))))
          (struct
           (find-if (lambda (f-assoc)
-                     (format #t "~A: ~A~%" (white "f-assoc") f-assoc)
+                     (if *debugging*
+                         (format #t "~A: ~A~%" (white "f-assoc") f-assoc))
                      (equal? (format #f "~A" arg) (format #f "~A" (cdr f-assoc))))
                    struct-files)))
     ;; (if-let ((structs (assoc-val :structures pkg)))
     ;;         structs
     ;;         '()))))
 
-    (format #t "~A: ~A~%" (white "struct") struct)
+    (if *debugging*
+        (format #t "~A: ~A~%" (white "struct") struct))
     (if struct
         (let ((key (string->keyword arg)))
-          (format #t "~A: ~A~%" (magenta "structfile INFERRED dep") struct)
+          (if *debugging*
+              (format #t "~A: ~A~%" (magenta "structfile INFERRED dep") struct))
           (set-cdr! deps (cons (cons key
                                      (list (cons :pkg (assoc-val :pkg-path pkg))
                                            (cons :tgt arg)))
                                (cdr deps)))
           key)
         ;; else search :modules
-        (let ((_ (format #t "~A~%" (uwhite "searching modules")))
+        (let ((_ (if *debugging* (format #t "~A~%" (uwhite "searching modules"))))
               (struct
                (find-if (lambda (m-assoc)
-                          (format #t "~A: ~A~%" (white "m-assoc") m-assoc)
+                          (if *debugging*
+                              (format #t "~A: ~A~%" (white "m-assoc") m-assoc))
                           (find-if (lambda (m)
-                                     (format #t "~A: ~A (~A)~%" (white "m") (cdr m) (type-of (cdr m)))
+                                     (if *debugging*
+                                         (format #t "~A: ~A (~A)~%" (white "m") (cdr m) (type-of (cdr m))))
                                      (let ((ml (cdr m)))
-                                       (format #t "~A: ~A~%" (white "(cdr m)") ml)
+                                       (if *debugging*
+                                           (format #t "~A: ~A~%" (white "(cdr m)") ml))
                                        (equal? (format #f "~A" arg)
                                                (format #f "~A" ml))))
                                    (cdr m-assoc)))
@@ -598,24 +669,28 @@
                                 '()))))
           (if struct
               (let ((key (string->keyword arg)))
-                (format #t "~A: ~A~%" (magenta "INFERRED DEP") struct)
+                (if *debugging*
+                    (format #t "~A: ~A~%" (magenta "INFERRED DEP") struct))
                 (set-cdr! deps (cons (cons key
                                            (list (cons :pkg (assoc-val :pkg-path pkg))
                                                  (cons :tgt arg)))
                                      (cdr deps)))
                 key)
               (begin
-                (format #t "~A: ~A~%" (ublue "not found in pkg files") arg)
+                (if *debugging*
+                    (format #t "~A: ~A~%" (ublue "not found in pkg files") arg))
                 #f))))))
 
 ;; updates :outputs. called by normalize-action-write-file if no (targets)
 ;; targets should be (:outputs)
 (define (-infer-output! arg targets pkg)
-  (format #t "~A: ~A (~A)~%" (blue "-infer-output!") arg (type-of arg))
-  (format #t "~A: ~A~%" (red "targets") targets)
-  (format #t "~A: ~A~%" (red ":signatures") (assoc-val :signatures pkg))
-  (format #t "~A: ~A~%" (red ":structures") (assoc-val :structures pkg))
-  (format #t "~A: ~A~%" (red ":modules") (assoc-val :modules pkg))
+  (if *debugging*
+      (begin
+        (format #t "~A: ~A (~A)~%" (blue "-infer-output!") arg (type-of arg))
+        (format #t "~A: ~A~%" (red "targets") targets)
+        (format #t "~A: ~A~%" (red ":signatures") (assoc-val :signatures pkg))
+        (format #t "~A: ~A~%" (red ":structures") (assoc-val :structures pkg))
+        (format #t "~A: ~A~%" (red ":modules") (assoc-val :modules pkg))))
 
   ;; if arg in targets return
   ;; else search pkgfiles
@@ -627,7 +702,8 @@
 
   (cond
    ((eq? (fnmatch "*.ml" (format #f "~A" arg) 0) 0)
-    (format #t "~A: ~A~%" (red "Matched *.ml") arg)
+    (if *debugging*
+        (format #t "~A: ~A~%" (red "Matched *.ml") arg))
     (let ((struct (find-if (lambda (f-assoc)
                              ;; (format #t "~A: ~A~%" (white "f-assoc")
                              ;;         f-assoc)
@@ -640,10 +716,12 @@
                                    structs
                                    '()))))
 
-      (format #t "~A: ~A~%" (white "struct") struct)
+      (if *debugging*
+          (format #t "~A: ~A~%" (white "struct") struct))
       (if struct
           (let ((key (string->keyword arg)))
-            (format #t "~A: ~A~%" (magenta "INFERRED DEP") struct)
+            (if *debugging*
+                (format #t "~A: ~A~%" (magenta "INFERRED DEP") struct))
             (set-cdr! deps (cons (cons key
                                        (list (cons :pkg (assoc-val :pkg-path pkg))
                                              (cons :tgt arg)))
@@ -651,11 +729,14 @@
             key)
           ;; else search :modules
           (let ((struct (find-if (lambda (m-assoc)
-                                   (format #t "~A: ~A~%" (white "m-assoc") m-assoc)
+                                   (if *debugging*
+                                       (format #t "~A: ~A~%" (white "m-assoc") m-assoc))
                                    (find-if (lambda (m)
-                                              (format #t "~A: ~A (~A)~%" (white "m") (cdr m) (type-of (cdr m)))
+                                              (if *debugging*
+                                                  (format #t "~A: ~A (~A)~%" (white "m") (cdr m) (type-of (cdr m))))
                                               (let ((ml (cdr m)))
-                                                (format #t "~A: ~A~%" (white "(cdr m)") ml)
+                                                (if *debugging*
+                                                    (format #t "~A: ~A~%" (white "(cdr m)") ml))
                                                 (equal? (format #f "~A" arg)
                                                         (format #f "~A" ml))))
                                             (cdr m-assoc)))
@@ -664,7 +745,8 @@
                                          '()))))
             (if struct
                 (let ((key (string->keyword arg)))
-                  (format #t "~A: ~A~%" (magenta "INFERRED DEP") struct)
+                  (if *debugging*
+                      (format #t "~A: ~A~%" (magenta "INFERRED DEP") struct))
                   (set-cdr! deps (cons (cons key
                                              (list (cons :pkg (assoc-val :pkg-path pkg))
                                                    (cons :tgt arg)))
@@ -674,7 +756,8 @@
                 ;; PROBLEM: distinguish between string args and labels of targets in other pkgs
                 ;; solution: assume "foo.ml" is a file name
                 (begin
-                  (format #t "~A: ~A~%" (red "NO MATCH in pkg files for") arg)
+                  (if *debugging*
+                      (format #t "~A: ~A~%" (red "NO MATCH in pkg files for") arg))
                   ;; 1. add to pkg files :structures or :modules
                   ;; 2. add to :targets
                   ;;(string->keyword arg)
@@ -688,7 +771,8 @@
     ;; targets should be a singleton list
     ;; e.g. (:outputs (:foo.txt (:pkg "a/b") (:tgt "foo.txt")))
     (let ((targets (car (cdr targets))))
-      (format #t "~A: ~A~%" (red "targets") targets)
+      (if *debugging*
+          (format #t "~A: ~A~%" (red "targets") targets))
       (car targets)))
 
    (else
@@ -698,13 +782,15 @@
 
 ;; search pkg files for arg, if found update deps
 (define (-infer-dep! ws arg deps pkg)
-  (format #t "~A: ~A (~A)~%" (ublue "-infer-dep!") arg (type-of arg))
-  ;; (format #t "~A: ~A~%" (uwhite "pkg") pkg)
-  (format #t "~A: ~A~%" (uwhite "deps") deps)
-  (format #t "~A: ~A~%" (uwhite "pkg-signatures") (assoc-val :signatures pkg))
-  (format #t "~A: ~A~%" (uwhite "pkg-structures") (assoc-val :structures pkg))
-  (format #t "~A: ~A~%" (uwhite "pkg-modules") (assoc-val :modules pkg))
-  (format #t "~A: ~A~%" (uwhite "pkg-files") (assoc-val :files pkg))
+  (if *debugging*
+      (begin
+        (format #t "~A: ~A (~A)~%" (ublue "-infer-dep!") arg (type-of arg))
+        ;; (format #t "~A: ~A~%" (uwhite "pkg") pkg)
+        (format #t "~A: ~A~%" (uwhite "deps") deps)
+        (format #t "~A: ~A~%" (uwhite "pkg-signatures") (assoc-val :signatures pkg))
+        (format #t "~A: ~A~%" (uwhite "pkg-structures") (assoc-val :structures pkg))
+        (format #t "~A: ~A~%" (uwhite "pkg-modules") (assoc-val :modules pkg))
+        (format #t "~A: ~A~%" (uwhite "pkg-files") (assoc-val :files pkg))))
 
   (let ((arg (format #f "~A" arg))) ;; (keyword->symbol arg))))
     (cond
@@ -716,7 +802,8 @@
 
      (else
       (let ((f (find-file-in-pkg-files!? arg deps pkg)))
-        (format #t "~A: ~A~%" (red "found file in pkg files?") f)
+        (if *debugging*
+            (format #t "~A: ~A~%" (red "found file in pkg files?") f))
         (if f
             (update-tagged-label-list! arg deps pkg)
                 #f))
@@ -732,9 +819,11 @@
 ;; string args may include suffixed vars, e.g. %{test}.corrected
 (define expand-string-arg
   (lambda (ws arg pkg targets deps)
-    (format #t "~A: ~A\n" (blue "expand-string-arg") arg)
-    (format #t "  targets: ~A\n" targets)
-    (format #t "  deps: ~A\n" deps)
+    (if *debugging*
+        (begin
+          (format #t "~A: ~A\n" (blue "expand-string-arg") arg)
+          (format #t "  targets: ~A\n" targets)
+          (format #t "  deps: ~A\n" deps)))
 
     (cond
      ((string=? "./" arg) ::pkg-dir)
@@ -763,13 +852,16 @@
      ;; by looking them up in the exports table
      ((string-prefix? "%{" arg)
       ;; %{foo} or %{foo}.suffix
-      (format #t "VAR: ~A\n" arg)
-      (format #t "deps: ~A\n" deps)
+      (if *debugging*
+          (begin
+            (format #t "VAR: ~A\n" arg)
+            (format #t "deps: ~A\n" deps)))
       (let ((pkg-path (car (assoc-val :pkg-path pkg))))
         (-expand-pct-arg!? ws arg :arg pkg deps)))
 
      (else
-      (format #t "~A: ~A~%" (white "String literal") arg)
+      (if *debugging*
+          (format #t "~A: ~A~%" (white "String literal") arg))
       ;; arg is string. check deps and targets, then pkg files
       (if-let ((tag (deps->tag-for-file deps arg)))
               tag
@@ -784,21 +876,25 @@
                                 (-infer-dep! ws arg #|search-key|# deps pkg)))
                               inferred-dep
                               (begin
-                                (format #t "~A: ~A~%" (red "string dep unresolved") arg)
+                                (if *debugging*
+                                    (format #t "~A: ~A~%" (red "string dep unresolved") arg))
                                 ;; first search exports tbl
                                 ;; pointless, tbl is incomplete
                                 (if-let ((found (find-in-exports ws (string->keyword arg))))
                                         (let* ((pkg (assoc-val :pkg found))
                                                (tgt (assoc-val :tgt found))
                                                (entry `((,(string->keyword arg) (:pkg . ,pkg) (:tgt . ,tgt)))))
-                                          (format #t "~A: ~A~%" (red "found") found)
+                                          (if *debugging*
+                                              (format #t "~A: ~A~%" (red "found") found))
                                           ;; (error 'STOP "STOP exp")
                                           entry)
                                         ;; we've searched deps, pkg files, exports with no luck
                                         ;; mark it unresolved and let later pass handle it
                                         (let ((key (string->keyword arg)))
-                                          (format #t "~A: ~A~%" (bgred "unresolved string") arg)
-                                          (format #t "~A: ~A~%" (bgred " deps") deps)
+                                          (if *debugging*
+                                              (begin
+                                                (format #t "~A: ~A~%" (bgred "unresolved string") arg)
+                                                (format #t "~A: ~A~%" (bgred " deps") deps)))
                                           ;; (update-tagged-label-list! kw deps pkg)
                                           (set-cdr! deps
                                                     (append (cdr deps)
@@ -814,15 +910,18 @@
 
 (define expand-cmd-args*
   (lambda (ws args pkg targets deps)
-    (format #t "~A: ~A\n" (ublue "expand-cmd-args*") args)
-    (format #t "  targets: ~A\n" targets)
-    (format #t "  deps: ~A\n" deps)
+    (if *debugging*
+        (begin
+          (format #t "~A: ~A\n" (ublue "expand-cmd-args*") args)
+          (format #t "  targets: ~A\n" targets)
+          (format #t "  deps: ~A\n" deps)))
 
     (if (list? args)
         (let ((result
                (if (null? args)
                    (begin
-                     (format #t "~A, returning: ~A~%" "bottomed out" '())
+                     (if *debugging*
+                         (format #t "~A, returning: ~A~%" "bottomed out" '()))
                      '())
 
                    ;; (let ((arg (if (symbol? (car args))
@@ -842,7 +941,8 @@
                        (cons arg (expand-cmd-args* ws (cdr args) pkg targets deps)))
 
                       ((symbol? arg)
-                       (format #t "~A: ~A~%" (red "arg is symbol") arg)
+                       (if *debugging*
+                           (format #t "~A: ~A~%" (red "arg is symbol") arg))
                        (if (or (eq? arg '%{target}) (eq? arg '%{targets}))
                            (cons :outputs
                                  (expand-cmd-args* ws (cdr args) pkg targets deps))
@@ -852,7 +952,8 @@
                                ;; %{foo} or %{foo}.suffix
                                (let* ((pkg-path (car (assoc-val :pkg-path pkg)))
                                       (arg (-expand-pct-arg!? ws arg :arg pkg deps)))
-                                 (format #t "~A: ~A~%" (uwhite "expanded arg") arg)
+                                 (if *debugging*
+                                     (format #t "~A: ~A~%" (uwhite "expanded arg") arg))
                                  (cons arg
                                        (expand-cmd-args* ws (cdr args) pkg targets deps))))
                               ( ;; else
@@ -860,7 +961,8 @@
                                                  pkg targets deps))))))
 
                       ((string? arg)
-                       (format #t "~A: ~A~%" (red "arg is string") arg)
+                       (if *debugging*
+                           (format #t "~A: ~A~%" (red "arg is string") arg))
                        (if (char=? #\- (arg 0))
                            (append (list arg)
                                    (expand-cmd-args* ws (cdr args) pkg targets deps))
@@ -871,8 +973,9 @@
                       ;; (cdr args) filedeps vars)))))
 
                       (else ; not number, pair, string
-                       (format #t
-                               "WARNING: not a nbr, pair, or string: ~A\n" arg)
+                       (if *debugging*
+                           (format #t
+                               "WARNING: not a nbr, pair, or string: ~A\n" arg))
                        ))
                      ))))
           ;; (format #t "~A: ~A\n" (ucyan "expanded-cmd-args") result)
@@ -882,34 +985,43 @@
 
 (define expand-targets
   (lambda (ws pkg targets deps)
-    (format #t "~A: ~A\n" (blue "expand-targets") targets)
+    (if *debugging*
+        (format #t "~A: ~A\n" (blue "expand-targets") targets))
     (let ((xtargets (expand-terms* ws targets pkg '())))
-      (format #t "Expanded targets ~A\n" xtargets)
+      (if *debugging*
+          (format #t "Expanded targets ~A\n" xtargets))
       xtargets)))
 
 ;; expands items, e.g. pct-vars like %{deps}
 (define (expand-terms* ws arglist pkg expanded-deps)
-  (format #t "~A: ~A\n" (ublue "expand-terms*") arglist)
-  ;; (format #t "pkg: ~A\n" pkg)
-  (format #t "expanded-deps: ~A\n" expanded-deps)
+  (if *debugging*
+      (begin
+        (format #t "~A: ~A\n" (ublue "expand-terms*") arglist)
+        ;; (format #t "pkg: ~A\n" pkg)
+        (format #t "expanded-deps: ~A\n" expanded-deps)))
   ;; (let ((pkg-path (car (assoc-val :pkg-path pkg)))
   ;;       (ws-root (car (assoc-val :ws-path pkg))))
   (if (null? arglist)
       (begin
-        (format #t "~A: ~A\n" (bgred "finished term-list") expanded-deps)
+        (if *debugging*
+            (format #t "~A: ~A\n" (bgred "finished term-list") expanded-deps))
         expanded-deps)
       (if (pair? (car arglist))
           (begin
-            (format #t "~A: ~A (t: ~A)~%" (bgred "term pair") (car arglist) (type-of (caar arglist)))
+            (if *debugging*
+                (format #t "~A: ~A (t: ~A)~%" (bgred "term pair") (car arglist) (type-of (caar arglist))))
             (if (equal? 'package (caar arglist))
                 (begin
                   ;; in executables, (package p) just means its part of that pkg
                   ;; in rules, (deps (package p)) means depend on everything in p
-                  (format #t "~A: ~A~%" (bgred "skipping term") (car arglist))
+                  (if *debugging*
+                      (format #t "~A: ~A~%" (bgred "skipping term") (car arglist)))
                   (expand-terms* ws (cdr arglist) pkg expanded-deps))
                 (let ((front (expand-terms* ws (car arglist) pkg '())))
-                  (format #t "~A: ~A~%" (ured "expanded front") front)
-                  (format #t "~A: ~A~%" (ured "now expanding") (cdr arglist))
+                  (if *debugging*
+                      (begin
+                        (format #t "~A: ~A~%" (ured "expanded front") front)
+                        (format #t "~A: ~A~%" (ured "now expanding") (cdr arglist))))
                   (expand-terms* ws (cdr arglist) pkg (append expanded-deps  front))
                   )))
           ;; car is atom
@@ -918,8 +1030,10 @@
                     (let ((res (apply (car depfn)
                                       (list ws pkg
                                             arglist))))
-                      (format #t "depfn res: ~A\n" res)
-                      (format #t "expanded-deps: ~A\n" expanded-deps)
+                      (if *debugging*
+                          (begin
+                            (format #t "depfn res: ~A\n" res)
+                            (format #t "expanded-deps: ~A\n" expanded-deps)))
                       ;; we're done, depfn consumed cdr
                       ;; return expanded-deps
                       ;; (if (null? expanded-deps)
@@ -946,7 +1060,8 @@
                        (else
                         (if-let ((found (find-in-exports ws (string->keyword dep))))
                                 (begin
-                                  (format #t "~A: ~A~%" (bggreen "xxxxxxxxxxxxxxxx") found)
+                                  (if *debugging*
+                                      (format #t "~A: ~A~%" (bggreen "xxxxxxxxxxxxxxxx") found))
                                   (let* ((pkg (assoc-val :pkg found))
                                          (tgt (assoc-val :tgt found))
                                          (entry `((,(string->keyword dep) (:pkg . ,pkg) (:tgt . ,tgt)))))
@@ -955,7 +1070,8 @@
                                 ;; return (:static <path> <fname>)
                                 ;; or (:dynamic <path> <fname>)
                                 (begin
-                                  (format #t "LIT DEP : ~A\n" arglist)
+                                  (if *debugging*
+                                      (format #t "LIT DEP : ~A\n" arglist))
                                   (handle-filename-literal-dep
                                    ws dep arglist pkg
                                    ;; stanza-alist
@@ -964,24 +1080,28 @@
 
 (define (expand-rule-deps ws paths stanza-alist)
   ;; updates stanza-alist
-  (format #t "~A: ~A\n" (ublue "expand-rule-deps") stanza-alist)
+  (if *debugging*
+      (format #t "~A: ~A\n" (ublue "expand-rule-deps") stanza-alist))
   ;; (let ((stanza-alist (cdr stanza)))
   (if-let ((deps-assoc (assoc 'deps stanza-alist)))
           (let* ((deplist (assoc-val 'deps stanza-alist))
-                 (_ (format #t "main deplist: ~A\n" deplist))
+                 (_ (if *debugging* (format #t "main deplist: ~A\n" deplist)))
                  ;; (stdout (assoc-in '(action with-stdout-to) stanza-alist))
                  ;; (stdout (if stdout (cadr stdout)))
-                 ;; (_ (format #t "~A: ~A~%" (green "stdout") stdout))
+                 ;; (_ (if *debugging* (format #t "~A: ~A~%" (green "stdout") stdout)))
                  ;; (deplist (if stdout (cons stdout deplist) deplist))
-                 (_ (format #t "~A: ~A\n" (green "DEPLIST") deplist))
+                 (_ (if *debugging* (format #t "~A: ~A\n" (green "DEPLIST") deplist)))
                  (result (expand-terms* ws deplist paths '())))
-            (format #t "~A: ~A\n" (green "DEPLIST EXPANDED") result)
+            (if *debugging*
+                (format #t "~A: ~A\n" (green "DEPLIST EXPANDED") result))
             `(:deps ,@result))
           #f))
 
 (define (expand-cmd-list ws pkg -raw-cmds targets deps)
-  (format #t "~A: ~A\n" (ublue "expand-cmd-list") -raw-cmds)
-  (format #t "~A: ~A~%" (green "deps") deps)
+  (if *debugging*
+      (begin
+        (format #t "~A: ~A\n" (ublue "expand-cmd-list") -raw-cmds)
+        (format #t "~A: ~A~%" (green "deps") deps)))
 
   (let recur ((raw-cmds -raw-cmds)
               (tool #f)
@@ -1027,7 +1147,8 @@
                                     (:args
                                       ,@(expand-cmd-args* ws (cdr raw-cmds)
                                                           pkg targets deps)))))
-                            (format #t "~A: ~A~%" (bggreen "tmp") tmp)
+                            (if *debugging*
+                                (format #t "~A: ~A~%" (bggreen "tmp") tmp))
                             ;; (error 'X "STOP expanded run-tool")
                             tmp)))))))))
                   ;; ;; else must be an arg

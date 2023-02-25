@@ -1,4 +1,5 @@
-(format #t "mibl: dune.scm loading...") (newline)
+(if *debugging*
+    (format #t "mibl: dune.scm loading...~%"))
 
 (load "alist.scm")
 ;; (load "srfi.scm")
@@ -50,4 +51,5 @@
 (load "dune/lexyacc.scm")
 (load "dune/menhir.scm")
 
-(format #t "loaded mibl/dune.scm") (newline)
+(if *debugging*
+    (format #t "loaded mibl/dune.scm~%"))
