@@ -190,9 +190,9 @@ EXPORT void mibl_configure(void)
         //FIXME: also look in XDG_CONFIG_HOME
     } else {
         ini_error = false;
-        if (verbose)
-            log_info("loading miblrc config file: %s",
-                     utstring_body(obazl_ini_path));
+        /* if (verbose) */
+        /*     log_info("loading miblrc config file: %s", */
+        /*              utstring_body(obazl_ini_path)); */
 
         /* PARSE INI FILE */
         rc = ini_parse(utstring_body(obazl_ini_path), _config_handler, &mibl_config);

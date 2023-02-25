@@ -33,6 +33,8 @@
 
 #include "config_s7_dune.h"
 
+/* extern bool debug; */
+
 /* char *callback_script_file = "dune.scm"; // passed in 'data' attrib */
 char *callback = "camlark_handler"; /* fn in callback_script_file  */
 
@@ -214,7 +216,7 @@ void initialize_mibl_data_model(s7_scheme *s7)
                     bws_root);
 
     s7_pointer wss = s7_eval_c_string(s7, utstring_body(init_sexp));
-    if (verbose) // & verbosity > 1)
+    if (debug) // & verbosity > 1)
         log_info("wss: %s\n", TO_STR(wss));
 
     /* /\* s7_pointer base_entry = s7_make_list(s7, 4, s7_f(s7)); *\/ */
@@ -908,16 +910,22 @@ void _mibl_s7_init(void)
     /* tmp dir */
     char tplt[] = "/tmp/obazl.XXXXXXXXXX";
     char *tmpdir = mkdtemp(tplt);
-    log_debug("tmpdir: %s", tmpdir);
+    if (debug)
+        log_debug("tmpdir: %s", tmpdir);
     s7_define_variable(s7, "*tmp-dir*", s7_make_string(s7, tmpdir));
 }
 
 /* FIXME: rename s7_configure_for_dune */
 EXPORT s7_scheme *s7_configure(void)
 {
-    log_debug("s7_configure");
+#if defined(DEBUG_TRACE)
+    if (debug)
+        log_debug("s7_configure");
+#endif
 
     _mibl_s7_init();
+
+    s7_define_variable(s7, "*debugging*", s7_f(s7));
 
     if (bws_root) {
         s7_define_variable(s7, "ws-root", s7_make_string(s7, bws_root));
@@ -977,11 +985,17 @@ EXPORT s7_scheme *s7_configure(void)
     char **p = NULL;
     s7_pointer _s7_exclusions = s7_nil(s7);
     while ( (p=(char**)utarray_next(mibl_config.exclude_dirs, p))) {
-        printf("adding to exlusions list: %s\n",*p);
+#if defined(DEBUG_TRACE)
+        if (debug)
+            printf("adding to exlusions list: %s\n",*p);
+#endif
         _s7_exclusions = s7_cons(s7, s7_make_string(s7, *p), _s7_exclusions);
 
     }
-    log_debug("exclusions list: %s", TO_STR(_s7_exclusions));
+#if defined(DEBUG_TRACE)
+    if (debug)
+        log_debug("exclusions list: %s", TO_STR(_s7_exclusions));
+#endif
     s7_define_variable(s7, "*scan-exclusions*", _s7_exclusions);
     /* p = utarray_find(mibl_config.exclude_dirs, */
     /*                  &ptr, */
