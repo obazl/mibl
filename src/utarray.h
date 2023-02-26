@@ -64,6 +64,7 @@ typedef struct {
     char *d;     /* n slots of size icd->sz*/
 } UT_array;
 
+#if EXPORT_INTERFACE
 #define utarray_init(a,_icd) do {                                             \
   memset(a,0,sizeof(UT_array));                                               \
   (a)->icd = *(_icd);                                                         \
@@ -227,6 +228,7 @@ typedef struct {
 
 #define utarray_front(a) (((a)->i) ? (_utarray_eltptr(a,0)) : NULL)
 #define utarray_next(a,e) (((e)==NULL) ? utarray_front(a) : (((a)->i != utarray_eltidx(a,e)+1) ? _utarray_eltptr(a,utarray_eltidx(a,e)+1) : NULL))
+#endif
 #define utarray_prev(a,e) (((e)==NULL) ? utarray_back(a) : ((utarray_eltidx(a,e) != 0) ? _utarray_eltptr(a,utarray_eltidx(a,e)-1) : NULL))
 #define utarray_back(a) (((a)->i) ? (_utarray_eltptr(a,(a)->i-1)) : NULL)
 #define utarray_eltidx(a,e) (((char*)(e) - (a)->d) / (a)->icd.sz)

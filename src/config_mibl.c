@@ -35,6 +35,13 @@ UT_string *config_mibl;        /* work string */
 struct mibl_config_s {
     char *schema_version;
     int libct;
+    bool emit_parsetree;
+    bool emit_mibl;
+    bool emit_starlark;
+    bool dump_parsetree;
+    bool dump_mibl;
+    bool dump_starlark;
+    UT_array *pkgs;
     UT_array *exclude_dirs;      /* overrides include_dirs */
     UT_array *include_dirs;
     UT_array *watch_dirs;       /* string list */
@@ -45,7 +52,13 @@ struct mibl_config_s {
 
 struct mibl_config_s mibl_config = {
     .schema_version = MIBL_SCHEMA_VERSION,
-    .libct = 0
+    .emit_parsetree = false,
+    .emit_mibl      = false,
+    .emit_starlark  = true,
+    .dump_parsetree = false,
+    .dump_mibl      = false,
+    .dump_starlark  = false,
+    .libct          = 0
 };
 
 LOCAL int _config_handler(void* config, const char* section, const char* name, const char* value)
@@ -65,10 +78,75 @@ LOCAL int _config_handler(void* config, const char* section, const char* name, c
         return 1;
     }
 
+    if (MATCH("mibl", "emit")) {
+        if (verbose && verbosity > 1) log_debug("miblrc [mibl] emit: %s", value);
+        if (strncmp(value, "starlark", 8) == 0) {
+            pconfig->emit_starlark = true;
+        }
+        else if (strncmp(value, "none", 4) == 0) {
+            pconfig->emit_parsetree = false;
+            pconfig->emit_mibl = false;
+            pconfig->emit_starlark = false;
+        }
+        else if (strncmp(value, "mibl", 4) == 0) {
+            pconfig->emit_mibl = true;
+        }
+        else if (strncmp(value, "parsetree", 9) == 0) {
+            pconfig->emit_parsetree = true;
+        } else {
+            log_error("mibl ini file: invalid value %s for 'emit' in section 'mibl'; allowed values: parsetree, mibl, starlark, none", value);
+            ini_error = true;
+            return 0;
+        }
+
+        return 1;
+    }
+
+    if (MATCH("mibl", "dump")) {
+        if (verbose && verbosity > 1) log_debug("miblrc [mibl] dump: %s", value);
+        if (strncmp(value, "starlark", 8) == 0) {
+            pconfig->dump_starlark = true;
+        }
+        else if (strncmp(value, "mibl", 4) == 0) {
+            pconfig->dump_mibl = true;
+        }
+        else if (strncmp(value, "parsetree", 9) == 0) {
+            pconfig->dump_parsetree = true;
+        } else {
+            log_error("mibl ini file: invalid value %s for 'dump' in section 'mibl'; allowed values: parsetree, mibl", value);
+            ini_error = true;
+            return 0;
+        }
+        return 1;
+    }
+
+    if (MATCH("mibl", "pkg")) {
+#if defined(DEBUG_TRACE)
+        if (debug) log_debug("section: mibl; entry: pkg");
+#endif
+        char *token, *sep = " ,\t";
+        token = strtok((char*)value, sep);
+        while( token != NULL ) {
+            if (token[0] == '/') {
+                log_error("Ini file: 'pkg' values in section 'mibl' must be relative paths: %s", token);
+                ini_error = true;
+                return 0;
+            } else {
+                log_debug("miblrc pushing pkg: %s", token);
+                utarray_push_back(pconfig->pkgs, &token);
+                token = strtok(NULL, sep);
+            }
+        }
+        return 1;
+    }
+
     /* FIXME: normalize filepaths. remove leading ./ and embedded ../ */
     /* disallow leading / and ../ */
     if (MATCH("srcs", "exclude")) {
-        log_debug("section: srcs; entry: exclude");
+#if defined(DEBUG_TRACE)
+        if (debug)
+            log_debug("section: srcs; entry: exclude");
+#endif
         /* log_debug("\t%s", value); */
         char *token, *sep = " ,\t";
         token = strtok((char*)value, sep);
@@ -174,6 +252,7 @@ EXPORT void mibl_configure(void)
     /* **************** */
     /* project-local .config/miblrc config file */
 
+    utarray_new(mibl_config.pkgs, &ut_str_icd);
     utarray_new(mibl_config.exclude_dirs, &ut_str_icd);
     utarray_new(mibl_config.include_dirs, &ut_str_icd);
     utarray_new(mibl_config.watch_dirs, &ut_str_icd);
@@ -211,7 +290,7 @@ EXPORT void mibl_configure(void)
             /*     log_debug("Config loaded from %s", utstring_body(obazl_ini_path)); */
         }
         if (verbose)
-            log_info("loaded miblrc config file: %s",
+            log_info("Loaded miblrc config file: %s",
                      utstring_body(obazl_ini_path));
     }
 

@@ -116,7 +116,7 @@ UT_string *xdg_data_home;
 /* #define XDG_RUNTIME_DIR */
 
 /* in addition we define a project-local directory for scm scripts */
-#define PROJ_MIBL ".mibl"
+#define PROJ_MIBL ".config"
 
 /* preference-ordered base directories in addition to XDG_DATA_HOME */
 #define XDG_DATA_DIRS   "/usr/local/share/:/usr/share/"
@@ -550,7 +550,7 @@ LOCAL void _config_s7_load_path_bws_root(void)
     rc = access(utstring_body(proj_script_dir), R_OK);
     if (rc) {
         if (verbose)
-            log_warn("project script dir %s not found",
+            log_warn("Not found: project script dir %s not found",
                      utstring_body(proj_script_dir));
     } else {
         /* if (verbose) */
@@ -927,6 +927,16 @@ EXPORT s7_scheme *s7_configure(void)
 
     s7_define_variable(s7, "*debugging*", s7_f(s7));
 
+    /* debug dump to stdout */
+    s7_define_variable(s7, "*dump-parsetree*", s7_f(s7));
+    s7_define_variable(s7, "*dump-mibl*", s7_f(s7));
+    s7_define_variable(s7, "*dump-starlark*", s7_f(s7));
+
+    /* emit to files (e.g. BUILD.bazel) */
+    s7_define_variable(s7, "*emit-parsetree*", s7_f(s7));
+    s7_define_variable(s7, "*emit-mibl*", s7_f(s7));
+    s7_define_variable(s7, "*emit-starlark*", s7_f(s7));
+
     if (bws_root) {
         s7_define_variable(s7, "ws-root", s7_make_string(s7, bws_root));
     } else {
@@ -981,16 +991,26 @@ EXPORT s7_scheme *s7_configure(void)
     s7_define_variable(s7, "*emit-rules-swc*", s7_f(s7));
     s7_define_variable(s7, "*emit-rules-closure*", s7_f(s7));
 
-    /* populate exclusions list, so scheme code can use it */
+    /* populate pkgs list, so scheme code can use it */
     char **p = NULL;
+    s7_pointer _s7_pkgs = s7_nil(s7);
+    while ( (p=(char**)utarray_next(mibl_config.pkgs, p))) {
+#if defined(DEBUG_TRACE)
+        if (debug) printf("Adding to pkgs list: %s\n", *p);
+#endif
+        _s7_pkgs = s7_cons(s7, s7_make_string(s7, *p), _s7_pkgs);
+    }
+    s7_define_variable(s7, "*dump-pkgs*", _s7_pkgs);
+
+    /* populate exclusions list, so scheme code can use it */
+    p = NULL;
     s7_pointer _s7_exclusions = s7_nil(s7);
     while ( (p=(char**)utarray_next(mibl_config.exclude_dirs, p))) {
 #if defined(DEBUG_TRACE)
         if (debug)
-            printf("adding to exlusions list: %s\n",*p);
+            printf("Adding to exlusions list: %s\n",*p);
 #endif
         _s7_exclusions = s7_cons(s7, s7_make_string(s7, *p), _s7_exclusions);
-
     }
 #if defined(DEBUG_TRACE)
     if (debug)
