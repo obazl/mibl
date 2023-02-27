@@ -20,7 +20,7 @@ def fetch_repos():
         git_repository,
         name = "libs7",
         remote = "https://github.com/obazl/libs7",
-        branch = "alpha"
+        branch = "dev"
     )
 
     ## logc vendored
