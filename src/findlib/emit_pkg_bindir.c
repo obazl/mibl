@@ -192,9 +192,25 @@ void emit_opam_pkg_bindir(const char *pkg) // UT_string *dune_pkg_file)
     fprintf(ostream, "])\n");
     fclose(ostream);
 
- stublibs: ;
+    if (verbose) {
+        utstring_renew(outpath);
+        utstring_printf(outpath, "%s/%s/bin",
+                        utstring_body(opam_coswitch_lib),
+                        pkg);
 
-    UT_array *stublibs = get_pkg_stublibs(stanzas);
+        log_info("Created %s containing symlinked pkg executables",
+                 utstring_body(outpath));
+    }
+
+
+ stublibs: ;
+    /* opam dumps all stublibs ('dllfoo.so') in lib/stublibs; they are
+       not found in the pkg's lib subdir. But the package's
+       dune-package file lists them, so we read that and then symlink
+       them from lib/stublibs to lib/<pkg>/stublibs.
+     */
+
+    UT_array *stublibs = get_pkg_stublibs(pkg, stanzas);
     if (utarray_len(stublibs) == 0) goto exit;
 
     UT_string *opam_stublib;
@@ -237,7 +253,6 @@ void emit_opam_pkg_bindir(const char *pkg) // UT_string *dune_pkg_file)
                     pkg);
     mkdir_r(utstring_body(outpath));
 
-    /* create <pkg>/bin/BUILD.bazel */
     utstring_renew(outpath);
     utstring_printf(outpath, "%s/%s/stublibs/BUILD.bazel",
                     utstring_body(opam_coswitch_lib),
@@ -297,7 +312,18 @@ void emit_opam_pkg_bindir(const char *pkg) // UT_string *dune_pkg_file)
     fprintf(ostream, "])\n");
     fclose(ostream);
 
+    if (verbose) {
+        utstring_renew(outpath);
+        utstring_printf(outpath, "%s/%s/stublibs",
+                        utstring_body(opam_coswitch_lib),
+                        pkg);
+
+        log_info("Created %s containing symlinked stublibs",
+                 utstring_body(outpath));
+    }
+
  exit: ;
+    /* utstring_free(outpath); */
 #if defined(DEBUG_TRACE)
     printf("exiting\n");
 #endif

@@ -342,7 +342,10 @@ void handle_findlib_pkg(// char *opam_switch_lib,
     } else {
         /* fail */
         /* perror(utstring_body(meta_path)); */
-        log_info("%s: %s", strerror(errno), utstring_body(meta_path));
+#if defined(DEBUG_TRACE)
+        if (debug)
+            log_info("%s: %s", strerror(errno), utstring_body(meta_path));
+#endif
         chdir(old_cwd);
         return;
         /* exit(EXIT_FAILURE); */

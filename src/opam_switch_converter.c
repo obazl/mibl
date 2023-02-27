@@ -89,17 +89,17 @@ char **tc;
 EXPORT void convert_findlib_pkgs(UT_array *opam_pending_deps,
                                  UT_array *opam_exclude_pkgs)
 {
-/* #if defined(DEBUG_TRACE) */
+#if defined(DEBUG_TRACE)
         log_debug(BLU "convert_findlib_pkgs" CRESET);
         log_debug("%-16s%s", "opam switch:", utstring_body(opam_switch_lib));
         log_debug("%-16s%s", "launch_dir:", launch_dir);
         log_debug("%-16s%s", "base ws:", bws_root);
         log_debug("%-16s%s", "effective ws:", ews_root);
         log_debug("pendings ct: %d", utarray_len(opam_pending_deps));
+#endif
 
-/* #endif */
     if (verbose) {
-        log_debug("current dir: %s", getcwd(NULL, 0));
+        log_info("current dir: %s", getcwd(NULL, 0));
         /* printf(YEL "%-16s%s\n" CRESET, "pkg_name:", pkg_name); */
     }
 
@@ -109,7 +109,9 @@ EXPORT void convert_findlib_pkgs(UT_array *opam_pending_deps,
 
     if (utarray_len(opam_pending_deps) < 1) {
         /* default: all pkgs in switch */
-        log_info("reading opam pkgs in %s", utstring_body(opam_switch_lib));
+        if (verbose) {
+            log_info("reading opam pkgs in %s", utstring_body(opam_switch_lib));
+        }
         errno = 0;
         DIR *switch_dir = opendir(utstring_body(opam_switch_lib));
         if (switch_dir == NULL) {
@@ -128,8 +130,9 @@ EXPORT void convert_findlib_pkgs(UT_array *opam_pending_deps,
         }
         closedir(switch_dir);
 
-        log_debug("pendings ct: %d", utarray_len(opam_pending_deps));
-
+        if (verbose) {
+            log_info("pendings ct: %d", utarray_len(opam_pending_deps));
+        }
         /* p = NULL; */
         /* while ( (p=(char**)utarray_next(opam_pending_deps, p))) { */
         /*     log_info("read:  %s", *p); */
@@ -201,7 +204,8 @@ EXPORT void convert_findlib_pkgs(UT_array *opam_pending_deps,
     UT_string *opam_bzl_file;
     utstring_new(opam_bzl_file);
     utstring_printf(opam_bzl_file, "%s/WORKSPACE.opam.bzl", bws_root);
-    log_debug("writing %s", utstring_body(opam_bzl_file));
+    if (verbose)
+        log_info("writing %s", utstring_body(opam_bzl_file));
 
     FILE *ostream = fopen(utstring_body(opam_bzl_file), "w");
     if (ostream == NULL) {
@@ -237,7 +241,8 @@ EXPORT void convert_findlib_pkgs(UT_array *opam_pending_deps,
         q = (char**)utarray_find(opam_exclude_pkgs, p, strsort);
 
         if (q == NULL) {
-            log_info("Importing opam pkg: %s", *p);
+            if (verbose)
+                log_info("Importing opam pkg: %s", *p);
             fprintf(ostream, "    native.local_repository(\n");
             fprintf(ostream, "        name       = \"%s\",\n", *p);
             fprintf(ostream, "        path       = ");
@@ -248,8 +253,14 @@ EXPORT void convert_findlib_pkgs(UT_array *opam_pending_deps,
         }
     }
 
+#if defined(DEBUG_TRACE)
     log_debug("pending ct: %d",  utarray_len(opam_pending_deps));
-    log_debug("completed ct: %d",  utarray_len(opam_completed_deps));
+#endif
+    /* if (verbose) */
+    //FIXME: print this with -v, the others with -vv
+    printf(GRN "INFO:" CRESET " Imported %d OPAM packages from switch %s\n",
+           utarray_len(opam_completed_deps),
+           utstring_body(opam_switch_lib));
     /* FIXME: free opam_completed_deps, opam_pending_deps */
     /* while ( (p=(char**)utarray_next(opam_completed_deps, p))) { */
     /* free(p); */

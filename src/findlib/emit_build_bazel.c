@@ -2867,15 +2867,34 @@ void emit_pkg_symlinks(UT_string *dst_dir,
                         19) == 0) {
 #if defined(DEBUG_TRACE)
                 if (debug)
-                    log_debug("Skipping missing 'topkg-care'\n");
+                    log_debug("Skipping missing 'topkg-care'");
 #endif
                 if (verbose)
-                    fprintf(stdout, "Skipping missing pkg 'topkg-care'\n");
+                    log_info("Skipping missing pkg 'topkg-care'");
                 return;
             }
+        } else if (strncmp(pkg_name, "configurator", 12) == 0) {
+            char *s = utstring_body(opamdir);
+            int len = strlen(s);
+            char *ptr = s + len - 21;
+            /* log_info("XXXX src_dir: %s", s); */
+            /* log_info("XXXX configurator len: %d", len); */
+            /* log_info("XXXX configurator ptr: %s", ptr); */
+            if (len > 20) {
+                if (strncmp(ptr, "lib/dune/configurator", 21) == 0) {
+                    if (verbose)
+                        log_info("Skipping dune/configurator; use @dune-configurator instead.");
+                    return;
+                } else {
+                    log_error("MISMATCH dune/configurator");
+                    exit(0);
+                }
+            /* } else { */
+            /*     log_debug("configurator not dune/configurator"); */
+            }
         } else
-            fprintf(stderr, "pkg_symlinks: Unable to opendir %s\n",
-                    utstring_body(opamdir));
+            log_warn("pkg_symlinks: Unable to opendir %s",
+                     utstring_body(opamdir));
         /* exit(EXIT_FAILURE); */
         /* this can happen if a related pkg is not installed */
         /* example, see topkg and topkg-care */

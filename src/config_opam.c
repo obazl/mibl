@@ -86,7 +86,8 @@ EXPORT void opam_configure(char *_opam_switch)
             fprintf(stderr, "FAIL: run_cmd 'opam var ocaml:version'\n");
         } else {
             utstring_printf(opam_switch_id, "%s", result);
-            log_info("opam: using current switch: %s", result);
+            if (verbose)
+                log_info("opam: using current switch: %s", result);
 
 #if defined(DEBUG_TRACE)
             log_debug("cmd result: '%s'", utstring_body(opam_switch_id));

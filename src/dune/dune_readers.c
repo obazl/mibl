@@ -145,15 +145,15 @@ EXPORT UT_array *get_pkg_executables(void *_stanzas)
     }
 #endif
 
-    /* result is list of executables installed in $PREFIX/bin */
-    if (s7_is_list(s7, executables)) {
-        if (verbose) {
-            printf(GRN "EXECUTABLES:" CRESET " %s\n",
-                   /* " for %s: %s\n", */
-                   /* utstring_body(dune_pkg_file), */
-                   TO_STR(executables));
-        }
-    }
+    /* /\* result is list of executables installed in $PREFIX/bin *\/ */
+    /* if (s7_is_list(s7, executables)) { */
+    /*     if (verbose) { */
+    /*         printf(GRN "EXECUTABLES:" CRESET " %s\n", */
+    /*                /\* " for %s: %s\n", *\/ */
+    /*                /\* utstring_body(dune_pkg_file), *\/ */
+    /*                TO_STR(executables)); */
+    /*     } */
+    /* } */
     iter = s7_make_iterator(s7, executables);
         //gc_loc = s7_gc_protect(s7, iter);
     if (!s7_is_iterator(iter))
@@ -200,7 +200,7 @@ EXPORT UT_array *get_pkg_executables(void *_stanzas)
     return bins;
 }
 
-EXPORT UT_array *get_pkg_stublibs(void *_stanzas)
+EXPORT UT_array *get_pkg_stublibs(char *pkg, void *_stanzas)
 /* UT_string *dune_pkg_file) */
 {
 #if defined(DEBUG_TRACE)
@@ -243,19 +243,20 @@ EXPORT UT_array *get_pkg_stublibs(void *_stanzas)
 #if defined(DEBUG_TRACE)
     if (debug) {
         /* log_debug("Pkg: %s", utstring_body(dune_pkg_file)); */
-        log_debug(RED "stublibs" CRESET ": %s", TO_STR(stublibs));
+        log_debug(RED "STUBLIBS" CRESET ": %s", TO_STR(stublibs));
     }
 #endif
 
     /* result is list of stublibs installed in $PREFIX/bin */
-    if (s7_is_list(s7, stublibs)) {
-        if (verbose) {
-            printf(GRN "STUBLIBS:" CRESET " %s\n",
-                   /* " for %s: %s\n", */
-                   /* utstring_body(dune_pkg_file), */
-                   TO_STR(stublibs));
-        }
-    }
+    /* if (s7_is_list(s7, stublibs)) { */
+    /*     if (verbose) { */
+    /*         log_info(GRN "%s stublibs:" CRESET " %s", */
+    /*                  pkg, */
+    /*                  /\* " for %s: %s\n", *\/ */
+    /*                  /\* utstring_body(dune_pkg_file), *\/ */
+    /*                  TO_STR(stublibs)); */
+    /*     } */
+    /* } */
     iter = s7_make_iterator(s7, stublibs);
         //gc_loc = s7_gc_protect(s7, iter);
     if (!s7_is_iterator(iter))
