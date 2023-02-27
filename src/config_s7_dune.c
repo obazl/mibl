@@ -926,11 +926,18 @@ EXPORT s7_scheme *s7_configure(void)
     _mibl_s7_init();
 
     s7_define_variable(s7, "*debugging*", s7_f(s7));
+    s7_define_variable(s7, "*debug-alias*", s7_f(s7));
+    s7_define_variable(s7, "*debug-emit*", s7_f(s7));
+    s7_define_variable(s7, "*debug-executables*", s7_f(s7));
+    s7_define_variable(s7, "*debug-genrules*", s7_f(s7));
+    s7_define_variable(s7, "*debug-mibl*", s7_f(s7));
+    s7_define_variable(s7, "*debug-ppx*", s7_f(s7));
 
     /* debug dump to stdout */
     s7_define_variable(s7, "*dump-parsetree*", s7_f(s7));
     s7_define_variable(s7, "*dump-mibl*", s7_f(s7));
     s7_define_variable(s7, "*dump-starlark*", s7_f(s7));
+    s7_define_variable(s7, "*dump-exports*", s7_f(s7));
 
     /* emit to files (e.g. BUILD.bazel) */
     s7_define_variable(s7, "*emit-parsetree*", s7_f(s7));

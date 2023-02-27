@@ -37,7 +37,7 @@ struct mibl_config_s {
     int libct;
     bool emit_parsetree;
     bool emit_mibl;
-    bool emit_starlark;
+    bool emit_bazel;
     bool dump_parsetree;
     bool dump_mibl;
     bool dump_starlark;
@@ -54,7 +54,7 @@ struct mibl_config_s mibl_config = {
     .schema_version = MIBL_SCHEMA_VERSION,
     .emit_parsetree = false,
     .emit_mibl      = false,
-    .emit_starlark  = true,
+    .emit_bazel  = true,
     .dump_parsetree = false,
     .dump_mibl      = false,
     .dump_starlark  = false,
@@ -81,12 +81,12 @@ LOCAL int _config_handler(void* config, const char* section, const char* name, c
     if (MATCH("mibl", "emit")) {
         if (verbose && verbosity > 1) log_debug("miblrc [mibl] emit: %s", value);
         if (strncmp(value, "starlark", 8) == 0) {
-            pconfig->emit_starlark = true;
+            pconfig->emit_bazel = true;
         }
         else if (strncmp(value, "none", 4) == 0) {
             pconfig->emit_parsetree = false;
             pconfig->emit_mibl = false;
-            pconfig->emit_starlark = false;
+            pconfig->emit_bazel = false;
         }
         else if (strncmp(value, "mibl", 4) == 0) {
             pconfig->emit_mibl = true;
