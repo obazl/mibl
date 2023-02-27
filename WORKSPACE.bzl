@@ -2,6 +2,8 @@ load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_tools//tools/build_defs/repo:utils.bzl", "maybe")
 
+OBAZL_BRANCH = "alpha"
+
 all_content = """filegroup(name = "all", srcs = glob(["**"]), visibility = ["//visibility:public"])"""
 
 def fetch_repos():
@@ -20,7 +22,7 @@ def fetch_repos():
         git_repository,
         name = "libs7",
         remote = "https://github.com/obazl/libs7",
-        branch = "dev"
+        branch = OBAZL_BRANCH
     )
 
     ## logc vendored
