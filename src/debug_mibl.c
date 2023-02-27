@@ -1,3 +1,5 @@
+#include <stdbool.h>
+
 /* #include "log.h" */
 /* #include "utarray.h" */
 

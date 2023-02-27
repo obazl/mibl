@@ -1,32 +1,38 @@
 (define (analyze-libdeps libdeps)
-  (format #t "~A: ~A\n" (ublue "analyze-libdeps") libdeps)
+  (if *debugging*
+      (format #t "~A: ~A\n" (ublue "analyze-libdeps") libdeps))
   ;; libdeps: raw dune (libraries) fld cdr
   (let recur ((raw libdeps) ;; 'libraries' fld
               (directs '()) ;; directs == public_name, listed in (libraries)
               (selects '())
               ;; (modules '()) ;; not needed?
               )
-    (format #t "~A: ~A~%" (uwhite "recurring on") raw)
+    (if *debugging*
+        (format #t "~A: ~A~%" (uwhite "recurring on") raw))
     (if (null? raw)
         (let* ((seldeps (map (lambda (s)
-                            (format #t "select: ~A\n" s)
-                            (let ((seldeps (assoc-val :deps s))) seldeps))
-                          selects))
+                               (if *debugging*
+                                   (format #t "select: ~A\n" s))
+                               (let ((seldeps (assoc-val :deps s))) seldeps))
+                             selects))
                (seldeps (fold (lambda (x accum)
                              (if (member x accum)
                                  accum
                                  (cons x accum)))
                            '() seldeps))
-               ;; (_ (format #t "FOLDED: ~A\n" seldeps))
+               ;; (_ (if *debugging* (format #t "FOLDED: ~A\n" seldeps)))
                (conditionals (map (lambda (s)
-                                    (format #t "S: ~A\n" s)
+                                    (if *debugging*
+                                        (format #t "S: ~A\n" s))
                                     (let ((conditionals (alist-delete
                                                          '(:deps) s)))
                                       conditionals))
                                   selects)))
-          (format #t "~A: ~A~%" (blue "select seldeps") seldeps)
-          (format #t "~A: ~A\n" (blue "select conditionals") conditionals)
-          (format #t "~A: ~A\n" (blue "directs") directs)
+          (if *debugging*
+              (begin
+                (format #t "~A: ~A~%" (blue "select seldeps") seldeps)
+                (format #t "~A: ~A\n" (blue "select conditionals") conditionals)
+                (format #t "~A: ~A\n" (blue "directs") directs)))
           ;; (let* ((dirdeps (if (null? directs) '()
           ;;                     (list (cons :remote directs))))
           ;;        (dirdeps (if (null? seldeps) dirdeps
@@ -44,7 +50,8 @@
               ((select)
             ;; (if (equal? (caar raw) 'select)
                (let ((the-selects (analyze-select (car raw))))
-                 (format #t "~A: ~A~%" (cyan "the-selects") the-selects)
+                 (if *debugging*
+                     (format #t "~A: ~A~%" (cyan "the-selects") the-selects))
                  (update-selects-list! the-selects)
                  (recur (cdr raw)
                         directs
@@ -53,7 +60,8 @@
                         ;; (libdep->module-name modules)
                         )))
               ((re_export)
-               (format #t "~A: ~A~%" (bgyellow "re_export") raw)
+               (if *debugging*
+                   (format #t "~A: ~A~%" (bgyellow "re_export") raw))
                (recur (cdr raw)
                       (cons (cadar raw) directs)
                        selects

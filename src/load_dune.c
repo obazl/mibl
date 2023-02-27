@@ -600,9 +600,10 @@ LOCAL void _update_pkg_files(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 
             s7_pointer addition = s7_list(s7, 1,
                                           s7_make_string(s7, ftsentry->fts_name));
-            log_debug("addition: %s",
-                       TO_STR(addition));
-
+#if defined(DEBUG_TRACE)
+            if (debug)
+                log_debug("addition: %s", TO_STR(addition));
+#endif
             s7_pointer new_files_alist =
                 s7_append(s7,
                 /* s7_list(s7, 2, */
@@ -611,8 +612,10 @@ LOCAL void _update_pkg_files(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
                           addition
                         /* file_pair, */
                           );
-            log_debug("new files_alist: %s",
-                       TO_STR(new_files_alist));
+#if defined(DEBUG_TRACE)
+            if (debug)
+                log_debug("new files_alist: %s", TO_STR(new_files_alist));
+#endif
 
             /* s7_pointer sort      = _load_sort(); */
             /* s7_pointer string_lt = _load_string_lt(); */
@@ -1546,7 +1549,7 @@ LOCAL void _update_pkg_structs(s7_pointer pkg_tbl,
                                                           pkg_alist));
             /* log_debug("STRUCTURES alist: %s", TO_STR(structures_alist)); */
             if (structures_alist == s7_f(s7)) {
-                /* log_debug("NEW"); */
+                /* log_debug("NEW :structures list"); */
                 s7_pointer statics_assoc =
                     s7_list(s7, 2,
                             // static_kw,
@@ -1570,7 +1573,7 @@ LOCAL void _update_pkg_structs(s7_pointer pkg_tbl,
 
                 s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg_alist);
             } else {
-                /* log_debug("OLD"); */
+                log_debug("OLD");
 
                 s7_pointer structures_alist_cdr = s7_cdr(structures_alist);
 #if defined(DEBUG_TRACE)
@@ -1595,8 +1598,8 @@ LOCAL void _update_pkg_structs(s7_pointer pkg_tbl,
                        TO_STR(new_structures_alist_cdr));
 #endif
 
-                /* s7_pointer new_structures_alist */
-                /*     = s7_set_cdr(structures_alist, new_structures_alist_cdr); */
+                s7_pointer new_structures_alist
+                    = s7_set_cdr(structures_alist, new_structures_alist_cdr);
             }
         } else {
 #if defined(DEBUG_TRACE)
@@ -1758,7 +1761,7 @@ LOCAL void _update_pkg_mll_files(s7_pointer pkg_tbl,
         if (ocamllex_alist == s7_f(s7)) {
 #if defined(DEBUG_TRACE)
             if (debug)
-                log_debug("INITIALIZING :ocamllex field");
+                log_debug("INITIALIZING :lex field");
 #endif
 
             s7_pointer statics_assoc =
@@ -2011,7 +2014,7 @@ LOCAL void _update_pkg_mly_files(s7_pointer pkg_tbl,
         if (ocamlyacc_alist == s7_f(s7)) {
 #if defined(DEBUG_TRACE)
             if (debug)
-                log_debug("INITIALIZING :ocamlyacc field");
+                log_debug("INITIALIZING :yacc field");
 #endif
 
             s7_pointer statics_assoc =
@@ -3205,7 +3208,9 @@ EXPORT s7_pointer g_load_dune(s7_scheme *s7,  s7_pointer args)
                 /* s7_pointer _pkg_tbl = */
                 load_dune(rootdir, pathdir);
                 /* if (trace) { */
+#if defined(DEBUG_TRACE)
                 log_trace("LOADED DUNE NOARG");
+#endif
                 /* log_trace(RED "-mibl-ws-table:" CRESET " %s\n", */
                 /*           TO_STR(s7_name_to_value(s7, "-mibl-ws-table"))); */
                 /* } */
@@ -3802,7 +3807,7 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
                     break;
                 }
         }
-        log_info("end while: (ftsentry = fts_read(tree)) != NULL)");
+        /* log_info("end while: (ftsentry = fts_read(tree)) != NULL)"); */
         chdir(old_cwd);
         /* printf(RED "Restored cwd: %s\n" CRESET, getcwd(NULL, 0)); */
     } else {

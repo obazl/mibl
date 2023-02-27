@@ -11,8 +11,10 @@
 ;; (alias <alias-name>), (mode <mode>), (enabled_if <blang expression>)
 ;; (copy_files <glob>) is equivalent to (copy_files (files <glob>))
 (define (normalize-stanza-copy_files pkg-path stanza)
-  (format #t "NORMALIZE-STANZA-COPY_FILES, path: ~A\n" pkg-path)
-  (format #t "  stanza: ~A\n" stanza)
+  (if *debugging*
+      (begin
+        (format #t "NORMALIZE-STANZA-COPY_FILES, path: ~A\n" pkg-path)
+        (format #t "  stanza: ~A\n" stanza)))
   ;; handle both copy_files and copy_files#
   ;; (copy_files
   ;;  <optional-fields>
@@ -50,7 +52,8 @@
                    (format #f "unexpected stanza type: ~A\n" stanza))))))
 
 (define (normalize-stanza-copy pkg-path stanza)
-  (format #t "NORMALIZE-STANZA-COPY: ~A" stanza)
+  (if *debugging*
+      (format #t "NORMALIZE-STANZA-COPY: ~A" stanza))
   ;; (display (format #f "dir: ~A" pfx)) (newline)
   ;; (copy_files
   ;;  <optional-fields>
@@ -390,7 +393,7 @@
 ;;                                                   (cadr srcfiles))))
 ;;                                  (concatenate ocaml-srcs (cadr srcs))
 ;;                                  ocaml-srcs)))
-;;          (_ (format #t "OCAML SRCS: ~A\n" (reverse ocaml-srcs)))
+;;          (_ (if *debugging* (format #t "OCAML SRCS: ~A\n" (reverse ocaml-srcs))))
 ;;          ;; (normalized-stanza
 ;;          (s (case (car stanza)
 ;;               ((alias) (normalize-stanza-alias stanza))

@@ -1522,15 +1522,15 @@ Note that "archive" should only be used for archive files that are intended to b
      */
 
     //FIXME: only if --enable-jsoo passed
-    emit_bazel_jsoo(ostream, 1,
-                    _pkg_prefix,
-                    _pkg_name,
-                    /* for constructing import label: */
-                    _filedeps_path,
-                    /* _subpkg_dir, */
-                    _entries,
-                    "archive",
-                    _pkg);
+    /* emit_bazel_jsoo(ostream, 1, */
+    /*                 _pkg_prefix, */
+    /*                 _pkg_name, */
+    /*                 /\* for constructing import label: *\/ */
+    /*                 _filedeps_path, */
+    /*                 /\* _subpkg_dir, *\/ */
+    /*                 _entries, */
+    /*                 "archive", */
+    /*                 _pkg); */
 
     /* write scheme opam-resolver table */
     //FIXME: for here-switch only
@@ -1583,14 +1583,14 @@ Note that "archive" should only be used for archive files that are intended to b
     fprintf(ostream, "    srcs     = glob([\"*.ml\", \"*.mli\"]),\n");
 
     //FIXME: only if --enable-jsoo passed
-    emit_bazel_jsoo_runtime_attr(ostream, 1,
-                                 _pkg_root,
-                                 _pkg_prefix,
-                                 _pkg_name,
-                                 pkg_parent,
-                                 _filedeps_path,
-                                 _entries,
-                                 _pkg);
+    /* emit_bazel_jsoo_runtime_attr(ostream, 1, */
+    /*                              _pkg_root, */
+    /*                              _pkg_prefix, */
+    /*                              _pkg_name, */
+    /*                              pkg_parent, */
+    /*                              _filedeps_path, */
+    /*                              _entries, */
+    /*                              _pkg); */
 
     /* emit cc_deps attr with lib*stubs.a */
     emit_bazel_stublibs_attr(ostream, 1,
@@ -2487,7 +2487,7 @@ void emit_bazel_deps_target(FILE* ostream, int level,
     }
 
     //FIXME: only if --enable-jsoo passed
-    fprintf(ostream, "\njsoo_library(name = \"js\")\n");
+    /* fprintf(ostream, "\njsoo_library(name = \"js\")\n"); */
 }
 
 /*

@@ -33,6 +33,8 @@
 
 #include "config_s7_dune.h"
 
+/* extern bool debug; */
+
 /* char *callback_script_file = "dune.scm"; // passed in 'data' attrib */
 char *callback = "camlark_handler"; /* fn in callback_script_file  */
 
@@ -114,7 +116,7 @@ UT_string *xdg_data_home;
 /* #define XDG_RUNTIME_DIR */
 
 /* in addition we define a project-local directory for scm scripts */
-#define PROJ_MIBL ".mibl"
+#define PROJ_MIBL ".config"
 
 /* preference-ordered base directories in addition to XDG_DATA_HOME */
 #define XDG_DATA_DIRS   "/usr/local/share/:/usr/share/"
@@ -214,7 +216,7 @@ void initialize_mibl_data_model(s7_scheme *s7)
                     bws_root);
 
     s7_pointer wss = s7_eval_c_string(s7, utstring_body(init_sexp));
-    if (verbose) // & verbosity > 1)
+    if (debug) // & verbosity > 1)
         log_info("wss: %s\n", TO_STR(wss));
 
     /* /\* s7_pointer base_entry = s7_make_list(s7, 4, s7_f(s7)); *\/ */
@@ -548,7 +550,7 @@ LOCAL void _config_s7_load_path_bws_root(void)
     rc = access(utstring_body(proj_script_dir), R_OK);
     if (rc) {
         if (verbose)
-            log_warn("project script dir %s not found",
+            log_warn("Not found: project script dir %s not found",
                      utstring_body(proj_script_dir));
     } else {
         /* if (verbose) */
@@ -908,16 +910,39 @@ void _mibl_s7_init(void)
     /* tmp dir */
     char tplt[] = "/tmp/obazl.XXXXXXXXXX";
     char *tmpdir = mkdtemp(tplt);
-    log_debug("tmpdir: %s", tmpdir);
+    if (debug)
+        log_debug("tmpdir: %s", tmpdir);
     s7_define_variable(s7, "*tmp-dir*", s7_make_string(s7, tmpdir));
 }
 
 /* FIXME: rename s7_configure_for_dune */
 EXPORT s7_scheme *s7_configure(void)
 {
-    log_debug("s7_configure");
+#if defined(DEBUG_TRACE)
+    if (debug)
+        log_debug("s7_configure");
+#endif
 
     _mibl_s7_init();
+
+    s7_define_variable(s7, "*debugging*", s7_f(s7));
+    s7_define_variable(s7, "*debug-alias*", s7_f(s7));
+    s7_define_variable(s7, "*debug-emit*", s7_f(s7));
+    s7_define_variable(s7, "*debug-executables*", s7_f(s7));
+    s7_define_variable(s7, "*debug-genrules*", s7_f(s7));
+    s7_define_variable(s7, "*debug-mibl*", s7_f(s7));
+    s7_define_variable(s7, "*debug-ppx*", s7_f(s7));
+
+    /* debug dump to stdout */
+    s7_define_variable(s7, "*dump-parsetree*", s7_f(s7));
+    s7_define_variable(s7, "*dump-mibl*", s7_f(s7));
+    s7_define_variable(s7, "*dump-starlark*", s7_f(s7));
+    s7_define_variable(s7, "*dump-exports*", s7_f(s7));
+
+    /* emit to files (e.g. BUILD.bazel) */
+    s7_define_variable(s7, "*emit-parsetree*", s7_f(s7));
+    s7_define_variable(s7, "*emit-mibl*", s7_f(s7));
+    s7_define_variable(s7, "*emit-starlark*", s7_f(s7));
 
     if (bws_root) {
         s7_define_variable(s7, "ws-root", s7_make_string(s7, bws_root));
@@ -946,6 +971,9 @@ EXPORT s7_scheme *s7_configure(void)
        false: map to :library */
     s7_define_variable(s7, "*unwrapped-libs-to-archives*", s7_t(s7));
 
+    /* emit menhir target instead of ocamlyacc */
+    s7_define_variable(s7, "*menhir*", s7_f(s7));
+
     /* emit ocaml_signature for every sigfile target */
     s7_define_variable(s7, "*build-dyads*", s7_t(s7));
 
@@ -973,15 +1001,31 @@ EXPORT s7_scheme *s7_configure(void)
     s7_define_variable(s7, "*emit-rules-swc*", s7_f(s7));
     s7_define_variable(s7, "*emit-rules-closure*", s7_f(s7));
 
-    /* populate exclusions list, so scheme code can use it */
+    /* populate pkgs list, so scheme code can use it */
     char **p = NULL;
+    s7_pointer _s7_pkgs = s7_nil(s7);
+    while ( (p=(char**)utarray_next(mibl_config.pkgs, p))) {
+#if defined(DEBUG_TRACE)
+        if (debug) printf("Adding to pkgs list: %s\n", *p);
+#endif
+        _s7_pkgs = s7_cons(s7, s7_make_string(s7, *p), _s7_pkgs);
+    }
+    s7_define_variable(s7, "*dump-pkgs*", _s7_pkgs);
+
+    /* populate exclusions list, so scheme code can use it */
+    p = NULL;
     s7_pointer _s7_exclusions = s7_nil(s7);
     while ( (p=(char**)utarray_next(mibl_config.exclude_dirs, p))) {
-        printf("adding to exlusions list: %s\n",*p);
+#if defined(DEBUG_TRACE)
+        if (debug)
+            printf("Adding to exlusions list: %s\n",*p);
+#endif
         _s7_exclusions = s7_cons(s7, s7_make_string(s7, *p), _s7_exclusions);
-
     }
-    log_debug("exclusions list: %s", TO_STR(_s7_exclusions));
+#if defined(DEBUG_TRACE)
+    if (debug)
+        log_debug("exclusions list: %s", TO_STR(_s7_exclusions));
+#endif
     s7_define_variable(s7, "*scan-exclusions*", _s7_exclusions);
     /* p = utarray_find(mibl_config.exclude_dirs, */
     /*                  &ptr, */
@@ -1000,8 +1044,8 @@ EXPORT s7_scheme *s7_configure(void)
     modules_kw = s7_make_keyword(s7, "modules");
     sigs_kw = s7_make_keyword(s7, "signatures");
     structs_kw = s7_make_keyword(s7, "structures");
-    mll_kw = s7_make_keyword(s7, "ocamllex");
-    mly_kw = s7_make_keyword(s7, "ocamlyacc");
+    mll_kw = s7_make_keyword(s7, "lex");
+    mly_kw = s7_make_keyword(s7, "yacc");
     cppo_kw = s7_make_keyword(s7, "cppo");
     files_kw   = s7_make_keyword(s7, "files");
     static_kw  = s7_make_keyword(s7, "static");

@@ -5,7 +5,8 @@
 ;; apodoses in 'select' clauses are not pkg-level build targets
 ;; remove them from :structures, :signatures
 (define (-mark-apodoses! pkg)
-  (format #t "~A: ~A\n" (ublue "-mark-apodoses!") (assoc-val :pkg-path pkg))
+  (if *debugging*
+      (format #t "~A: ~A\n" (ublue "-mark-apodoses!") (assoc-val :pkg-path pkg)))
   ;; (if (equal? (car (assoc-val :pkg-path pkg)) "compiler/tests-ocaml/lib-bytes-utf")
   ;;     (begin
   ;;       (format #t "~A: ~A~%" (bgred "pkg") pkg))
@@ -18,33 +19,40 @@
                                                (car (assoc-val :selectors x)))
                                               (defaults-alist
                                                 (car (assoc-val :default x))))
-                                          (format #t "SELS ~A\n" sels-alist)
+                                          (if *debugging*
+                                              (format #t "SELS ~A\n" sels-alist))
                                           (cons
                                            defaults-alist
                                            (map cdr sels-alist))))
                                       (cdr conditionals))))
                 (apodoses (map symbol->string apodoses)))
-            (format #t "MARKING ~A\n" apodoses)
+            (if *debugging*
+                (format #t "MARKING ~A\n" apodoses))
 
             (let ((sigs-static (assoc-in '(:signatures :static) pkg))
                   (structs-static (assoc-in '(:structures :static) pkg)))
-              (format #t "structs-static: ~A\n" structs-static)
+              (if *debugging*
+                  (format #t "structs-static: ~A\n" structs-static))
               (for-each (lambda (s)
-                          (format #t "struct: ~A\n" s)
+                          (if *debugging*
+                              (format #t "struct: ~A\n" s))
                           (if (member (last (last s)) apodoses)
                               (set-car! s :_)))
                         (cdr sigs-static))
               (for-each (lambda (s)
-                          (format #t "struct: ~A\n" s)
+                          (if *debugging*
+                              (format #t "struct: ~A\n" s))
                           (if (member (last (last s)) apodoses)
                               (set-car! s :_)))
                         (cdr structs-static))
               ))
-          (format #t "~A~%" (uwhite "no conditionals"))
+          (if *debugging*
+              (format #t "~A~%" (uwhite "no conditionals")))
           ))
 
 (define (-trim-pkg! pkg)
-  (format #t "~A: ~A~%" (blue "-trim-pkg!") pkg) ;; (assoc-val :pkg-path pkg))
+  (if *debugging*
+      (format #t "~A: ~A~%" (blue "-trim-pkg!") pkg)) ;; (assoc-val :pkg-path pkg))
 
   ;; remove null lists from :dune alist
   (let ((dune (assoc :dune pkg)))
@@ -64,14 +72,16 @@
                 (assoc-update! :signatures
                                pkg
                                (lambda (old)
-                                 (format #t "OLD: ~A\n" old)
+                                 (if *debugging*
+                                     (format #t "OLD: ~A\n" old))
                                  (set-cdr! old '())))))
   (if-let ((sigs (assoc-in '(:signatures :dynamic) pkg)))
           (if (null? (cdr sigs))
               (assoc-update! :signatures
                              pkg
                              (lambda (old)
-                               (format #t "OLD: ~A\n" old)
+                               (if *debugging*
+                                   (format #t "OLD: ~A\n" old))
                                (set-cdr! old '())))))
 
   (if-let ((sigs (assoc :signatures pkg)))
@@ -84,7 +94,8 @@
               (assoc-update! :structures
                              pkg
                              (lambda (old)
-                               (format #t "OLD: ~A\n" old)
+                               (if *debugging*
+                                   (format #t "OLD: ~A\n" old))
                                (set-cdr! old '())))))
 
   (if-let ((structs (assoc-in '(:structures :dynamic) pkg)))
@@ -92,7 +103,8 @@
               (assoc-update! :structures
                              pkg
                              (lambda (old)
-                               (format #t "OLD: ~A\n" old)
+                               (if *debugging*
+                                   (format #t "OLD: ~A\n" old))
                                (set-cdr! old '())))))
 
   (if-let ((structs (assoc :structures pkg)))
@@ -100,7 +112,8 @@
                 (dissoc! '(:structures) pkg))))
 
 (define (dune-env->mibl ws pkg stanza)
-  (format #t "~A: ~A~%" (ublue "dune-env->mibl") stanza)
+  (if *debugging*
+      (format #t "~A: ~A~%" (ublue "dune-env->mibl") stanza))
   ;; (env
   ;;  (<profile1> <settings1>)
   ;;  (<profile2> <settings2>)
@@ -110,7 +123,8 @@
          (res
           (map
            (lambda (profile)
-             (format #t "~A: ~A~%" (uwhite "env profile") profile)
+             (if *debugging*
+                 (format #t "~A: ~A~%" (uwhite "env profile") profile))
              (cons (symbol->keyword (car profile))
                    (map (lambda (fld-assoc)
                           (case (car fld-assoc)
@@ -148,16 +162,18 @@
                 res))))
 
 (define (dune-tuareg->mibl ws pkg stanza)
-  (format #t "~A: ~A~%" (ublue "dune-tuareg->mibl") stanza)
+  (if *debugging*
+      (format #t "~A: ~A~%" (ublue "dune-tuareg->mibl") stanza))
   (list (list :tuareg
                (list 'FIXME))))
 
 (define (dune-stanza->mibl ws pkg stanza nstanzas)
-  (format #t "~A: ~A\n" (blue "dune-stanza->mibl") stanza)
+  (if *debugging*
+      (format #t "~A: ~A\n" (blue "dune-stanza->mibl") stanza))
   ;; (format #t "pkg: ~A\n" pkg)
   ;; (format #t "  nstanzas: ~A\n" nstanzas)
   (let* ((stanza-alist (cdr stanza))
-         ;; (_ (format #t "stanza-alist ~A\n" stanza-alist))
+         ;; (_ (if *debugging* (format #t "stanza-alist ~A\n" stanza-alist)))
          ;; (_ (if-let ((nm (assoc 'name stanza-alist)))
          ;;            (format #t "name: ~A\n" nm)
          ;;            (format #t "unnamed\n")))
@@ -187,8 +203,10 @@
             ((executable)
              (let* ((mibl-stanza (dune-executable->mibl ws pkg :executable stanza))
                     (x (append (cdr nstanzas) mibl-stanza)))
-               (format #t  "~A: ~A~%" (yellow "mibl-stanza") mibl-stanza)
-               (format #t  "~A: ~A~%" (yellow "x") x)
+               (if *debugging*
+                   (begin
+                     (format #t  "~A: ~A~%" (yellow "mibl-stanza") mibl-stanza)
+                     (format #t  "~A: ~A~%" (yellow "x") x)))
                (set-cdr! nstanzas x)))
 
             ((executables)
@@ -217,12 +235,14 @@
 
                    ;; earlier versions may use it, so we convert to
                    ;; std rule stanza with alias fld
-                   (format #t "~A: ~A~%" (red "stanza before") stanza)
+                   (if *debugging*
+                       (format #t "~A: ~A~%" (red "stanza before") stanza))
                    (let ((n (car (assoc-val 'name stanza-alist))))
                      (set! stanza (cons :rule
                                         `((alias ,n)
                                           ,@(dissoc '(name) (cdr stanza))))))
-                   (format #t "~A: ~A~%" (red "stanza after") stanza)
+                   (if *debugging*
+                       (format #t "~A: ~A~%" (red "stanza after") stanza))
                    (set-cdr! nstanzas
                              (append
                               (cdr nstanzas)
@@ -243,14 +263,13 @@
              (set-cdr! nstanzas
                        (append
                         (cdr nstanzas)
-                        (lexyacc->mibl :ocamllex ws pkg stanza))))
+                        (lexyacc->mibl :lex ws pkg stanza))))
 
             ((ocamlyacc)
              (set-cdr! nstanzas
                        (append
                         (cdr nstanzas)
-                        (lexyacc->mibl :ocamlyacc
-                                                  ws pkg stanza))))
+                        (lexyacc->mibl :yacc ws pkg stanza))))
 
             ((menhir)
              (set-cdr! nstanzas
@@ -294,8 +313,9 @@
     pkg))
 
 (define (dune-pkg->mibl ws pkg)
-  (format #t "~A: ~A\n" (blue "dune-pkg->mibl")
-          (assoc-val :pkg-path pkg))
+  (if *debugging*
+      (format #t "~A: ~A\n" (blue "dune-pkg->mibl")
+              (assoc-val :pkg-path pkg)))
   ;; (format #t "~A: ~A\n" (green "ws") ws)
   (let* ((nstanzas (list :dune )) ;; hack to make sure pkg is always an alist
          (pkg+ (append pkg (list nstanzas)))
@@ -322,11 +342,13 @@
           ;; (format #t "~A: ~A\n" (red "NEW PKG") pkg+)
           (let* ((@ws (assoc-val ws -mibl-ws-table))
                  (exports (car (assoc-val :exports @ws))))
-            (format #t "~A: ~A~%" (red "exports table") exports))
+            (if *debugging*
+                (format #t "~A: ~A~%" (red "exports table") exports)))
 
           pkg+)
         (begin
-          (format #t "~A: ~A\n"
+          (if *debugging*
+              (format #t "~A: ~A\n"
                   (red "WARNING: pkg w/o dunefile")
-                  (assoc-val :pkg-path pkg))
+                  (assoc-val :pkg-path pkg)))
           pkg))))

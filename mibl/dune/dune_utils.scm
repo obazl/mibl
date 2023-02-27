@@ -1,7 +1,8 @@
 ;; (display "dune/dune_utils.scm\n")
 
 (define (label-list->label-string l)
-  (format #t "~A: ~A~%" (ublue "label-list->label-string") l)
+  (if *debugging*
+      (format #t "~A: ~A~%" (ublue "label-list->label-string") l))
   (format #f "//~A:~A"
           (assoc-val :pkg l)
           (assoc-val :tgt l)))
@@ -81,7 +82,8 @@
 ;;      stanzas))
 
 (define (handle-read-error path fname args)
-  (format #t "HANDLE-READ-ERROR ~A\n" path)
+  (if *debugging*
+      (format #t "HANDLE-READ-ERROR ~A\n" path))
   (let ((msg (caadr args)))
     (display
      (if (string-prefix? "unexpected close paren:" msg)
@@ -373,8 +375,11 @@
     libdep))
 
 (define (pkg->pkg-name pkg)
-  (let ((bn (basename (car (assoc-val :pkg-path pkg)))))
-    (string-map (lambda (ch) (if (char=? ch #\-) #\_ ch)) bn)))
+  (let* ((bn (basename (car (assoc-val :pkg-path pkg))))
+         (pn (if (string=? "." bn)
+                (basename (car (assoc-val :ws-path pkg)))
+                bn)))
+    (string-map (lambda (ch) (if (char=? ch #\-) #\_ ch)) pn)))
 
 (define (normalize-module-name mname)
   ;;(format #t "normalize-module-name: ~A\n" mname)

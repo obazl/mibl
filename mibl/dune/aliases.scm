@@ -15,7 +15,8 @@
 ;; 2.0, so users must port their code to use the rule stanza with the
 ;; alias field instead.
 
-;; WARNING: plenty of packages still used dune 1.0, e.g.
+;; WARNING: evidently it was not removed. Plenty of packages still
+;; use dune 1.0, e.g.
 ;; yojson/test/pretty:
 ;; (alias
 ;;  (name runtest)
@@ -23,21 +24,26 @@
 ;;   (diff test.expected test.output)))
 
 (define (dune-alias->mibl ws pkg stanza)
-  (format #t "~A: ~A\n" (blue "dune-alias->mibl") stanza)
+  (if (or *debug-alias* *debugging*)
+      (format #t "~A: ~A\n" (blue "dune-alias->mibl") stanza))
   ;; (if-let ((alias-assoc (assoc :alias (cdr stanza))))
   (if (assoc-in '(:actions :cmd) (cdr stanza))
       (let ((alias (cadr alias-assoc))
             (cmd-ct (length (assoc-in* '(:actions :cmd) (cdr stanza))))
             ;;FIXME assuming one cmd
             (args (assoc-in '(:actions :cmd :args) (cdr stanza))))
-        (format #t "~A: ~A~%" (ured "ALIAS") alias)
-        (format #t "~A: ~A~%" (ured "cmd ct") cmd-ct)
-        (format #t "~A: ~A~%" (ured "args") args)
+        (if (or *debug-alias* *debugging*)
+            (begin
+              (format #t "~A: ~A~%" (ured "ALIAS") alias)
+              (format #t "~A: ~A~%" (ured "cmd ct") cmd-ct)
+              (format #t "~A: ~A~%" (ured "args") args)))
         ;; if :args contains executable, mark as :test
         (let ((tool-args (fold (lambda (arg accum)
-                                 (format #t "~A: ~A~%" (ured "arg") arg)
+                                 (if (or *debug-alias* *debugging*)
+                                     (format #t "~A: ~A~%" (ured "arg") arg))
                                  (let ((argstr (format #f "~A" arg)))
-                                   (format #t "~A: ~A~%" (ured "argstr") argstr)
+                                   (if (or *debug-alias* *debugging*)
+                                       (format #t "~A: ~A~%" (ured "argstr") argstr))
                                    ;; FIXME what about local sh scripts?
                                    (cond
                                     ((string-prefix? ":bin" argstr) (cons arg accum))
@@ -54,14 +60,16 @@
                                '() (cdr args))))
           (if tool-args
               (begin
-                (format #t "~A: ~A~%" (ured "found executable tool args") tool-args)
+                (if (or *debug-alias* *debugging*)
+                    (format #t "~A: ~A~%" (ured "found executable tool args") tool-args))
                 (if-let ((deps (assoc :deps (cdr stanza))))
                         (let ((tool-deps (assoc ::tools (cdr deps))))
                           (if tool-deps
                               ;; append tools
-                              (format #t "~A: ~A~%" (ured "tool-deps") tool-deps)
+                              (if (or *debug-alias* *debugging*)
+                                  (format #t "~A: ~A~%" (ured "tool-deps") tool-deps))
                               ;; add ::tools to (:deps ...)
-                              (let ((_ (format #t "~A: ~A~%" (ured "deps") deps))
+                              (let ((_ (if (or *debug-alias* *debugging*) (format #t "~A: ~A~%" (ured "deps") deps)))
                                     (deps-list (cdr deps))
                                     (tools (list (cons ::tools tool-args))))
                                 (set-cdr! deps (append tools deps-list)))
@@ -76,7 +84,8 @@
                 (set! -sh-test-id (+ 1 -sh-test-id))
                 )
               (begin
-                (format #t "~A: ~A~%" (ured "NO executable tools") tools)
+                (if (or *debug-alias* *debugging*)
+                    (format #t "~A: ~A~%" (ured "NO executable tools") tools))
                 (error 'FIXME "alias without run tool")))
           ))
       ;; else alias with no :actions

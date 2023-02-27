@@ -10,13 +10,16 @@
 ;; FIXME: returns #f for non-existent paths
 ;; use ->canonical-path instead
 (define (normalize-pkg-path path ws-root)
-  (format #t "~A: ~A~%" (blue "normalize-pkg-path") path)
+  (if *debugging*
+      (format #t "~A: ~A~%" (blue "normalize-pkg-path") path))
   ;; path is not in pkg-path dir
   (let ((rp (realpath path '())))
-    (format #t "f rel path: ~A\n" path)
-    (format #t "f realpath: ~A\n" rp)
-    (format #t "ws root: ~A\n" ws-root)
-    (format #t "pfx?: ~A\n" (string-prefix? ws-root rp))
+    (if *debugging*
+        (begin
+          (format #t "f rel path: ~A\n" path)
+          (format #t "f realpath: ~A\n" rp)
+          (format #t "ws root: ~A\n" ws-root)
+          (format #t "pfx?: ~A\n" (string-prefix? ws-root rp))))
     (if (string-prefix? ws-root rp)
         (string-drop rp (+ 1 (string-length ws-root)))
         "problem")))
@@ -58,9 +61,11 @@
 ;; rsrc-list: :signatures or :structures
 ;; may remove item from list
 (define (find-module-in-rsrc-list!? m-name tgt rsrc-list)
-  (format #t "~A: ~A~%" (blue "find-module-in-rsrc-list!?") m-name)
-  (format #t "~A: ~A~%" (white "tgt") tgt)
-  (format #t "~A: ~A~%" (white "singletons") rsrc-list)
+  (if *debugging*
+      (begin
+        (format #t "~A: ~A~%" (blue "find-module-in-rsrc-list!?") m-name)
+        (format #t "~A: ~A~%" (white "tgt") tgt)
+        (format #t "~A: ~A~%" (white "singletons") rsrc-list)))
   (if rsrc-list
       (let* ((rsrc-alists (cdr rsrc-list))
              (statics (assoc :static rsrc-alists))
@@ -68,26 +73,33 @@
              (fileset (if statics statics
                           (if dynamics dynamics
                               '()))))
-        (format #t "~A: ~A~%" (white "statics") statics)
-        (format #t "~A: ~A~%" (white "dynamics") dynamics)
+        (if *debugging*
+            (begin
+              (format #t "~A: ~A~%" (white "statics") statics)
+              (format #t "~A: ~A~%" (white "dynamics") dynamics)))
 
         (let ((match (find-if (lambda (sig)
-                                (format #t "~A: ~A~%" (green "sig") sig)
+                                (if *debugging*
+                                    (format #t "~A: ~A~%" (green "sig") sig))
                                 (equal? (format #f "~A" m-name)
                                         (format #f "~A" (car sig))))
                               (cdr fileset))))
-          (format #t "~A: ~A~%" (red "MATCH") match)
+          (if *debugging*
+              (format #t "~A: ~A~%" (red "MATCH") match))
           (if match
               ;; remove from pkg files, then return
               (begin
-                (format #t "~A: ~A from: ~A~%" (red "removing") match fileset)
+                (if *debugging*
+                    (format #t "~A: ~A from: ~A~%" (red "removing") match fileset))
                 (let ((new (dissoc (list (car match)) (cdr fileset))))
-                  (format #t "~A: ~A~%" (red "new fs") new)
+                  (if *debugging*
+                      (format #t "~A: ~A~%" (red "new fs") new))
                   (set-cdr! fileset new)
                   match))
 
               (let ((match (find-if (lambda (sig)
-                                      (format #t "dynamic ~A: ~A~%" (green "sig") sig)
+                                      (if *debugging*
+                                          (format #t "dynamic ~A: ~A~%" (green "sig") sig))
                                       #f)
                                     (if dynamics
                                         (cdr dynamics)
@@ -98,10 +110,12 @@
       #f))
 
 (define (-remove-from-pkg-files kind sig pkg)
-  (format #t "~A: ~A, ~A~%" (blue "-remove-from-pkg-files") kind sig)
+  (if *debugging*
+      (format #t "~A: ~A, ~A~%" (blue "-remove-from-pkg-files") kind sig))
   ;; (format #t "~A: ~A~%" (blue "pkg") pkg)
   (let ((fileset (assoc kind pkg)))
-    (format #t "~A: ~A~%" (cyan "fileset") fileset))
+    (if *debugging*
+        (format #t "~A: ~A~%" (cyan "fileset") fileset)))
   )
 
 ;; e.g. (cdr (:standard (symbol "\\") legacy_store_builder))

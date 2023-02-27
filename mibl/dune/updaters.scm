@@ -1,32 +1,42 @@
+(if *debugging*
+    (format #t "loading updaters.scm~%"))
+
 (define (update-filegroups-table! ws client-path pkg-path tgt pattern)
-  (format #t "~A path: ~A~%" (umagenta "update-filegroups-table!") pkg-path)
-  (format #t "~A: ~A~%" (green "client") client-path)
-  (format #t "~A: ~A~%" (green "tgt") tgt)
-  (format #t "~A: ~A~%" (green "pattern") pattern)
-  (format #t "~A: ~A~%" (green "ws") ws)
-  ;; (format #t "~A: ~A~%" (green "mibl tbl") -mibl-ws-table)
+  (if *debugging*
+      (begin
+        (format #t "~A path: ~A~%" (umagenta "update-filegroups-table!") pkg-path)
+        (format #t "~A: ~A~%" (green "client") client-path)
+        (format #t "~A: ~A~%" (green "tgt") tgt)
+        (format #t "~A: ~A~%" (green "pattern") pattern)
+        (format #t "~A: ~A~%" (green "ws") ws)
+        ;; (format #t "~A: ~A~%" (green "mibl tbl") -mibl-ws-table)
+        ))
 
   (let* ((-ws (if (keyword? ws) (assoc-val ws -mibl-ws-table) ws))
-         ;; (_ (format #t "~A: ~A~%" (uwhite "-ws") -ws))
+         ;; (_ (if *debugging* (format #t "~A: ~A~%" (uwhite "-ws") -ws)))
          (filegroups (car (assoc-val :filegroups -ws)))
-         (_ (format #t "filegroups tbl: ~A\n" filegroups))
+         (_ (if *debugging* (format #t "filegroups tbl: ~A\n" filegroups)))
          (patt-str (format #f "~A" pattern))
          (glob? (string-index patt-str (lambda (ch) (equal? ch #\*))))
          (fg-name (format #f "glob_~A" (string-replace patt-str "STAR" glob? (+ 1 glob?))))
          )
-    (format #t "~A: ~A~%" (bgcyan "fg-name") fg-name)
-
-    (format #t "adding ~A~A to filegroups tbl\n" pkg-path tgt)
+    (if *debugging*
+        (begin
+          (format #t "~A: ~A~%" (bgcyan "fg-name") fg-name)
+          (format #t "adding ~A~A to filegroups tbl\n" pkg-path tgt)))
 
     (let ((fgroups (hash-table-ref filegroups pkg-path)))
-      (format #t "~A: ~A~%" (red "fgroups") fgroups)
+      (if *debugging*
+          (format #t "~A: ~A~%" (red "fgroups") fgroups))
       (if fgroups
           (if-let ((same (assoc fg-name fgroups)))
                   (begin
-                    (format #t "~A: ~A~%" (bgred "same") same)
+                    (if *debugging*
+                        (format #t "~A: ~A~%" (bgred "same") same))
                     (alist-update-in! fgroups (list fg-name :clients)
                                       (lambda (old) (append old (list client-path))))
-                    (format #t "~A: ~A~%" (bgblue "updated") filegroups)
+                    (if *debugging*
+                        (format #t "~A: ~A~%" (bgblue "updated") filegroups))
                     ;; (error 'STOP "update-fgs")
                     ;; (hash-table-set! filegroups pkg-path
                     ;;                  (append
@@ -56,49 +66,59 @@
                                                `((:glob . ,pattern)
                                                  (:clients ,client-path))
                                                `((:file . ,pattern)))))))
-      (format #t "updated filegroups tbl: ~A\n" filegroups)
+      (if *debugging*
+          (format #t "updated filegroups tbl: ~A\n" filegroups))
       )))
 
 (define (-module-in-modules? m modules)
-  (format #t "~A: ~A~%" (ublue "-module-in-modules?") m)
+  (if *debugging*
+      (format #t "~A: ~A~%" (ublue "-module-in-modules?") m))
   (find-if (lambda (mod)
              (string=? (format #f "~A" m)
                      (format #f "~A" (car mod))))
            modules))
 
 (define (-normalize-pkg-files pkg)
-  (format #t "~A: ~A~%" (ublue "-normalize-pkg-files") (assoc-val :pkg-path pkg))
+  (if *debugging*
+      (format #t "~A: ~A~%" (ublue "-normalize-pkg-files") (assoc-val :pkg-path pkg)))
   (let ((pkg-modules (assoc-val :modules pkg))
         (pkg-structs (assoc :structures pkg))
         (pkg-sigs (assoc :signatures pkg)))
     (if pkg-modules
         (begin
-          (format #t "~A:~%" (cyan "pkg-modules"))
+          (if *debugging*
+              (format #t "~A:~%" (cyan "pkg-modules")))
           (for-each (lambda (m)
-                      (format #t "  ~A~%" m))
+                      (if *debugging*
+                          (format #t "  ~A~%" m)))
                     pkg-modules))
-          (format #t "~A: ~A~%" (cyan "pkg-modules") pkg-modules))
+        (if *debugging*
+            (format #t "~A: ~A~%" (cyan "pkg-modules") pkg-modules)))
 
     (if pkg-structs
         (let* ((statics (if-let ((statics (assoc-in '(:structures :static) pkg)))
                                 statics '(:static)))
                (dynamics (if-let ((dynamics (assoc-in '(:structures :dynamic) pkg)))
                                  dynamics '(:dynamic))))
-          (format #t "~A: ~A~%" (cyan "pstructs, static") statics)
-          (format #t "~A: ~A~%" (cyan "pstructs, dynamic") dynamics)
+          (if *debugging*
+              (begin
+                (format #t "~A: ~A~%" (cyan "pstructs, static") statics)
+                (format #t "~A: ~A~%" (cyan "pstructs, dynamic") dynamics)))
           (if pkg-modules
               (begin ;; twice, once for statics, once for dynamics
                 (let ((remainder
                        (filter (lambda (struct)
-                                 (format #t "~A: ~A~%" (uwhite "struct") struct)
+                                 (if *debugging*
+                                     (format #t "~A: ~A~%" (uwhite "struct") struct))
                                  (if-let ((x (-module-in-modules? (car struct) pkg-modules)))
                                          (begin
-                                           (format #t "~A: ~A~%"
-                                                   (uwhite "in modules?") x)
+                                           (if *debugging*
+                                               (format #t "~A: ~A~%" (uwhite "in modules?") x))
                                            #f)
                                          #t))
                                (cdr statics))))
-                  (format #t "~A: ~A~%" (ured "structs static remainder") remainder)
+                  (if *debugging*
+                      (format #t "~A: ~A~%" (ured "structs static remainder") remainder))
                   (if (null? remainder)
                       (dissoc! '(:structures :static) pkg)
                       (set-cdr! statics remainder))
@@ -106,15 +126,18 @@
                 ;; (format #t "~A~%" (bgmagenta "dynstructs"))
                 (let ((remainder
                        (filter (lambda (struct)
-                                 (format #t "~A: ~A~%" (uwhite "struct") struct)
+                                 (if *debugging*
+                                     (format #t "~A: ~A~%" (uwhite "struct") struct))
                                  (if-let ((x (-module-in-modules? (car struct) pkg-modules)))
                                          (begin
-                                           (format #t "~A: ~A~%"
-                                                   (uwhite "in modules?") x)
+                                           (if *debugging*
+                                               (format #t "~A: ~A~%"
+                                                       (uwhite "in modules?") x))
                                            #f)
                                          #t))
                                (cdr dynamics))))
-                (format #t "~A: ~A~%" (ured "structs dyn remainder") remainder)
+                  (if *debugging*
+                      (format #t "~A: ~A~%" (ured "structs dyn remainder") remainder))
                 (if (null? remainder)
                     (begin
                       ;; (dissoc! '(:structures :dynamic) pkg)
@@ -129,27 +152,32 @@
     ;;     (error 'STOP "nmani"))
 
     (if pkg-sigs
-        (let* ((_ (format #t "~A: ~A~%" (red "pkg-sigs") pkg-sigs))
+        (let* ((_ (if *debugging* (format #t "~A: ~A~%" (red "pkg-sigs") pkg-sigs)))
                (psigs (cdr pkg-sigs))
                (statics (if-let ((statics (assoc-val :static psigs)))
                                 statics '()))
                (dynamics (if-let ((dynamics (assoc-val :dynamic psigs)))
                                  dynamics '())))
-          (format #t "~A: ~A~%" (cyan "psigs, static") statics)
-          (format #t "~A: ~A~%" (cyan "psigs, dynamic") dynamics)
+          (if *debugging*
+              (begin
+                (format #t "~A: ~A~%" (cyan "psigs, static") statics)
+                (format #t "~A: ~A~%" (cyan "psigs, dynamic") dynamics)))
           (if pkg-modules
               (begin ;; twice, once for statics, once for dynamics
                 (let ((remainder
                        (filter (lambda (sig)
-                                 (format #t "~A: ~A~%" (uwhite "sig") sig)
+                                 (if *debugging*
+                                     (format #t "~A: ~A~%" (uwhite "sig") sig))
                                  (if-let ((x (-module-in-modules? (car sig) pkg-modules)))
                                          (begin
-                                           (format #t "~A: ~A~%"
-                                                   (uwhite "in modules?") x)
+                                           (if *debugging*
+                                               (format #t "~A: ~A~%"
+                                                       (uwhite "in modules?") x))
                                            #f)
                                          #t))
                                (concatenate statics dynamics))))
-                  (format #t "~A: ~A~%" (ured "sigs remainder") remainder)
+                  (if *debugging*
+                      (format #t "~A: ~A~%" (ured "sigs remainder") remainder))
                   (if (null? remainder)
                       (dissoc! '(:signatures) pkg)
                       (set-cdr! pkg-sigs remainder)))))))
@@ -178,7 +206,8 @@
 ;; where bar is generated.
 
 (define (normalize-manifests! ws)
-  (format #t "~A: ~A~%" (bgblue "normalize-manifests") ws)
+  (if *debugging*
+      (format #t "~A: ~A~%" (bgblue "normalize-manifests") ws))
   (let* ((@ws (assoc-val ws -mibl-ws-table))
          (pkgs (car (assoc-val :pkgs @ws))))
     (for-each (lambda (kv)
@@ -199,26 +228,30 @@
                   ;; for each aggregate stanza, resolve the (modules) fld
                   (if stanzas
                       (for-each (lambda (stanza)
-                                  (format #t "~A: ~A~%" (blue "stanza") stanza)
+                                  (if *debugging*
+                                      (format #t "~A: ~A~%" (blue "stanza") stanza))
                                   (case (car stanza)
                                     ((:ns-archive
                                       :archive
                                       :ns-library
                                       :library)
-                                     (format #t "~A: ~A~%" (ured "aggregate")
-                                             (assoc-val :privname (cdr stanza)))
+                                     (if *debugging*
+                                         (format #t "~A: ~A~%" (ured "aggregate")
+                                                 (assoc-val :privname (cdr stanza))))
                                      (let* ((stanza-alist (cdr stanza))
-                                            (_ (format #t "~A: ~A~%" (ured "stanza-alist") stanza-alist))
+                                            (_ (if *debugging* (format #t "~A: ~A~%" (ured "stanza-alist") stanza-alist)))
                                             (old-manifest (assoc ':manifest stanza-alist))
                                             (mmods (assoc-in '(:manifest :raw) stanza-alist))
                                             (manifest
                                              (get-manifest pkg :lib #t (cons (cadr mmods) stanza-alist)) ;; (cadr mmods))
                                              ;;(x-get-manifest pkg #t stanza-alist (cadr mmods))
                                              ))
-                                       (format #t "~A: ~A~%" (ured "structures") (assoc :structures stanza-alist))
-                                       (format #t "~A: ~A~%" (uyellow "mmods") mmods)
-                                       (format #t "~A: ~A~%" (uyellow "old manifest") old-manifest)
-                                       (format #t "~A: ~A~%" (uyellow "manifest") manifest)
+                                       (if *debugging*
+                                           (begin
+                                             (format #t "~A: ~A~%" (ured "structures") (assoc :structures stanza-alist))
+                                             (format #t "~A: ~A~%" (uyellow "mmods") mmods)
+                                             (format #t "~A: ~A~%" (uyellow "old manifest") old-manifest)
+                                             (format #t "~A: ~A~%" (uyellow "manifest") manifest)))
                                        (set-cdr! old-manifest (cdr manifest))
                                        ))
 
@@ -237,8 +270,9 @@
                                 stanzas)
                           )))
               pkgs)
-    (format #t "~A: ~A~%" (bgblue "//normalize-manifests") ws)
-      ))
+    (if *debugging*
+        (format #t "~A: ~A~%" (bgblue "//normalize-manifests") ws))
+    ))
 
 ;; normalize-rule-deps: in some rules the same resource may end up as both tool and dep, e.g. test.exe in yojson/test/pretty:
 ;; (rule
@@ -251,52 +285,60 @@
 
 ;; task: remove tool from deps list
 (define (normalize-rule-deps! ws)
-  (format #t "~A: ~A~%" (bgblue "normalize-rule-deps!") ws)
+  (if *debugging*
+      (format #t "~A: ~A~%" (bgblue "normalize-rule-deps!") ws))
   (let* ((@ws (assoc-val ws -mibl-ws-table))
          (pkgs (car (assoc-val :pkgs @ws))))
     (for-each (lambda (kv)
                 (let* ((pkg-key (car kv))
                        (pkg (cdr kv))
                        (stanzas (assoc-val :dune (cdr kv))))
-                  (format #t "~A: ~A~%" (bgcyan "pkg key") pkg-key)
+                  (if *debugging*
+                      (format #t "~A: ~A~%" (bgcyan "pkg key") pkg-key))
 
                   (if stanzas
                       (for-each (lambda (stanza)
                                   ;; (format #t "~A: ~A~%" (blue "stanza") stanza)
                                   (case (car stanza)
                                     ((:rule)
-                                     (format #t "~A: ~A~%" (ured "rule stanza") stanza)
+                                     (if *debugging*
+                                         (format #t "~A: ~A~%" (ured "rule stanza") stanza))
                                      (let* ((stanza-alist (cdr stanza))
                                             (all-deps (assoc-val ':deps stanza-alist))
-                                            (_ (format #t "~A: ~A~%" (ured "all deps") all-deps))
+                                            (_ (if *debugging* (format #t "~A: ~A~%" (ured "all deps") all-deps)))
                                             (tools (assoc-val '::tools all-deps))
-                                            (_ (format #t "~A: ~A~%" (ured "tools") tools))
+                                            (_ (if *debugging* (format #t "~A: ~A~%" (ured "tools") tools)))
                                             (deps (cdr all-deps))
-                                            (_ (format #t "~A: ~A~%" (ured "deps") deps)))
+                                            (_ (if *debugging* (format #t "~A: ~A~%" (ured "deps") deps))))
                                        (if tools
                                            (for-each (lambda (tool)
-                                                       (format #t "~A: ~A~%" (red "tool key") (car tool))
+                                                       (if *debugging*
+                                                           (format #t "~A: ~A~%" (red "tool key") (car tool)))
                                                        ;;FIXME? we expect the entire list to match, e.g.
                                                        ;; (:./test.exe (:pkg . "test/pretty") (:tgt . "test.exe"))
                                                        ;; but what if only the key matches?
                                                        (if (member tool deps)
                                                            (let ((filtered-deps (dissoc (list (car tool)) deps)))
-                                                             (format #t "~A: ~A~%" (ured "filtered") filtered-deps)
+                                                             (if *debugging*
+                                                                 (format #t "~A: ~A~%" (ured "filtered") filtered-deps))
                                                              (set-cdr! all-deps filtered-deps))
-                                                           (format #t "~A: ~A~%" (bgred "MISS") tool))
+                                                           (if *debugging*
+                                                               (format #t "~A: ~A~%" (bgred "MISS") tool)))
                                                        )
                                                      tools))
-                                       (format #t "~A: ~A~%" (bgred "updated stanza") stanza)
+                                       (if *debugging*
+                                           (format #t "~A: ~A~%" (bgred "updated stanza") stanza))
                                        (values)))
                                     (else)))
                                 stanzas))))
               pkgs)
-    (format #t "~A: ~A~%" (bgblue "//normalize-manifests") ws)
+    (if *debugging*
+        (format #t "~A: ~A~%" (bgblue "//normalize-manifests") ws))
     ))
 
   ;; (let* ((@ws (assoc-val ws -mibl-ws-table))
   ;;        (ws-path (car (assoc-val :path @ws)))
-  ;;        (_ (format #t "~A: ~A~%" (blue "ws-path") ws-path))
+  ;;        (_ (if *debugging* (format #t "~A: ~A~%" (blue "ws-path") ws-path))
   ;;        (pkgs (car (assoc-val :pkgs @ws)))
   ;;        (filegroups (car (assoc-val :filegroups @ws))))
   ;;   (format #t "~A: ~A~%" (yellow "fg-table") filegroups)
@@ -331,20 +373,24 @@
   ;;             filegroups)))
 
 (define (add-filegroups-to-pkgs ws)
-  (format #t "~A: ~A~%" (blue "-add-filegroups-to-pkgs") ws)
+  (if *debugging*
+      (format #t "~A: ~A~%" (blue "-add-filegroups-to-pkgs") ws))
   (let* ((@ws (assoc-val ws -mibl-ws-table))
          (ws-path (car (assoc-val :path @ws)))
-         (_ (format #t "~A: ~A~%" (blue "ws-path") ws-path))
+         (_ (if *debugging* (format #t "~A: ~A~%" (blue "ws-path") ws-path)))
          (pkgs (car (assoc-val :pkgs @ws)))
          (filegroups (car (assoc-val :filegroups @ws))))
-    (format #t "~A: ~A~%" (yellow "fg-table") filegroups)
+    (if *debugging*
+        (format #t "~A: ~A~%" (yellow "fg-table") filegroups))
     (for-each (lambda (kv)
                 (let* ((fg-path (car kv))
                        (fg-key (car kv))
                        (fg-pkg (hash-table-ref pkgs fg-key)))
-                  (format #t "\n~A: ~A~%" (yellow "fg-path") fg-path)
-                  (format #t "~A: ~A~%" (yellow "fg-key") fg-key)
-                  (format #t "~A: ~A~%" (yellow "pkg") fg-pkg)
+                  (if *debugging*
+                      (begin
+                        (format #t "\n~A: ~A~%" (yellow "fg-path") fg-path)
+                        (format #t "~A: ~A~%" (yellow "fg-key") fg-key)
+                        (format #t "~A: ~A~%" (yellow "pkg") fg-pkg)))
                   ;; WARNING: fg-pkg will be #f if it is not in scope
                   ;; e.g. its a globbed super-dir
                   (if fg-pkg
@@ -373,8 +419,8 @@
     ;;                          (hash-table-set! pkgs (car kv) mibl-pkg)
     ;;                          mibl-pkg))
     ;;                      pkgs)))
-    ;;     ;; (_ (format #t "~A: ~A~%" (blue "mpkg-alist")
-    ;;     ;;            mpkg-alist))
+    ;;     ;; (_ (if *debugging* (format #t "~A: ~A~%" (blue "mpkg-alist")
+    ;;     ;;            mpkg-alist)))
     ;;     ;; (_ (for-each (lambda (k)
     ;;     ;;                (format #t "~A: ~A~%" (blue "pkg") k))
     ;;     ;;              (sort! (hash-table-keys pkgs) string<?)))
@@ -383,21 +429,25 @@
 
 
 (define (update-tagged-label-list! filename tllist pkg)
-  (format #t "~A: ~A ~A~%" (ublue "update-tagged-label-list!")
-          filename tllist)
+  (if *debugging*
+      (format #t "~A: ~A ~A~%" (ublue "update-tagged-label-list!")
+          filename tllist))
   (let* ((fname (format #f "~A" filename))
          (key (string->keyword fname)))
-    (format #t "~A: ~A~%" (uwhite "tllist before") tllist)
+    (if *debugging*
+        (format #t "~A: ~A~%" (uwhite "tllist before") tllist))
     (set-cdr! tllist
               (cons (cons key
                           (list (cons :pkg (car (assoc-val :pkg-path pkg)))
                                 (cons :tgt fname)))
                     (cdr tllist)))
-    (format #t "~A: ~A~%" (uwhite "tllist after") tllist)
+    (if *debugging*
+        (format #t "~A: ~A~%" (uwhite "tllist after") tllist))
     key))
 
 (define (update-pkg-files-with-struct! pkg tgt)
-  (format #t "~A: ~A~%" (ublue "update-pkg-files-with-struct!") tgt)
+  (if *debugging*
+      (format #t "~A: ~A~%" (ublue "update-pkg-files-with-struct!") tgt))
   ;; (format #t "~A: ~A~%" (blue "pkg") pkg)
   (flush-output-port)
   ;; if we already have corresponding sig, move to :modules
@@ -406,29 +456,32 @@
          ;; m-assoc == (A (:ml "a.ml"))
          (m-name (car m-assoc))
          (pr (cadr m-assoc))
-         (_ (format #t "~A: ~A\n" (red "PR") pr))
+         (_ (if *debugging* (format #t "~A: ~A\n" (red "PR") pr)))
          ;; (sigs (assoc-val :signatures pkg))
-         ;; (_ (format #t "~A: ~A~%" (cyan "sigs2") sigs))
+         ;; (_ (if *debugging* (format #t "~A: ~A~%" (cyan "sigs2") sigs)))
          (sigs (assoc :signatures pkg))
-         (_ (format #t "~A: ~A~%" (cyan "sigs") sigs))
+         (_ (if *debugging* (format #t "~A: ~A~%" (cyan "sigs") sigs)))
          ;; removes matching sig from :signatures
          (matching-sig (if sigs
                            (if (cdr sigs)
                                (find-module-in-rsrc-list!? m-name tgt sigs)
                                #f)
                            #f))
-         (_ (format #t "~A: ~A~%" (cyan "found sig?") matching-sig))
+         (_ (if *debugging* (format #t "~A: ~A~%" (cyan "found sig?") matching-sig)))
          )
 
     ;; FIXME: check to see if already in pkg-modules
     (if matching-sig
         (begin ;; we know this file is not in :modules since it was in sigs
-          (format #t "~A: ~A~%" (red "updating :modules") m-name)
+          (if *debugging*
+              (format #t "~A: ~A~%" (red "updating :modules") m-name))
           (alist-update-in! pkg `(:modules ,m-name)
                             (lambda (old)
-                              (format #t "struct Module OLD: ~A\n" old)
-                              (format #t "adding: ~A\n" matching-sig)
-                              (format #t " pr: ~A\n" pr)
+                              (if *debugging*
+                                  (begin
+                                    (format #t "struct Module OLD: ~A\n" old)
+                                    (format #t "adding: ~A\n" matching-sig)
+                                    (format #t " pr: ~A\n" pr)))
                               (if (null? old)
                                   (cons pr
                                         (list (cons :mli (cdr matching-sig))))
@@ -441,15 +494,18 @@
                                    )))))
 
         ;; else no sig, so update :structures
-        (let* ((_ (format #t "~A: ~A~%" (yellow "updating :structures")
-                          m-name))
+        (let* ((_ (if *debugging* (format #t "~A: ~A~%" (yellow "updating :structures")
+                          m-name)))
                (dynamics (assoc-in '(:structures :dynamic) pkg))
                )
-          (format #t "~A: ~A~%" (white "(:structures :dynamic) : ") dynamics)
+          (if *debugging*
+              (format #t "~A: ~A~%" (white "(:structures :dynamic) : ") dynamics))
           (alist-update-in! pkg `(:structures :dynamic)
                                 (lambda (old)
-                                  (format #t "structures OLD: ~A\n" old)
-                                  (format #t "adding: ~A\n" pr)
+                                  (if *debugging*
+                                      (begin
+                                        (format #t "structures OLD: ~A\n" old)
+                                        (format #t "adding: ~A\n" pr)))
                                   (if (null? old)
                                       (list
                                        (cons m-name (cdr pr)))
@@ -463,32 +519,37 @@
                                        ;;(filename->module-assoc tgt)
                                        ))))
           )))
-  (format #t "~A: ~A~%" (bgblue "pkg w/updated structs") pkg)
+  (if *debugging*
+      (format #t "~A: ~A~%" (bgblue "pkg w/updated structs") pkg))
   pkg)
 
 (define (-update-pkg-files-with-sig! pkg tgt)
-  (format #t "~A: ~A~%" (yellow "-update-pkg-files-with-sig!") tgt)
+  (if *debugging*
+      (format #t "~A: ~A~%" (yellow "-update-pkg-files-with-sig!") tgt))
   ;; if we already have corresponding struct, move to :modules
   ;; else update :signatures
   (let* ((m-assoc (filename->module-assoc tgt))
          ;; m-assoc == (A (:ml "a.ml"))
          (m-name (car m-assoc))
          (pr (cadr m-assoc))
-         (_ (format #t "~A: ~A\n" (red "PR") pr))
+         (_ (if *debugging* (format #t "~A: ~A\n" (red "PR") pr)))
          (structs (assoc :structures pkg))
-         (_ (format #t "~A: ~A~%" (cyan "structs") structs))
+         (_ (if *debugging* (format #t "~A: ~A~%" (cyan "structs") structs)))
          ;; removes matching struct from :structnatures
          (matching-struct (find-module-in-rsrc-list!? m-name tgt structs))
-         (_ (format #t "~A: ~A~%" (cyan "found struct?") matching-struct))
+         (_ (if *debugging* (format #t "~A: ~A~%" (cyan "found struct?") matching-struct)))
          )
     (if matching-struct
         (begin ;; we know this file is not in :modules since it was in structs
-          (format #t "~A: ~A~%" (red "updating :modules") m-name)
+          (if *debugging*
+              (format #t "~A: ~A~%" (red "updating :modules") m-name))
           (alist-update-in! pkg `(:modules ,m-name)
                             (lambda (old)
-                              (format #t "sig Module OLD: ~A\n" old)
-                              (format #t "adding: ~A\n" matching-struct)
-                              (format #t " pr: ~A\n" pr)
+                              (if *debugging*
+                                  (begin
+                                    (format #t "sig Module OLD: ~A\n" old)
+                                    (format #t "adding: ~A\n" matching-struct)
+                                    (format #t " pr: ~A\n" pr)))
                               (if (null? old)
                                   (cons pr
                                         (list (cons :mli (cdr matching-struct))))
@@ -503,11 +564,14 @@
         (let* ((s-assoc (assoc-in '(:signatures :dynamic) pkg))
                ;; (structures (if s-assoc (append (cadr s-assoc) '(Foo . bar)) '()))
                )
-          (format #t "~A: ~A~%" (yellow "UPDATING (:signatures :dynamic) : ") s-assoc)
+          (if *debugging*
+              (format #t "~A: ~A~%" (yellow "UPDATING (:signatures :dynamic) : ") s-assoc))
           (alist-update-in! pkg `(:signatures :dynamic)
                             (lambda (old)
-                              (format #t "signatures OLD: ~A\n" old)
-                              (format #t "adding: ~A\n" pr)
+                              (if *debugging*
+                                  (begin
+                                    (format #t "signatures OLD: ~A\n" old)
+                                    (format #t "adding: ~A\n" pr)))
                               (if (null? old)
                                   (list
                                    (cons m-name (cdr pr)))
@@ -525,19 +589,23 @@
 ;; principal-fname: fileame w/o extension
 ;; updates :modules with generated files
 (define (update-pkg-modules-with-module! pkg principal-fname)
-  (format #t "~A: ~A~%" (ublue "update-pkg-modules-with-module") principal-fname)
+  (if *debugging*
+      (format #t "~A: ~A~%" (ublue "update-pkg-modules-with-module") principal-fname))
   (let* ((pkg-modules (assoc :modules pkg))
-         (_ (format #t "~A: ~A~%" (uyellow "pkg-modules") pkg-modules))
+         (_ (if *debugging* (format #t "~A: ~A~%" (uyellow "pkg-modules") pkg-modules)))
          (m-assoc (list (list (normalize-module-name principal-fname)
                               (cons :ml_ (string->symbol (format #f "~A.ml" principal-fname)))
                               (cons :mli_ (string->symbol (format #f "~A.mli" principal-fname)))))))
-    (format #t "~A: ~A~%" (red "updating :modules") m-assoc)
+    (if *debugging*
+        (format #t "~A: ~A~%" (red "updating :modules") m-assoc))
     (if pkg-modules
         (set-cdr! pkg-modules (append (cdr pkg-modules) m-assoc))
         (alist-update-in! pkg `(:modules)
                           (lambda (old)
-                            (format #t ":modules OLD: ~A\n" old)
-                            (format #t "adding: ~A\n" m-assoc)
+                            (if *debugging*
+                                (begin
+                                  (format #t ":modules OLD: ~A\n" old)
+                                  (format #t "adding: ~A\n" m-assoc)))
                             (if (null? old)
                                 m-assoc
                                 (append
@@ -545,7 +613,8 @@
         ;; (set! pkg (append pkg (cons :modules m-assoc))))))
 
 (define (-partition-tgts tgts)
-  (format #t "~A: ~A~%" (ublue "-partition-tgts") tgts)
+  (if *debugging*
+      (format #t "~A: ~A~%" (ublue "-partition-tgts") tgts))
   (let recur ((tgts tgts)
               (module-tgts '())
               (sig-tgts    '())
@@ -603,8 +672,10 @@
 (define update-pkg-files!
   (let ((+documentation+ "INTERNAL. Add tgts to :modules (or :files etc) fld of pkg."))
     (lambda (pkg tgts)
-      (format #t "~%~A: ~A~%" (bgblue "update-pkg-files!") tgts)
-      (format #t "  package: ~A\n" (assoc-val :pkg-path pkg))
+      (if *debugging*
+          (begin
+            (format #t "~%~A: ~A~%" (bgblue "update-pkg-files!") tgts)
+            (format #t "  package: ~A\n" (assoc-val :pkg-path pkg))))
       ;; (format #t "  targets: ~A\n" tgts)
       ;; tgts may contain ml/mli pairs, so
       ;; step 1: partition tgts into module-tgts, struct-tgts, sig-tgts
@@ -725,9 +796,11 @@
 ;; javascript: emit 2, one with sfx .js, one without
 
 (define (update-exports-table! ws pfx modes nm pkg-path tgt)
-  (format #t "~A: ~A , ~A\n" (ublue "update-exports-table!") pfx nm)
-  (format #t "~A: (:pkg . ~A) (:tgt . ~A)~%" (uwhite "spec") pkg-path tgt)
-  (format #t "~A: ~A\n" (ublue "modes") modes)
+  (if *debugging*
+      (begin
+        (format #t "~A: ~A , ~A\n" (ublue "update-exports-table!") pfx nm)
+        (format #t "~A: (:pkg . ~A) (:tgt . ~A)~%" (uwhite "spec") pkg-path tgt)
+        (format #t "~A: ~A\n" (ublue "modes") modes)))
   (let* ((exports (car (assoc-val :exports
                                   (assoc-val ws -mibl-ws-table))))
          (key (case pfx
@@ -752,7 +825,8 @@
                                   (format #f "~A" tgt)))))))
     ;; (format #t "exports tbl: ~A\n" exports)
 
-    (format #t "~A ~A => ~A~%" (bgred "adding to exports") key spec)
+    (if *debugging*
+        (format #t "~A ~A => ~A~%" (bgred "adding to exports") key spec))
     (if exe
         (begin
           (hash-table-set! exports tgt spec)
@@ -833,57 +907,71 @@
     ))
 
 (define (update-exports-table-with-targets! ws targets pkg-path)
-  (format #t "~A: ~A~%" (magenta "update-exports-table-with-targets!") targets)
+  (if *debugging*
+      (format #t "~A: ~A~%" (magenta "update-exports-table-with-targets!") targets))
   (if targets
       (for-each (lambda (target)
-              (format #t "~A: ~A~%" (red "target") target)
-              (let* ((pkg-tgt (cdr target))
-                     (pkg (assoc-val :pkg pkg-tgt))
-                     (tgt (assoc-val :tgt pkg-tgt)))
-                (format #t "~A: ~A~%" (magenta "pkg") pkg)
-                (format #t "~A: ~A~%" (magenta "tgt") tgt)
+                  (if *debugging*
+                      (format #t "~A: ~A~%" (red "target") target))
+                  (let* ((pkg-tgt (cdr target))
+                         (pkg (assoc-val :pkg pkg-tgt))
+                         (tgt (assoc-val :tgt pkg-tgt)))
+                    (if *debugging*
+                        (begin
+                          (format #t "~A: ~A~%" (magenta "pkg") pkg)
+                          (format #t "~A: ~A~%" (magenta "tgt") tgt)))
 
-                (update-exports-table! ws :FIXME :FIXME-MODES tgt pkg)
+                    (update-exports-table! ws :FIXME :FIXME-MODES tgt pkg)
 
-               ;; (case (car target)
-                ;;   ((::)
-                ;;    (update-exports-table! ws :_ (cadr target) pkg-path))
+                    ;; (case (car target)
+                    ;;   ((::)
+                    ;;    (update-exports-table! ws :_ (cadr target) pkg-path))
 
-                ;;   ((:_)
-                ;;    (error 'fixme "unhandled :_ target"))
+                    ;;   ((:_)
+                    ;;    (error 'fixme "unhandled :_ target"))
 
-                ;;   (else
-                ;;    (if (list? (cadr target))
-                ;;        ;; (:foo.sh (:pkg "foo/bar") (:tgt "foo.sh"))
-                ;;        (error 'fixme (format #f "~A" "unhandled  target"))
-                ;;        ;; else (:foo.sh "foo.sh")
-                ;;        (update-exports-table! ws :_ (cadr target) pkg-path)))
-                ;;   )
-                ))
-            (cdr targets))))
+                    ;;   (else
+                    ;;    (if (list? (cadr target))
+                    ;;        ;; (:foo.sh (:pkg "foo/bar") (:tgt "foo.sh"))
+                    ;;        (error 'fixme (format #f "~A" "unhandled  target"))
+                    ;;        ;; else (:foo.sh "foo.sh")
+                    ;;        (update-exports-table! ws :_ (cadr target) pkg-path)))
+                    ;;   )
+                    ))
+                (cdr targets))))
 
 (define (update-stanza-deps pkg fname mdeps)
-  (format #t "~A: ~A~%" (ublue "update-stanza-deps") (assoc-val :pkg-path pkg))
-  (format #t "~A: ~A~%" (blue "pkg") pkg)
-  (format #t "~A: ~A~%" (blue "fname") fname)
-  (format #t "~A: ~A~%" (blue "mdeps") mdeps)
+  (if *debugging*
+      (begin
+        (format #t "~A: ~A~%" (ublue "update-stanza-deps") (assoc-val :pkg-path pkg))
+        (format #t "~A: ~A~%" (blue "pkg") pkg)
+        (format #t "~A: ~A~%" (blue "fname") fname)
+        (format #t "~A: ~A~%" (blue "mdeps") mdeps)))
   (let ((mname (filename->module-name fname)))
-    (format #t "~A: ~A~%" (blue "mname") mname)
+    (if *debugging*
+        (format #t "~A: ~A~%" (blue "mname") mname))
     (for-each (lambda (stanza)
                 (case (car stanza)
                   ((:exports-files))
                   (else
-                   (format #t "~A: ~A~%" (ucyan "stanza") stanza)
+                   (if *debugging*
+                       (format #t "~A: ~A~%" (ucyan "stanza") stanza))
                    (let ((compile-deps (assoc-in '(:compile :manifest :modules) (cdr stanza))))
-                     (format #t "~A: ~A~%" (cyan "compile-deps (before)") compile-deps)
+                     (if *debugging*
+                         (format #t "~A: ~A~%" (cyan "compile-deps (before)") compile-deps))
                      (if compile-deps
                          (if (member mname (cdr compile-deps))
                              (begin
-                               (format #t "~A ~A to :compile :manifest ~A~%" (bgcyan "adding") mdeps compile-deps)
+                               (if *debugging*
+                                   (format #t "~A ~A to :compile :manifest ~A~%" (bgcyan "adding") mdeps compile-deps))
                                (set-cdr! compile-deps
                                          (remove-duplicates ;; don't add if its already there
                                           (append (cdr compile-deps)
                                                   mdeps)))
-                               (format #t "~A: ~A~%" (cyan "compile-deps (after)") compile-deps)))))
+                               (if *debugging*
+                                   (format #t "~A: ~A~%" (cyan "compile-deps (after)") compile-deps))))))
                          )))
                 (assoc-val :dune pkg))))
+
+(if *debugging*
+    (format #t "loaded updaters.scm~%"))

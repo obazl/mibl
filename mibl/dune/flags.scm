@@ -1,3 +1,5 @@
+(if *debugging*
+    (format #t "loading: mibl/dune/flags.scm\n"))
 
 ;; WARNING: in principle we could see '(flags (:standard \ ...))'.
 ;; Haven't seen it in the wild, but we have seen:
@@ -10,7 +12,8 @@
 
 ;; split opts into boolean flags and (opt arg) pairs
 (define (split-opts opts)
-  (format #t "~A: ~A\n" (ublue "split-opts") opts)
+  (if *debugging*
+      (format #t "~A: ~A\n" (ublue "split-opts") opts))
   ;; assumption: :standard has been removed
   ;; cases: arg is list or not: (flags (a b ...)) v. (flags a b ...)
   ;; case: embedded list, e.g. (flags a (b c) ...)
@@ -22,8 +25,10 @@
               (options '())
               (flags '())
               (orphans '()))
-    (format #t "~A: ~A\n" (green "opts") opts)
-    (format #t "~A: ~A\n" (green "ostack") ostack)
+    (if *debugging*
+        (begin
+          (format #t "~A: ~A\n" (green "opts") opts)
+          (format #t "~A: ~A\n" (green "ostack") ostack)))
     (if (null? opts)
         (if (null? ostack)
             (values options flags (reverse orphans))
@@ -39,7 +44,8 @@
           (if (number? opt)
               (if (null? ostack)
                   (begin
-                    (format #t "WARNING: numeric opt ~A without predecing optname\n" opt)
+                    (if *debugging*
+                        (format #t "WARNING: numeric opt ~A without predecing optname\n" opt))
                     (recur (cdr opts)
                            ostack options flags (cons opt orphans)))
                   (recur (cdr opts) '()
@@ -51,19 +57,22 @@
                              (cons opt ostack) options flags orphans)
                       ;; prev must be a flag, new goes on ostack
                       (begin
-                        (format #t "~A: current: ~A, prev: ~A~%"
-                                (bgred "hyphen prev") opt (car ostack))
+                        (if *debugging*
+                            (format #t "~A: current: ~A, prev: ~A~%"
+                                (bgred "hyphen prev") opt (car ostack)))
                         ;; special case: dashed warning nbrs following -w, e.g. -w -27
                         (if (or (equal? (car ostack) "-w")
                                 (string-prefix? "-" (format #f (car ostack))))
                             ;; current is arg to prev -<opt>
                             (begin
-                              (format #t "~A~%" (red "XXXXXXXXXXXXXXXX"))
-                              (format #t "~A: ~A~%" (red "ostack") ostack)
-                              (format #t "~A: ~A~%" (red "options") options)
-                              (format #t "~A: ~A~%" (red "flags") flags)
-                              (format #t "~A: ~A~%" (red "orphans") orphans)
-                              (format #t "~A: ~A~%" (red "opts") opts)
+                              (if *debugging*
+                                  (begin
+                                    (format #t "~A~%" (red "XXXXXXXXXXXXXXXX"))
+                                    (format #t "~A: ~A~%" (red "ostack") ostack)
+                                    (format #t "~A: ~A~%" (red "options") options)
+                                    (format #t "~A: ~A~%" (red "flags") flags)
+                                    (format #t "~A: ~A~%" (red "orphans") orphans)
+                                    (format #t "~A: ~A~%" (red "opts") opts)))
                               (let ((prev (car ostack)))
                                 (recur (cdr opts)
                                        (cons opt (cdr ostack)) ;; new opt replaces prev on stack
@@ -72,7 +81,8 @@
                                        orphans)))
                             ;; else prev is flag, push current to ostack
                             (begin
-                              (format #t "~A~%" (green "ZZZZZZZZZZZZZZZZ"))
+                              (if *debugging*
+                                  (format #t "~A~%" (green "ZZZZZZZZZZZZZZZZ")))
                               (recur (cdr opts)
                                      (list opt) ;; ostack
                                      options
@@ -88,9 +98,10 @@
                             (recur '() ostack options flags
                                    (append orphans (cdr opts))))
                           (begin
-                            (format #t
+                            (if *debugging*
+                                (format #t
                                     "WARNING: value ~A without preceding -opt\n"
-                                    opt)
+                                    opt))
                             ;; (format #t "type: ~A\n" (type-of opt))
                             (recur (cdr opts) ostack options flags
                                    (cons opt orphans))))
@@ -156,7 +167,8 @@
     (values link-std flags)))
 
 (define (normalize-stanza-fld-flags flags kind)
-  (format #t "~A: ~A\n" (ublue "normalize-stanza-fld-flags") flags)
+  (if *debugging*
+      (format #t "~A: ~A\n" (ublue "normalize-stanza-fld-flags") flags))
   (if flags
       ;; (let* ((flags (if (list? (cadr flags))
       ;;                   (cadr flags)
@@ -249,5 +261,6 @@
         ;; else no flags
         (values '() '() '() '())))
 
-;; (format #t "loaded: mibl/dune/flags.scm\n")
+(if *debugging*
+    (format #t "loaded: mibl/dune/flags.scm\n"))
 

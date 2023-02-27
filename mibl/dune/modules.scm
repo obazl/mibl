@@ -1,12 +1,15 @@
-;; (format #t "loading modules.scm\n")
+(if *debugging*
+    (format #t "loading modules.scm\n"))
 
 ;; mibl/dune/modules.scm
 
 ;;(define (  get-manifest pkg kind wrapped? stanza-alist) ;;  deps
 (define (x-get-manifest pkg kind wrapped? stanza-alist spec) ;;  deps
-  (format #t "~A: ~A\n" (ublue "x-get-manifest") stanza-alist)
-  ;; (format #t "~A: ~A\n" (uwhite "pkg") pkg)
-  (format #t "~A: ~A\n" (blue "spec") spec)
+  (if *debugging*
+      (begin
+        (format #t "~A: ~A\n" (ublue "x-get-manifest") stanza-alist)
+        ;; (format #t "~A: ~A\n" (uwhite "pkg") pkg)
+        (format #t "~A: ~A\n" (blue "spec") spec)))
   ;; (if deps
   (let* ((submods+sigs-list
           (modules-fld->submodules-fld kind
@@ -26,16 +29,19 @@
                                 (cdr submods+sigs-list)
                                 ;; (sort! (cdr submods+sigs-list) sym<?)
                                 submods+sigs-list)))
-    (format #t "~A: ~A\n" (uwhite "submods+sigs-list") submods+sigs-list)
+    (if *debugging*
+        (format #t "~A: ~A\n" (uwhite "submods+sigs-list") submods+sigs-list))
     (if (null? submods+sigs-list)
         '()
         (cons :manifest
               (remove () submods+sigs-list)))))
 
 (define (get-manifest pkg kind wrapped? stanza-alist) ;;  deps
-  (format #t "~A: ~A\n" (ublue "get-manifest") stanza-alist)
-  (format #t "~A: ~A\n" "pkg" pkg)
-  (format #t "~A: ~A\n" "kind" kind)
+  (if *debugging*
+      (begin
+        (format #t "~A: ~A\n" (ublue "get-manifest") stanza-alist)
+        (format #t "~A: ~A\n" "pkg" pkg)
+        (format #t "~A: ~A\n" "kind" kind)))
   ;; (if deps
   (let* ((submods+sigs-list
           (modules-fld->submodules-fld
@@ -55,7 +61,8 @@
                                 (cdr submods+sigs-list)
                                 ;; (cdr submods+sigs-list)
                                 submods+sigs-list)))
-    (format #t "~A: ~A\n" (uwhite "submods+sigs-list") submods+sigs-list)
+    (if *debugging*
+        (format #t "~A: ~A\n" (uwhite "submods+sigs-list") submods+sigs-list))
     (if (null? submods+sigs-list)
         '()
         (cons :manifest
@@ -67,7 +74,8 @@
 
 ;; only used for generated files, so returns :ml_, :mli_
 (define (filename->module-assoc filename)
-  (format #t "~A: ~A\n" (ublue "filename->module-assoc") filename)
+  (if *debugging*
+      (format #t "~A: ~A\n" (ublue "filename->module-assoc") filename))
   (let* ((ext (filename-extension filename))
          (pname (principal-name filename))
          (mname (normalize-module-name pname)))
@@ -111,7 +119,8 @@
   (let ((+documentation+ "Returns module names from modules-assoc, which has the form ((:static (A (:ml a.ml) (:mli a.mli)...) (:dynamic ...))")
         (+signature+ '(get-module-names modules-alist)))
     (lambda (modules-alist)
-      (format #t "~A: ~A\n" (blue "get-module-names") modules-alist)
+      (if *debugging*
+          (format #t "~A: ~A\n" (blue "get-module-names") modules-alist))
       (if modules-alist
           (case (car modules-alist)
             ((:modules)
@@ -168,15 +177,19 @@
 ;; (define (expand-std-modules modules srcfiles)
 
 (define (resolve-gentargets gentargets sigs structs)
-  (format #t "resolve-gentargets: ~A\n" gentargets)
+  (if *debugging*
+      (format #t "resolve-gentargets: ~A\n" gentargets))
   (let ((resolved (map (lambda (f)
-                         (format #t "f: ~A\n" f)
+                         (if *debugging*
+                             (format #t "f: ~A\n" f))
                          (let* ((fname (if (symbol? f) (symbol->string f) f))
                                 (type (if (eq? 0 (fnmatch "*.mli" fname 0))
                                           :mli :ml))
                                 (mname (filename->module-name fname)))
-                           (format #t "mname: ~A\n" mname)
-                           (format #t "type: ~A\n" type)
+                           (if *debugging*
+                               (begin
+                                 (format #t "mname: ~A\n" mname)
+                                 (format #t "type: ~A\n" type)))
                            (if (eq? type :ml)
                                (if-let ((sigmatch (assoc-in `(:static ,mname)
                                                             sigs)))
@@ -185,8 +198,8 @@
                                          (alist-update-in!
                                           sigs `(:static)
                                           (lambda (old)
-                                            (format #t "old static: ~A\n"
-                                                    old)
+                                            (if *debugging*
+                                                (format #t "old static: ~A\n" old))
                                             (dissoc `(,mname) old)))
                                          `(:_ ,(car sigmatch)))
                                        `(:ml ,mname))
@@ -198,8 +211,8 @@
                                          (alist-update-in!
                                           structs `(:static)
                                           (lambda (old)
-                                            (format #t "old static: ~A\n"
-                                                    old)
+                                            (if *debugging*
+                                                (format #t "old static: ~A\n" old))
                                             (dissoc `(,mname) old)))
                                          `(:_ ,(car structmatch)))
                                        `(:mli ,mname)))))
@@ -224,12 +237,13 @@
         (+signature+ '(expand-std-modules std-list pkg-modules module-deps sigs structs)))
     ;; modules-ht)))
     (lambda (std-list pkg-modules sigs structs) ;;  module-deps
-
-      (format #t "~A: ~A\n" (blue "EXPAND-std-modules") std-list)
-      (format #t " pkg-modules: ~A\n" pkg-modules)
-      ;; (format #t " module-deps: ~A\n" module-deps)
-      (format #t " sigs: ~A\n" sigs)
-      (format #t " structs: ~A\n" structs)
+      (if *debugging*
+          (begin
+            (format #t "~A: ~A\n" (blue "EXPAND-std-modules") std-list)
+            (format #t " pkg-modules: ~A\n" pkg-modules)
+            ;; (format #t " module-deps: ~A\n" module-deps)
+            (format #t " sigs: ~A\n" sigs)
+            (format #t " structs: ~A\n" structs)))
       (let* ((modifiers (cdr std-list)) ;; car is always :standard
              (pkg-module-names (if pkg-modules
                                    (get-module-names pkg-modules)
@@ -251,16 +265,20 @@
 
              ;; (conditionals (assoc :conditionals module-deps))
              )
-        (format #t "pkg-module-names: ~A\n" pkg-module-names)
-        (format #t "sig-module-names: ~A\n" sig-module-names)
-        (format #t "modifiers: ~A\n" modifiers)
-        ;; (format #t "conditionals: ~A\n" conditionals)
+        (if *debugging*
+            (begin
+              (format #t "pkg-module-names: ~A\n" pkg-module-names)
+              (format #t "sig-module-names: ~A\n" sig-module-names)
+              (format #t "modifiers: ~A\n" modifiers)
+              ;; (format #t "conditionals: ~A\n" conditionals)
+              ))
         (if-let ((slash (member (symbol "\\") modifiers)))
                 (let* ((exclusions (cdr slash))
                        (exclusions (if (list? (car exclusions))
                                        (car exclusions) exclusions))
                        (exclusions (map normalize-module-name exclusions)))
-                  (format #t "exclusions: ~A\n" exclusions)
+                  (if *debugging*
+                      (format #t "exclusions: ~A\n" exclusions))
                   (let ((winnowed (remove-if
                                    list
                                    (lambda (item)
@@ -295,12 +313,14 @@
         (+signature+ '(kind modules-fld->submodules-fld modules-spec pkg-modules pkg-sigs pkg-structs))) ;;  modules-deps
         ;; modules-ht)))
     (lambda (kind modules-spec pkg-modules pkg-sigs pkg-structs)
-      (format #t "~A\n" (ublue "modules-fld->submodules-fld"))
-      (format #t "modules-spec: ~A\n" modules-spec)
-      (format #t "pkg-modules: ~A\n" pkg-modules)
-      ;; (format #t "deps: ~A\n" deps)
-      (format #t "pkg-sigs: ~A\n" pkg-sigs)
-      (format #t "pkg-structs: ~A\n" pkg-structs)
+      (if *debugging*
+          (begin
+            (format #t "~A\n" (ublue "modules-fld->submodules-fld"))
+            (format #t "modules-spec: ~A\n" modules-spec)
+            (format #t "pkg-modules: ~A\n" pkg-modules)
+            ;; (format #t "deps: ~A\n" deps)
+            (format #t "pkg-sigs: ~A\n" pkg-sigs)
+            (format #t "pkg-structs: ~A\n" pkg-structs)))
       (if (equal? modules-spec '(modules))
           ;; exclude all modules (lib and exe)
           '((:modules) (:signatures))
@@ -313,15 +333,15 @@
                                                 pkg-modules)
                                                '()))
                          (struct-module-names (get-module-names pkg-structs))
-                         ;; (_ (format #t "struct-module-names:: ~A\n" struct-module-names))
+                         ;; (_ (if *debugging* (format #t "struct-module-names:: ~A\n" struct-module-names)))
                          (pkg-module-names (if struct-module-names
                                                (append struct-module-names
                                                        pkg-module-names)
                                                pkg-module-names))
-                         ;; (_ (format #t "pkg-module-names:: ~A\n" pkg-module-names))
+                         ;; (_ (if *debugging* (format #t "pkg-module-names:: ~A\n" pkg-module-names)))
                          (sig-module-names (get-module-names pkg-sigs))
-                         ;; (_ (format #t "sig-module-names:: ~A\n" sig-module-names))
-                         ;; (_ (format #t "modules-spec:: ~A\n" modules-spec))
+                         ;; (_ (if *debugging* (format #t "sig-module-names:: ~A\n" sig-module-names)))
+                         ;; (_ (if *debugging* (format #t "modules-spec:: ~A\n" modules-spec)))
                          (tmp (let recur ((modules-spec modules-spec)
                                           (submods '())
                                           (subsigs '()))
@@ -410,7 +430,8 @@
                     tmp) ;; let*
                   ;; no modules-spec - default is all (lib) or none (exe)
                   (begin
-                    (format #t "~A~%" (bgred "no modules-spec"))
+                    (if *debugging*
+                        (format #t "~A~%" (bgred "no modules-spec")))
                     (if (equal? kind :exe)
                         ;; exclude all
                         '((:modules) (:signatures))
@@ -418,16 +439,16 @@
                                                  (get-module-names
                                                   pkg-modules)
                                                  '()))
-                           ;; (_ (format #t "~A: ~A\n" (white "pkg-module-names") pkg-module-names))
+                           ;; (_ (if *debugging* (format #t "~A: ~A\n" (white "pkg-module-names") pkg-module-names)))
                            (struct-module-names (get-module-names pkg-structs))
-                           ;; (_ (format #t "struct-module-names:: ~A\n" struct-module-names))
+                           ;; (_ (if *debugging* (format #t "struct-module-names:: ~A\n" struct-module-names)))
                            (all-module-names (if struct-module-names
                                                  (append struct-module-names
                                                          pkg-module-names)
                                                  pkg-module-names))
-                           ;; (_ (format #t "all module-names:: ~A\n" all-module-names))
+                           ;; (_ (if *debugging* (format #t "all module-names:: ~A\n" all-module-names)))
                            (sig-module-names (get-module-names pkg-sigs))
-                           ;; (_ (format #t "sig-module-names:: ~A\n" sig-module-names))
+                           ;; (_ (if *debugging* (format #t "sig-module-names:: ~A\n" sig-module-names)))
                            )
 
                       (list
@@ -436,7 +457,8 @@
                            '() (cons :signatures sig-module-names))))))
                   ) ;; if modules-spec
               (begin
-                (format #t "modules-spec but no pkg modules nor structs\n")
+                (if *debugging*
+                    (format #t "modules-spec but no pkg modules nor structs\n"))
                 '((:modules) (:signatures)))))
       ) ;; lamda
     ) ;; let

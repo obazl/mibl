@@ -16,12 +16,13 @@
 
 ;; arg:  normalized module name
 (define (find-module-in-pkg module pkg)
-  (format #t "~A: ~A~%" (ublue "find-module-in-pkg") module)
+  (if *debugging*
+      (format #t "~A: ~A~%" (ublue "find-module-in-pkg") module))
   (let* ((pkg-modules (if-let ((files (assoc-val :modules pkg)))
                                 files '()))
-         (_ (format #t "~A: ~A~%" (yellow "pkg-modules") pkg-modules))
+         (_ (if *debugging* (format #t "~A: ~A~%" (yellow "pkg-modules") pkg-modules)))
          ;; (m-name (filename->module-name arg))
-         ;; (_ (format #t "~A: ~A~%" (yellow "m-name") m-name))
+         ;; (_ (if *debugging* (format #t "~A: ~A~%" (yellow "m-name") m-name)))
          (entry
           (find-if (lambda (mod)
                      ;; (format #t "~A: ~A~%" (white "mod") mod)
@@ -35,9 +36,9 @@
         (let* ((structs-static (if-let ((ss (assoc-in '(:structures :static) pkg))) (cdr ss) '()))
                (structs-dynamic (if-let ((ss (assoc-in '(:structures :dynamic) pkg))) (cdr ss) '()))
                (pkg-structs (append structs-static structs-dynamic))
-               (_ (format #t "~A: ~A~%" (yellow "pkg-structs") pkg-structs))
+               (_ (if *debugging* (format #t "~A: ~A~%" (yellow "pkg-structs") pkg-structs)))
                ;; (m-name (filename->module-name arg))
-               ;; (_ (format #t "~A: ~A~%" (yellow "m-name") m-name))
+               ;; (_ (if *debugging* (format #t "~A: ~A~%" (yellow "m-name") m-name)))
                (entry
                 (find-if (lambda (struct)
                            ;; (format #t "~A: ~A~%" (white "mod") mod)
@@ -47,12 +48,13 @@
           entry))))
 
 (define (-find-m-file-in-pkg-modules arg pkg)
-  ;; (format #t "~A: ~A~%" (ublue "find-m-file-in-pkg-modules") arg)
+  (if *debugging*
+      (format #t "~A: ~A~%" (ublue "find-m-file-in-pkg-modules") arg))
   (let* ((pkg-modules (if-let ((files (assoc-val :modules pkg)))
                                 files '()))
-         ;; (_ (format #t "~A: ~A~%" (yellow "pkg-modules") pkg-modules))
+         ;; (_ (if *debugging* (format #t "~A: ~A~%" (yellow "pkg-modules") pkg-modules)))
          (m-name (filename->module-name arg))
-         ;; (_ (format #t "~A: ~A~%" (yellow "m-name") m-name))
+         ;; (_ (if *debugging* (format #t "~A: ~A~%" (yellow "m-name") m-name)))
          (file
           (find-if (lambda (mod)
                      ;; (format #t "~A: ~A~%" (white "mod") mod)
@@ -64,15 +66,16 @@
 
 ;; arg: filename
 (define (-find-m-file-in-pkg-structs arg pkg)
-  (format #t "~A: ~A~%" (ublue "find-m-file-in-pkg-structs") arg)
+  (if *debugging*
+      (format #t "~A: ~A~%" (ublue "find-m-file-in-pkg-structs") arg))
   (let* ((statics (if-let ((files (assoc-in '(:structures :static) pkg)))
                           (cdr files) '()))
-         ;; (_ (format #t "~A: ~A~%" (yellow "statics") statics))
+         ;; (_ (if *debugging* (format #t "~A: ~A~%" (yellow "statics") statics)))
          (dynamics (if-let ((files (assoc-in '(:structures :dynamic) pkg)))
                            (cdr files) '()))
-         ;; (_ (format #t "~A: ~A~%" (yellow "dynamics") dynamics))
+         ;; (_ (if *debugging* (format #t "~A: ~A~%" (yellow "dynamics") dynamics)))
          (structs (concatenate statics dynamics))
-         ;; (_ (format #t "~A: ~A~%" (yellow "structs") structs))
+         ;; (_ (if *debugging* (format #t "~A: ~A~%" (yellow "structs") structs)))
          (file
           (find-if (lambda (struct)
                      ;; (format #t "~A: ~A~%" (white "struct") struct)
@@ -84,10 +87,11 @@
 
 ;; arg: filename
 (define (-find-m-file-in-pkg-sigs arg pkg)
-  ;; (format #t "~A: ~A~%" (ublue "find-m-file-in-pkg-sigs") arg)
+  (if *debugging*
+      (format #t "~A: ~A~%" (ublue "find-m-file-in-pkg-sigs") arg))
   (let* ((pkg-sigs (if-let ((files (assoc-val :signatures pkg)))
                               files '()))
-         ;; (_ (format #t "~A: ~A~%" (yellow "pkg-sigs") pkg-sigs))
+         ;; (_ (if *debugging* (format #t "~A: ~A~%" (yellow "pkg-sigs") pkg-sigs)))
          (file
           (find-if (lambda (sig)
                      ;; (format #t "~A: ~A~%" (white "sig") sig)
@@ -101,10 +105,12 @@
 ;; arg: filename
 ;; e.g. (:ml foo.ml) or (Foo . foo.ml) or (Foo . foo.mli)
 (define (find-m-file-in-pkg arg pkg)
-  ;; (format #t "~A: ~A~%" (ublue "find-m-file-in-pkg") arg)
-  ;; (format #t "~A: ~A~%" (blue ":files") (assoc-val :files pkg))
-  ;; (format #t "~A: ~A~%" (blue "deps") deps)
-  ;; (format #t "~A: ~A~%" (red ":scripts") (assoc-val :scripts pkg))
+  (if *debugging*
+      (begin
+        (format #t "~A: ~A~%" (ublue "find-m-file-in-pkg") arg)
+        (format #t "~A: ~A~%" (blue ":files") (assoc-val :files pkg))
+        ;; (format #t "~A: ~A~%" (blue "deps") deps)
+        (format #t "~A: ~A~%" (red ":scripts") (assoc-val :scripts pkg))))
 
   (if-let ((m (-find-m-file-in-pkg-modules arg pkg)))
           m
@@ -114,40 +120,44 @@
                           m))))
 
 (define (is-module-in-pkg m pkg)
-  (format #t "~A: ~A~%" (ucyan "is-module-in-pkg") m)
+  (if *debugging*
+      (format #t "~A: ~A~%" (ucyan "is-module-in-pkg") m))
   ;; (format #t "~A: ~A~%" (ucyan "pkg") pkg)
   (let* ((pkg-mods (if-let ((files (assoc-val :modules pkg)))
                              (map car files) '()))
-         ;; (_ (format #t "~A: ~A~%" (yellow "pkg-mods") pkg-mods))
+         ;; (_ (if *debugging* (format #t "~A: ~A~%" (yellow "pkg-mods") pkg-mods)))
          (pkg-structs (if-let ((structs (assoc-val :structures pkg)))
-                              (let* (;; (_ (format #t "~A: ~A~%" (uyellow "pkg-structs") structs))
+                              (let* (;; (_ (if *debugging* (format #t "~A: ~A~%" (uyellow "pkg-structs") structs)))
                                      (statics (if-let ((statics (assoc-val :static structs)))
                                                       statics '()))
-                                     ;; (_ (format #t "~A: ~A~%" (cyan "struct statics") statics))
+                                     ;; (_ (if *debugging* (format #t "~A: ~A~%" (cyan "struct statics") statics)))
                                      (dynamics (if-let ((dynamics (assoc-val :dynamic structs)))
                                                        dynamics '()))
-                                     ;; (_ (format #t "~A: ~A~%" (cyan "struct dynamics") dynamics))
+                                     ;; (_ (if *debugging* (format #t "~A: ~A~%" (cyan "struct dynamics") dynamics)))
                                      ) ;; gets both :static & :dynamic
                                 (map car (concatenate statics dynamics)))
                            '()))
-         ;; (_ (format #t "~A: ~A~%" (yellow "pkg-structs") pkg-structs))
+         ;; (_ (if *debugging* (format #t "~A: ~A~%" (yellow "pkg-structs") pkg-structs)))
          (pkg-sigs (if-let ((files (assoc-val :signatures pkg)))
                            (map car (car (map cdr files)))
                            '()))
-         ;; (_ (format #t "~A: ~A~%" (yellow "pkg-sigs") pkg-sigs))
+         ;; (_ (if *debugging* (format #t "~A: ~A~%" (yellow "pkg-sigs") pkg-sigs)))
          (modules (concatenate pkg-mods pkg-structs pkg-sigs))
-         (_ (format #t "~A: ~A~%" (yellow "all pkg modules") modules))
+         (_ (if *debugging* (format #t "~A: ~A~%" (yellow "all pkg modules") modules)))
          (answer (member m modules)))
-    (format #t "~A: ~A~%" (cyan "answer") answer)
+    (if *debugging*
+        (format #t "~A: ~A~%" (cyan "answer") answer))
     ;; (if (equal? 'Arg m) (error 'STOP "STOP mod in pkg"))
     answer))
 
 ;;FIXME: rename
 ;; may update deps
 (define (find-file-in-pkg-files!? arg deps pkg)
-  (format #t "~A: ~A~%" (ublue "find-file-in-pkg-files") arg)
-  (format #t "~A: ~A~%" (blue ":files") (assoc-val :files pkg))
-  (format #t "~A: ~A~%" (blue "deps") deps)
+  (if *debugging*
+      (begin
+        (format #t "~A: ~A~%" (ublue "find-file-in-pkg-files") arg)
+        (format #t "~A: ~A~%" (blue ":files") (assoc-val :files pkg))
+        (format #t "~A: ~A~%" (blue "deps") deps)))
   ;; (format #t "~A: ~A~%" (red ":scripts") (assoc-val :scripts pkg))
 
   (if (assoc-val :files pkg)
@@ -158,14 +168,16 @@
                                  statics '())
                          (if-let ((dynamics (assoc-val :dynamic pkg-files)))
                                  dynamics '())))
-             (_ (format #t "~A: ~A~%" (cyan "pkg-files") pkg-files))
+             (_ (if *debugging* (format #t "~A: ~A~%" (cyan "pkg-files") pkg-files)))
              (file
               (find-if (lambda (f)
-                         (format #t "~A: ~A~%" (white "f") f)
+                         (if *debugging*
+                             (format #t "~A: ~A~%" (white "f") f))
                          (equal? (format #f "~A" arg)
                                  (format #f "~A" f)))
                        pkg-files)))
-        (format #t "~A: ~A~%" (white "found file") file)
+        (if *debugging*
+            (format #t "~A: ~A~%" (white "found file") file))
         (if file
             #t
             ;; update deps/targets but no dups
@@ -194,13 +206,15 @@
         #t #|(string->keyword (format #f "~A" arg))|# )))
 
 (define (-codept-pkg-file-deps pkg-path)
-  (format #t "~A: ~A~%" (blue "-codept-pkg-file-deps") pkg-path)
+  (if *debugging*
+      (format #t "~A: ~A~%" (blue "-codept-pkg-file-deps") pkg-path))
   (let* ((fpath (format #f "~A/*" pkg-path)) ;; (cdr struct)))
          (cmd (format #f "codept -k -expand-deps -sexp -I ~A ~A/*"
                       pkg-path pkg-path))
-         (_ (format #t "~A: ~A~%" (green "cmd") cmd)))
+         (_ (if *debugging* (format #t "~A: ~A~%" (green "cmd") cmd))))
     (let ((deps (string-trim '(#\newline) (system cmd #t))))
-      (format #t "~A: ~A~%" (yellow "codept") deps))
+      (if *debugging*
+          (format #t "~A: ~A~%" (yellow "codept") deps)))
   ;;(set-cdr! struct (cdr struct))
     ))
 
@@ -209,55 +223,58 @@
 ;; this handles only static srcs, dynamics (ocamllex, ocamlyacc)
 ;; must be handled separately
 (define (-ocamldep-pkg-static-file-deps! pkg)
-  (format #t "~A: ~A~%" (bgblue "-ocamldep-pkg-static-file-deps") (assoc-val :pkg-path pkg))
+  (if *debugging*
+      (format #t "~A: ~A~%" (bgblue "-ocamldep-pkg-static-file-deps") (assoc-val :pkg-path pkg)))
           ;; (assoc-val :pkg-path pkg))
   (let* ((pkg-path (car (assoc-val :pkg-path pkg)))
          (fpath (format #f "~A/*" pkg-path)) ;; (cdr struct)))
          (pkg-mods (if-let ((files (assoc-val :modules pkg)))
                              (map car files) '()))
-         (_ (format #t "~A: ~A~%" (yellow "pkg-mods") pkg-mods))
+         (_ (if *debugging* (format #t "~A: ~A~%" (yellow "pkg-mods") pkg-mods)))
          (pkg-structs (if-let ((structs (assoc-val :structures pkg)))
-                              (let* (;; (_ (format #t "~A: ~A~%" (uyellow "pkg-structs") structs))
+                              (let* (;; (_ (if *debugging* (format #t "~A: ~A~%" (uyellow "pkg-structs") structs)))
                                      (statics (if-let ((statics (assoc-val :static structs)))
                                                       statics '()))
-                                     ;; (_ (format #t "~A: ~A~%" (cyan "struct statics") statics))
+                                     ;; (_ (if *debugging* (format #t "~A: ~A~%" (cyan "struct statics") statics)))
                                      (dynamics (if-let ((dynamics (assoc-val :dynamic structs)))
                                                        dynamics '()))
-                                     ;; (_ (format #t "~A: ~A~%" (cyan "struct dynamics") dynamics))
+                                     ;; (_ (if *debugging* (format #t "~A: ~A~%" (cyan "struct dynamics") dynamics)))
                                      ) ;; gets both :static & :dynamic
                                 (map car (concatenate statics dynamics)))
                            '()))
-         (_ (format #t "~A: ~A~%" (yellow "pkg-structs") pkg-structs))
+         (_ (if *debugging* (format #t "~A: ~A~%" (yellow "pkg-structs") pkg-structs)))
 
          (pkg-sigs (if-let ((sigs (assoc-val :signatures pkg)))
-                              (let* (;; (_ (format #t "~A: ~A~%" (uyellow "pkg-sigs") sigs))
+                              (let* (;; (_ (if *debugging* (format #t "~A: ~A~%" (uyellow "pkg-sigs") sigs)))
                                      (statics (if-let ((statics (assoc-val :static sigs)))
                                                       statics '()))
-                                     ;; (_ (format #t "~A: ~A~%" (cyan "sig statics") statics))
+                                     ;; (_ (if *debugging* (format #t "~A: ~A~%" (cyan "sig statics") statics)))
                                      (dynamics (if-let ((dynamics (assoc-val :dynamic sigs)))
                                                        dynamics '()))
-                                     ;; (_ (format #t "~A: ~A~%" (cyan "sig dynamics") dynamics))
+                                     ;; (_ (if *debugging* (format #t "~A: ~A~%" (cyan "sig dynamics") dynamics)))
                                      ) ;; gets both :static & :dynamic
                                 (map car (concatenate statics dynamics)))
                            '()))
-         (_ (format #t "~A: ~A~%" (yellow "pkg-sigs") pkg-sigs))
+         (_ (if *debugging* (format #t "~A: ~A~%" (yellow "pkg-sigs") pkg-sigs)))
          ;; (pkg-sigs (if-let ((files (assoc-val :signatures pkg)))
          ;;                   (map car files)
          ;;                   '()))
-         ;; (_ (format #t "~A: ~A~%" (yellow "pkg-sigs") pkg-sigs))
+         ;; (_ (if *debugging* (format #t "~A: ~A~%" (yellow "pkg-sigs") pkg-sigs)))
 
          (modules (concatenate pkg-mods pkg-structs pkg-sigs))
-         (_ (format #t "~A: ~A~%" (yellow "all pkg modules") modules))
+         (_ (if *debugging* (format #t "~A: ~A~%" (yellow "all pkg modules") modules)))
          )
     (let* ((cmd (format #f "ocamldep -one-line -modules -I ~A ~A/*"
                         pkg-path pkg-path))
-           (_ (format #t "~A: ~A~%" (green "cmd") cmd))
+           (_ (if *debugging* (format #t "~A: ~A~%" (green "cmd") cmd)))
            (deps (string-trim '(#\newline) (system cmd #t))) ;; EXECUTE CMD
            (deps (string-split deps #\newline)))
       (for-each (lambda (dep)
-                  (format #t "~%~A: ~A~%" (uyellow "iter over ocamldeps") dep)
+                  (if *debugging*
+                      (format #t "~%~A: ~A~%" (uyellow "iter over ocamldeps") dep))
                   (let ((segs (string-split dep #\:)))
-                    (format #t "~A: ~A~%" (yellow "segs") segs)
+                    (if *debugging*
+                        (format #t "~A: ~A~%" (yellow "segs") segs))
                     (if (null? (cdr segs))
                         (begin)
                         (let* ((fpath (car segs))
@@ -268,27 +285,31 @@
                                (mdeps (string-split mdeps #\space))
                                (mdeps (map string->symbol mdeps))
 
-                               (_ (format #t "~A for ~A: ~A~%" (ugreen "unfiltered mdeps") mname mdeps))
+                               (_ (if *debugging* (format #t "~A for ~A: ~A~%" (ugreen "unfiltered mdeps") mname mdeps)))
                                ;; do not include file module in deps list
                                (mdeps (remove mname mdeps))
-                               (_ (format #t "~A: ~A~%" (ugreen "unfiltered mdeps excluding self") mdeps))
+                               (_ (if *debugging* (format #t "~A: ~A~%" (ugreen "unfiltered mdeps excluding self") mdeps)))
                                ;; eliminate mdeps not in this pkg
                                ;; (mdeps (filter (lambda (d) (is-module-in-pkg d pkg)) mdeps))
                                (mdeps (filter (lambda (dep) (member dep modules)) mdeps))
-                               (_ (format #t "~A: ~A~%" (ugreen "filtered mdeps, excluding pkg-externals") mdeps))
+                               (_ (if *debugging* (format #t "~A: ~A~%" (ugreen "filtered mdeps, excluding pkg-externals") mdeps)))
                                )
-                          (format #t "~A: ~A~%" (red "mdeps") mdeps)
-                          (format #t "~A: ~A~%" (red "pkg (before)") pkg)
-                          (format #t "~A: ~A~%" (red "fname") fname)
-                          (format #t "~A: ~A~%" (red "mname") mname)
+                          (if *debugging*
+                              (begin
+                                (format #t "~A: ~A~%" (red "mdeps") mdeps)
+                                (format #t "~A: ~A~%" (red "pkg (before)") pkg)
+                                (format #t "~A: ~A~%" (red "fname") fname)
+                                (format #t "~A: ~A~%" (red "mname") mname)))
                           ;; (if (string=? "arg.ml" fname) (error 'STOP "STOP ocamldep"))
                           (if (truthy? mdeps) ;; (not (null? mdeps))
                               (begin
-                                (format #t "~A ~A to ~A~%" (bgyellow "updating stanza :deps") mdeps fname)
+                                (if *debugging*
+                                    (format #t "~A ~A to ~A~%" (bgyellow "updating stanza :deps") mdeps fname))
                                 ;; (format #t "~A: ~A~%" (uyellow "in pkg") pkg)
                                 (if (assoc-val :dune pkg)
                                     (update-stanza-deps pkg fname mdeps))
-                                (format #t "~A: ~A~%" (red "pkg (after)") pkg)
+                                (if *debugging*
+                                    (format #t "~A: ~A~%" (red "pkg (after)") pkg))
                                 ))
 
                           ;; mdeps is list of ocamldeps of fname with corresponding files in this pkg
@@ -300,7 +321,8 @@
                           (if (truthy? mdeps) ;; (not (null? mdeps))
                               (if-let ((m-assoc (find-m-file-in-pkg fname pkg)))
                                       (begin
-                                        (format #t "~A: ~A~%" (red "m-assoc in pkg") m-assoc)
+                                        (if *debugging*
+                                            (format #t "~A: ~A~%" (red "m-assoc in pkg") m-assoc))
                                         (if (proper-list? m-assoc)
                                             ;; its a module entry, form (A (:ml a.ml) (:mli a.mli))
                                             (begin ;; if mdeps not empty
@@ -314,8 +336,10 @@
                                               )
                                             ;; else its a struct entry, (A a.ml)
                                             (begin
-                                              (format #t "~A: ~A~%" (bgred "STRUCT ENTRY") m-assoc)
-                                              (format #t "~A: ~A~%" (bgred "adding mdeps") mdeps)
+                                              (if *debugging*
+                                                  (begin
+                                                    (format #t "~A: ~A~%" (bgred "STRUCT ENTRY") m-assoc)
+                                                    (format #t "~A: ~A~%" (bgred "adding mdeps") mdeps)))
                                               (if (not (null? mdeps))
                                                   (set-cdr! m-assoc
                                                             (cons (cdr m-assoc)
@@ -323,23 +347,29 @@
                                       ;;else
                                       (format #t "~A: ~A~%" (blue "not found") m-assoc))
                               ;; else mdeps is null
-                              (format #t "~A~%" (uyellow "continue"))
+                              (if *debugging*
+                                  (format #t "~A~%" (uyellow "continue")))
                               )))))
                 deps))))
 
 (define (-ocamlyacc-deps! pkg pkg-path pkg-mly-modules)
-  (format #t "~A: ~A~%" (ublue "-ocamlyacc-deps!") pkg-mly-modules)
+  (if *debugging*
+      (format #t "~A: ~A~%" (ublue "-ocamlyacc-deps!") pkg-mly-modules))
   (for-each (lambda (mly)
-              (format #t "~A: ~A~%" (blue "mly module") mly)
+              (if *debugging*
+                  (format #t "~A: ~A~%" (blue "mly module") mly))
               (let* ((mly-src (assoc-val :mly (cdr mly)))
                      (principal (format #f "~A" (bname mly-src)))
                      (cp-cmd (format #f "cp -v ~A/~A ~A" pkg-path mly-src *tmp-dir*)))
-                (format #t "~A: ~A~%" (blue "mly-src") mly-src)
-                (format #t "~A: ~A~%" (blue "cp-cmd") cp-cmd)
+                (if *debugging*
+                    (begin
+                      (format #t "~A: ~A~%" (blue "mly-src") mly-src)
+                      (format #t "~A: ~A~%" (blue "cp-cmd") cp-cmd)))
                 (system cp-cmd) ;;;;;;;;;;;;;;;; SYS
                 (let ((yacc-cmd
                        (format #f "ocamlyacc ~A/~A" *tmp-dir* mly-src)))
-                  (format #t "~A: ~A~%" (blue "yacc-cmd") yacc-cmd)
+                  (if *debugging*
+                      (format #t "~A: ~A~%" (blue "yacc-cmd") yacc-cmd))
                   (system yacc-cmd)  ;;;;;;;;;;;;;;;; SYS
                   (let* ((ocamldep-cmd
                           (format
@@ -347,15 +377,18 @@
                            pkg-path *tmp-dir* principal))
                          (deps (string-trim '(#\newline) (system ocamldep-cmd #t))) ;;;;;;;;;;;;;;;; SYS
                          (file-deps (string-split deps #\newline)))
-                    (format #t "~A: ~A~%" (blue "ocamldep-cmd") ocamldep-cmd)
-                    (format #t "~A: ~A~%" (blue "file-deps") file-deps)
+                    (if *debugging*
+                        (begin
+                          (format #t "~A: ~A~%" (blue "ocamldep-cmd") ocamldep-cmd)
+                          (format #t "~A: ~A~%" (blue "file-deps") file-deps)))
 
                     ;; (format #t "~A: ~A~%" (bgred "pkg-modules")
                     ;;         (assoc :modules pkg))
                     ;; (error 'stop "STOP yacc")
 
                     (for-each (lambda (file-dep)
-                                (format #t "~A: ~A~%" (bgyellow "ocamldep") file-dep)
+                                (if *debugging*
+                                    (format #t "~A: ~A~%" (bgyellow "ocamldep") file-dep))
                                 (let ((segs (string-split file-dep #\:)))
                                   ;; (format #t "~A: ~A~%" (yellow "segs") segs)
                                   (if (null? (cdr segs))
@@ -369,12 +402,15 @@
                                              ;; eliminate mdeps not in this pkg
                                              (mdeps (filter (lambda (d) (is-module-in-pkg d pkg)) mdeps))
                                              )
-                                        (format #t "~A: ~A~%" (yellow "ocamldep fname") fname)
-                                        (format #t "~A: ~A~%" (yellow "ocamldep kind") kind)
-                                        (format #t "~A: ~A~%" (yellow "ocamldep mdeps") mdeps)
+                                        (if *debugging*
+                                            (begin
+                                              (format #t "~A: ~A~%" (yellow "ocamldep fname") fname)
+                                              (format #t "~A: ~A~%" (yellow "ocamldep kind") kind)
+                                              (format #t "~A: ~A~%" (yellow "ocamldep mdeps") mdeps)))
                                         (if-let ((m-assoc (find-m-file-in-pkg fname pkg)))
                                                 (begin
-                                                  (format #t "~A: ~A~%" (blue "m-assoc before") m-assoc)
+                                                  (if *debugging*
+                                                      (format #t "~A: ~A~%" (blue "m-assoc before") m-assoc))
                                                   (if (proper-list? m-assoc)
                                                       ;; its a module entry, (A (:ml a.ml) (:mli a.mli))
                                                       (begin
@@ -385,10 +421,12 @@
                                                                                  (if (eq? kind :struct)
                                                                                      :ml-deps :mli-deps)
                                                                                  mdeps))))
-                                                        (format #t "~A: ~A~%" (blue "m-assoc after") m-assoc))
+                                                        (if *debugging*
+                                                            (format #t "~A: ~A~%" (blue "m-assoc after") m-assoc)))
                                                       ;; else its a struct entry, (A a.ml)
                                                       (begin
-                                                        (format #t "~A: ~A~%" (bgred "updating w/struct") m-assoc)
+                                                        (if *debugging*
+                                                            (format #t "~A: ~A~%" (bgred "updating w/struct") m-assoc))
                                                         (set-cdr! m-assoc
                                                                   (cons (cdr m-assoc)
                                                                         mdeps))))
@@ -402,34 +440,44 @@
             pkg-mly-modules))
 
 (define (-ocamllex-deps! pkg pkg-path pkg-mll-modules)
-  (format #t "~A: ~A~%" (ublue "-ocamllex-deps") pkg-mll-modules)
+  (if *debugging*
+      (format #t "~A: ~A~%" (ublue "-ocamllex-deps") pkg-mll-modules))
   (for-each (lambda (mll)
-              (format #t "~A: ~A~%" (blue "mll module") mll)
+              (if *debugging*
+                  (format #t "~A: ~A~%" (blue "mll module") mll))
               (let* ((mll-src (cdr mll))
                      (ml-src (format #f "~A.ml" (bname mll-src)))
-                     (cp-cmd (format #f "cp -v ~A/~A ~A" pkg-path mll-src *tmp-dir*)))
-                (format #t "~A: ~A~%" (blue "mll-src") mll-src)
-                (format #t "~A: ~A~%" (blue "cp-cmd") cp-cmd)
+                     ;;FIXME: if verbose, add '-v' to cmd
+                     (cp-cmd (format #f "cp ~A/~A ~A" pkg-path mll-src *tmp-dir*)))
+                (if *debugging*
+                    (begin
+                      (format #t "~A: ~A~%" (blue "mll-src") mll-src)
+                      (format #t "~A: ~A~%" (blue "cp-cmd") cp-cmd)))
                 (system cp-cmd) ;;;;;;;;;;;;;;;; SYS
                 (let ((lex-cmd
-                       (format #f "ocamllex ~A/~A" *tmp-dir* mll-src)))
-                  (format #t "~A: ~A~%" (blue "lex-cmd") lex-cmd)
+                       (format #f "ocamllex -q ~A/~A" *tmp-dir* mll-src)))
+                  (if *debugging*
+                      (format #t "~A: ~A~%" (blue "lex-cmd") lex-cmd))
                   (system lex-cmd)  ;;;;;;;;;;;;;;;; SYS
                   (let* ((ocamldep-cmd
                           (format
                            #f "ocamldep -one-line -modules -I ~A ~A/~A"
                            pkg-path *tmp-dir* ml-src))
                          (deps (string-trim '(#\newline) (system ocamldep-cmd #t))) ;;;;;;;;;;;;;;;; SYS
-                         (file-deps (string-split deps #\newline)))
-                    (format #t "~A: ~A~%" (blue "ocamldep-cmd") ocamldep-cmd)
-                    (format #t "~A: ~A~%" (blue "file-deps") file-deps)
+                         (file-deps (cdr (string-split deps #\newline))))
+                    (if *debugging*
+                        (begin
+                          (format #t "~A: ~A~%" (blue "ocamldep-cmd") ocamldep-cmd)
+                          (format #t "~A: ~A~%" (blue "deps") deps)
+                          (format #t "~A: ~A~%" (blue "file-deps") file-deps)))
 
                     ;; (format #t "~A: ~A~%" (bgred "pkg-modules")
                     ;;         (assoc :modules pkg))
                     ;; (error 'stop "STOP lex")
 
                     (for-each (lambda (file-dep)
-                                (format #t "~A: ~A~%" (bgyellow "ocamldep") file-dep)
+                                (if *debugging*
+                                    (format #t "~A: ~A~%" (bgyellow "ocamldep") file-dep))
                                 (let ((segs (string-split file-dep #\:)))
                                   ;; (format #t "~A: ~A~%" (yellow "segs") segs)
                                   (if (null? (cdr segs))
@@ -443,12 +491,15 @@
                                              ;; eliminate mdeps not in this pkg
                                              (mdeps (filter (lambda (d) (is-module-in-pkg d pkg)) mdeps))
                                              )
-                                        (format #t "~A: ~A~%" (yellow "ocamldep fname") fname)
-                                        (format #t "~A: ~A~%" (yellow "ocamldep kind") kind)
-                                        (format #t "~A: ~A~%" (yellow "ocamldep mdeps") mdeps)
+                                        (if *debugging*
+                                            (begin
+                                              (format #t "~A: ~A~%" (yellow "ocamldep fname") fname)
+                                              (format #t "~A: ~A~%" (yellow "ocamldep kind") kind)
+                                              (format #t "~A: ~A~%" (yellow "ocamldep mdeps") mdeps)))
                                         (if-let ((m-assoc (find-m-file-in-pkg fname pkg)))
                                                 (begin
-                                                  (format #t "~A: ~A~%" (blue "m-assoc before") m-assoc)
+                                                  (if *debugging*
+                                                      (format #t "~A: ~A~%" (blue "m-assoc before") m-assoc))
                                                   (if (proper-list? m-assoc)
                                                       ;; its a module entry, (A (:ml a.ml) (:mli a.mli))
                                                       (begin
@@ -459,10 +510,12 @@
                                                                                  (if (eq? kind :struct)
                                                                                      :ml-deps :mli-deps)
                                                                                  mdeps))))
-                                                        (format #t "~A: ~A~%" (blue "m-assoc after") m-assoc))
+                                                        (if *debugging*
+                                                            (format #t "~A: ~A~%" (blue "m-assoc after") m-assoc)))
                                                       ;; else its a struct entry, (A a.ml)
                                                       (begin
-                                                        (format #t "~A: ~A~%" (bgred "updating w/struct entry") m-assoc)
+                                                        (if *debugging*
+                                                            (format #t "~A: ~A~%" (bgred "updating w/struct entry") m-assoc))
                                                         (set-cdr! m-assoc
                                                                   (cons (cdr m-assoc)
                                                                         mdeps))))
@@ -478,47 +531,50 @@
 
 ;; handle :ocamllex, :ocamlyacc, etc.
 (define (-ocamldep-pkg-dynamic-file-deps! pkg)
-  (format #t "~A: ~A~%" (bgblue "-ocamldep-pkg-dynamic-file-deps") (assoc-val :pkg-path pkg))
+  (if *debugging*
+      (format #t "~A: ~A~%" (bgblue "-ocamldep-pkg-dynamic-file-deps") (assoc-val :pkg-path pkg)))
           ;; (assoc-val :pkg-path pkg))
   (let* ((ws-path (car (assoc-val :ws-path pkg)))
          (pkg-path (car (assoc-val :pkg-path pkg)))
          (pkg-modules (if-let ((modules (assoc-val :modules pkg)))
                               modules '()))
-         (_ (format #t "~A: ~A~%" (blue "pkg-modules") pkg-modules))
+         (_ (if *debugging* (format #t "~A: ~A~%" (blue "pkg-modules") pkg-modules)))
 
          (pkg-static-mll (if-let ((mll-static
-                                   (assoc-in '(:ocamllex :static) pkg)))
+                                   (assoc-in '(:lex :static) pkg)))
                                  (cdr mll-static) '()))
-         (_ (format #t "~A: ~A~%" (blue "pkg-static-mll") pkg-static-mll))
+         (_ (if *debugging* (format #t "~A: ~A~%" (blue "pkg-static-mll") pkg-static-mll)))
          ;; prolly won't have dynamic .mll files, but just in case
-         (pkg-dynamic-mll (if-let ((mll-dyn (assoc-in '(:ocamllex :dynamic) pkg)))
+         (pkg-dynamic-mll (if-let ((mll-dyn (assoc-in '(:lex :dynamic) pkg)))
                                   (cdr mll-dyn) '()))
-         (_ (format #t "~A: ~A~%" (blue "pkg-dynamic-mll") pkg-dynamic-mll))
+         (_ (if *debugging* (format #t "~A: ~A~%" (blue "pkg-dynamic-mll") pkg-dynamic-mll)))
 
          (pkg-mll (concatenate pkg-static-mll pkg-dynamic-mll))
-         (_ (format #t "~A: ~A~%" (blue "pkg-mll") pkg-mll))
+         (_ (if *debugging* (format #t "~A: ~A~%" (blue "pkg-mll") pkg-mll)))
 
          (pkg-static-mly (if-let ((mly-static
-                                   (assoc-in '(:ocamlyacc :static) pkg)))
+                                   (assoc-in '(:yacc :static) pkg)))
                                  mly-static '()))
-         (_ (format #t "~A: ~A~%" (blue "pkg-static-mly") pkg-static-mly))
+         (_ (if *debugging* (format #t "~A: ~A~%" (blue "pkg-static-mly") pkg-static-mly)))
          (pkg-dynamic-mly (if-let ((mly-dyn
-                                    (assoc-in '(:ocamlyacc :dynamic) pkg)))
+                                    (assoc-in '(:yacc :dynamic) pkg)))
                                   mly-dyn '()))
-         (_ (format #t "~A: ~A~%" (blue "pkg-dynamic-mly") pkg-dynamic-mly))
+         (_ (if *debugging* (format #t "~A: ~A~%" (blue "pkg-dynamic-mly") pkg-dynamic-mly)))
          (pkg-mly (concatenate pkg-static-mly pkg-dynamic-mly))
-         (_ (format #t "~A: ~A~%" (blue "pkg-mly") pkg-mly))
+         (_ (if *debugging* (format #t "~A: ~A~%" (blue "pkg-mly") pkg-mly)))
 
          ;; filtered :modules
          (pkg-mly-modules (filter (lambda (m)
                                     ;; (format #t "~A: ~A~%" (blue "m") m)
                                     (assoc :mly (cdr m))) pkg-modules))
          )
-    (format #t "~A: ~A~%" (blue "filtered mly") pkg-mly-modules)
-    (format #t "~A: ~A~%" (blue "ws-path") ws-path)
-    (format #t "~A: ~A~%" (blue "pkg-path") pkg-path)
-    (format #t "~A: ~A~%" (blue "pwd") (pwd))
-    (format #t "~A: ~A~%" (blue "tmp-dir") *tmp-dir*)
+    (if *debugging*
+        (begin
+          (format #t "~A: ~A~%" (blue "filtered mly") pkg-mly-modules)
+          (format #t "~A: ~A~%" (blue "ws-path") ws-path)
+          (format #t "~A: ~A~%" (blue "pkg-path") pkg-path)
+          (format #t "~A: ~A~%" (blue "pwd") (pwd))
+          (format #t "~A: ~A~%" (blue "tmp-dir") *tmp-dir*)))
 
     ;; 1. copy mly file to tmp dir (ensure tmp dir empty first?)
     ;; 2. run ocamlyacc on it
@@ -528,11 +584,14 @@
     (-ocamlyacc-deps! pkg pkg-path pkg-mly-modules)
 
     ;; ditto for ocamllex
+    ;; (set! *debugging* #t)
     (-ocamllex-deps! pkg pkg-path pkg-mll)
+    ;; (set! *debugging* #f)
     ))
 
 (define (-resolve-pkg-struct-deps pkg-path pkg-structs)
-  (format #t "~A: ~A~%" (blue "-resolve-pkg-struct-deps") pkg-structs)
+  (if *debugging*
+      (format #t "~A: ~A~%" (blue "-resolve-pkg-struct-deps") pkg-structs))
   (let* ((statics (if-let ((statics (assoc-val :static pkg-structs)))
                           statics '()))
          (dynamics (if-let ((dynamics (assoc-val :dynamics pkg-structs)))
@@ -548,7 +607,7 @@
                        (cmd (format #f "codept -k -expand-deps -sexp -I ~A ~A"
                                     pkg-path fpath))
                        ;; (cmd (format #f "ocamldep -one-line -modules ~A" fpath))
-                       (_ (format #t "~A: ~A~%" (green "cmd") cmd))
+                       (_ (if *debugging* (format #t "~A: ~A~%" (green "cmd") cmd)))
                        (deps (string-trim '(#\newline) (system cmd #t))))
                   ;;(format #t "~A: ~A~%" (yellow "ocamldeps") deps)
                   )
@@ -570,16 +629,19 @@
 ;; skip :ocamllex, :ocamlyacc, they're already elaborated
 ;; add flds (:ml-deps), (:mli-deps)
 (define (resolve-pkg-file-deps ws)
-  (format #t "~%~A: ~A~%" (bgred "resolve-pkg-file-deps for ws") ws)
+  (if *debugging*
+      (format #t "~%~A: ~A~%" (bgred "resolve-pkg-file-deps for ws") ws))
   (let* ((@ws (assoc-val ws -mibl-ws-table))
          (pkgs (car (assoc-val :pkgs @ws))))
-    (format #t "~A: ~A~%" (uwhite "pkgs") pkgs)
+    (if *debugging*
+        (format #t "~A: ~A~%" (uwhite "pkgs") pkgs))
     (for-each (lambda (pkg-kv)
-                (format #t "~A: ~A~%" (uwhite "for pkg") (car pkg-kv))
+                (if *debugging*
+                    (format #t "~A: ~A~%" (uwhite "for pkg") (car pkg-kv)))
                 (let* ((pkg-path (car pkg-kv))
-                       (_ (format #t "~A: ~A~%" (green "pkg-path") pkg-path))
+                       (_ (if *debugging* (format #t "~A: ~A~%" (green "pkg-path") pkg-path)))
                        (pkg (cdr pkg-kv))
-                       ;; (_ (format #t "~A: ~A~%" (green "pkg") pkg))
+                       ;; (_ (if *debugging* (format #t "~A: ~A~%" (green "pkg") pkg)))
                        (pkg-modules (if-let ((ms (assoc-val :modules pkg)))
                                             ms '()))
                        (pkg-structs (if-let ((structs (assoc-val :structures pkg)))

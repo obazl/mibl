@@ -1,4 +1,5 @@
-(format #t "mibl: dune.scm loading...") (newline)
+(if *debugging*
+    (format #t "mibl: dune.scm loading...~%"))
 
 (load "alist.scm")
 ;; (load "srfi.scm")
@@ -39,7 +40,6 @@
 (load "dune/predicates.scm")
 (load "dune/preprocessing.scm")
 ;; (load "dune/actions_with_output_to.scm")
-(load "dune/emit.scm")
 (load "dune/miblark.scm")
 (load "dune/aliases.scm")
 (load "dune/shared.scm")
@@ -50,4 +50,5 @@
 (load "dune/lexyacc.scm")
 (load "dune/menhir.scm")
 
-(format #t "loaded mibl/dune.scm") (newline)
+(if *debugging*
+    (format #t "loaded mibl/dune.scm~%"))

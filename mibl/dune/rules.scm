@@ -3,13 +3,15 @@
 (load "dune/expanders.scm")
 
 (define (normalize-action-rule ws pkg rule-alist targets deps)
-  (format #t "~A: ~A\n" (ublue "normalize-action-rule") rule-alist)
-  (format #t "deps: ~A\n" deps)
-  (format #t "targets: ~A\n" targets)
-  (format #t "ws: ~A\n" ws)
+  (if *debugging*
+      (begin
+        (format #t "~A: ~A\n" (ublue "normalize-action-rule") rule-alist)
+        (format #t "deps: ~A\n" deps)
+        (format #t "targets: ~A\n" targets)
+        (format #t "ws: ~A\n" ws)))
   (let* ((nzaction (normalize-action ws pkg rule-alist targets deps))
-         (_ (format #t "~A: ~A\n"
-                    (blue "normalized action") nzaction))
+         (_ (if *debugging* (format #t "~A: ~A\n"
+                    (blue "normalized action") nzaction)))
          ;; (_ (error 'X "STOP normalize-action"))
          (package (if-let ((p (assoc-val 'package rule-alist))) (car p)))
          (mode (if-let ((m (assoc-val 'mode rule-alist))) (car m)))
@@ -23,8 +25,8 @@
                              (car p)))
 
          ;; (rule-tag (-action->rule-tag nzaction))
-         ;; (_ (format #t "rule-tag: ~A\n" rule-tag))
-         ;; (_ (format #t "~A: ~A\n" (green "TARGETS") targets))
+         ;; (_ (if *debugging* (format #t "rule-tag: ~A\n" rule-tag)))
+         ;; (_ (if *debugging* (format #t "~A: ~A\n" (green "TARGETS") targets)))
          (r-alist (if (null? targets)
                       (list (if (assoc :progn nzaction)
                                 (cons :actions (cdar nzaction))
@@ -86,8 +88,10 @@
 (define dune-rule->mibl
   (let ((+documentation+ "INTERNAL. Updates pkg arg, returns normalized stanza. stanza: raw dune stanza (input); nstanza: miblized (output)"))
     (lambda (ws pkg stanza)
-      (format #t "~A: ~A\n" (bgblue "dune-rule->mibl") stanza)
-      (format #t "~A: ~A\n" (green "ws") ws)
+      (if *debugging*
+          (begin
+            (format #t "~A: ~A\n" (bgblue "dune-rule->mibl") stanza)
+            (format #t "~A: ~A\n" (green "ws") ws)))
       ;; for other stanza types we can normalize fields in isolation. For
       ;; 'rule' stanzas, we need a higher level of analysis, so we cannot
       ;; 'map' over the fields. Instead we extract the fields into local
@@ -95,13 +99,13 @@
 
       (let* ((pkg-path (car (assoc-val :pkg-path pkg)))
              (rule-alist (cdr stanza))
-             (_ (format #t "rule-alist: ~A\n" rule-alist))
-             ;; (_ (format #t "target: ~A\n" (assoc 'target rule-alist)))
-             ;; (_ (format #t "Targets: ~A\n" (assoc-val 'targets rule-alist)))
+             (_ (if *debugging* (format #t "rule-alist: ~A\n" rule-alist)))
+             ;; (_ (if *debugging* (format #t "target: ~A\n" (assoc 'target rule-alist))))
+             ;; (_ (if *debugging* (format #t "Targets: ~A\n" (assoc-val 'targets rule-alist))))
 
              ;; Step 1: rule deps don't depend on targets, so do first
              (deps (expand-rule-deps ws pkg rule-alist))
-             (_ (format #t "~A: ~A\n" (red "expanded rule deps") deps))
+             (_ (if *debugging* (format #t "~A: ~A\n" (red "expanded rule deps") deps)))
 
              ;; Step 2: 'target' and 'targets' fields list files generated
              ;; by the action. Add them to the pkg :modules and :files
@@ -112,17 +116,17 @@
                                         (assoc-val 'targets rule-alist)))
                                       tgts
                                       '())))
-             (_ (format #t "~A: ~A~%" (red "Targets") targets))
+             (_ (if *debugging* (format #t "~A: ~A~%" (red "Targets") targets)))
 
              ;; 'target' may be omitted with with-stdout-to
-             (_ (format #t "~A: ~A~%" (green "rule-alist") rule-alist))
+             (_ (if *debugging* (format #t "~A: ~A~%" (green "rule-alist") rule-alist)))
              (stdout-tgt (if-let ((stdout (assoc-in '(action with-stdout-to) rule-alist)))
                                  (let ((stdout (cadr stdout)))
                                    (if (string-prefix? "%{" (format #f "~A" stdout))
                                        #f
                                        stdout))
                                  #f))
-             (_ (format #t "~A: ~A~%" (green "stdout-tgt") stdout-tgt))
+             (_ (if *debugging* (format #t "~A: ~A~%" (green "stdout-tgt") stdout-tgt)))
 
              ;; if with-stdout-to is listed in targets, remove dups
              (targets (remove-duplicates
@@ -130,7 +134,7 @@
                            (cons stdout-tgt targets)
                            targets)))
 
-             (_ (format #t "~A: ~A~%" (red "Targets") targets))
+             (_ (if *debugging* (format #t "~A: ~A~%" (red "Targets") targets)))
 
              ;; add targets to pkg fields
              (pkg (if (null? targets)
@@ -140,56 +144,60 @@
                         (update-pkg-files! pkg targets)
                               ;; )
                         pkg)))
-             ;; (_ (format #t "~A: ~A\n" (yellow "updated pkg") pkg))
+             ;; (_ (if *debugging* (format #t "~A: ~A\n" (yellow "updated pkg") pkg)))
 
              ;; normalize
              (targets (cons :outputs (expand-targets ws pkg targets deps)))
-             (_ (format #t "~A: ~A\n" (red "expanded rule targets") targets))
+             (_ (if *debugging* (format #t "~A: ~A\n" (red "expanded rule targets") targets)))
              )
 
-        (format #t "~A: ~A~%" (yellow "iterating deps") deps)
+        (if *debugging*
+            (format #t "~A: ~A~%" (yellow "iterating deps") deps))
         (if deps
             (for-each (lambda (dep)
                         ;; dep forms:
                         ;; (:foo (:pkg a/b/c)(:tgt "foo.sh"))
                         ;; (::opam-pkg foo-bar-baz)
                         ;; (tezos-protocol-demo-noops ::opam-pkg)
-                        (format #t "~A: ~A~%" (ucyan "dep") dep)
+                        (if *debugging*
+                            (format #t "~A: ~A~%" (ucyan "dep") dep))
                         (case (cdr dep)
                           ((::opam-pkg) (cdr dep))
                           (else
-                              (format #t "~A: ~A~%" (red "filegroup dep?") dep)
-                              (let* ((lbl-tag (car dep))
-                                     (lbl (cdr dep))
-                                     (pkg (assoc-val :pkg lbl))
-                                     (tgt-tag (caadr lbl))
-                                     (_ (format #t "~A: ~A~%" (red "tgt-tag") tgt-tag))
-                                     (tgt (case tgt-tag
-                                            ((:tgt)
-                                             (assoc-val :tgt lbl))
-                                            ((:tgts)
-                                             (assoc-val :tgts lbl))
-                                            ((:glob)
-                                             (assoc-val :glob lbl))
-                                            ((:fg)
-                                             (assoc-val :fg lbl))
-                                            (else
-                                             (error 'fixme "label pair lacks :tgt and :tgts"))))
-                                     (fg-tag (if (eq? tgt-tag :fg)
-                                                 (format #f "*~A*" tgt)
-                                                 tgt)))
-                                ;; (format #t "~A: ~A~%" (red "pkg") pkg)
-                                ;; (format #t "~A: ~A~%" (red "lbl-tag") lbl-tag)
-                                ;; (format #t "~A: ~A~%" (red "tgt-tag") tgt-tag)
-                                ;; (format #t "~A: ~A~%" (red "tgt") tgt)
-                                ;; (format #t "~A: ~A~%" (red "pkg-path") pkg-path)
-                                (if (not (equal? (format #f "~A" pkg) pkg-path))
-                                    (if (eq? tgt-tag :fg)
-                                        (update-filegroups-table!
-                                         ws pkg-path pkg (string->keyword fg-tag) tgt)))))))
+                           (if *debugging*
+                               (format #t "~A: ~A~%" (red "filegroup dep?") dep))
+                           (let* ((lbl-tag (car dep))
+                                  (lbl (cdr dep))
+                                  (pkg (assoc-val :pkg lbl))
+                                  (tgt-tag (caadr lbl))
+                                  (_ (if *debugging* (format #t "~A: ~A~%" (red "tgt-tag") tgt-tag)))
+                                  (tgt (case tgt-tag
+                                         ((:tgt)
+                                          (assoc-val :tgt lbl))
+                                         ((:tgts)
+                                          (assoc-val :tgts lbl))
+                                         ((:glob)
+                                          (assoc-val :glob lbl))
+                                         ((:fg)
+                                          (assoc-val :fg lbl))
+                                         (else
+                                          (error 'fixme "label pair lacks :tgt and :tgts"))))
+                                  (fg-tag (if (eq? tgt-tag :fg)
+                                              (format #f "*~A*" tgt)
+                                              tgt)))
+                             ;; (format #t "~A: ~A~%" (red "pkg") pkg)
+                             ;; (format #t "~A: ~A~%" (red "lbl-tag") lbl-tag)
+                             ;; (format #t "~A: ~A~%" (red "tgt-tag") tgt-tag)
+                             ;; (format #t "~A: ~A~%" (red "tgt") tgt)
+                             ;; (format #t "~A: ~A~%" (red "pkg-path") pkg-path)
+                             (if (not (equal? (format #f "~A" pkg) pkg-path))
+                                 (if (eq? tgt-tag :fg)
+                                     (update-filegroups-table!
+                                      ws pkg-path pkg (string->keyword fg-tag) tgt)))))))
                       (cdr deps)))
 
-        (format #t "~%~A: ~A~%~%" (red "DISPATCHING  on action") rule-alist)
+        (if *debugging*
+            (format #t "~%~A: ~A~%~%" (red "DISPATCHING  on action") rule-alist))
 
         ;; rule type is determined by 'action' field, which can be:
         ;; bash, copy, run, etc.
@@ -200,9 +208,11 @@
         (let* ((mibl-rule
                 (cond
                  ((assoc 'action rule-alist)
-                  (format #t "handling action rule\n" )
-                  (format #t "targets: ~A~%" targets)
-                  (format #t "deps: ~A~%" deps)
+                  (if *debugging*
+                      (begin
+                        (format #t "handling action rule\n" )
+                        (format #t "targets: ~A~%" targets)
+                        (format #t "deps: ~A~%" deps)))
                   (normalize-action-rule ws pkg rule-alist
                                          (if (null? targets) (list :targets) targets)
                                          (if deps deps (list :deps))))
@@ -215,14 +225,16 @@
                                            ;; (format #t "~A: ~A~%" (red "RULE FLD") fld)
                                            (member (car fld) dune-dsl-cmds))
                                          rule-alist)))
-                    (format #t "~A: ~A~%" (red "FOUND dsl cmd") action)
+                    (if *debugging*
+                        (format #t "~A: ~A~%" (red "FOUND dsl cmd") action))
                     (if action
                         (let ((rule-alist (map (lambda (fld)
                                                  (if (equal? (car fld) (car action))
                                                      (list 'action fld)
                                                      fld))
                                                rule-alist)))
-                          (format #t "~A: ~A~%" (red "updated alist") rule-alist)
+                          (if *debugging*
+                              (format #t "~A: ~A~%" (red "updated alist") rule-alist))
                           (normalize-action-rule ws pkg rule-alist targets
                                                  (if deps deps (list :deps))))
                         (error 'no-action (format #f "rule without action: ~A" rule-alist)))))))
@@ -244,7 +256,8 @@
                 ;; (else
                 ;;  (error 'unhandled-rule
                 ;;         (format #f "unhandled rule: ~A" rule-alist))))))
-          (format #t "~A: ~A~%" (green "mibl-rule") mibl-rule)
+               (if *debugging*
+                   (format #t "~A: ~A~%" (green "mibl-rule") mibl-rule))
          ;; (_ (error 'X "STOP prune"))
 
           ;; (update-exports-table-with-targets! ws

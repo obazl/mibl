@@ -23,7 +23,7 @@
 ;;       (let* ((key (string->keyword tool)))
 ;;         ;; search :deps
 ;;         (let* ((deps (assoc-val :deps stanza))
-;;                ;; (_ (format #t "~A: ~A~%" (yellow "deps") deps))
+;;                ;; (_ (if *debugging* (format #t "~A: ~A~%" (yellow "deps") deps)))
 ;;                (match (find-if (lambda (dep)
 ;;                                  ;; (format #t "~A: ~A~%" (yellow "dep") dep)
 ;;                                  (eq? key (car dep)))
@@ -32,7 +32,7 @@
 ;;           (if match
 ;;               (let* ((lbl (cdr match))
 ;;                      (pkg (assoc-val :pkg lbl))
-;;                      ;; (_ (format #t "~A: ~A~%" (yellow "pkg") pkg))
+;;                      ;; (_ (if *debugging* (format #t "~A: ~A~%" (yellow "pkg") pkg)))
 ;;                      (pkg (if (equal? pkg-path pkg) "" pkg))
 ;;                      (tgt (if-let ((t (assoc-val :tgt lbl)))
 ;;                                   (format #f "~A:~A" pkg t)
@@ -46,19 +46,22 @@
   ;; FIXME: shell cmd args may include filename literals; find way to expand?
   ;; FIXME: may include ${target}
   ;; FIXME: in general: expand all '${}' in args
-  (format #t "~A: ~A\n" (ublue "normalize-action-shell-cmd") action)
-  (format #t "~A: ~A~%" (white "action-list") action-list)
-  (format #t "~A: ~A~%" (white "action-args") (cdr action-list))
+  (if *debugging*
+      (begin
+        (format #t "~A: ~A\n" (ublue "normalize-action-shell-cmd") action)
+        (format #t "~A: ~A~%" (white "action-list") action-list)
+        (format #t "~A: ~A~%" (white "action-args") (cdr action-list))))
 
   ;; search deps for tool, if not found, add it to (:deps ::tool)?
 
   (let* ((tool (if (eq? action 'system) 'sh action))
-         (_ (format #t "~A: ~A~%" (white "tool") tool))
+         (_ (if *debugging* (format #t "~A: ~A~%" (white "tool") tool)))
          (action-args (cdr action-list))
-         (_ (format #t "~A: ~A~%" (white "action-args") action-args))
+         (_ (if *debugging* (format #t "~A: ~A~%" (white "action-args") action-args)))
          (expanded-args (expand-cmd-args* ws action-args pkg targets deps))
          )
-    (format #t "~A: ~A~%" (uwhite "expanded-args") expanded-args)
+    (if *debugging*
+        (format #t "~A: ~A~%" (uwhite "expanded-args") expanded-args))
     `((:cmd
        (:tool ,tool)
        (:args ,@expanded-args)))))

@@ -1,4 +1,5 @@
 ;; mibl:  opam.scm
-(display "loading opam.scm") (newline)
+(if *debugging*
+    (format #t "loading opam.scm~%"))
 
 

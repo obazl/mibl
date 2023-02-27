@@ -163,8 +163,10 @@ EXPORT void bazel_configure(void) // char *_exec_root)
     /* NB: the Bazel cc toolchain _may_ set
        -DBAZEL_CURRENT_REPOSITORY, not sure when.
      */
+#if defined(DEBUG_TRACE)
 #ifdef BAZEL_CURRENT_REPOSITORY
-    log_debug("BAZEL_CURRENT_REPOSITORY: %s", BAZEL_CURRENT_REPOSITORY);
+        log_debug("BAZEL_CURRENT_REPOSITORY: %s", BAZEL_CURRENT_REPOSITORY);
+#endif
 #endif
     build_wd = getenv("BUILD_WORKING_DIRECTORY");
 
