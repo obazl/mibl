@@ -23,15 +23,6 @@ def fetch_repos():
         branch = "dev"
     )
 
-    # maybe(
-    #     git_repository,
-    #     name = "rules_cc",
-    #     remote = "https://github.com/bazelbuild/rules_cc",
-    #     commit = "b1c40e1de81913a3c40e5948f78719c28152486d",
-    #     shallow_since = "1605101351 -0800"
-    #     # branch = "master"
-    # )
-
     ## logc vendored
 #     maybe(
 #         http_archive,

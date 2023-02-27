@@ -23,7 +23,6 @@
 ;;  (action
 ;;   (diff test.expected test.output)))
 
-(set! *debug-alias* #t)
 (define (dune-alias->mibl ws pkg stanza)
   (if (or *debug-alias* *debugging*)
       (format #t "~A: ~A\n" (blue "dune-alias->mibl") stanza))
