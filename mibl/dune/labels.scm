@@ -541,7 +541,7 @@
               ;;        (deps (assoc-val :deps stanza-alist)))
               ;;    (format #t "library deps: ~A~%" deps)))
 
-              ((:ocamllex :ocamlyacc :menhir :env
+              ((:lex :yacc :menhir :env
                           :exec-libs :testsuite :tuareg :alias)
                (values))
 

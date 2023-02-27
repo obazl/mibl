@@ -375,8 +375,11 @@
     libdep))
 
 (define (pkg->pkg-name pkg)
-  (let ((bn (basename (car (assoc-val :pkg-path pkg)))))
-    (string-map (lambda (ch) (if (char=? ch #\-) #\_ ch)) bn)))
+  (let* ((bn (basename (car (assoc-val :pkg-path pkg))))
+         (pn (if (string=? "." bn)
+                (basename (car (assoc-val :ws-path pkg)))
+                bn)))
+    (string-map (lambda (ch) (if (char=? ch #\-) #\_ ch)) pn)))
 
 (define (normalize-module-name mname)
   ;;(format #t "normalize-module-name: ~A\n" mname)

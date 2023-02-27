@@ -1,3 +1,6 @@
+(if *debugging*
+    (format #t "loading updaters.scm~%"))
+
 (define (update-filegroups-table! ws client-path pkg-path tgt pattern)
   (if *debugging*
       (begin
@@ -969,3 +972,6 @@
                                    (format #t "~A: ~A~%" (cyan "compile-deps (after)") compile-deps))))))
                          )))
                 (assoc-val :dune pkg))))
+
+(if *debugging*
+    (format #t "loaded updaters.scm~%"))

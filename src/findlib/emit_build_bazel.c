@@ -375,8 +375,8 @@ void emit_bazel_hdr(FILE* ostream)
             "load(\"@opam//build:rules.bzl\", \"opam_import\")\n");
 
     //FIXME: only if --enable-jsoo passed
-    /* fprintf(ostream, */
-    /*         "load(\"@rules_jsoo//build:rules.bzl\", \"jsoo_library\", \"jsoo_import\")\n\n"); */
+    fprintf(ostream,
+            "load(\"@rules_jsoo//build:rules.bzl\", \"jsoo_library\", \"jsoo_import\")\n\n");
 }
 
 /* obzl_meta_values *resolve_setting_values(obzl_meta_setting *_setting, */

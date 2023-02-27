@@ -263,14 +263,13 @@
              (set-cdr! nstanzas
                        (append
                         (cdr nstanzas)
-                        (lexyacc->mibl :ocamllex ws pkg stanza))))
+                        (lexyacc->mibl :lex ws pkg stanza))))
 
             ((ocamlyacc)
              (set-cdr! nstanzas
                        (append
                         (cdr nstanzas)
-                        (lexyacc->mibl :ocamlyacc
-                                                  ws pkg stanza))))
+                        (lexyacc->mibl :yacc ws pkg stanza))))
 
             ((menhir)
              (set-cdr! nstanzas

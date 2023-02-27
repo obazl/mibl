@@ -964,6 +964,9 @@ EXPORT s7_scheme *s7_configure(void)
        false: map to :library */
     s7_define_variable(s7, "*unwrapped-libs-to-archives*", s7_t(s7));
 
+    /* emit menhir target instead of ocamlyacc */
+    s7_define_variable(s7, "*menhir*", s7_f(s7));
+
     /* emit ocaml_signature for every sigfile target */
     s7_define_variable(s7, "*build-dyads*", s7_t(s7));
 
@@ -1034,8 +1037,8 @@ EXPORT s7_scheme *s7_configure(void)
     modules_kw = s7_make_keyword(s7, "modules");
     sigs_kw = s7_make_keyword(s7, "signatures");
     structs_kw = s7_make_keyword(s7, "structures");
-    mll_kw = s7_make_keyword(s7, "ocamllex");
-    mly_kw = s7_make_keyword(s7, "ocamlyacc");
+    mll_kw = s7_make_keyword(s7, "lex");
+    mly_kw = s7_make_keyword(s7, "yacc");
     cppo_kw = s7_make_keyword(s7, "cppo");
     files_kw   = s7_make_keyword(s7, "files");
     static_kw  = s7_make_keyword(s7, "static");

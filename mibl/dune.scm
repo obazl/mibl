@@ -40,7 +40,6 @@
 (load "dune/predicates.scm")
 (load "dune/preprocessing.scm")
 ;; (load "dune/actions_with_output_to.scm")
-(load "dune/emit.scm")
 (load "dune/miblark.scm")
 (load "dune/aliases.scm")
 (load "dune/shared.scm")

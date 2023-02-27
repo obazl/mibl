@@ -464,10 +464,11 @@
                            #f "ocamldep -one-line -modules -I ~A ~A/~A"
                            pkg-path *tmp-dir* ml-src))
                          (deps (string-trim '(#\newline) (system ocamldep-cmd #t))) ;;;;;;;;;;;;;;;; SYS
-                         (file-deps (string-split deps #\newline)))
+                         (file-deps (cdr (string-split deps #\newline))))
                     (if *debugging*
                         (begin
                           (format #t "~A: ~A~%" (blue "ocamldep-cmd") ocamldep-cmd)
+                          (format #t "~A: ~A~%" (blue "deps") deps)
                           (format #t "~A: ~A~%" (blue "file-deps") file-deps)))
 
                     ;; (format #t "~A: ~A~%" (bgred "pkg-modules")
@@ -540,11 +541,11 @@
          (_ (if *debugging* (format #t "~A: ~A~%" (blue "pkg-modules") pkg-modules)))
 
          (pkg-static-mll (if-let ((mll-static
-                                   (assoc-in '(:ocamllex :static) pkg)))
+                                   (assoc-in '(:lex :static) pkg)))
                                  (cdr mll-static) '()))
          (_ (if *debugging* (format #t "~A: ~A~%" (blue "pkg-static-mll") pkg-static-mll)))
          ;; prolly won't have dynamic .mll files, but just in case
-         (pkg-dynamic-mll (if-let ((mll-dyn (assoc-in '(:ocamllex :dynamic) pkg)))
+         (pkg-dynamic-mll (if-let ((mll-dyn (assoc-in '(:lex :dynamic) pkg)))
                                   (cdr mll-dyn) '()))
          (_ (if *debugging* (format #t "~A: ~A~%" (blue "pkg-dynamic-mll") pkg-dynamic-mll)))
 
@@ -552,11 +553,11 @@
          (_ (if *debugging* (format #t "~A: ~A~%" (blue "pkg-mll") pkg-mll)))
 
          (pkg-static-mly (if-let ((mly-static
-                                   (assoc-in '(:ocamlyacc :static) pkg)))
+                                   (assoc-in '(:yacc :static) pkg)))
                                  mly-static '()))
          (_ (if *debugging* (format #t "~A: ~A~%" (blue "pkg-static-mly") pkg-static-mly)))
          (pkg-dynamic-mly (if-let ((mly-dyn
-                                    (assoc-in '(:ocamlyacc :dynamic) pkg)))
+                                    (assoc-in '(:yacc :dynamic) pkg)))
                                   mly-dyn '()))
          (_ (if *debugging* (format #t "~A: ~A~%" (blue "pkg-dynamic-mly") pkg-dynamic-mly)))
          (pkg-mly (concatenate pkg-static-mly pkg-dynamic-mly))

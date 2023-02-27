@@ -1,6 +1,6 @@
 filegroup(
     name = "srcs",
-    data = ["dune.scm", "meta.scm", "opam.scm"], # glob(["*.scm"]),
+    data = ["mibl.scm", "dune.scm", "meta.scm", "opam.scm"],
     visibility = ["//visibility:public"]
 )
 

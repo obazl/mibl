@@ -268,7 +268,7 @@
              ;;         (-alias-args->miblark pkg stanza)))
              )
            (cdr dune-pkg))
-      ;; else
+      ;; else no dune file
       ))
 
 (define (miblarkize ws)
