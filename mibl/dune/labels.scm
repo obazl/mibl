@@ -219,11 +219,21 @@
 
               ((:executable :test)
                (if *debugging*
-                   (format #t "~A: ~A~%" (ublue "fixup") (car stanza)))
+                   (format #t "~A: ~A~%" (ublue "x fixup") (car stanza)))
                ;; FIXME: also handle :dynamic
-               (let (;; (modules (assoc-in '(:compile :manifest :modules) stanza-alist))
+               (let* (;; (modules (assoc-in '(:compile :manifest :modules) stanza-alist))
                      (compile-deps (assoc-in '(:deps :remote) stanza-alist))
-                     (stanza-deps (assoc-in '(:deps :remote) stanza-alist)))
+                     (stanza-deps (assoc-in '(:deps :remote) stanza-alist))
+
+                      (ppx (if-let ((ppx (assoc-val :ppx stanza-alist)))
+                                   ppx #f))
+                      (ppxex (if-let ((ppxes (assoc-val :ppxes stanza-alist)))
+                                     ppxes #f))
+                      (_ (if *debugging* (format #t "~A: ~A~%" (ublue "ppx") ppx)))
+                      (ppx-codeps (if-let ((ppx-codeps (assoc
+                                                        :ppx-codeps stanza-alist)))
+                                          ppx-codeps #f))
+                     )
                  ;; (format #t "x compile modules: ~A~%" modules)
                  (if *debugging*
                      (begin
@@ -257,6 +267,33 @@
 
                      ;; else no compile-deps
                      )
+
+                 (if ppx
+                     (begin
+                       (if *debugging*
+                           (format #t "~A: ~A~%" (ured "resolving ppx") ppx))
+                       (let* ((exports (car (assoc-val :exports ws)))
+                              (ppx-deps (assoc :manifest ppx))
+                              (_ (if *debugging* (format #t "~A: ~A~%" (bgred "ppx-deps") ppx-deps)))
+                              (fixppx
+                               (map (lambda (dep)
+                                      (if *debugging*
+                                          (format #t "~A: ~A~%" (uwhite "fixup ppx-dep") dep))
+                                      (cond
+                                       ((list? dep)
+                                        ;; std dep form: (:foo (:pkg...)(:tgt...))
+                                        (-fixup-std-dep-form ws pkg dep exports))
+                                       ((symbol? dep)
+                                        (-fixup-dep-sym ws-id dep pkg-path exports))
+                                       (else (error 'fixme
+                                                    (format #f "~A: ~A~%" (bgred "unrecognized ppx-dep type") dep)))))
+                                    (cdr ppx-deps))))
+                         (if *debugging*
+                             (format #t "~A: ~A~%" (ured "fixed-up ppx-deps") fixppx))
+                         (set-cdr! ppx-deps fixppx)
+                         ;; (set-car! ppx-deps :resolved)
+                         ;; (error 'STOP "stop ppx")
+                         )))
                      ;; (let ((new (map (lambda (dep)
                      ;;                   ;; (format #t "~A: ~A\n" (uyellow "dep") dep)
                      ;;                   (let ((exp (hash-table-ref exports dep)))
@@ -410,7 +447,7 @@
 
               ((:archive :ns-archive :library :ns-library)
                (if *debugging*
-                   (format #t "~A: ~A~%" (blue "fixup") (car stanza)))
+                   (format #t "~A: ~A~%" (blue " agg fixup") (car stanza)))
                ;; (let ((deps (assoc-val :deps stanza-alist)))
                ;;   (format #t "archive deps: ~A~%" deps)))
                (let* ((deps (if-let ((deps (assoc-in '(:deps :remote) stanza-alist)))

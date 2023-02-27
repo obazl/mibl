@@ -101,6 +101,6 @@
       t)))
 
 (define (normalize-stanza-tests pkg-path ocaml-srcs stanza)
-  ;; (display (format #f "dir: ~A" pfx)) (newline)
-  ;; (display (format #f "normalize-stanza-tests: ~A" stanza)) (newline)
+  (if (or *debug-executables* *debugging*)
+      (format #t "~A: ~A~%" (ublue "normalize-stanza-tests") stanza))
   (dune-executables->mibl :test pkg-path ocaml-srcs stanza))
