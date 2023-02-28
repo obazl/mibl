@@ -79,14 +79,13 @@ HDRS_CMD_LOCATIONS = [
 
     "$(location //convert:convert.c)",
     "$(location //coswitch:coswitch.c)",
-    ";",
 ]
 
-LINUX = select({
+LINUX = " " + select({
     "//bzl/host:linux": " ".join(["$(location //src/linux:strlcat.c)",
                                   "$(location //src/linux:strlcpy.c)",
                                   "$(location //src/linux:strnstr.c)"]),
-    "//conditions:default": " "
+    "//conditions:default": ""
 })
 
 genrule(
@@ -213,13 +212,16 @@ genrule(
         "SRCDIR4=`dirname $$SRC4`;",
         "SRC5=$(location //convert:convert.c);",
         "SRCDIR5=`dirname $$SRC5`;",
-    ] + HDRS_CMD_LOCATIONS) + LINUX + " ".join([
+        "SRC6=$(location //src/linux:strlcat.c);",
+        "SRCDIR6=`dirname $$SRC6`;",
+    ] + HDRS_CMD_LOCATIONS) + LINUX + ";" + ".join([
         "cp $${SRCDIR0}/*.h $(@D);",
         "cp $${SRCDIR1}/*.h $(@D);",
         "cp $${SRCDIR2}/*.h $(@D);",
         "cp $${SRCDIR3}/*.h $(@D);",
         "cp $${SRCDIR4}/*.h $(@D);",
         "cp $${SRCDIR5}/*.h $(@D);",
+        "cp $${SRCDIR6}/*.h $(@D);",
     ]),
     tools = ["//src:makeheaders"],
     visibility = ["//visibility:public"]
