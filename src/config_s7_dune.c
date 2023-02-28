@@ -813,7 +813,7 @@ LOCAL void s7_config_repl(s7_scheme *sc)
 {
     printf("mibl: s7_repl\n");
 #if (!WITH_C_LOADER)
-  dumb_repl(sc);
+  /* dumb_repl(sc); */
 #else
 #if WITH_NOTCURSES
   s7_load(sc, "nrepl.scm");
