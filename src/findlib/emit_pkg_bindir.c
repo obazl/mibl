@@ -210,7 +210,7 @@ void emit_opam_pkg_bindir(const char *pkg) // UT_string *dune_pkg_file)
        them from lib/stublibs to lib/<pkg>/stublibs.
      */
 
-    UT_array *stublibs = get_pkg_stublibs(pkg, stanzas);
+    UT_array *stublibs = get_pkg_stublibs((char*)pkg, stanzas);
     if (utarray_len(stublibs) == 0) goto exit;
 
     UT_string *opam_stublib;
