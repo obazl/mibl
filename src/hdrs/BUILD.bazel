@@ -24,7 +24,26 @@ makeheaders(
 )
 
 ########
-HDRS_CMD_LOCATIONS = [
+DIRLOCS = [
+    "SRC0=$(location //coswitch:coswitch.c);",
+    "SRCDIR0=`dirname $$SRC0`;",
+    "SRC1=$(location //src:ansi_colors.h);",
+    "SRCDIR1=`dirname $$SRC1`;",
+    "SRC2=$(location //src/dune:dune_readers.c);",
+    "SRCDIR2=`dirname $$SRC2`;",
+    "SRC3=$(location //src/findlib:meta_packages.c);",
+    "SRCDIR3=`dirname $$SRC3`;",
+    ## meta_syntaxis.c is generated so needs special treatment
+    "SRC4=$(location //src/findlib:meta_syntaxis.c);",
+    "SRCDIR4=`dirname $$SRC4`;",
+    "SRC5=$(location //convert:convert.c);",
+    "SRCDIR5=`dirname $$SRC5`;",
+]
+
+# We need to enumerate rather than use $(SRCS) or a wildcard
+# since for for a few srcfiles we do not want to emit a hdr;
+# for those we use the suffixed colon notation e.g. 'foo.c:'.
+FILELOCS = [
     "$(location //src:makeheaders)",
 
     "$(location //src:ansi_colors.h)",
@@ -81,12 +100,22 @@ HDRS_CMD_LOCATIONS = [
     "$(location //coswitch:coswitch.c)",
 ]
 
-LINUX = " " + select({
-    "//bzl/host:linux": " ".join(["$(location //src/linux:strlcat.c)",
-                                  "$(location //src/linux:strlcpy.c)",
-                                  "$(location //src/linux:strnstr.c)"]),
+# Note the trailing ':', we do not need to emit headers for these.
+LINUX_FILELOCS = " " + select({
+    "//bzl/host:linux": " ".join(["$(location //src/linux:strlcat.c):",
+                                  "$(location //src/linux:strlcpy.c):",
+                                  "$(location //src/linux:strnstr.c):"]),
     "//conditions:default": ""
 })
+
+CP_CMDS = " ".join([
+    "cp $${SRCDIR0}/*.h $(@D);",
+    "cp $${SRCDIR1}/*.h $(@D);",
+    "cp $${SRCDIR2}/*.h $(@D);",
+    "cp $${SRCDIR3}/*.h $(@D);",
+    "cp $${SRCDIR4}/*.h $(@D);",
+    "cp $${SRCDIR5}/*.h $(@D);",
+])
 
 genrule(
     name = "hdrs",
@@ -195,34 +224,9 @@ genrule(
         "convert.h",
         "coswitch.h"
     ],
-    # we need to enumerate rather than use $(SRCS) or a wildcard
-    # since for for a few srcfiles we do not want to emit a hdr;
-    # for those we use the suffixed colon notation e.g. 'foo.c:'.
-    cmd = " ".join([
-        "SRC0=$(location //coswitch:coswitch.c);",
-        "SRCDIR0=`dirname $$SRC0`;",
-        "SRC1=$(location //src:ansi_colors.h);",
-        "SRCDIR1=`dirname $$SRC1`;",
-        "SRC2=$(location //src/dune:dune_readers.c);",
-        "SRCDIR2=`dirname $$SRC2`;",
-        "SRC3=$(location //src/findlib:meta_packages.c);",
-        "SRCDIR3=`dirname $$SRC3`;",
-        ## meta_syntaxis.c is generated so needs special treatment
-        "SRC4=$(location //src/findlib:meta_syntaxis.c);",
-        "SRCDIR4=`dirname $$SRC4`;",
-        "SRC5=$(location //convert:convert.c);",
-        "SRCDIR5=`dirname $$SRC5`;",
-        "SRC6=$(location //src/linux:strlcat.c);",
-        "SRCDIR6=`dirname $$SRC6`;",
-    ] + HDRS_CMD_LOCATIONS) + LINUX + ";" + ".join([
-        "cp $${SRCDIR0}/*.h $(@D);",
-        "cp $${SRCDIR1}/*.h $(@D);",
-        "cp $${SRCDIR2}/*.h $(@D);",
-        "cp $${SRCDIR3}/*.h $(@D);",
-        "cp $${SRCDIR4}/*.h $(@D);",
-        "cp $${SRCDIR5}/*.h $(@D);",
-        "cp $${SRCDIR6}/*.h $(@D);",
-    ]),
+    cmd = " ".join(DIRLOCS) +
+    " ".join(FILELOCS) + LINUX_FILELOCS + ";"
+    + CP_CMDS,
     tools = ["//src:makeheaders"],
     visibility = ["//visibility:public"]
 )
