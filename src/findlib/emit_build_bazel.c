@@ -863,6 +863,7 @@ void emit_bazel_stublibs_attr(FILE* ostream,
     char *sbuf = (char*)&strbuf;
     /* char *foo = "foo"; */
     struct dirent *direntry;
+    int name_len;
 
     while ((direntry = readdir(d)) != NULL) {
         if ((direntry->d_type==DT_REG)
@@ -872,8 +873,9 @@ void emit_bazel_stublibs_attr(FILE* ostream,
                 /* fprintf(ostream, "%*scc_deps   = [\":_%s\"],\n", */
                 /*         level*spfactor, sp, direntry->d_name); */
 
-                (void)strncpy(strbuf, direntry->d_name, direntry->d_namlen);
-                strbuf[direntry->d_namlen] = '\0';
+                name_len = strlen(direntry->d_name);
+                (void)strncpy(strbuf, direntry->d_name, name_len);
+                strbuf[name_len] = '\0';
                 /* fprintf(ostream, "X %s\n", strbuf); */
 
                 /* printf("STUBLIB: %s\n", strbuf); */

@@ -1600,6 +1600,7 @@ LOCAL void _update_pkg_structs(s7_pointer pkg_tbl,
 
                 s7_pointer new_structures_alist
                     = s7_set_cdr(structures_alist, new_structures_alist_cdr);
+                (void)new_structures_alist;
             }
         } else {
 #if defined(DEBUG_TRACE)

@@ -569,67 +569,67 @@ EXPORT void initialize_config_flags()
     struct config_flag *a_flag;
 
     a_flag = calloc(sizeof(struct config_flag), 1);
-    strncpy(a_flag->name, "byte", 4);
+    strncpy(a_flag->name, "byte", 5);
+    strncpy(a_flag->repo, "@ocaml", 7);
+    strncpy(a_flag->package, "mode", 5);
+    strncpy(a_flag->target, "bytecode", 9);
+    strncpy(a_flag->label, "@rules_ocaml//build/mode:bytecode", 34);
+    HASH_ADD_STR(the_flag_table, name, a_flag);
+
+    a_flag = calloc(sizeof(struct config_flag), 1);
+    strncpy(a_flag->name, "native", 7);
+    strncpy(a_flag->repo, "@ocaml", 7);
+    strncpy(a_flag->package, "mode", 5);
+    strncpy(a_flag->target, "native", 7);
+    strncpy(a_flag->label, "@rules_ocaml//build/mode:native", 32);
+    HASH_ADD_STR(the_flag_table, name, a_flag);
+
+    a_flag = calloc(sizeof(struct config_flag), 1);
+    strncpy(a_flag->name, "mt", 3);
+    strncpy(a_flag->repo, "@ocaml", 7);
+    strncpy(a_flag->package, "cfg/mt", 7);
+    strncpy(a_flag->target, "default", 8);
+    strncpy(a_flag->label, "@rules_ocaml//cfg/cfg/mt:default", 33);
+    HASH_ADD_STR(the_flag_table, name, a_flag);
+
+    a_flag = calloc(sizeof(struct config_flag), 1);
+    strncpy(a_flag->name, "mt_posix", 9);
     strncpy(a_flag->repo, "@ocaml", 6);
-    strncpy(a_flag->package, "mode", 4);
-    strncpy(a_flag->target, "bytecode", 8);
-    strncpy(a_flag->label, "@rules_ocaml//build/mode:bytecode", 21);
+    strncpy(a_flag->package, "cfg/mt", 7);
+    strncpy(a_flag->target, "posix", 6);
+    strncpy(a_flag->label, "@rules_ocaml//cfg/cfg/mt:posix", 31);
     HASH_ADD_STR(the_flag_table, name, a_flag);
 
     a_flag = calloc(sizeof(struct config_flag), 1);
-    strncpy(a_flag->name, "native", 6);
+    strncpy(a_flag->name, "mt_vm", 6);
     strncpy(a_flag->repo, "@ocaml", 6);
-    strncpy(a_flag->package, "mode", 4);
-    strncpy(a_flag->target, "native", 6);
-    strncpy(a_flag->label, "@rules_ocaml//build/mode:native", 19);
+    strncpy(a_flag->package, "cfg/mt", 7);
+    strncpy(a_flag->target, "vm", 3);
+    strncpy(a_flag->label, "@rules_ocaml//cfg/cfg/mt:vm", 28);
     HASH_ADD_STR(the_flag_table, name, a_flag);
 
     a_flag = calloc(sizeof(struct config_flag), 1);
-    strncpy(a_flag->name, "mt", 2);
-    strncpy(a_flag->repo, "@ocaml", 5);
-    strncpy(a_flag->package, "cfg/mt", 6);
-    strncpy(a_flag->target, "default", 7);
-    strncpy(a_flag->label, "@rules_ocaml//cfg/cfg/mt:default", 21);
+    strncpy(a_flag->name, "gprof", 6);
+    strncpy(a_flag->repo, "@ocaml", 6);
+    strncpy(a_flag->package, "cfg", 4);
+    strncpy(a_flag->target, "gprof", 6);
+    strncpy(a_flag->label, "@rules_ocaml//cfg/cfg:gprof", 28);
     HASH_ADD_STR(the_flag_table, name, a_flag);
 
     a_flag = calloc(sizeof(struct config_flag), 1);
-    strncpy(a_flag->name, "mt_posix", 8);
-    strncpy(a_flag->repo, "@ocaml", 5);
-    strncpy(a_flag->package, "cfg/mt", 6);
-    strncpy(a_flag->target, "posix", 5);
-    strncpy(a_flag->label, "@rules_ocaml//cfg/cfg/mt:posix", 19);
+    strncpy(a_flag->name, "ppx_driver", 11);
+    strncpy(a_flag->repo, "@ocaml", 6);
+    strncpy(a_flag->package, "cfg", 4);
+    strncpy(a_flag->target, "driver", 7);
+    strncpy(a_flag->label, "@rules_ocaml//cfg/cfg:ppx_driver", 33);
     HASH_ADD_STR(the_flag_table, name, a_flag);
 
     a_flag = calloc(sizeof(struct config_flag), 1);
-    strncpy(a_flag->name, "mt_vm", 5);
-    strncpy(a_flag->repo, "@ocaml", 5);
-    strncpy(a_flag->package, "cfg/mt", 6);
-    strncpy(a_flag->target, "vm", 2);
-    strncpy(a_flag->label, "@rules_ocaml//cfg/cfg/mt:vm", 16);
-    HASH_ADD_STR(the_flag_table, name, a_flag);
-
-    a_flag = calloc(sizeof(struct config_flag), 1);
-    strncpy(a_flag->name, "gprof", 5);
-    strncpy(a_flag->repo, "@ocaml", 5);
-    strncpy(a_flag->package, "cfg", 3);
-    strncpy(a_flag->target, "gprof", 5);
-    strncpy(a_flag->label, "@rules_ocaml//cfg/cfg:gprof", 16);
-    HASH_ADD_STR(the_flag_table, name, a_flag);
-
-    a_flag = calloc(sizeof(struct config_flag), 1);
-    strncpy(a_flag->name, "ppx_driver", 10);
-    strncpy(a_flag->repo, "@ocaml", 5);
-    strncpy(a_flag->package, "cfg", 3);
-    strncpy(a_flag->target, "driver", 6);
-    strncpy(a_flag->label, "@rules_ocaml//cfg/cfg:ppx_driver", 21);
-    HASH_ADD_STR(the_flag_table, name, a_flag);
-
-    a_flag = calloc(sizeof(struct config_flag), 1);
-    strncpy(a_flag->name, "custom_ppx", 10);
-    strncpy(a_flag->repo, "@ocaml", 5);
-    strncpy(a_flag->package, "cfg", 3);
-    strncpy(a_flag->target, "custom", 6);
-    strncpy(a_flag->label, "@rules_ocaml//cfg/cfg:ppx_custom", 21);
+    strncpy(a_flag->name, "custom_ppx", 11);
+    strncpy(a_flag->repo, "@ocaml", 6);
+    strncpy(a_flag->package, "cfg", 4);
+    strncpy(a_flag->target, "custom", 7);
+    strncpy(a_flag->label, "@rules_ocaml//cfg/cfg:ppx_custom", 33);
     HASH_ADD_STR(the_flag_table, name, a_flag);
 
     /* these seem to be associated with camlp4; ignore for now: */

@@ -6,6 +6,12 @@ exports_files(glob(["*.c", "*.h"]))
 #     "utils.c"
 # ])
 
+config_setting(name = "linux",
+               constraint_values = ["@platforms//os:linux"])
+
+config_setting(name = "macos",
+               constraint_values = ["@platforms//os:macos"])
+
 filegroup(
     name = "mkhdrs_srcs",
     srcs = glob(
@@ -164,7 +170,11 @@ CMD_HDR = "\n".join([
 cc_binary(
     name  = "makeheaders",
     srcs  = ["makeheaders.c"],
-    copts = ["-O3"],
+    copts = ["-O3"] + select({
+        "linux": ["-Wno-stringop-truncation",
+                  "-Wno-stringop-overflow"],
+        "//conditions:default": []
+    }),
     linkstatic=1,
     visibility = ["//visibility:public"]
 )
