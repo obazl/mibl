@@ -879,7 +879,7 @@ void libc_s7_init(s7_scheme *sc);
 
 EXPORT void s7_shutdown(s7_scheme *s7)
 {
-    close_error_config();
+    close_error_config_opam();
     s7_quit(s7);
 }
 
@@ -889,8 +889,8 @@ EXPORT void mibl_s7_init(void)
 
     /* trap error messages */
     /* close_error_config(); */
-    error_config();
-    init_error_handlers();
+    error_config_opam();
+    init_error_handlers_opam();
 
     /* tmp dir */
     char tplt[] = "/tmp/obazl.XXXXXXXXXX";
