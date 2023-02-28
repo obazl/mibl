@@ -6,6 +6,17 @@ exports_files(glob(["*.c", "*.h"]))
 #     "utils.c"
 # ])
 
+COPTS = [
+    "-x", "c",
+    "-std=c11",
+    "-pedantic-errors",
+] + select({
+    "//bzl/host:linux": [
+        "-D_POSIX_C_SOURCE=200809L", ## strdup, strndup, waitpid, etc.
+        "-D_DEFAULT_SOURCE"],        ## DT_ constants from dirent.h
+    "//conditions:default":   []
+})
+
 config_setting(name = "linux",
                constraint_values = ["@platforms//os:linux"])
 
@@ -120,10 +131,7 @@ cc_library(
         ],
         "//conditions:default":   []
     }),
-    copts = [
-        "-x", "c",
-        "-std=c11",
-        "-g",
+    copts = COPTS + [
         "-Wall",
         "-Wpedantic",
         "-Wno-unused-function",
@@ -292,7 +300,7 @@ cc_library(
         # "@libs7//src:s7.h",
         # "log.h",
     ],
-    copts = [
+    copts = COPTS + [
         "-Isrc",
         "-I$(GENDIR)/src",
         "-Iexternal/mibl/src",
@@ -369,7 +377,7 @@ cc_library(
         # "@libs7//src:s7.h",
         # "log.h",
     ],
-    copts = [
+    copts = COPTS + [
         "-Isrc",
         "-I$(GENDIR)/src",
         "-Iexternal/mibl/src",
@@ -434,7 +442,7 @@ cc_library(
     hdrs = [
         # "libdebug.h",
     ],
-    copts = [
+    copts = COPTS + [
         "-Isrc",
         "-I$(GENDIR)/src",
         "-I$(GENDIR)/src/findlib",

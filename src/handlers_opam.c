@@ -314,18 +314,18 @@ void opam_handle_fts_f(FTS *tree, FTSENT *ftsentry)
 
     if ((strstr(ftsentry->fts_name, "opam"))
         && (strlen(ftsentry->fts_name) == 4)) {
-        return handle_opam_file(ftsentry);
+        handle_opam_file(ftsentry);
     }
     else if ((strstr(ftsentry->fts_name, "META"))
              && (strlen(ftsentry->fts_name) == 4)) {
-        return handle_meta_file(ftsentry);
+        handle_meta_file(ftsentry);
     }
     else if (strncmp(ftsentry->fts_name, "dune-package", 12) == 0) {
-        return handle_dune_package_file(ftsentry);
+        handle_dune_package_file(ftsentry);
     }
     else if ((strncmp(ftsentry->fts_name, "dune", 4) == 0)
              && (strlen(ftsentry->fts_name) == 4)) {
-        return handle_dune_file(ftsentry);
+        handle_dune_file(ftsentry);
     }
 
     ext = strrchr(ftsentry->fts_name, '.');
