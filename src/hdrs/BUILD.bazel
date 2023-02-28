@@ -24,6 +24,71 @@ makeheaders(
 )
 
 ########
+HDRS_CMD_LOCATIONS = [
+    "$(location //src:makeheaders)",
+
+    "$(location //src:ansi_colors.h)",
+    "$(location //src:config.c)",
+    "$(location //src:config_bazel.c)",
+    "$(location //src:config_mibl.c)",
+    "$(location //src:config_opam.c)",
+    "$(location //src:config_s7.c)",
+    "$(location //src:config_s7_dune.c)",
+
+    "$(location //src:debug.c)",
+    "$(location //src:debug_findlib.c)",
+    "$(location //src:debug_mibl.c)",
+    "$(location //src:debug_s7.c)",
+
+    "$(location //src:error_handler.c)",
+    "$(location //src:error_handler_dune.c)",
+    "$(location //src:handlers.c)",
+    "$(location //src:handlers_opam.c)",
+
+    "$(location //src:load_dune.c)",
+
+    "$(location //src:opam_switch_converter.c)",
+    "$(location //src:treewalker_project.c)",
+    "$(location //src:utils.c)",
+
+    "$(location //src:log.c):", # do not emit header
+    "$(location //src:log.h)",
+    "$(location //src:utarray.c):",  # do not emit header
+    "$(location //src:utarray.h)",
+    "$(location //src:uthash.h)",
+
+    "$(location //src:utstring.c)",
+
+    "$(location //src/dune:dune_readers.c)",
+
+    "$(location //src/findlib:emit_build_bazel.c)",
+    "$(location //src/findlib:emit_jsoo.c)",
+    "$(location //src/findlib:emit_ocaml_repo.c)",
+    "$(location //src/findlib:emit_pkg_bindir.c)",
+    "$(location //src/findlib:handlers_findlib.c)",
+    "$(location //src/findlib:meta_parser.c)",
+    "$(location //src/findlib:meta_entries.c)",
+    "$(location //src/findlib:meta_flags.c)",
+    "$(location //src/findlib:meta_lexis.c)",
+    "$(location //src/findlib:meta_packages.c)",
+    "$(location //src/findlib:meta_properties.c)",
+    "$(location //src/findlib:meta_settings.c)",
+    "$(location //src/findlib:meta_values.c)",
+    "$(location //src/findlib:meta_syntaxis.c)",
+    "$(location //src/findlib:debug_meta.c)",
+
+    "$(location //convert:convert.c)",
+    "$(location //coswitch:coswitch.c)",
+    ";",
+]
+
+LINUX = select({
+    "//bzl/host:linux": " ".join(["$(location //src/linux:strlcat.c)",
+                                  "$(location //src/linux:strlcpy.c)",
+                                  "$(location //src/linux:strnstr.c)"]),
+    "//conditions:default": " "
+})
+
 genrule(
     name = "hdrs",
     srcs = [
@@ -148,67 +213,7 @@ genrule(
         "SRCDIR4=`dirname $$SRC4`;",
         "SRC5=$(location //convert:convert.c);",
         "SRCDIR5=`dirname $$SRC5`;",
-
-        "$(location //src:makeheaders)",
-
-        "$(location //src:ansi_colors.h)",
-        "$(location //src:config.c)",
-        "$(location //src:config_bazel.c)",
-        "$(location //src:config_mibl.c)",
-        "$(location //src:config_opam.c)",
-        "$(location //src:config_s7.c)",
-        "$(location //src:config_s7_dune.c)",
-
-        "$(location //src:debug.c)",
-        "$(location //src:debug_findlib.c)",
-        "$(location //src:debug_mibl.c)",
-        "$(location //src:debug_s7.c)",
-
-        "$(location //src:error_handler.c)",
-        "$(location //src:error_handler_dune.c)",
-        "$(location //src:handlers.c)",
-        "$(location //src:handlers_opam.c)",
-
-        "$(location //src:load_dune.c)",
-
-        "$(location //src:opam_switch_converter.c)",
-        "$(location //src:treewalker_project.c)",
-        "$(location //src:utils.c)",
-
-        "$(location //src:log.c):", # do not emit header
-        "$(location //src:log.h)",
-        "$(location //src:utarray.c):",  # do not emit header
-        "$(location //src:utarray.h)",
-        "$(location //src:uthash.h)",
-
-        "$(location //src:utstring.c)",
-
-        "$(location //src/dune:dune_readers.c)",
-
-        # "$(location //src/linux:strlcat.c)",
-        # "$(location //src/linux:strlcpy.c)",
-        # "$(location //src/linux:strnstr.c)",
-
-        "$(location //src/findlib:emit_build_bazel.c)",
-        "$(location //src/findlib:emit_jsoo.c)",
-        "$(location //src/findlib:emit_ocaml_repo.c)",
-        "$(location //src/findlib:emit_pkg_bindir.c)",
-        "$(location //src/findlib:handlers_findlib.c)",
-        "$(location //src/findlib:meta_parser.c)",
-        "$(location //src/findlib:meta_entries.c)",
-        "$(location //src/findlib:meta_flags.c)",
-        "$(location //src/findlib:meta_lexis.c)",
-        "$(location //src/findlib:meta_packages.c)",
-        "$(location //src/findlib:meta_properties.c)",
-        "$(location //src/findlib:meta_settings.c)",
-        "$(location //src/findlib:meta_values.c)",
-        "$(location //src/findlib:meta_syntaxis.c)",
-        "$(location //src/findlib:debug_meta.c)",
-
-        "$(location //convert:convert.c)",
-        "$(location //coswitch:coswitch.c)",
-        ";",
-
+    ] + HDRS_CMD_LOCATIONS) + LINUX + " ".join([
         "cp $${SRCDIR0}/*.h $(@D);",
         "cp $${SRCDIR1}/*.h $(@D);",
         "cp $${SRCDIR2}/*.h $(@D);",
