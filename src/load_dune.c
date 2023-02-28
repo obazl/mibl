@@ -2440,22 +2440,25 @@ LOCAL void _update_cppo(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 LOCAL void _update_mli(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 {
     /* printf("_update_mli: "); */
-    char *pkg_name = dirname(ftsentry->fts_path);
+    char *dname = strdup(ftsentry->fts_path);
+    char *pkg_path = dirname(dname);
     char *mname = _module_name(ftsentry, ext);
 #if defined(DEBUG_TRACE)
-    if (trace) {
-        log_trace("_update_mli: %s; ", mname);
-        log_trace("pkg name: %s; fname: %s", pkg_name, ftsentry->fts_name);
+    if (verbose) {
+        log_info(BLU "_update_mli" CRESET);
+        log_info("\tpkg path: %s", pkg_path);
+        log_info("\tfts_name: %s", ftsentry->fts_name);
+        log_info("\tfts_path: %s", ftsentry->fts_path);
+        log_info("\tfts_accpath: %s", ftsentry->fts_accpath);
     }
 #endif
+    /* truncate mli name to get ml name */
     char *ml_name = strdup(ftsentry->fts_name);
     ml_name[strlen(ftsentry->fts_name) - 1] = '\0';
-
-    /* dirname may mutate its arg, use a copy */
-    char *dname = strdup(ftsentry->fts_path);
     UT_string *ml_test;
     utstring_new(ml_test);
-    utstring_printf(ml_test, "%s/%s", dirname(dname), ml_name);
+    utstring_printf(ml_test, "%s/%s", realpath(pkg_path, NULL), ml_name);
+
 #if defined(DEBUG_TRACE)
     if (trace) {
         log_debug(RED "Checking for companion .ml:" CRESET  " %s",
@@ -2465,10 +2468,10 @@ LOCAL void _update_mli(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
     int rc = access(utstring_body(ml_test), F_OK);
     if (rc) {
         /* companion ml file not found */
-        _update_pkg_sigs(pkg_tbl, pkg_name, mname,
+        _update_pkg_sigs(pkg_tbl, pkg_path, mname,
                          ftsentry->fts_name, TAG_MLI);
     } else {
-        _update_pkg_modules(pkg_tbl, pkg_name, mname,
+        _update_pkg_modules(pkg_tbl, pkg_path, mname,
                             ftsentry->fts_name, TAG_MLI);
     }
 }
@@ -2476,25 +2479,26 @@ LOCAL void _update_mli(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 LOCAL void _update_ml(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 {
     /* printf("_update_ml: "); */
-    char *pkg_name = dirname(ftsentry->fts_path);
+    /* dirname may mutate its arg, use a copy */
+    char *dname = strdup(ftsentry->fts_path);
+    char *pkg_path = dirname(dname);
     char *mname = _module_name(ftsentry, ext);
+
 #if defined(DEBUG_TRACE)
     if (verbose) {
-        log_info(BLU "_update_ml:" CRESET " %s; ", mname);
-        log_info("pkg name: %s; fname: %s", pkg_name, ftsentry->fts_name);
-        log_info("fts_path: %s\n", ftsentry->fts_path);
-        log_info("fts_accpath: %s\n", ftsentry->fts_accpath);
+        log_info(BLU "_update_ml" CRESET);
+        log_info("\tpkg path: %s", pkg_path);
+        log_info("\tfts_name: %s", ftsentry->fts_name);
+        log_info("\tfts_path: %s", ftsentry->fts_path);
+        log_info("\tfts_accpath: %s", ftsentry->fts_accpath);
     }
 #endif
     char *ml_name = strdup(ftsentry->fts_name);
-
-    /* dirname may mutate its arg, use a copy */
-#
-    char *dname = strdup(ftsentry->fts_path);
     UT_string *mli_test;
     utstring_new(mli_test);
     /* add terminal 'i' with printf */
-    utstring_printf(mli_test, "%s/%si", realpath(dirname(dname), NULL), ml_name);
+    utstring_printf(mli_test, "%s/%si", realpath(pkg_path, NULL), ml_name);
+
 #if defined(DEBUG_TRACE)
     if (trace) {
         log_debug("Checking for companion .mli: %s",
@@ -2504,24 +2508,24 @@ LOCAL void _update_ml(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
     int rc = access(utstring_body(mli_test), F_OK);
     if (rc) {
         /* companion mli file not found */
-        _update_pkg_structs(pkg_tbl, pkg_name, mname,
+        _update_pkg_structs(pkg_tbl, pkg_path, mname,
                             ftsentry->fts_name, TAG_ML);
     } else {
-        _update_pkg_modules(pkg_tbl, pkg_name, mname,
+        _update_pkg_modules(pkg_tbl, pkg_path, mname,
                             ftsentry->fts_name, TAG_ML);
     }
 }
 
- 
 /*
   if no entry in pkg-tbl for ctx dir, add one
  */
 LOCAL void _handle_ml_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 {
-    /* log_debug("_handle_ml_file %s, %s\n", */
-    /*           ftsentry->fts_name, ext); */
-    /* printf("    pkg: %s\n", dirname(ftsentry->fts_path)); */
-
+#if defined(DEBUG_TRACE)
+    log_debug("_handle_ml_file");
+    log_debug("\tfts_name: %s", ftsentry->fts_name, ext);
+    log_debug("\tfts_path: %s", ftsentry->fts_path, ext);
+#endif
     /* char *ext = strrchr(ftsentry->fts_name, '.'); */
     /* _indent(ftsentry->fts_level); */
     /* printf("%d. " CRESET, ftsentry->fts_level); */

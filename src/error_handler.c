@@ -196,28 +196,28 @@ void init_error_handlers(void)
 
 }
 
-void error_config(void)
-{
-    /* if (trace) log_trace(BLU "error_config" CRESET); */
+/* void error_config(void) */
+/* { */
+/*     /\* if (trace) log_trace(BLU "error_config" CRESET); *\/ */
 
-    old_err_port = s7_set_current_error_port(s7, s7_open_output_string(s7));
-    if (old_err_port != s7_nil(s7)) {
-        /* if (s7_is_output_port(s7, old_err_port)) { */
-        /*     s7_flush_output_port(s7, old_err_port); */
-        /* } */
-        gc_loc = s7_gc_protect(s7, old_err_port);
-    }
-    s7_flush_output_port(s7, s7_current_error_port(s7));
-}
+/*     old_err_port = s7_set_current_error_port(s7, s7_open_output_string(s7)); */
+/*     if (old_err_port != s7_nil(s7)) { */
+/*         /\* if (s7_is_output_port(s7, old_err_port)) { *\/ */
+/*         /\*     s7_flush_output_port(s7, old_err_port); *\/ */
+/*         /\* } *\/ */
+/*         gc_loc = s7_gc_protect(s7, old_err_port); */
+/*     } */
+/*     s7_flush_output_port(s7, s7_current_error_port(s7)); */
+/* } */
 
-void close_error_config(void) // s7_pointer err_port)
-{
-    s7_close_output_port(s7, s7_current_error_port(s7));
+/* void close_error_config(void) // s7_pointer err_port) */
+/* { */
+/*     s7_close_output_port(s7, s7_current_error_port(s7)); */
 
-    s7_set_current_error_port(s7, old_err_port);
-    if (gc_loc != -1)
-        s7_gc_unprotect_at(s7, gc_loc);
-}
+/*     s7_set_current_error_port(s7, old_err_port); */
+/*     if (gc_loc != -1) */
+/*         s7_gc_unprotect_at(s7, gc_loc); */
+/* } */
 
 /* char *dunefile_to_string(UT_string *dunefile_name) */
 /* { */
