@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <stddef.h>
 
 /* #include "log.h" */
 /* #include "s7.h" */
