@@ -594,7 +594,7 @@ EXPORT void initialize_config_flags()
 
     a_flag = calloc(sizeof(struct config_flag), 1);
     strncpy(a_flag->name, "mt_posix", 9);
-    strncpy(a_flag->repo, "@ocaml", 6);
+    strncpy(a_flag->repo, "@ocaml", 7);
     strncpy(a_flag->package, "cfg/mt", 7);
     strncpy(a_flag->target, "posix", 6);
     strncpy(a_flag->label, "@rules_ocaml//cfg/cfg/mt:posix", 31);
@@ -602,7 +602,7 @@ EXPORT void initialize_config_flags()
 
     a_flag = calloc(sizeof(struct config_flag), 1);
     strncpy(a_flag->name, "mt_vm", 6);
-    strncpy(a_flag->repo, "@ocaml", 6);
+    strncpy(a_flag->repo, "@ocaml", 7);
     strncpy(a_flag->package, "cfg/mt", 7);
     strncpy(a_flag->target, "vm", 3);
     strncpy(a_flag->label, "@rules_ocaml//cfg/cfg/mt:vm", 28);
@@ -610,7 +610,7 @@ EXPORT void initialize_config_flags()
 
     a_flag = calloc(sizeof(struct config_flag), 1);
     strncpy(a_flag->name, "gprof", 6);
-    strncpy(a_flag->repo, "@ocaml", 6);
+    strncpy(a_flag->repo, "@ocaml", 7);
     strncpy(a_flag->package, "cfg", 4);
     strncpy(a_flag->target, "gprof", 6);
     strncpy(a_flag->label, "@rules_ocaml//cfg/cfg:gprof", 28);
@@ -618,7 +618,7 @@ EXPORT void initialize_config_flags()
 
     a_flag = calloc(sizeof(struct config_flag), 1);
     strncpy(a_flag->name, "ppx_driver", 11);
-    strncpy(a_flag->repo, "@ocaml", 6);
+    strncpy(a_flag->repo, "@ocaml", 7);
     strncpy(a_flag->package, "cfg", 4);
     strncpy(a_flag->target, "driver", 7);
     strncpy(a_flag->label, "@rules_ocaml//cfg/cfg:ppx_driver", 33);
@@ -626,7 +626,7 @@ EXPORT void initialize_config_flags()
 
     a_flag = calloc(sizeof(struct config_flag), 1);
     strncpy(a_flag->name, "custom_ppx", 11);
-    strncpy(a_flag->repo, "@ocaml", 6);
+    strncpy(a_flag->repo, "@ocaml", 7);
     strncpy(a_flag->package, "cfg", 4);
     strncpy(a_flag->target, "custom", 7);
     strncpy(a_flag->label, "@rules_ocaml//cfg/cfg:ppx_custom", 33);
