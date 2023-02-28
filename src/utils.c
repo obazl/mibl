@@ -6,6 +6,7 @@
 #include <libgen.h>
 #ifdef __linux__
 #include <linux/limits.h>
+#include <sys/wait.h>           /* waitpid */
 #else
 #include <limits.h>             /* PATH_MAX */
 #endif

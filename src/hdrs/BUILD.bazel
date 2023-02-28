@@ -60,11 +60,6 @@ genrule(
         # "//src/dune:mkhdrs_srcs",
         "//src/dune:dune_readers.c",
 
-        ## ONLY FOR LINUX
-        # "//src/linux:strlcat.c",
-        # "//src/linux:strlcpy.c",
-        # "//src/linux:strnstr.c",
-
         "//src/findlib:emit_build_bazel.c",
         "//src/findlib:emit_jsoo.c",
         "//src/findlib:emit_ocaml_repo.c",
@@ -85,7 +80,12 @@ genrule(
         ## runners
         "//convert:convert.c",
         "//coswitch:coswitch.c"
-    ],
+    ] + select({
+        "//bzl/host:linux": ["//src/linux:strlcat.c",
+                             "//src/linux:strlcpy.c",
+                             "//src/linux:strnstr.c"],
+        "//conditions:default":   []
+    }),
     outs = [
         "config.h",
         "config_bazel.h",
@@ -257,11 +257,6 @@ genrule(
         # "//src/dune:mkhdrs_srcs",
         "//src/dune:dune_readers.c",
 
-        ## ONLY FOR LINUX
-        # "//src/linux:strlcat.c",
-        # "//src/linux:strlcpy.c",
-        # "//src/linux:strnstr.c",
-
         "//src/findlib:emit_build_bazel.c",
         "//src/findlib:emit_jsoo.c",
         "//src/findlib:emit_ocaml_repo.c",
@@ -280,7 +275,12 @@ genrule(
         "//src/findlib:meta_syntaxis.c", # //src/findlib/gen_meta_syntaxis
 
         "//coswitch:coswitch.c"
-    ],
+    ] + select({
+        "//bzl/host:linux": ["//src/linux:strlcat.c",
+                             "//src/linux:strlcpy.c",
+                             "//src/linux:strnstr.c"],
+        "//conditions:default":   []
+    }),
     outs = ["libmibl.h"],
     # we need to enumerate rather than use $(SRCS) or a wildcard
     # since for for a few srcfiles we do not want to emit a hdr;
