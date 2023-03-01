@@ -314,7 +314,7 @@ char *dunefile_to_string(UT_string *dunefile_name)
 #endif
 
     if (fileSize > BUFSZ) {
-        printf(RED "ERROR:" CRESET " dune file '%s' size (%llu) > BUFSZ (%d)\n", utstring_body(dunefile_name), fileSize, BUFSZ);
+        printf(RED "ERROR:" CRESET " dune file '%s' size (%lu) > BUFSZ (%d)\n", utstring_body(dunefile_name), fileSize, BUFSZ);
         log_error("dune file size (%d) > BUFSZ (%d)", fileSize, BUFSZ);
         exit(EXIT_FAILURE);     /* FIXME: exit gracefully */
     }
