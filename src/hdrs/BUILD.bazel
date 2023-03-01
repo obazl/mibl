@@ -38,6 +38,8 @@ DIRLOCS = [
     "SRCDIR4=`dirname $$SRC4`;",
     "SRC5=$(location //convert:convert.c);",
     "SRCDIR5=`dirname $$SRC5`;",
+    "SRC6=$(location //src/xdg:xdg.c);",
+    "SRCDIR6=`dirname $$SRC6`;",
 ]
 
 # We need to enumerate rather than use $(SRCS) or a wildcard
@@ -98,6 +100,8 @@ FILELOCS = [
 
     "$(location //convert:convert.c)",
     "$(location //coswitch:coswitch.c)",
+
+    "$(location //src/xdg:xdg.c)",
 ]
 
 # Note the trailing ':', we do not need to emit headers for these.
@@ -115,6 +119,7 @@ CP_CMDS = " ".join([
     "cp $${SRCDIR3}/*.h $(@D);",
     "cp $${SRCDIR4}/*.h $(@D);",
     "cp $${SRCDIR5}/*.h $(@D);",
+    "cp $${SRCDIR6}/*.h $(@D);",
 ])
 
 genrule(
@@ -170,6 +175,8 @@ genrule(
         "//src/findlib:meta_lexis.c",
         "//src/findlib:meta_syntaxis.c", # //src/findlib/gen_meta_syntaxis
 
+        "//src/xdg:xdg.c",
+
         ## runners
         "//convert:convert.c",
         "//coswitch:coswitch.c"
@@ -220,6 +227,8 @@ genrule(
 
         "utils.h",
         "utstring.h",
+
+        "xdg.h",
 
         "convert.h",
         "coswitch.h"
@@ -284,6 +293,8 @@ genrule(
 
         "//src/findlib:meta_lexis.c",
         "//src/findlib:meta_syntaxis.c", # //src/findlib/gen_meta_syntaxis
+
+        "//src/xdg:xdg.c",
 
         "//coswitch:coswitch.c"
     ] + select({
@@ -364,6 +375,7 @@ genrule(
         "$(location //src/findlib:meta_values.c)",
         "$(location //src/findlib:meta_syntaxis.c)",
         "$(location //src/findlib:debug_meta.c)",
+        "$(location //src/xdg:xdg.c)",
 
         "$(location //coswitch:coswitch.c)",
         ">",
