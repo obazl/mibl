@@ -3840,5 +3840,12 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
     }
     /* s7_gc_unprotect_at(s7, pkg_tbl_gc_loc); */
 
+    UT_string *setter;
+    utstring_new(setter);
+    utstring_printf(setter, "(set! *dunefile-count* %d)", dunefile_ct);
+    s7_eval_c_string(s7, utstring_body(setter));
+
+    /* log_info("dunefile count: %d", dunefile_ct); */
+
     return pkg_tbl;
 }
