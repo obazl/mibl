@@ -72,7 +72,7 @@ bool include_this(FTSENT *ftsentry)
 
     /* discard leading "./" */
     char *ptr = NULL;
-    if (ftsentry->fts_path[0] == '.' & ftsentry->fts_path[1] == '/')
+    if ((ftsentry->fts_path[0] == '.') && (ftsentry->fts_path[1] == '/'))
         ptr = ftsentry->fts_path+2;
     else
         ptr = ftsentry->fts_path;
