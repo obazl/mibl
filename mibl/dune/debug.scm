@@ -21,11 +21,13 @@
               keys)))
 
 (define (debug-print-pkgs ws)
-  (format #t "~A~%" (bgred "PKG DUMP"))
+  ;; (if *debug-debug*
+  ;;     (format #t "~A~%" (bgred "PKG DUMP")))
   (let* ((@ws (assoc-val ws -mibl-ws-table))
          (pkgs (car (assoc-val :pkgs @ws)))
          ;; (_ (format #t "~A: ~A~%" (red "pkgs") pkgs))
          (pkg-paths (hash-table-keys pkgs))
+         (pkg-paths (sort! pkg-paths string<?))
          )
     (if *debugging*
         (begin
@@ -34,10 +36,10 @@
           (format #t "~A: ~A~%" (green "pkg-paths") pkg-paths)))
     (for-each (lambda (k)
                 (let ((pkg (hash-table-ref pkgs k)))
-                  (if *debugging*
-                      (begin
-                        (format #t "~A: ~A~%" (green "k") k)
-                        (format #t "~A: ~A~%" (green "pkg") pkg)))
+                  ;; (if *debugging*
+                  ;;     (begin
+                  ;;       (format #t "~A: ~A~%" (green "k") k)
+                  ;;       (format #t "~A: ~A~%" (green "pkg") pkg)))
                   (if (or (null? *dump-pkgs*)
                           (member k *dump-pkgs*))
                       (begin
@@ -76,6 +78,7 @@
                         (format #t "~A: ~A~%" (ugreen "pkg-signatures") (assoc-val :signatures pkg))
                         (format #t "~A: ~A~%" (ugreen "pkg-lex") (assoc-val :lex pkg))
                         (format #t "~A: ~A~%" (ugreen "pkg-yacc") (assoc-val :yacc pkg))
+                        (format #t "~A: ~A~%" (ugreen "pkg-mllib") (assoc-val :mllib pkg))
                         (format #t "~A: ~A~%" (ugreen "pkg-cppo") (assoc-val :cppo pkg))
                         (format #t "~A: ~A~%" (ugreen "pkg-cc-hdrs") (assoc-val :cc-hdrs pkg))
                         (format #t "~A: ~A~%" (ugreen "pkg-cc-srcs") (assoc-val :cc-srcs pkg))

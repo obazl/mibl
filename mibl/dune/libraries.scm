@@ -187,7 +187,7 @@
 
          ;; (ppx (lib-ppx->mibl stanza-alist))
          ;;(preprocess-fld->mibl fld-assoc stanza-alist))
-         (_ (if *debugging* (format #t "~A: ~A~%" (bgyellow ":PPX") ppx)))
+         (_ (if (or *debug-ppx* *debugging*) (format #t "~A: ~A~%" (bgyellow ":PPX") ppx)))
 
          (lib-flds (-map-lib-flds->mibl ws pkg stanza-alist))
          (_ (if *debugging* (format #t "lib-flds (mibl): ~A~%" lib-flds)))
@@ -202,13 +202,14 @@
                                lib-flds)
                        lib-flds))
          (_ (if *debugging* (format #t "lib-flds (2): ~A~%" lib-flds)))
-         (_ (if *debugging* (format #t "lib-flds ppx: ~A~%" ppx)))
+         (_ (if (or *debug-ppx* *debugging*) (format #t "lib-flds ppx: ~A~%" ppx)))
          (lib-flds (if ppx
                        (append lib-flds
                                (if (alist? ppx)
                                    ppx
                                    (list ppx)))
                        lib-flds))
+
          (_ (if *debugging* (format #t "lib-flds (3): ~A~%" lib-flds)))
          ) ;; end let bindings
 
