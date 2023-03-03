@@ -1,5 +1,5 @@
-/* #include "log.h" */
-/* #include "utarray.h" */
+#include "log.h"
+#include "utarray.h"
 
 #include "debug_meta.h"
 
@@ -7,7 +7,7 @@ extern int indent;
 extern int delta;
 extern char *sp;
 
-bool debug_symlinks = true;
+extern bool debug_symlinks;
 
 EXPORT void dump_package(int indent, struct obzl_meta_package *pkg)
 {

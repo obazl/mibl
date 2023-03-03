@@ -4,9 +4,9 @@
 #include <unistd.h>
 
 /* #if EXPORT_INTERFACE */
-/* #include "utarray.h" */
-/* #include "utstring.h" */
-/* #include "log.h" */
+#include "utarray.h"
+#include "utstring.h"
+#include "log.h"
 /* #endif */
 
 #include "ini.h"
@@ -15,9 +15,8 @@
 
 extern const UT_icd ut_str_icd;
 
-bool dev_mode = false;
-int  verbosity = 0;
-
+extern bool dev_mode;
+extern int  verbosity;
 
 #if INTERFACE
 #define HOME_MIBL ".mibl"
@@ -35,11 +34,12 @@ UT_string *config_mibl;        /* work string */
 struct mibl_config_s {
     char *schema_version;
     int libct;
-    bool emit_parsetree;
-    bool emit_mibl;
     bool emit_bazel;
-    bool dump_parsetree;
+    bool emit_mibl;
+    bool emit_parsetree;
     bool dump_mibl;
+    bool dump_parsetree;
+    bool dump_exports;
     bool dump_starlark;
     UT_array *pkgs;
     UT_array *exclude_dirs;      /* overrides include_dirs */
@@ -55,8 +55,9 @@ struct mibl_config_s mibl_config = {
     .emit_parsetree = false,
     .emit_mibl      = false,
     .emit_bazel  = true,
-    .dump_parsetree = false,
+    .dump_exports      = false,
     .dump_mibl      = false,
+    .dump_parsetree = false,
     .dump_starlark  = false,
     .libct          = 0
 };
@@ -104,16 +105,20 @@ LOCAL int _config_handler(void* config, const char* section, const char* name, c
 
     if (MATCH("mibl", "dump")) {
         if (verbose && verbosity > 1) log_debug("miblrc [mibl] dump: %s", value);
-        if (strncmp(value, "starlark", 8) == 0) {
-            pconfig->dump_starlark = true;
+        if (strncmp(value, "exports", 7) == 0) {
+            pconfig->dump_exports = true;
         }
         else if (strncmp(value, "mibl", 4) == 0) {
             pconfig->dump_mibl = true;
         }
         else if (strncmp(value, "parsetree", 9) == 0) {
             pconfig->dump_parsetree = true;
-        } else {
-            log_error("mibl ini file: invalid value %s for 'dump' in section 'mibl'; allowed values: parsetree, mibl", value);
+        }
+        else if (strncmp(value, "starlark", 8) == 0) {
+            pconfig->dump_starlark = true;
+        }
+        else {
+            log_error("mibl ini file: invalid value %s for 'dump' in section 'mibl'; allowed values: exports, mibl, parsetree", value);
             ini_error = true;
             return 0;
         }

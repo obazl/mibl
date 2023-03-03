@@ -2,12 +2,12 @@
 #include <stdio.h>
 
 /* #if EXPORT_INTERFACE */
-/* #include "utarray.h" */
-/* #include "uthash.h" */
-/* #include "utstring.h" */
+#include "utarray.h"
+#include "uthash.h"
+#include "utstring.h"
 /* #endif */
 
-/* #include "log.h" */
+#include "log.h"
 
 #include "meta_flags.h"
 

@@ -23,10 +23,10 @@
 /* #include "s7.h" */
 /* #endif */
 
-/* #include "log.h" */
+#include "log.h"
 /* #if EXPORT_INTERFACE */
-/* #include "utarray.h" */
-/* #include "utstring.h" */
+#include "utarray.h"
+#include "utstring.h"
 /* #endif */
 
 #include "emit_build_bazel.h"
@@ -36,13 +36,13 @@
 /* /\* const char *errmsg = NULL; *\/ */
 /* #define TO_STR(x) s7_object_to_c_string(s7, x) */
 
-static int level = 0;
-int spfactor = 4;               /* FIXME: move to //constants.c? */
-char *sp = " ";                 /* FIXME: move to //constants.c? */
+extern int level;
+extern int spfactor;
+extern char *sp;
 
 #if defined(DEBUG_TRACE)
-int indent = 2;
-int delta = 2;
+extern int indent = 2;
+extern int delta = 2;
 #endif
 
 extern char *ocaml_ws;

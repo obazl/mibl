@@ -1,7 +1,8 @@
 #include <stdbool.h>
 
-/* #include "log.h" */
-/* #include "utarray.h" */
+#include "log.h"
+#include "utarray.h"
+#include "utstring.h"
 
 #include "meta_packages.h"
 

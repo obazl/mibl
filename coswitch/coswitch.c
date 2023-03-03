@@ -14,19 +14,10 @@
 
 #include <unistd.h>
 
-/* #include "log.h" */
-/* #include "utarray.h" */
-/* #include "utstring.h" */
-
-/* #if INTERFACE */
-/* #include "utstring.h" */
-/* #endif */
-
-/* #include "opam_lexer.h" */
-/* #include "opam_lex.h" */
-
-/* #include "mibl.h" */
-/* #include "libtreewalker.h" */
+#include "gopt.h"
+#include "log.h"
+#include "utarray.h"
+#include "utstring.h"
 
 #include "coswitch.h"
 
@@ -42,6 +33,62 @@ char *pkg_path = NULL;
 
 UT_array *opam_include_pkgs;
 UT_array *opam_exclude_pkgs;
+
+enum OPTS {
+    OPT_ROOT = 0,
+    OPT_PKG,
+    OPT_PACKAGE,
+    OPT_EMIT,
+    OPT_EMIT_EM,            /* = OPT_EMIT_MIBL */
+    OPT_EMIT_MIBL,
+    OPT_NO_EMIT_MIBL,
+    OPT_EMIT_EB,            /* = OPT_EMIT_BAZEL */
+    OPT_EMIT_BAZEL,
+    OPT_NO_EMIT_BAZEL,
+    OPT_NOEMIT,
+    OPT_MENHIR,
+    OPT_DUMP_EXPORTS,
+    OPT_DUMP_MIBL,
+    OPT_DUMP_PARSETREE,
+    OPT_DUMP_STARLARK,
+    OPT_HELP,
+    OPT_DEBUG,
+    OPT_DEBUG_DE,
+    OPT_DEBUG_EMIT,
+    OPT_DEBUG_DX,
+    OPT_DEBUG_EXECUTABLES,
+    OPT_DEBUG_DM,
+    OPT_DEBUG_MIBL,
+    OPT_DEBUG_DPPX,
+    OPT_DEBUG_PPX,
+    OPT_TRACE,
+    OPT_VERBOSE,
+    OPT_LAST
+};
+
+void _print_usage(void) {
+    printf("Usage:\t$ bazel run @obazl//convert [flags, options]\n");
+    printf("Flags (note that some flags require double-hyphenation):\n");
+    printf("\t-d  | --debug\t\t\tEnable all debugging flags.\n");
+    printf("\t--dx | --debug-executables\tDebug handling of Dune executable and executables stanzas.\n");
+    printf("\t--de | --debug-emit\t\tDebug emit logic.\n");
+    printf("\t--dm | --debug-mibl\t\tDebug mibl elaboration.\n");
+    printf("\t--dppx | --debug-ppx\t\tDebug ppx stuff.\n");
+    printf("\t--dump-exports\t\tDebug exported syms table.\n");
+    printf("\t--em | --emit-mibl\t\tEmit BUILD.mibl files.\n");
+    printf("\t--no-emit\t\t\tDisable emitting.\n");
+    printf("\t-t  | --trace\t\t\tEnable trace flags.\n");
+    printf("\t-v  | --verbose\t\t\tEnable verbosity. Repeatable.\n");
+    printf("\t--menhir\t\t\tEmit 'menhir' targets for .mly files, instead of ocamlyacc.\n");
+
+    printf("Options:\n");
+    printf("\t-D | -dump <arg>\t\tDump <arg> (parsetree, mibl, or starlark}) to stdout.\n");
+    printf("\t-e | --emit <arg>\t\tEmit BUILD.<arg> files, where <arg> = mibl | bazel. BUILD.bazel always emitted unless --no-emit passed.\n");
+
+    printf("\t-p | --pkg | --package <arg>"
+           "\tRestrict dump ouput to <arg> (relative pkg path).\n");
+
+}
 
 int main(int argc, char *argv[])
 {

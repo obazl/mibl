@@ -13,9 +13,9 @@
 #include <string.h>
 #include <unistd.h>
 
-/* #include "log.h" */
-/* #include "utarray.h" */
-/* #include "utstring.h" */
+#include "log.h"
+#include "utarray.h"
+#include "utstring.h"
 
 #include "emit_ocaml_repo.h"
 

@@ -1,12 +1,13 @@
 #include <errno.h>
+#include <inttypes.h>
 #include <stddef.h>
 
-/* #include "log.h" */
+#include "log.h"
 /* #include "s7.h" */
 
 /* #if EXPORT_INTERFACE */
-/* #include "utarray.h" */
-/* #include "utstring.h" */
+#include "utarray.h"
+#include "utstring.h"
 /* #endif */
 
 /* #if defined(DEBUG_TRACE) */
@@ -314,7 +315,8 @@ char *dunefile_to_string(UT_string *dunefile_name)
 #endif
 
     if (fileSize > BUFSZ) {
-        printf(RED "ERROR:" CRESET " dune file '%s' size (%lu) > BUFSZ (%d)\n", utstring_body(dunefile_name), fileSize, BUFSZ);
+        printf(RED "ERROR:" CRESET
+               " dune file '%s' size (%" PRIu64 " > BUFSZ (%d)\n", utstring_body(dunefile_name), fileSize, BUFSZ);
         log_error("dune file size (%d) > BUFSZ (%d)", fileSize, BUFSZ);
         exit(EXIT_FAILURE);     /* FIXME: exit gracefully */
     }

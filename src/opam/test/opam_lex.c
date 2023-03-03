@@ -1,3 +1,5 @@
+#include "log.h"
+
 #include <errno.h>
 #include <fcntl.h>
 #include <libgen.h>
@@ -12,16 +14,14 @@
 
 #include <unistd.h>
 
-#include "log.h"
 #include "utarray.h"
 #include "utstring.h"
-
-#if INTERFACE
 #include "utstring.h"
-#endif
 
 #include "opam_lexer.h"
 #include "opam_lex.h"
+
+#include "log.h"
 
 int main(int argc, char *argv[])
 {

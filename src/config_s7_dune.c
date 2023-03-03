@@ -20,11 +20,11 @@
 #include <sys/stat.h>
 
 #include "ini.h"
-/* #include "log.h" */
+#include "log.h"
 
 /* #if EXPORT_INTERFACE */
-/* #include "utarray.h" */
-/* #include "utstring.h" */
+#include "utarray.h"
+#include "utstring.h"
 /* #endif */
 
 /* #if INTERFACE */
@@ -56,6 +56,7 @@ s7_pointer sigs_kw;
 s7_pointer structs_kw;
 s7_pointer mll_kw;
 s7_pointer mly_kw;
+s7_pointer mllib_kw;
 s7_pointer cppo_kw;
 s7_pointer cc_kw;
 s7_pointer cc_srcs_kw;
@@ -79,7 +80,7 @@ s7_pointer _s7_quote = NULL;
 s7_pointer _s7_set_car = NULL;
 s7_pointer _s7_set_cdr = NULL;
 
-int rc;
+extern int rc;
 
 #define MIBL    "mibl"
 #define MIBL_S7 MIBL "/s7"
@@ -696,7 +697,7 @@ LOCAL void _config_s7_load_path_xdg_home(void)
     }
 }
 
-LOCAL void _config_s7_load_path_xdg_sys(void)
+LOCAL __attribute__((unused)) void _config_s7_load_path_xdg_sys(void)
 {
     UT_string *xdg_script_dir;
 
@@ -809,7 +810,7 @@ bazel run is similar, but not identical, to directly invoking the binary built b
 void libc_s7_init(s7_scheme *sc);
 
 /* FIXME: call into libs7 for this */
-LOCAL void s7_config_repl(s7_scheme *sc)
+LOCAL __attribute__((unused)) void s7_config_repl(s7_scheme *sc)
 {
     printf("mibl: s7_repl\n");
 #if (!WITH_C_LOADER)
@@ -936,14 +937,14 @@ EXPORT s7_scheme *s7_configure(void)
     s7_define_variable(s7, "*dunefile-count*", s7_make_integer(s7, 0));
 
     /* debug dump to stdout */
-    s7_define_variable(s7, "*dump-parsetree*", s7_f(s7));
-    s7_define_variable(s7, "*dump-mibl*", s7_f(s7));
-    s7_define_variable(s7, "*dump-starlark*", s7_f(s7));
     s7_define_variable(s7, "*dump-exports*", s7_f(s7));
+    s7_define_variable(s7, "*dump-mibl*", s7_f(s7));
+    s7_define_variable(s7, "*dump-parsetree*", s7_f(s7));
+    s7_define_variable(s7, "*dump-starlark*", s7_f(s7));
 
     /* emit to files (e.g. BUILD.bazel) */
-    s7_define_variable(s7, "*emit-parsetree*", s7_f(s7));
     s7_define_variable(s7, "*emit-mibl*", s7_f(s7));
+    s7_define_variable(s7, "*emit-parsetree*", s7_f(s7));
     s7_define_variable(s7, "*emit-starlark*", s7_f(s7));
 
     if (bws_root) {
@@ -1048,6 +1049,7 @@ EXPORT s7_scheme *s7_configure(void)
     structs_kw = s7_make_keyword(s7, "structures");
     mll_kw = s7_make_keyword(s7, "lex");
     mly_kw = s7_make_keyword(s7, "yacc");
+    mllib_kw = s7_make_keyword(s7, "mllib");
     cppo_kw = s7_make_keyword(s7, "cppo");
     files_kw   = s7_make_keyword(s7, "files");
     static_kw  = s7_make_keyword(s7, "static");

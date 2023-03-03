@@ -5,9 +5,9 @@
 #include "log.h"
 
 /* #if EXPORT_INTERFACE */
-#include "utarray.h"
-#include "uthash.h"
-#include "utstring.h"
+/* #include "utarray.h" */
+/* #include "uthash.h" */
+/* #include "utstring.h" */
 /* #endif */
 
 #include "opam_lexer.h"

@@ -5,12 +5,11 @@
 #include <string.h>
 
 #include "s7.h"
-/* #include "log.h" */
+#include "log.h"
+#include "utarray.h"
+#include "utstring.h"
 
 #include "error_handler_dune.h"
-
-/* #include "utarray.h" */
-/* #include "utstring.h" */
 
 extern bool debug;
 extern bool trace;

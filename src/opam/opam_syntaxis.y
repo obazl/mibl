@@ -5,8 +5,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "utarray.h"
+#include "uthash.h"
+
 #include "log.h"
-/* #include "opam_package.h" */
 
 #if INTERFACE
 #ifndef YYMALLOCARGTYPE

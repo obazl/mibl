@@ -1,7 +1,7 @@
 #include <stdbool.h>
 
-/* #include "log.h" */
-/* #include "utarray.h" */
+#include "log.h"
+#include "utarray.h"
 
 #include "debug_mibl.h"
 

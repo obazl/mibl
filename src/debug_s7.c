@@ -7,15 +7,15 @@
 
 #include "s7.h"
 
-/* #include "log.h" */
-/* /\* #if EXPORT *\/ */
-/* #include "utarray.h" */
-/* /\* #endif *\/ */
+#include "log.h"
+/* #if EXPORT */
+#include "utarray.h"
+/* #endif */
 
 #include "debug_s7.h"
 
-bool debug = false;
-bool trace = false;
+extern bool debug;
+extern bool trace;
 
 /* #if defined(DEBUG) */
 /* https://stackoverflow.com/questions/6934659/how-to-make-backtrace-backtrace-symbols-print-the-function-names */

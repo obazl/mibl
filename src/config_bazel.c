@@ -22,11 +22,11 @@
 #include <sys/stat.h>
 
 /* #include "ini.h" */
-/* #include "log.h" */
+#include "log.h"
 
 /* #if EXPORT_INTERFACE */
-/* #include "utarray.h" */
-/* #include "utstring.h" */
+#include "utarray.h"
+#include "utstring.h"
 /* #endif */
 
 #include "config_bazel.h"
@@ -34,7 +34,7 @@
 /* bool debug; */
 /* bool verbose; */
 
-int rc;
+extern int rc;
 
 char *build_wd; /* BUILD_WORKING_DIRECTORY else NULL */
 char *launch_dir; /* real launch dir */

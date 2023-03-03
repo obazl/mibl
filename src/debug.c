@@ -8,15 +8,15 @@
 #include <string.h>
 #include <unistd.h>
 
-/* #include "log.h" */
+#include "log.h"
 /* #if EXPORT */
-/* #include "utarray.h" */
+#include "utarray.h"
 /* #endif */
 
 #include "debug.h"
 
-bool debug = false;
-bool trace = false;
+extern bool debug;
+extern bool trace;
 
 /* #if defined(DEBUG) */
 /* https://stackoverflow.com/questions/6934659/how-to-make-backtrace-backtrace-symbols-print-the-function-names */

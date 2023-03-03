@@ -20,11 +20,11 @@
 #include <sys/stat.h>
 
 #include "ini.h"
-/* #include "log.h" */
+#include "log.h"
 
 /* #if EXPORT_INTERFACE */
-/* #include "utarray.h" */
-/* #include "utstring.h" */
+#include "utarray.h"
+#include "utstring.h"
 /* #endif */
 
 /* #if INTERFACE */
@@ -34,7 +34,7 @@
 #include "config_s7.h"
 
 /* char *callback_script_file = "dune.scm"; // passed in 'data' attrib */
-char *callback = "camlark_handler"; /* fn in callback_script_file  */
+/* char *callback = "camlark_handler"; /\* fn in callback_script_file  *\/ */
 
 #if EXPORT_INTERFACE
 #define TO_STR(x) s7_object_to_c_string(s7, x)
@@ -74,7 +74,7 @@ s7_scheme *s7;                  /* GLOBAL s7 */
 /* s7_pointer _s7_set_car = NULL; */
 /* s7_pointer _s7_set_cdr = NULL; */
 
-int rc;
+extern int rc;
 
 /* #define MIBL    "mibl" */
 /* #define MIBL_S7 MIBL "/s7" */
@@ -143,26 +143,26 @@ int rc;
 
 /* #endif */
 
-EXPORT s7_pointer g_effective_ws_root(s7_scheme *s7,  s7_pointer args)
-{
-    char *dir = NULL;
-    if ( s7_is_null(s7, args) ) {
-        dir = getcwd(NULL, 0);
-    } else {
-        s7_int args_ct = s7_list_length(s7, args);
-        if (args_ct == 1) {
-            s7_pointer arg = s7_car(args);
-            if (s7_is_string(arg)) {
-                dir = strdup((char*)s7_string(arg));
-            }
-        } else {
-            // throw exception
-        }
-    }
-    ews_root = effective_ws_root(dir);
-    free(dir); // effective_ws_root allocates its own
-    return s7_make_string(s7, ews_root);
-}
+/* EXPORT s7_pointer g_effective_ws_root(s7_scheme *s7,  s7_pointer args) */
+/* { */
+/*     char *dir = NULL; */
+/*     if ( s7_is_null(s7, args) ) { */
+/*         dir = getcwd(NULL, 0); */
+/*     } else { */
+/*         s7_int args_ct = s7_list_length(s7, args); */
+/*         if (args_ct == 1) { */
+/*             s7_pointer arg = s7_car(args); */
+/*             if (s7_is_string(arg)) { */
+/*                 dir = strdup((char*)s7_string(arg)); */
+/*             } */
+/*         } else { */
+/*             // throw exception */
+/*         } */
+/*     } */
+/*     ews_root = effective_ws_root(dir); */
+/*     free(dir); // effective_ws_root allocates its own */
+/*     return s7_make_string(s7, ews_root); */
+/* } */
 
 /* void initialize_mibl_data_model(s7_scheme *s7) */
 /* { */
@@ -877,11 +877,11 @@ void libc_s7_init(s7_scheme *sc);
 /* defined in s7.c, we need the prototype */
 /* void s7_config_libc_s7(s7_scheme *sc); */
 
-EXPORT void s7_shutdown(s7_scheme *s7)
-{
-    close_error_config_opam();
-    s7_quit(s7);
-}
+/* EXPORT void s7_shutdown(s7_scheme *s7) */
+/* { */
+/*     close_error_config_opam(); */
+/*     s7_quit(s7); */
+/* } */
 
 EXPORT void mibl_s7_init(void)
 {

@@ -1,9 +1,9 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-/* #include "utarray.h" */
-/* #include "uthash.h" */
-/* #include "log.h" */
+#include "utarray.h"
+#include "uthash.h"
+#include "log.h"
 
 #include "meta_values.h"
 

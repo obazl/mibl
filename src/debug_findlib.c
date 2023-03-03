@@ -4,5 +4,5 @@
 
 #include "debug_findlib.h"
 
-bool debug_findlib = false;
+extern bool debug_findlib;
 

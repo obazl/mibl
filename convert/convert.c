@@ -12,9 +12,9 @@
 
 #include <unistd.h>
 
-/* #include "log.h" */
-/* #include "utarray.h" */
-/* #include "utstring.h" */
+#include "log.h"
+#include "utarray.h"
+#include "utstring.h"
 
 /* #if INTERFACE */
 /* #include "utstring.h" */

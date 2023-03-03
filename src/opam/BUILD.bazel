@@ -1,7 +1,11 @@
 load("@bazel_skylib//rules:common_settings.bzl",
      "bool_flag", "string_flag")
 
-load(":BUILD.bzl", "CMD_FLAGS", "BOOTSTRAP_INCLUDES", "lemon")
+load(":BUILD.bzl", "CMD_FLAGS", "BOOTSTRAP_INCLUDES")
+
+load("//vendored/lemon:BUILD.bzl", "lemon")
+
+exports_files(glob(["*.c"]))
 
 ################################################################
 ####    OPAM Parser
@@ -11,20 +15,44 @@ cc_library(
     # name = "opam_syntaxis",
     srcs = [
         "opam_parser.c",
-        "opam_parser.h",
-        "opam_syntaxis.c",
-        "opam_syntaxis.h",
-        "//src:log.h",
-        "//src:utarray.h",
-        "//src:uthash.h",
-        "//src:utstring.h",
+        ":opam_parser.h",
+        # "opam_syntaxis.c",
+        # "opam_syntaxis.h",
+
+        # # "//src/hdrs",
+        # "//vendored/logc:log.c", "//vendored/logc:log.h",
+        # "//vendored/uthash:utarray.h",
+        # "//vendored/uthash:uthash.h",
+        # "//vendored/uthash:utstring.h",
         ],
     hdrs = [
         "libopamparser.h",
         # "opam_parser.h"
     ],
     copts = [
-        "-Isrc", "-I$(GENDIR)/src/opam"
+        "-Wno-unused-variable", # in lemon-generated code
+        "-Isrc",
+        "-Isrc/hdrs",
+        "-Isrc/opam",
+
+        "-Ivendored/logc",
+        "-Iexternal/mibl/vendored/logc",
+
+        "-Ivendored/uthash",
+        "-Iexternal/mibl/vendored/uthash",
+
+        "-Iexternal/src",
+        "-I$(GENDIR)/src",
+
+        "-I$(GENDIR)/src/opam",
+        "-I$(GENDIR)/external/mibl/src/opam",
+
+        "-I$(GENDIR)/src/hdrs",
+        "-I$(GENDIR)/external/mibl/src/hdrs",
+        # "-Isrc",
+        # "-I$(GENDIR)/src/opam",
+        # "-I$(GENDIR)/src/hdrs",
+        # "-I$(GENDIR)/external/mibl/src/hdrs",
     ] + CMD_FLAGS + BOOTSTRAP_INCLUDES,
     defines = select({
         ":yydebug-enabled": ["YYDEBUG"],
@@ -36,13 +64,56 @@ cc_library(
         ":lexdebug-fvf": ["LEXDEBUG_FVF"],
         "//conditions:default":   []
     }),
-    deps = ["opam_lexer"],
+    deps = [
+        ":opam_syntaxis",
+        ":opam_lexer",
+        "//vendored/logc",
+        "//vendored/uthash"
+    ],
     visibility = ["//test:__subpackages__"]
 )
 
-cc_binary(
-    name  = "lemon",
-    srcs  = ["lemon.c"],
+cc_library(
+    name = "opam_syntaxis",
+    srcs = [
+        "opam_syntaxis.c",
+        "opam_syntaxis.h",
+
+        # "//vendored/logc:log.h",
+        # "//vendored/uthash:utarray.h",
+        # # "//vendored/uthash:uthash.h",
+        # "//vendored/uthash:utstring.h",
+    ],
+    deps = ["//vendored/logc", "//vendored/uthash"],
+    copts = CMD_FLAGS + [
+        "-Wno-unused-variable",  # warning from lemon-generated code
+        ## NOTE: generated meta_syntaxis.c includes header with full
+        ## bazel path, e.g.
+        ## #include "bazel-out/darwin-fastbuild/bin/external/mibl/src/findlib/meta_syntaxis.h"
+        ## so we always need '-I .'
+        "-I.",
+        "-Isrc",
+
+        "-Iexternal/mibl/src",
+        "-I$(GENDIR)/src/hdrs",
+
+        # "-I$(GENDIR)/src/opam",
+        # "-I$(GENDIR)/mibl/src/opam",
+        "-I$(GENDIR)/external/mibl/src/opam",
+
+        "-Ivendored/logc",
+        "-Iexternal/mibl/vendored/logc",
+        "-Ivendored/uthash",
+        "-Iexternal/mibl/vendored/uthash",
+    ],
+    defines = select({
+        ":yydebug-enabled": ["YYDEBUG", "DEBUG_TRACE"],
+        "//conditions:default":   []
+    }) + select({
+        ":yytrace-enabled": ["YYTRACE"],
+        "//conditions:default":   []
+    }),
+    visibility = ["//test:__subpackages__"]
 )
 
 lemon(
@@ -68,7 +139,8 @@ lemon(
     }) + select({
         ":yydebug-build-filter": ["YYDEBUG_BUILD_FILTER"],
         "//conditions:default":   []
-    })
+    }),
+    visibility = ["//src/hdrs:__pkg__"]
 )
 
 ###########
@@ -77,14 +149,36 @@ cc_library(
     srcs = [
         "opam_lexer.c", "opam_lexer.h",
         "opam_lexis.c", "opam_lexis.h",
-        "//src:log.c", "//src:log.h",
-        "//src:utarray.h",
-        "//src:uthash.h",
-        "//src:utstring.h",
+        "//vendored/logc:log.c", "//vendored/logc:log.h",
+
+        # ":mkhdrs",
+        # "//src/hdrs",
+
+        "//vendored/uthash:utarray.h",
+        "//vendored/uthash:uthash.h",
+        # ":utstring.h",
     ],
     copts = [
-        "-Isrc", "-I$(GENDIR)/src/opam"
+        "-Isrc",
+        "-Isrc/hdrs",
+        "-Isrc/opam",
+        "-Ivendored/uthash",
+        "-Ivendored/logc",
+        "-I$(GENDIR)/src",
+
+        "-I$(GENDIR)/src/opam",
+        "-I$(GENDIR)/external/mibl/src/opam",
+
+        "-I$(GENDIR)/src/hdrs",
+        "-I$(GENDIR)/external/mibl/src/hdrs",
+
+        "-Ivendored/logc",
+        "-Iexternal/mibl/vendored/logc",
+        "-Ivendored/uthash",
+        "-Iexternal/mibl/vendored/uthash",
+
     ] + CMD_FLAGS + BOOTSTRAP_INCLUDES,
+    deps = ["//vendored/logc", "//vendored/uthash"],
     defines = select({
         ":yydebug-enabled": ["YYDEBUG"],
         "//conditions:default":   []
@@ -138,24 +232,43 @@ genrule(
         "opam_lexis.c",
         "opam_parser.c",
         "opam_syntaxis.c", ## defines token_type constants
-        "opam_package.c" ## ast node types, etc.
+        "opam_package.c", ## ast node types, etc.
+        # "//vendored/uthash:utarray.c",
+        # "//vendored/uthash:utarray.h",
+        # "//vendored/uthash:uthash.h",
+        # "//vendored/uthash:utstring.c",
+        # "//vendored/logc:log.c",
+        # "//vendored/logc:log.h"
     ],
     outs = [
         "opam_lexer.h",
         "opam_lexis.h",
         "opam_parser.h",
         "opam_syntaxis.h",
+        # "utstring.h",
     ],
     cmd = "\n".join([
         "SRC1=$(location opam_lexer.c)",
         "SRCDIR1=`dirname $$SRC1`",
+        # "SRC2=$(location //vendored/logc:log.c)",
+        # "SRCDIR2=`dirname $$SRC2`",
+        # "SRC3=$(location //vendored/uthash:utstring.c)",
+        # "SRCDIR3=`dirname $$SRC3`",
         "$(location //src:makeheaders) \\",
+        # "    $(location //vendored/uthash:utarray.c): \\", # do not emit hdr
+        # "    $(location //vendored/uthash:utarray.h) \\",
+        # "    $(location //vendored/uthash:uthash.h) \\",
+        # "    $(location //vendored/uthash:utstring.c) \\",
+        # "    $(location //vendored/logc:log.c): \\",
+        # "    $(location //vendored/logc:log.h) \\",
         "    $(location opam_lexer.c) \\",
         "    $(location opam_lexis.c) \\",
         "    $(location opam_package.c) \\",
         "    $(location opam_parser.c) \\",
-        "    $(location opam_syntaxis.c)",
+        "    $(location opam_syntaxis.c);",
         "cp $${SRCDIR1}/*.h $(@D)",
+        # "cp $${SRCDIR2}/*.h $(@D)",
+        # "cp $${SRCDIR3}/*.h $(@D)",
         # "> $@"
     ]),
     tools = ["//src:makeheaders"],

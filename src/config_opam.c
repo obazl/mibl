@@ -20,21 +20,21 @@
 #include <sys/stat.h>
 
 #include "ini.h"
-/* #include "log.h" */
+#include "log.h"
 /* #if EXPORT_INTERFACE */
-/* #include "utarray.h" */
-/* #include "utstring.h" */
+#include "utarray.h"
+#include "utstring.h"
 /* #endif */
 
 #include "config_opam.h"
 
 /* const char *errmsg = NULL; */
 
-int rc;
+extern int rc;
 
 /* char *bazel_script_dir = NULL; */
 
-bool enable_jsoo = true;
+extern bool enable_jsoo;
 
 UT_string *opam_switch_id       = NULL;
 

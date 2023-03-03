@@ -16,13 +16,13 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "log.h"
 /* #if INTERFACE */
-/* #include "utarray.h" */
-/* #include "utstring.h" */
+#include "utarray.h"
+#include "utstring.h"
 /* /\* #include "s7.h" *\/ */
 /* #endif */
 
-/* #include "log.h" */
 
 /* #include "libdune.h" */
 
