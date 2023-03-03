@@ -1,0 +1,44 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+CMD_FLAGS = [
+    "-std=c11",
+    "-pedantic-errors",
+    "-Iexternal/uthash/include",
+]
+## macos: -UDEBUG
+
+BOOTSTRAP_INCLUDES = [
+    "-I.",
+    "-Isrc",
+    "-Iexternal/mibl/src",
+    "-Iexternal/libs7/src",
+
+    "-I$(GENDIR)",
+    "-I$(GENDIR)/src",
+]
+
+##########
+cc_binary(
+    name  = "driver",
+    srcs  = ["driver.c",
+             "//src:bazel_config.h",
+             "@uthash//:include",
+             ],
+    data = [
+        "//mibl:dune.scm",
+        "//mibl/dune:srcs"
+    ],
+    # defines = select({
+    #     "//bzl/debug/trace": [], # "DEBUG_TRACE"],
+    #     "//conditions:default":   []
+    # }),
+    copts = CMD_FLAGS + BOOTSTRAP_INCLUDES + [
+    ],
+    deps = ["//src:mibl"],
+)
+
+################################################################
+cc_test(
+    name = "demo_test",
+    srcs = ["template_unity_test.c"]
+)
