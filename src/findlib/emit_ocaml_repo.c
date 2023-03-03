@@ -37,7 +37,7 @@ void _copy_buildfile(char *buildfile, UT_string *to_file) {
 
     /* FIXME: use a proper runfiles library */
     utstring_printf(src,
-                    "%s/external/%s/templates/%s",
+                    "%s/external/%s/coswitch/templates/%s",
                     utstring_body(runfiles_root),
                     ws_name,
                     buildfile);
@@ -814,7 +814,7 @@ void _symlink_buildfile(char *buildfile, UT_string *to_file)
     UT_string *src;
     utstring_new(src);
     utstring_printf(src,
-                    "%s/external/%s/templates/%s",
+                    "%s/external/%s/coswitch/templates/%s",
                     utstring_body(runfiles_root),
                     ws_name,
                     buildfile);
