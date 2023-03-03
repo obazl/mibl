@@ -9,8 +9,42 @@ cc_binary(
         "xen_repl.c", "xen_repl.h",
         # "//src:opam_config.h",
         # "//src:bazel_config.h"
-        "//vendored/logc:log.c",
-        "//vendored/logc:log.h"
+        # "//vendored/logc:log.c",
+        # "//vendored/logc:log.h"
+    ],
+    copts = select({
+        "//bzl/host:macos": ["-std=c11"],
+        "//bzl/host:linux": ["-std=gnu11"],
+        "//conditions:default": ["-std=c11"],
+    }) + [
+        "-Wall",
+        "-Wpedantic",
+        # "-pedantic-errors",
+        "-Wno-unused-function",
+
+        # "-I$(GENDIR)/src",
+        # "-I$(GENDIR)/external/mibl/src",
+
+        "-I$(GENDIR)/repl",
+        "-I$(GENDIR)/external/mibl/repl",
+
+        "-I$(GENDIR)/src/hdrs",
+        "-I$(GENDIR)/external/mibl/src/hdrs", # mibl.h is generated
+
+        "-Ivendored/logc",
+        "-Iexternal/mibl/vendored/logc",
+
+        "-Ivendored/uthash",
+        "-Iexternal/mibl/vendored/uthash",
+
+        # "-Iexternal/libinih",
+        # "-Iexternal/logc/src",
+
+        "-Iexternal/libs7/src",
+        "-Iexternal/mibl/libs7/src",
+
+        "-Iexternal/libs7/vendored/linenoise",
+        "-Iexternal/mibl/libs7/vendored/linenoise",
     ],
     defines = select({
         "//bzl/host:debug": ["DEBUG_TRACE"],
@@ -21,36 +55,6 @@ cc_binary(
     }) + [
         "WITH_C_LOADER"
         # "LD_LIBRARY_PATH=external/libs7/src"
-    ],
-    copts = select({
-        # strdup is non-standard, not supported on linux in strict c11 mode?
-        "//bzl/host:macos": ["-std=c11"],
-        "//bzl/host:linux": ["-std=gnu11"],
-        "//conditions:default": ["-std=c11"],
-    }) + [
-        # "-pedantic-errors",
-        "-Wall",
-        "-Wno-unused-function",
-
-        "-I$(GENDIR)/src",
-        "-I$(GENDIR)/external/mibl/src",
-
-        "-I$(GENDIR)/repl",
-        "-I$(GENDIR)/external/mibl/repl",
-
-        "-Ivendored/uthash",
-        "-Iexternal/vendored/uthash",
-
-        "-Ivendored/logc",
-        "-Iexternal/mibl/vendored/logc",
-
-        # "-Iexternal/libinih",
-        "-Iexternal/logc/src",
-
-        "-Iexternal/libs7/src",
-        "-Iexternal/mibl/libs7/src",
-        "-Iexternal/libs7/vendored/linenoise",
-        "-Iexternal/mibl/libs7/vendored/linenoise",
     ],
     linkopts = select({
         "//bzl/host:macos": [],
@@ -64,9 +68,9 @@ cc_binary(
         "//src:mibl",
         # "//external/libinih:inih",
         "//vendored/uthash",
-        # "@logc//:logc",
+        "//vendored/logc",
         "@libs7//src:s7",
-        "@libs7//src:c_s7",
+        # "@libs7//src:c_s7",
         # "@libs7//vendored/linenoise",
     ],
     visibility = ["//visibility:public"]

@@ -37,10 +37,10 @@ struct mibl_config_s {
     bool emit_bazel;
     bool emit_mibl;
     bool emit_parsetree;
-    bool dump_mibl;
-    bool dump_parsetree;
-    bool dump_exports;
-    bool dump_starlark;
+    bool log_mibl;
+    bool log_parsetree;
+    bool log_exports;
+    bool log_starlark;
     UT_array *pkgs;
     UT_array *exclude_dirs;      /* overrides include_dirs */
     UT_array *include_dirs;
@@ -55,10 +55,10 @@ struct mibl_config_s mibl_config = {
     .emit_parsetree = false,
     .emit_mibl      = false,
     .emit_bazel  = true,
-    .dump_exports      = false,
-    .dump_mibl      = false,
-    .dump_parsetree = false,
-    .dump_starlark  = false,
+    .log_exports      = false,
+    .log_mibl      = false,
+    .log_parsetree = false,
+    .log_starlark  = false,
     .libct          = 0
 };
 
@@ -103,22 +103,22 @@ LOCAL int _config_handler(void* config, const char* section, const char* name, c
         return 1;
     }
 
-    if (MATCH("mibl", "dump")) {
-        if (verbose && verbosity > 1) log_debug("miblrc [mibl] dump: %s", value);
+    if (MATCH("mibl", "log")) {
+        if (verbose && verbosity > 1) log_debug("miblrc [mibl] log: %s", value);
         if (strncmp(value, "exports", 7) == 0) {
-            pconfig->dump_exports = true;
+            pconfig->log_exports = true;
         }
         else if (strncmp(value, "mibl", 4) == 0) {
-            pconfig->dump_mibl = true;
+            pconfig->log_mibl = true;
         }
         else if (strncmp(value, "parsetree", 9) == 0) {
-            pconfig->dump_parsetree = true;
+            pconfig->log_parsetree = true;
         }
         else if (strncmp(value, "starlark", 8) == 0) {
-            pconfig->dump_starlark = true;
+            pconfig->log_starlark = true;
         }
         else {
-            log_error("mibl ini file: invalid value %s for 'dump' in section 'mibl'; allowed values: exports, mibl, parsetree", value);
+            log_error("mibl ini file: invalid value %s for 'log' in section 'mibl'; allowed values: exports, mibl, parsetree", value);
             ini_error = true;
             return 0;
         }
