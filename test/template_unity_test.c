@@ -1,20 +1,33 @@
+/* FIXME: use mkhdrs to elim 'unused function' warnings */
+/* #include "bazel_config.h" */
+/* #include "mibl_config.h" */
+/* #include "s7_config.h" */
+/* #include "ansi_colors.h" */
+/* #include "load_dune.h" */
+
+#include "log.h"
+#include "utarray.h"
+#include "utstring.h"
+#include "s7.h"
+#include "libmibl.h"
+#include "log.h"
+
 #include "unity.h"
-#include "file_to_test.h"
 
 void setUp(void) {
-    // set stuff up here
+    log_info("setup");
 }
 
 void tearDown(void) {
-    // clean stuff up here
+    log_info("teardown");
 }
 
 void test_function_should_doBlahAndBlah(void) {
-    //test stuff
+    log_info("test stuff");
 }
 
 void test_function_should_doAlsoDoBlah(void) {
-    //more test stuff
+    log_info("more test stuff");
 }
 
 int main(void) {

@@ -11,7 +11,7 @@ BOOTSTRAP_INCLUDES = [
     "-I.",
     "-Isrc",
     "-Iexternal/mibl/src",
-    "-Iexternal/libs7/src",
+    "-Ivendored/libs7/src",
 
     "-I$(GENDIR)",
     "-I$(GENDIR)/src",
@@ -40,5 +40,28 @@ cc_binary(
 ################################################################
 cc_test(
     name = "demo_test",
-    srcs = ["template_unity_test.c"]
+    srcs = ["template_unity_test.c"],
+    copts = CMD_FLAGS + BOOTSTRAP_INCLUDES + [
+        "-I$(GENDIR)/src/hdrs",
+
+        "-Ivendored/logc",
+        "-Iexternal/mibl/vendored/logc",
+
+        "-Ivendored/unity",
+        "-Iexternal/mibl/vendored/unity",
+
+        "-Ivendored/uthash",
+        "-Iexternal/mibl/vendored/uthash",
+
+        "-Iexternal/libs7/src"  # s7.h
+    ],
+    data = [
+        "//mibl/dune:srcs"
+    ],
+    deps = [
+        "//src:mibl",
+        "//vendored/logc",
+        "//vendored/unity",
+        "//vendored/uthash",
+    ],
 )
