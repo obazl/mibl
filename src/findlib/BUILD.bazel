@@ -22,11 +22,11 @@ filegroup(
 CMD_FLAGS = [
     "-std=c11",
     "-pedantic-errors",
+    "-Wno-unused-variable"  # warning from lemon-generated code meta_syntaxis
 ] + select({
     "//bzl/host:linux": [
         "-D_POSIX_C_SOURCE=200809L", ## strdup, strndup
         "-D_DEFAULT_SOURCE",        ## DT_ constants from dirent.h
-        "-Wno-unused-variable"      # warning from lemon-generated code
     ],
     "//conditions:default":   []
 })
