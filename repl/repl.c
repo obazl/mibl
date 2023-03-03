@@ -9,15 +9,15 @@
 #include "linenoise.h"
 #include "s7.h"
 
-/* #include "utarray.h" */
-/* #include "utstring.h" */
+#include "utarray.h"
+#include "utstring.h"
 
 /* #include "load_dune.h" */
 /* /\* #include "opam_config.h" *\/ */
 /* #include "bazel_config.h" */
 /* #include "s7_config.h" */
 
-/* #include "mibl.h" */
+#include "libmibl.h"
 #include "repl.h"
 
 extern s7_scheme *s7;
@@ -157,8 +157,10 @@ int main(int argc, char **argv)
     }
 
    /* initialize in this order: bazel then mibl then s7 */
-    bazel_configure(); // getcwd(NULL, 0));
+    bazel_configure();
+
     mibl_configure();
+
     s7_configure();
     /* chdir(launch_dir); */
     /* if (debug) */

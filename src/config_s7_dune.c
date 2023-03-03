@@ -936,11 +936,11 @@ EXPORT s7_scheme *s7_configure(void)
 
     s7_define_variable(s7, "*dunefile-count*", s7_make_integer(s7, 0));
 
-    /* debug dump to stdout */
-    s7_define_variable(s7, "*dump-exports*", s7_f(s7));
-    s7_define_variable(s7, "*dump-mibl*", s7_f(s7));
-    s7_define_variable(s7, "*dump-parsetree*", s7_f(s7));
-    s7_define_variable(s7, "*dump-starlark*", s7_f(s7));
+    /* logging */
+    s7_define_variable(s7, "*log-exports*", s7_f(s7));
+    s7_define_variable(s7, "*log-mibl*", s7_f(s7));
+    s7_define_variable(s7, "*log-parsetree*", s7_f(s7));
+    s7_define_variable(s7, "*log-starlark*", s7_f(s7));
 
     /* emit to files (e.g. BUILD.bazel) */
     s7_define_variable(s7, "*emit-mibl*", s7_f(s7));
