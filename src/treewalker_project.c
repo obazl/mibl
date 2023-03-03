@@ -3,6 +3,10 @@
 #include <sys/errno.h>
 #include <unistd.h>
 
+#include "log.h"
+#include "utarray.h"
+#include "utstring.h"
+
 #include "treewalker_project.h"
 
 /* FIXME: common to both walkers */

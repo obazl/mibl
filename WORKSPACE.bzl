@@ -106,19 +106,19 @@ filegroup(name = "include", srcs = glob(["include/*.h"]), visibility = ["//visib
     )
 
     ######
-    maybe(
-        http_archive,
-        name = "libinih",
-        # build_file_content = "exports_files(['ini.c', 'ini.h'])",
-    build_file_content = """
-filegroup(name = "srcs", srcs = ["ini.c", "ini.h"], visibility = ["//visibility:public"])
-filegroup(name = "hdrs", srcs = ["ini.h"], visibility = ["//visibility:public"])""",
-        urls = [
-            "https://github.com/benhoyt/inih/archive/cb55f57d87ae840bd0f65dbe6bd22fa021a873a7.tar.gz"
-        ],
-        strip_prefix = "inih-cb55f57d87ae840bd0f65dbe6bd22fa021a873a7",
-        sha256 = "26d05999033eef9e3abca2d4dbf3dc2e4a24335df51231b6faa093be06bb19d7"
-    )
+#     maybe(
+#         http_archive,
+#         name = "libinih",
+#         # build_file_content = "exports_files(['ini.c', 'ini.h'])",
+#     build_file_content = """
+# filegroup(name = "srcs", srcs = ["ini.c", "ini.h"], visibility = ["//visibility:public"])
+# filegroup(name = "hdrs", srcs = ["ini.h"], visibility = ["//visibility:public"])""",
+#         urls = [
+#             "https://github.com/benhoyt/inih/archive/cb55f57d87ae840bd0f65dbe6bd22fa021a873a7.tar.gz"
+#         ],
+#         strip_prefix = "inih-cb55f57d87ae840bd0f65dbe6bd22fa021a873a7",
+#         sha256 = "26d05999033eef9e3abca2d4dbf3dc2e4a24335df51231b6faa093be06bb19d7"
+#     )
 
     # Unit testing framework for C
     # http://www.throwtheswitch.org/unity

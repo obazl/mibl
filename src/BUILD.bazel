@@ -48,7 +48,7 @@ filegroup(
 
 MIBL_SRCS = [
     "load_dune.c",
-    "config.c",
+    "globals.c",
     "config_bazel.c",
     "config_mibl.c",
     "config_opam.c",
@@ -64,7 +64,7 @@ cc_library(
     name  = "mibl",
     srcs = MIBL_SRCS + [
         "//src/hdrs:load_dune.h",
-        "//src/hdrs:config.h",
+        "//src/hdrs:globals.h",
         "//src/hdrs:config_bazel.h",
         "//src/hdrs:config_mibl.h",
         "//src/hdrs:config_opam.h",
@@ -147,8 +147,8 @@ cc_library(
 
         "-Iexternal/libs7/src",
 
-        "-Iexternal/libinih",
-        # "-Iexternal/logc/src",
+        "-Ivendored/libinih",
+        "-Iexternal/mibl/vendored/libinih",
 
         "-Ivendored/logc",
         "-Iexternal/mibl/vendored/logc",
@@ -218,7 +218,7 @@ cc_binary(
 #         "$(location error_handler_dune.c)",
 #         # do not emit headers:
 #         "$(location debug_s7.c):",
-#         "$(location config.c):",
+#         "$(location globals.c):",
 #         "$(location config_bazel.c):",
 #         "$(location config_mibl.c):",
 #         "$(location config_opam.c):",
@@ -276,7 +276,7 @@ cc_library(
         "handlers_opam.c",
         "//src/hdrs:handlers_opam.h",
 
-        "config.c", "//src/hdrs:config.h",
+        "globals.c", "//src/hdrs:globals.h",
         "config_bazel.c", "//src/hdrs:config_bazel.h",
         "config_mibl.c", "//src/hdrs:config_mibl.h",
         "config_opam.c", "//src/hdrs:config_opam.h",
@@ -314,7 +314,10 @@ cc_library(
         "-I$(GENDIR)/external/mibl/src/findlib",
 
         "-Iexternal/libs7/src",
-        "-Iexternal/libinih",
+        # "-Iexternal/libinih",
+
+        "-Ivendored/libinih",
+        "-Iexternal/mibl/vendored/libinih",
 
         "-Ivendored/logc",
         "-Iexternal/mibl/vendored/logc",
@@ -345,26 +348,17 @@ cc_library(
 cc_library(
     name = "treewalker_project",
     srcs = [
-        "treewalker_project.c",
-        "//src/hdrs:treewalker_project.h",
-        # "handlers_findlib.c",
-        "//src/hdrs:handlers_findlib.h",
-        "handlers_opam.c",
-        "//src/hdrs:handlers_opam.h",
-        "config.c",
-        "//src/hdrs:config.h",
-        "config_bazel.c",
-        "//src/hdrs:config_bazel.h",
-        "config_mibl.c",
-        "//src/hdrs:config_mibl.h",
-        "config_opam.c",
-        "//src/hdrs:config_opam.h",
-        "config_s7.c",
-        "//src/hdrs:config_s7.h",
-        "config_s7_dune.c",
-        "//src/hdrs:config_s7_dune.h",
-        "error_handler_opam.c",
-        "//src/hdrs:error_handler_opam.h",
+        "treewalker_project.c" , "//src/hdrs:treewalker_project.h",
+        # "handlers_findlib.c" , "//src/hdrs:handlers_findlib.h",
+        "handlers_opam.c"      , "//src/hdrs:handlers_opam.h",
+        "globals.c"            , "//src/hdrs:globals.h",
+        "config_bazel.c"       , "//src/hdrs:config_bazel.h",
+        "config_mibl.c"        , "//src/hdrs:config_mibl.h",
+        "config_opam.c"        , "//src/hdrs:config_opam.h",
+        "config_s7.c"          , "//src/hdrs:config_s7.h",
+        "config_s7_dune.c"     , "//src/hdrs:config_s7_dune.h",
+        "error_handler_opam.c" , "//src/hdrs:error_handler_opam.h",
+
         "utils.c",
         "//src/hdrs:utils.h",
         # "log.c",
@@ -398,7 +392,15 @@ cc_library(
         "-I$(GENDIR)/external/mibl/src/findlib",
 
         "-Iexternal/libs7/src",
-        # "-Iexternal/libinih",
+
+        "-Ivendored/libinih",
+        "-Iexternal/mibl/vendored/libinih",
+
+        "-Ivendored/logc",
+        "-Iexternal/mibl/vendored/logc",
+
+        "-Ivendored/uthash",
+        "-Iexternal/miblvendored/uthash"
     ],
     defines = select({
         "//compilation_mode:dbg?": ["DEBUG_TRACE", "DEBUG_MIBL"],
@@ -410,6 +412,7 @@ cc_library(
         # "//src:mibl",
         "//vendored/libinih:inih",
         "//vendored/logc",
+        "//vendored/uthash",
         "@libs7//src:s7",
     ] + select({
         "//compilation_mode:dbg?": [":debug"],

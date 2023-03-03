@@ -199,6 +199,10 @@ void handle_dune_file(FTSENT *ftsentry)
 {
 }
 
+void handle_dune_project_file(FTSENT *ftsentry)
+{
+}
+
 void handle_dune_package_file(FTSENT *ftsentry)
 {
     opam_dune_package_ct++;
@@ -256,6 +260,10 @@ void handle_cc_file(FTSENT *ftsentry, char *ext)
 }
 
 void opam_handle_symlink(FTS *tree, FTSENT *ftsentry)
+{
+}
+
+void handle_symlink(FTS *tree, FTSENT *ftsentry)
 {
 }
 

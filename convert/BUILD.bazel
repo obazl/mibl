@@ -1,3 +1,5 @@
+# FIXME: broken build
+
 load("@rules_cc//cc:defs.bzl", "cc_binary")
 
 exports_files(["convert.c"]) # for makeheaders
@@ -30,17 +32,21 @@ cc_binary(
         "-Wpedantic",
         "-Wno-unused-function",
 
-        # "-Isrc",                             # log.h (local)
-        # "-Iexternal/mibl/src",               # log.h
-
         "-I$(GENDIR)/src/hdrs",               # convert.h (local)
         "-I$(GENDIR)/external/mibl/src/hdrs", # convert.h
 
         "-I$(GENDIR)/src",                   # mibl.h (local)
         "-I$(GENDIR)/external/mibl/src",     # mibl.h
 
-        "-Iexternal/uthash/include",
-        "-Iexternal/libinih",
+        "-Ivendored/libinih",
+        "-Iexternal/mibl/vendored/libinih",
+
+        "-Ivendored/logc",
+        "-Iexternal/mibl/vendored/logc",
+
+        "-Ivendored/uthash",
+        "-Iexternal/mibl/vendored/uthash",
+
         "-Iexternal/libs7/src",
     ],
     linkopts = select({
@@ -58,7 +64,9 @@ cc_binary(
         "//mibl/opam:srcs",
     ],
     deps = [
-        "//src:treewalker_project"
+        "//src:treewalker_project",
+        "//vendored/logc",
+        "//vendored/uthash"
         # "//src:mibl",
         # "//external/libinih:inih",
         # "@libs7//src:s7",

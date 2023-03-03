@@ -54,7 +54,7 @@ FILELOCS = [
     "$(location //src:makeheaders)",
 
     "$(location //src:ansi_colors.h)",
-    "$(location //src:config.c)",
+    "$(location //src:globals.c)",
     "$(location //src:config_bazel.c)",
     "$(location //src:config_mibl.c)",
     "$(location //src:config_opam.c)",
@@ -138,7 +138,7 @@ genrule(
     name = "hdrs",
     srcs = [
         "//src:ansi_colors.h",
-        "//src:config.c",
+        "//src:globals.c",
         "//src:config_bazel.c",
         "//src:config_mibl.c",
         "//src:config_opam.c",
@@ -205,7 +205,7 @@ genrule(
         "//conditions:default":   []
     }),
     outs = [
-        "config.h",
+        "globals.h",
         "config_bazel.h",
         "config_mibl.h",
         "config_opam.h",
@@ -269,7 +269,7 @@ genrule(
     name = "export",
     srcs = [
         "//src:ansi_colors.h",
-        "//src:config.c",
+        "//src:globals.c",
         "//src:config_bazel.c",
         "//src:config_mibl.c",
         "//src:config_opam.c",
@@ -347,7 +347,7 @@ genrule(
         "$(location //src:makeheaders)",
         "-H",
         "$(location //src:ansi_colors.h)",
-        "$(location //src:config.c)",
+        "$(location //src:globals.c)",
         "$(location //src:config_bazel.c)",
         "$(location //src:config_mibl.c)",
         "$(location //src:config_opam.c)",
