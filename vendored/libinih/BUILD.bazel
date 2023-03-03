@@ -7,8 +7,8 @@ cc_library(
     srcs = [
         "@libinih//:srcs",
     ],
+    hdrs = ["@libinih//:hdrs"],
     defines = ["INI_STOP_ON_FIRST_ERROR=1"],
-    includes = ["@libinih//:hdrs"],
     visibility = ["//visibility:public"],
 )
 
