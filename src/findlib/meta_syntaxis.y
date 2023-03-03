@@ -5,7 +5,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-/* #include "log.h" */
+#include "log.h"
+#include "utarray.h"
 
 #if defined(YYDEBUG)
 static int indent = 2;

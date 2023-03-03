@@ -20,10 +20,10 @@
 #include <sys/stat.h>
 
 #include "ini.h"
-/* #include "log.h" */
+#include "log.h"
 /* #if EXPORT_INTERFACE */
-/* #include "utarray.h" */
-/* #include "utstring.h" */
+#include "utarray.h"
+#include "utstring.h"
 /* #endif */
 
 #include "config_opam.h"

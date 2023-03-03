@@ -24,7 +24,8 @@ def _lemon_impl(ctx):
         compress=compress,
         defines=defs,
         template=ctx.file.template.path,
-        outdir=out_c.dirname
+        outdir=out_c.dirname,
+        args = "-m"
     )
 
     ctx.actions.run_shell(
@@ -52,11 +53,11 @@ lemon = rule(
         ),
         "template": attr.label(
             allow_single_file =  True,
-            default = "//src/lemon:lempar.c"
+            default = "//vendored/lemon:lempar.c"
         ),
         "_tool": attr.label(
             allow_single_file = True,
-            default = "//src/lemon",
+            default = "//vendored/lemon",
             executable = True,
             cfg = "host"
         )

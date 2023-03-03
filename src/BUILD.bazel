@@ -32,11 +32,11 @@ filegroup(
     visibility = ["//visibility:public"]
 )
 
-filegroup(
-    name = "mkhdrs_xsrcs",
-    srcs = ["log.c", "utarray.c"],
-    visibility = ["//visibility:public"]
-)
+# filegroup(
+#     name = "mkhdrs_xsrcs",
+#     srcs = ["log.c", "utarray.c"],
+#     visibility = ["//visibility:public"]
+# )
 
 filegroup(
     name = "mkhdrs_hdrs",
@@ -55,7 +55,7 @@ MIBL_SRCS = [
     "config_s7_dune.c",
     "error_handler_dune.c",
     # "fs.c",
-    "log.c", "log.h",
+    # "log.c", "log.h",
     "utils.c",
 ]
 
@@ -73,10 +73,10 @@ cc_library(
         # "fs.h",
         "//src/hdrs:utils.h",
 
-        "utarray.c",
-        "utarray.h",
-        "utstring.c",
-        "//src/hdrs:utstring.h",
+        # "utarray.c",
+        "//vendored/uthash:utarray.h",
+        # "utstring.c",
+        "//vendored/uthash:utstring.h",
 
         "@libs7//src:s7",
     ] + select({
@@ -150,7 +150,12 @@ cc_library(
 
         "-Iexternal/libinih",
         # "-Iexternal/logc/src",
-        "-Iexternal/uthash/include",
+
+        "-Ivendored/logc",
+        "-Iexternal/mibl/vendored/logc",
+
+        "-Ivendored/uthash",
+        "-Iexternal/mibl/vendored/uthash",
     ],
     alwayslink = False, # True,
     linkstatic = True,
@@ -159,6 +164,8 @@ cc_library(
     # ],
     deps = [
         "//vendored/libinih:inih",
+        "//vendored/logc",
+        "//vendored/uthash",
         "@libs7//src:s7",
         "@libs7//vendored/linenoise",
     ] + select({
@@ -288,8 +295,7 @@ cc_library(
         "log.h",
         # "//src:utarray.h",
         # "//src:uthash.h",
-        "utstring.c",
-        "//src/hdrs:utstring.h",
+        "//vendored/uthash:utstring.h",
     ] + select({
         "//bzl/host:linux": [
             "//src/linux:strlcat.c", "//src/linux:strlcpy.c", "//src/linux:strnstr.c"],
@@ -361,12 +367,11 @@ cc_library(
         "//src/hdrs:error_handler_opam.h",
         "utils.c",
         "//src/hdrs:utils.h",
-        "log.c",
-        "log.h",
-        # "//src:utarray.h",
-        # "//src:uthash.h",
-        "utstring.c",
-        "//src/hdrs:utstring.h",
+        # "log.c",
+        # "//vendored/uthash::log.h",
+        # "//vendored/uthash::utarray.h",
+        # "//vendored/uthash:::uthash.h",
+        # "//vendored/uthash:utstring.h",
     ] + select({
         "//bzl/host:linux": [
             "//src/linux:strlcat.c", "//src/linux:strlcpy.c", "//src/linux:strnstr.c"],
@@ -403,8 +408,9 @@ cc_library(
         "//src/dune",
         "//src/findlib",
         # "//src:mibl",
-        "@libs7//src:s7",
         "//vendored/libinih:inih",
+        "//vendored/logc",
+        "@libs7//src:s7",
     ] + select({
         "//compilation_mode:dbg?": [":debug"],
         "//conditions:default": []
@@ -428,7 +434,7 @@ cc_library(
         # "//src:utils.h",
         "log.c",
         "log.h",
-        "utarray.h",
+        "//vendored/uthash:utarray.h",
         # "//src:uthash.h",
         # "//src:utstring.h",
     ] + select({

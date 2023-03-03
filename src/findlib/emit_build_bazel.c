@@ -23,10 +23,10 @@
 /* #include "s7.h" */
 /* #endif */
 
-/* #include "log.h" */
+#include "log.h"
 /* #if EXPORT_INTERFACE */
-/* #include "utarray.h" */
-/* #include "utstring.h" */
+#include "utarray.h"
+#include "utstring.h"
 /* #endif */
 
 #include "emit_build_bazel.h"

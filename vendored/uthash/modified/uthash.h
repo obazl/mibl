@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2003-2021, Troy D. Hanson     http://troydhanson.github.io/uthash/
+Copyright (c) 2003-2020, Troy D. Hanson     http://troydhanson.github.com/uthash/
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -21,10 +21,10 @@ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef UTHASH_H
-#define UTHASH_H
+/* #ifndef UTHASH_H */
+/* #define UTHASH_H */
 
-#define UTHASH_VERSION 2.3.0
+#define UTHASH_VERSION 2.2.0
 
 #include <string.h>   /* memcmp, memset, strlen */
 #include <stddef.h>   /* ptrdiff_t */
@@ -85,12 +85,15 @@ do {                                                                            
 #define uthash_strlen(s) strlen(s)
 #endif
 
-#ifndef HASH_FUNCTION
-#define HASH_FUNCTION(keyptr,keylen,hashv) HASH_JEN(keyptr, keylen, hashv)
+#ifdef uthash_memcmp
+/* This warning will not catch programs that define uthash_memcmp AFTER including uthash.h. */
+#warning "uthash_memcmp is deprecated; please use HASH_KEYCMP instead"
+#else
+#define uthash_memcmp(a,b,n) memcmp(a,b,n)
 #endif
 
 #ifndef HASH_KEYCMP
-#define HASH_KEYCMP(a,b,n) memcmp(a,b,n)
+#define HASH_KEYCMP(a,b,n) uthash_memcmp(a,b,n)
 #endif
 
 #ifndef uthash_noexpand_fyi
@@ -148,7 +151,7 @@ do {                                                                            
 
 #define HASH_VALUE(keyptr,keylen,hashv)                                          \
 do {                                                                             \
-  HASH_FUNCTION(keyptr, keylen, hashv);                                          \
+  HASH_FCN(keyptr, keylen, hashv);                                               \
 } while (0)
 
 #define HASH_FIND_BYHASHVALUE(hh,head,keyptr,keylen,hashval,out)                 \
@@ -580,6 +583,13 @@ do {                                                                            
 #define HASH_EMIT_KEY(hh,head,keyptr,fieldlen)
 #endif
 
+/* default to Jenkin's hash unless overridden e.g. DHASH_FUNCTION=HASH_SAX */
+#ifdef HASH_FUNCTION
+#define HASH_FCN HASH_FUNCTION
+#else
+#define HASH_FCN HASH_JEN
+#endif
+
 /* The Bernstein hash function, used in Perl prior to v5.6. Note (x<<5+x)=x*33. */
 #define HASH_BER(key,keylen,hashv)                                               \
 do {                                                                             \
@@ -678,8 +688,7 @@ do {                                                                            
     case 4:  _hj_i += ( (unsigned)_hj_key[3] << 24 );  /* FALLTHROUGH */         \
     case 3:  _hj_i += ( (unsigned)_hj_key[2] << 16 );  /* FALLTHROUGH */         \
     case 2:  _hj_i += ( (unsigned)_hj_key[1] << 8 );   /* FALLTHROUGH */         \
-    case 1:  _hj_i += _hj_key[0];                      /* FALLTHROUGH */         \
-    default: ;                                                                   \
+    case 1:  _hj_i += _hj_key[0];                                                \
   }                                                                              \
   HASH_JEN_MIX(_hj_i, _hj_j, hashv);                                             \
 } while (0)
@@ -727,8 +736,6 @@ do {                                                                            
     case 1: hashv += *_sfh_key;                                                  \
             hashv ^= hashv << 10;                                                \
             hashv += hashv >> 1;                                                 \
-            break;                                                               \
-    default: ;                                                                   \
   }                                                                              \
                                                                                  \
   /* Force "avalanching" of final 127 bits */                                    \
@@ -1133,4 +1140,4 @@ typedef struct UT_hash_handle {
    unsigned hashv;                   /* result of hash-fcn(key)        */
 } UT_hash_handle;
 
-#endif /* UTHASH_H */
+/* #endif /\* UTHASH_H *\/ */

@@ -15,13 +15,13 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "log.h"
 /* #if INTERFACE */
-/* #include "utarray.h" */
-/* #include "utstring.h" */
+#include "utarray.h"
+#include "utstring.h"
 #include "s7.h"
 /* #endif */
 
-/* #include "log.h" */
 
 #include "load_dune.h"
 
@@ -483,6 +483,7 @@ LOCAL bool _exclusions(FTSENT *ftsentry, char *ext)
 #define TAG_MLL 4
 #define TAG_MLY 5
 #define TAG_CPPO 6
+#define TAG_MLLIB 7
 
 /* char *_get_extension(char *filename) */
 /* { */
@@ -1960,6 +1961,208 @@ LOCAL void _update_mll(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
     /* exit(0); */
 }
 
+LOCAL void _update_pkg_mllib_files(s7_pointer pkg_tbl,
+                                   char *pkg_name, char *mname,
+                                   char *fname, int ftype)
+{
+#if defined(DEBUG_TRACE)
+    if (trace) {
+        log_trace(RED "_update_pkg_mllib_files" CRESET);
+    }
+    if (debug) {
+        log_debug("pkg_name: %s", pkg_name);
+        /* log_debug("pkg_tbl: %s", TO_STR(pkg_tbl)); */
+    }
+#endif
+    s7_pointer pkg_key = make_pkg_key(pkg_name);
+    //s7_make_string(s7, pkg_name);
+#if defined(DEBUG_TRACE)
+    if (debug) log_debug("pkg_key: %s", TO_STR(pkg_key));
+#endif
+
+    s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
+    /* if (debug) log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
+
+    if (pkg_alist == s7_f(s7)) {
+#if defined(DEBUG_TRACE)
+        if (debug)
+            log_debug("no dunefile in this directory");
+#endif
+        exit(1);
+    } else {
+        s7_pointer mname_sym   = s7_make_symbol(s7, mname);
+
+        s7_pointer assoc_in = _load_assoc_in();
+        s7_pointer keypath = s7_list(s7, 2, mll_kw, static_kw);
+        s7_pointer ocamllex_alist = s7_call(s7, assoc_in,
+                                        s7_list(s7, 2,
+                                                keypath,
+                                                pkg_alist));
+        /* = s7_call(s7, assoc_in, */
+        /*           s7_list(s7, 2, modules_kw, pkg_alist)); */
+#if defined(DEBUG_TRACE)
+        if (debug) log_debug("ocamllex_alist %s", TO_STR(ocamllex_alist));
+#endif
+
+        s7_pointer mll_file = s7_make_symbol(s7, fname);
+
+        /* s7_pointer mll_assoc = s7_list(s7, 2, mname_sym, mll_file); */
+        s7_pointer mll_assoc = s7_cons(s7, mname_sym, mll_file);
+#if defined(DEBUG_TRACE)
+        if (debug) log_debug("mll_assoc: %s", TO_STR(mll_assoc));
+#endif
+
+        if (ocamllex_alist == s7_f(s7)) {
+#if defined(DEBUG_TRACE)
+            if (debug)
+                log_debug("INITIALIZING :lex field");
+#endif
+
+            s7_pointer statics_assoc =
+                s7_list(s7, 2, static_kw, mll_assoc);
+
+            s7_pointer ocamllex_assoc = s7_list(s7, 2,
+                                            mll_kw, statics_assoc);
+#if defined(DEBUG_TRACE)
+            if (debug) log_debug("ocamllex_assoc: %s", TO_STR(ocamllex_assoc));
+#endif
+
+            s7_pointer new_pkg_alist = s7_append(s7, pkg_alist,
+                                                 s7_list(s7, 1,
+                                                         ocamllex_assoc));
+            /* if (debug) */
+            /*     log_debug("pkg_alist: %s", */
+            /*            TO_STR(new_pkg_alist)); */
+
+            s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg_alist);
+        } else {
+#if defined(DEBUG_TRACE)
+            if (debug) {
+                log_debug("UPDATING :signatures");
+                log_debug("ocamllex_alist: %s", TO_STR(ocamllex_alist));
+                log_debug("mname_sym: %s", TO_STR(mname_sym));
+            }
+#endif
+
+            s7_pointer keypath = s7_list(s7, 3,
+                                         mll_kw,
+                                         static_kw,
+                                         mname_sym);
+#if defined(DEBUG_TRACE)
+            if (debug) {
+                /* log_debug("assoc-in: %s", TO_STR(assoc_in)); */
+                log_debug("keypath: %s", TO_STR(keypath));
+                /* log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
+            }
+#endif
+
+            s7_pointer mll_alist = s7_call(s7, assoc_in,
+                                           s7_list(s7, 2,
+                                                   keypath,
+                                                   pkg_alist));
+
+#if defined(DEBUG_TRACE)
+            if (debug) {
+                log_debug("mll_alist: %s", TO_STR(mll_alist));
+            }
+#endif
+            if (mll_alist == s7_f(s7)) {
+                /* new */
+#if defined(DEBUG_TRACE)
+                if (debug)
+                    log_debug(RED "ADDING" CRESET " sig %s to %s",
+                              TO_STR(mname_sym), TO_STR(ocamllex_alist));
+                if (debug) log_debug("ocamllex_alist: %s",
+                                     s7_object_to_c_string(s7,
+                                                           ocamllex_alist));
+#endif
+
+                s7_pointer ocamllex_alist_cdr = s7_cdr(ocamllex_alist);
+#if defined(DEBUG_TRACE)
+                if (debug) {
+                    log_debug("ocamllex_alist_cdr: %s",
+                       TO_STR(ocamllex_alist_cdr));
+                }
+#endif
+
+                /* s7_pointer mll_assoc = */
+                /*     s7_list(s7, 1, s7_list(s7, 2, mname_sym, mll_file)); //mll_assoc)); */
+                /* if (debug) log_debug("new mll_assoc: %s", */
+                /*                      TO_STR(mll_assoc)); */
+
+                s7_pointer new_ocamllex_alist_cdr =
+                    s7_append(s7, ocamllex_alist_cdr,
+                              s7_list(s7, 1, mll_assoc));
+
+#if defined(DEBUG_TRACE)
+
+                if (debug)
+                    log_debug("new_ocamllex_alist_cdr: %s",
+                       TO_STR(new_ocamllex_alist_cdr));
+#endif
+
+                s7_pointer new_ocamllex_alist
+                    = s7_set_cdr(ocamllex_alist, new_ocamllex_alist_cdr);
+                (void)new_ocamllex_alist;
+#if defined(DEBUG_TRACE)
+                if (debug) {
+                    log_debug("new_ocamllex_alist: %s",
+                              TO_STR(new_ocamllex_alist));
+                }
+#endif
+            } else {
+                /* update */
+#if defined(DEBUG_TRACE)
+                if (debug) log_debug(RED "UPDATING" CRESET " mll_alist: %s",
+                                     TO_STR(mll_alist));
+#endif
+
+                s7_pointer ocamllex_alist_cdr = s7_cdr(mll_alist);
+#if defined(DEBUG_TRACE)
+                if (debug)
+                    log_debug("ocamllex_alist_cdr: %s",
+                       TO_STR(ocamllex_alist_cdr));
+#endif
+
+                s7_pointer msrcs = s7_append(s7,
+                                             ocamllex_alist_cdr,
+                                             s7_list(s7, 1, mll_file));
+
+                s7_pointer new_ocamllex_alist
+                    = s7_set_cdr(mll_alist, msrcs);
+                (void)new_ocamllex_alist;
+#if defined(DEBUG_TRACE)
+                if (debug) {
+                    log_debug("new_ocamllex_alist: %s",
+                              TO_STR(new_ocamllex_alist));
+                    log_debug("new pkgs: %s", TO_STR(pkg_alist));
+                }
+#endif
+            }
+        }
+    }
+}
+
+LOCAL void _update_mllib(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
+{
+#if defined(DEBUG_TRACE)
+    if (trace) {
+        log_trace(RED "_update_mllib", CRESET);
+    }
+#endif
+    char *pkg_name = dirname(ftsentry->fts_path);
+    char *mname = _module_name(ftsentry, ext);
+#if defined(DEBUG_TRACE)
+    if (trace) {
+        log_trace("module name: %s ", mname);
+        log_trace("pkg name: %s; fname: %s", pkg_name, ftsentry->fts_name);
+    }
+#endif
+
+    _update_pkg_mllib_files(pkg_tbl, pkg_name, mname,
+                            ftsentry->fts_name, TAG_MLLIB);
+}
+
 LOCAL void _update_pkg_mly_files(s7_pointer pkg_tbl,
                                  char *pkg_name, char *mname,
                                  char *fname, int ftype)
@@ -2561,10 +2764,14 @@ LOCAL void _handle_ml_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
     }
     /*  */
     else if ((strncmp(ext, ".mlt", 4) == 0)
-        /* .mlt - ocamlformat file, not a module */
+        /* .mlt - toplevel? ocamlformat? file, not a module */
         && (strlen(ext) == 4)) {
         /* log_warn("UNHANDLED: :%-6s %s", "mlt", ftsentry->fts_name); */
         _update_pkg_files(pkg_tbl, ftsentry, ext);
+    }
+    else if ((strncmp(ext, ".mllib", 6) == 0)
+        && (strlen(ext) == 6)) {
+        _update_mllib(pkg_tbl, ftsentry, ext);
     }
     else if ((strncmp(ext, ".mll", 4) == 0)
         && (strlen(ext) == 4)) {
@@ -2579,11 +2786,6 @@ LOCAL void _handle_ml_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
         /* log_warn("UNHANDLED: :%-6s %s", "mlh", ftsentry->fts_name); */
         _update_pkg_files(pkg_tbl, ftsentry, ext);
     }
-    else if ((strncmp(ext, ".mllib", 6) == 0)
-        && (strlen(ext) == 6)) {
-        /* log_warn("UNHANDLED: :%-6s %s", "mllib", ftsentry->fts_name); */
-        _update_pkg_files(pkg_tbl, ftsentry, ext);
-    }
     else if ((strncmp(ext, ".mligo", 6) == 0)
         && (strlen(ext) == 6)) {
         /* tezos */
@@ -2595,6 +2797,11 @@ LOCAL void _handle_ml_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
         /* mina */
         /* log_warn("UNHANDLED: :%-6s %s", "mldylib", ftsentry->fts_name); */
         _update_pkg_files(pkg_tbl, ftsentry, ext);
+    }
+    else if ((strncmp(ext, ".mld", 4) == 0)
+        && (strlen(ext) == 4)) {
+        log_warn("UNHANDLED: :%-6s %s", "mld", ftsentry->fts_name);
+        /* _update_pkg_files(pkg_tbl, ftsentry, ext); */
     }
     else if ((strncmp(ext, ".md", 3) == 0)
         && (strlen(ext) == 3)) {

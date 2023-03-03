@@ -16,11 +16,11 @@
 #include <unistd.h>
 
 /* #if INTERFACE */
-/* #include "utarray.h" */
-/* #include "utstring.h" */
+#include "utarray.h"
+#include "utstring.h"
 /* #endif */
 
-/* #include "log.h" */
+#include "log.h"
 
 /* #include "libfindlib.h" */
 #include "handlers_opam.h"

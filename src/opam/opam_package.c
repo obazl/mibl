@@ -1,7 +1,7 @@
 /* types etc. for parsed opam files */
 
 #if EXPORT_INTERFACE
-#include "uthash.h"
+/* #include "uthash.h" */
 
 enum phrase_type_e {
     BINDING_BOOL,

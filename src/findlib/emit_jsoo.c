@@ -1,5 +1,8 @@
 #include <stdbool.h>
 
+#include "log.h"
+#include "utarray.h"
+#include "utstring.h"
 #include "emit_jsoo.h"
 
 extern int spfactor;

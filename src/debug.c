@@ -8,9 +8,9 @@
 #include <string.h>
 #include <unistd.h>
 
-/* #include "log.h" */
+#include "log.h"
 /* #if EXPORT */
-/* #include "utarray.h" */
+#include "utarray.h"
 /* #endif */
 
 #include "debug.h"

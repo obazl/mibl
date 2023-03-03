@@ -1,5 +1,6 @@
+
 /*
-Copyright (c) 2008-2021, Troy D. Hanson   http://troydhanson.github.io/uthash/
+Copyright (c) 2008-2020, Troy D. Hanson   http://troydhanson.github.com/uthash/
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -23,10 +24,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* a dynamic array implementation using macros
  */
-#ifndef UTARRAY_H
-#define UTARRAY_H
+/* #ifndef UTARRAY_H */
+/* #define UTARRAY_H */
 
-#define UTARRAY_VERSION 2.3.0
+#define UTARRAY_VERSION 2.2.0
 
 #include <stddef.h>  /* size_t */
 #include <string.h>  /* memset, etc */
@@ -63,6 +64,7 @@ typedef struct {
     char *d;     /* n slots of size icd->sz*/
 } UT_array;
 
+#if EXPORT_INTERFACE
 #define utarray_init(a,_icd) do {                                             \
   memset(a,0,sizeof(UT_array));                                               \
   (a)->icd = *(_icd);                                                         \
@@ -110,7 +112,7 @@ typedef struct {
   utarray_reserve(a,1);                                                       \
   if ((a)->icd.copy) { (a)->icd.copy( _utarray_eltptr(a,(a)->i++), p); }      \
   else { memcpy(_utarray_eltptr(a,(a)->i++), p, (a)->icd.sz); };              \
-} while(0)
+  } while(0)
 
 #define utarray_pop_back(a) do {                                              \
   if ((a)->icd.dtor) { (a)->icd.dtor( _utarray_eltptr(a,--((a)->i))); }       \
@@ -226,23 +228,24 @@ typedef struct {
 
 #define utarray_front(a) (((a)->i) ? (_utarray_eltptr(a,0)) : NULL)
 #define utarray_next(a,e) (((e)==NULL) ? utarray_front(a) : (((a)->i != utarray_eltidx(a,e)+1) ? _utarray_eltptr(a,utarray_eltidx(a,e)+1) : NULL))
+#endif
 #define utarray_prev(a,e) (((e)==NULL) ? utarray_back(a) : ((utarray_eltidx(a,e) != 0) ? _utarray_eltptr(a,utarray_eltidx(a,e)-1) : NULL))
 #define utarray_back(a) (((a)->i) ? (_utarray_eltptr(a,(a)->i-1)) : NULL)
 #define utarray_eltidx(a,e) (((char*)(e) - (a)->d) / (a)->icd.sz)
 
-/* last we pre-define a few icd for common utarrays of ints and strings */
-static void utarray_str_cpy(void *dst, const void *src) {
-  char *const *srcc = (char *const *)src;
-  char **dstc = (char**)dst;
-  *dstc = (*srcc == NULL) ? NULL : strdup(*srcc);
-}
-static void utarray_str_dtor(void *elt) {
-  char **eltc = (char**)elt;
-  if (*eltc != NULL) free(*eltc);
-}
-static const UT_icd ut_str_icd UTARRAY_UNUSED = {sizeof(char*),NULL,utarray_str_cpy,utarray_str_dtor};
-static const UT_icd ut_int_icd UTARRAY_UNUSED = {sizeof(int),NULL,NULL,NULL};
-static const UT_icd ut_ptr_icd UTARRAY_UNUSED = {sizeof(void*),NULL,NULL,NULL};
+/* /\* last we pre-define a few icd for common utarrays of ints and strings *\/ */
+/* static void utarray_str_cpy(void *dst, const void *src) { */
+/*   char *const *srcc = (char *const *)src; */
+/*   char **dstc = (char**)dst; */
+/*   *dstc = (*srcc == NULL) ? NULL : strdup(*srcc); */
+/* } */
+/* static void utarray_str_dtor(void *elt) { */
+/*   char **eltc = (char**)elt; */
+/*   if (*eltc != NULL) free(*eltc); */
+/* } */
+/* static const UT_icd ut_str_icd UTARRAY_UNUSED = {sizeof(char*),NULL,utarray_str_cpy,utarray_str_dtor}; */
+/* static const UT_icd ut_int_icd UTARRAY_UNUSED = {sizeof(int),NULL,NULL,NULL}; */
+/* static const UT_icd ut_ptr_icd UTARRAY_UNUSED = {sizeof(void*),NULL,NULL,NULL}; */
 
 
-#endif /* UTARRAY_H */
+// #endif /* UTARRAY_H */

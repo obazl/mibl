@@ -40,6 +40,11 @@ DIRLOCS = [
     "SRCDIR5=`dirname $$SRC5`;",
     "SRC6=$(location //src/xdg:xdg.c);",
     "SRCDIR6=`dirname $$SRC6`;",
+    "SRC7=$(location //src/opam:opam_lexer.c);",
+    "SRCDIR7=`dirname $$SRC7`;",
+    ## opam_syntaxis.c generated
+    "SRC8=$(location //src/opam:opam_syntaxis.c);",
+    "SRCDIR8=`dirname $$SRC8`;",
 ]
 
 # We need to enumerate rather than use $(SRCS) or a wildcard
@@ -72,13 +77,12 @@ FILELOCS = [
     "$(location //src:treewalker_project.c)",
     "$(location //src:utils.c)",
 
-    "$(location //src:log.c):", # do not emit header
-    "$(location //src:log.h)",
-    "$(location //src:utarray.c):",  # do not emit header
-    "$(location //src:utarray.h)",
-    "$(location //src:uthash.h)",
-
-    "$(location //src:utstring.c)",
+    # "$(location //src:log.c):", # do not emit header
+    # "$(location //src:log.h)",
+    # "$(location //src:utarray.c):",  # do not emit header
+    # "$(location //src:utarray.h)",
+    # "$(location //src:uthash.h)",
+    # "$(location //src:utstring.c)",
 
     "$(location //src/dune:dune_readers.c)",
 
@@ -97,6 +101,12 @@ FILELOCS = [
     "$(location //src/findlib:meta_values.c)",
     "$(location //src/findlib:meta_syntaxis.c)",
     "$(location //src/findlib:debug_meta.c)",
+
+    "$(location //src/opam:opam_lexer.c)",
+    "$(location //src/opam:opam_lexis.c)",
+    "$(location //src/opam:opam_parser.c)",
+    "$(location //src/opam:opam_syntaxis.c)",
+    "$(location //src/opam:opam_package.c):",
 
     "$(location //convert:convert.c)",
     "$(location //coswitch:coswitch.c)",
@@ -120,6 +130,8 @@ CP_CMDS = " ".join([
     "cp $${SRCDIR4}/*.h $(@D);",
     "cp $${SRCDIR5}/*.h $(@D);",
     "cp $${SRCDIR6}/*.h $(@D);",
+    "cp $${SRCDIR7}/*.h $(@D);",
+    "cp $${SRCDIR8}/*.h $(@D);",
 ])
 
 genrule(
@@ -148,12 +160,12 @@ genrule(
         "//src:treewalker_project.c", # FIXME: rename
         "//src:utils.c",
 
-        "//src:log.c",
-        "//src:log.h",
-        "//src:utarray.c",
-        "//src:utarray.h",
-        "//src:uthash.h",
-        "//src:utstring.c",
+        # "//src:log.c",
+        # "//src:log.h",
+        # "//src:utarray.c",
+        # "//src:utarray.h",
+        # "//src:uthash.h",
+        # "//src:utstring.c",
 
         # "//src/dune:mkhdrs_srcs",
         "//src/dune:dune_readers.c",
@@ -174,6 +186,12 @@ genrule(
 
         "//src/findlib:meta_lexis.c",
         "//src/findlib:meta_syntaxis.c", # //src/findlib/gen_meta_syntaxis
+
+        "//src/opam:opam_lexer.c",
+        "//src/opam:opam_lexis.c",
+        "//src/opam:opam_parser.c",
+        "//src/opam:opam_syntaxis.c",
+        "//src/opam:opam_package.c",
 
         "//src/xdg:xdg.c",
 
@@ -219,6 +237,12 @@ genrule(
         "meta_settings.h",
         "meta_values.h",
         "meta_syntaxis.h",
+
+        "opam_lexer.h",
+        "opam_lexis.h",
+        "opam_parser.h",
+        "opam_syntaxis.h",
+
         "debug_meta.h",
 
         "load_dune.h",
@@ -226,7 +250,7 @@ genrule(
         "error_handler_opam.h",
 
         "utils.h",
-        "utstring.h",
+        # "utstring.h",
 
         "xdg.h",
 
@@ -267,12 +291,12 @@ genrule(
         "//src:treewalker_project.c",
         "//src:utils.c",
 
-        "//src:log.c",
-        "//src:log.h",
-        "//src:utarray.c",
-        "//src:utarray.h",
-        "//src:uthash.h",
-        "//src:utstring.c",
+        # "//src:log.c",
+        # "//src:log.h",
+        # "//src:utarray.c",
+        # "//src:utarray.h",
+        # "//src:uthash.h",
+        # "//src:utstring.c",
 
         # "//src/dune:mkhdrs_srcs",
         "//src/dune:dune_readers.c",
@@ -346,13 +370,12 @@ genrule(
         "$(location //src:treewalker_project.c)",
         "$(location //src:utils.c)",
 
-        "$(location //src:log.c):", # do not emit header
-        "$(location //src:log.h)",
-        "$(location //src:utarray.c):",  # do not emit header
-        "$(location //src:utarray.h)",
-        "$(location //src:uthash.h)",
-
-        "$(location //src:utstring.c)",
+        # "$(location //src:log.c):", # do not emit header
+        # "$(location //src:log.h)",
+        # "$(location //src:utarray.c):",  # do not emit header
+        # "$(location //src:utarray.h)",
+        # "$(location //src:uthash.h)",
+        # "$(location //src:utstring.c)",
 
         "$(location //src/dune:dune_readers.c)",
 

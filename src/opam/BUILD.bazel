@@ -1,7 +1,11 @@
 load("@bazel_skylib//rules:common_settings.bzl",
      "bool_flag", "string_flag")
 
-load(":BUILD.bzl", "CMD_FLAGS", "BOOTSTRAP_INCLUDES", "lemon")
+load(":BUILD.bzl", "CMD_FLAGS", "BOOTSTRAP_INCLUDES")
+
+load("//vendored/lemon:BUILD.bzl", "lemon")
+
+exports_files(glob(["*.c"]))
 
 ################################################################
 ####    OPAM Parser
@@ -11,20 +15,37 @@ cc_library(
     # name = "opam_syntaxis",
     srcs = [
         "opam_parser.c",
-        "opam_parser.h",
+        ":opam_parser.h",
         "opam_syntaxis.c",
-        "opam_syntaxis.h",
-        "//src:log.h",
-        "//src:utarray.h",
-        "//src:uthash.h",
-        "//src:utstring.h",
+        ":opam_syntaxis.h",
+        "//vendored/logc:log.c", "//vendored/logc:log.h",
+
+        # ":mkhdrs",
+
+        # # "//src/hdrs",
+        "//vendored/uthash:utarray.h",
+        "//vendored/uthash:uthash.h",
+        "//vendored/uthash:utstring.h",
         ],
     hdrs = [
         "libopamparser.h",
         # "opam_parser.h"
     ],
     copts = [
-        "-Isrc", "-I$(GENDIR)/src/opam"
+        "-Isrc",
+        "-Isrc/hdrs",
+        "-Isrc/opam",
+        "-Ivendored/uthash",
+        "-Ivendored/logc",
+        "-Iexternal/src",
+        "-I$(GENDIR)/src",
+        "-I$(GENDIR)/src/opam",
+        "-I$(GENDIR)/src/hdrs",
+        "-I$(GENDIR)/external/mibl/src/hdrs",
+        # "-Isrc",
+        # "-I$(GENDIR)/src/opam",
+        # "-I$(GENDIR)/src/hdrs",
+        # "-I$(GENDIR)/external/mibl/src/hdrs",
     ] + CMD_FLAGS + BOOTSTRAP_INCLUDES,
     defines = select({
         ":yydebug-enabled": ["YYDEBUG"],
@@ -40,10 +61,10 @@ cc_library(
     visibility = ["//test:__subpackages__"]
 )
 
-cc_binary(
-    name  = "lemon",
-    srcs  = ["lemon.c"],
-)
+# cc_binary(
+#     name  = "lemon",
+#     srcs  = ["lemon.c"],
+# )
 
 lemon(
     name = "gen_opam_syntaxis",
@@ -68,7 +89,8 @@ lemon(
     }) + select({
         ":yydebug-build-filter": ["YYDEBUG_BUILD_FILTER"],
         "//conditions:default":   []
-    })
+    }),
+    visibility = ["//src/hdrs:__pkg__"]
 )
 
 ###########
@@ -77,13 +99,25 @@ cc_library(
     srcs = [
         "opam_lexer.c", "opam_lexer.h",
         "opam_lexis.c", "opam_lexis.h",
-        "//src:log.c", "//src:log.h",
-        "//src:utarray.h",
-        "//src:uthash.h",
-        "//src:utstring.h",
+        "//vendored/logc:log.c", "//vendored/logc:log.h",
+
+        # ":mkhdrs",
+        # "//src/hdrs",
+
+        "//vendored/uthash:utarray.h",
+        "//vendored/uthash:uthash.h",
+        # ":utstring.h",
     ],
     copts = [
-        "-Isrc", "-I$(GENDIR)/src/opam"
+        "-Isrc",
+        "-Isrc/hdrs",
+        "-Isrc/opam",
+        "-Ivendored/uthash",
+        "-Ivendored/logc",
+        "-I$(GENDIR)/src",
+        "-I$(GENDIR)/src/opam",
+        "-I$(GENDIR)/src/hdrs",
+        "-I$(GENDIR)/external/mibl/src/hdrs",
     ] + CMD_FLAGS + BOOTSTRAP_INCLUDES,
     defines = select({
         ":yydebug-enabled": ["YYDEBUG"],
@@ -138,24 +172,43 @@ genrule(
         "opam_lexis.c",
         "opam_parser.c",
         "opam_syntaxis.c", ## defines token_type constants
-        "opam_package.c" ## ast node types, etc.
+        "opam_package.c", ## ast node types, etc.
+        # "//vendored/uthash:utarray.c",
+        # "//vendored/uthash:utarray.h",
+        # "//vendored/uthash:uthash.h",
+        # "//vendored/uthash:utstring.c",
+        # "//vendored/logc:log.c",
+        # "//vendored/logc:log.h"
     ],
     outs = [
         "opam_lexer.h",
         "opam_lexis.h",
         "opam_parser.h",
         "opam_syntaxis.h",
+        # "utstring.h",
     ],
     cmd = "\n".join([
         "SRC1=$(location opam_lexer.c)",
         "SRCDIR1=`dirname $$SRC1`",
+        # "SRC2=$(location //vendored/logc:log.c)",
+        # "SRCDIR2=`dirname $$SRC2`",
+        # "SRC3=$(location //vendored/uthash:utstring.c)",
+        # "SRCDIR3=`dirname $$SRC3`",
         "$(location //src:makeheaders) \\",
+        # "    $(location //vendored/uthash:utarray.c): \\", # do not emit hdr
+        # "    $(location //vendored/uthash:utarray.h) \\",
+        # "    $(location //vendored/uthash:uthash.h) \\",
+        # "    $(location //vendored/uthash:utstring.c) \\",
+        # "    $(location //vendored/logc:log.c): \\",
+        # "    $(location //vendored/logc:log.h) \\",
         "    $(location opam_lexer.c) \\",
         "    $(location opam_lexis.c) \\",
         "    $(location opam_package.c) \\",
         "    $(location opam_parser.c) \\",
-        "    $(location opam_syntaxis.c)",
+        "    $(location opam_syntaxis.c);",
         "cp $${SRCDIR1}/*.h $(@D)",
+        # "cp $${SRCDIR2}/*.h $(@D)",
+        # "cp $${SRCDIR3}/*.h $(@D)",
         # "> $@"
     ]),
     tools = ["//src:makeheaders"],

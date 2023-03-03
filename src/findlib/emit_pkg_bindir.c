@@ -22,10 +22,10 @@
 /* #include "s7.h" */
 /* #endif */
 
-/* #include "utarray.h" */
-/* #include "utstring.h" */
+#include "utarray.h"
+#include "utstring.h"
 
-/* #include "log.h" */
+#include "log.h"
 
 /* #include "libdune.h" */
 #include "emit_pkg_bindir.h"

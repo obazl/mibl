@@ -21,7 +21,7 @@
 #if EXPORT_INTERFACE
 #include "utarray.h"
 #include "uthash.h"
-#include "utstring.h"
+/* #include "utstring.h" */
 #endif
 
 #include "opam_parser.h"

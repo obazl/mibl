@@ -2,11 +2,11 @@
 #include <stdio.h>
 
 /* #if INTERFACE */
-/* #include "utarray.h" */
-/* #include "uthash.h" */
+#include "utarray.h"
+#include "uthash.h"
 /* #endif */
 
-/* #include "log.h" */
+#include "log.h"
 
 #include "meta_settings.h"
 

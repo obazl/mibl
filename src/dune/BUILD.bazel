@@ -21,12 +21,13 @@ cc_library(
         # "config_s7.h",
         # "error_handler.h",
         # "utils.h"
-        "//src:log.c",
-        "//src:log.h",
+        # "//src:log.c",
+        # "//src:log.h",
         # "uthash.h", "utarray.h", "utstring.h"
         # "@uthash//:include"
-        "//src:utarray.c",
-        "//src:utarray.h"
+        # "//src:utarray.c",
+        "//vendored/uthash:utarray.h",
+        "//vendored/uthash:utstring.h"
     ] + select({
         "//bzl/host:linux": [
             "//src/linux:strlcat.c", "//src/linux:strlcpy.c", "//src/linux:strnstr.c"],
@@ -54,6 +55,8 @@ cc_library(
         "-Iexternal/src",
         "-Iexternal/mibl/src",
 
+        "-Ivendored/uthash",
+
         "-I$(GENDIR)/src",
         "-I$(GENDIR)/src/hdrs",
 
@@ -70,11 +73,13 @@ cc_library(
         "-Iexternal/libs7/src",
 
         # "-Iexternal/libinih",
-        # "-Iexternal/logc/src",
-        "-Iexternal/uthash/include",
+        "-Ivendored/logc",
+        "-Iexternal/mibl/vendored/logc",
+        "-Iexternal/mibl/vendored/uthash",
     ],
     deps = [
         # "//external/libinih:inih",
+        "//vendored/logc",
         "@libs7//src:s7",
         # "@libs7//vendored/linenoise",
     ] + select({
