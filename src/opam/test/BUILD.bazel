@@ -7,7 +7,7 @@ cc_binary(
     srcs  = [
         "walk_test.c",
         "walk_test.h",
-        "//src:log.h"
+        # "//src:log.h"
     ],
     copts = CMD_FLAGS + BOOTSTRAP_INCLUDES + [
 
@@ -17,6 +17,8 @@ cc_binary(
         "-I$(GENDIR)/src",
         "-I$(GENDIR)/src/opam",
         "-I$(GENDIR)/test/opam",
+
+        "-Ivendored/uthash",
 
         "-Iexternal/mibl/src",
         "-I$(GENDIR)/external/mibl/src",
@@ -40,14 +42,18 @@ cc_binary(
 cc_binary(
     name  = "opam_lex",
     srcs  = [
+        "//vendored/logc:log.c",
+        "//vendored/logc:log.h",
         "opam_lex.c",
         "opam_lex.h",
-        "//src:log.h"
+        "//vendored/uthash:utstring.h",
     ],
     copts = CMD_FLAGS + BOOTSTRAP_INCLUDES + [
         "-Isrc",
         "-I$(GENDIR)/src/opam",
         "-I$(GENDIR)/test/opam",
+        "-Ivendored/uthash",
+        "-Ivendored/logc",
         # "-I$(GENDIR)/external/opam/test"
     ],
     defines = ["DEBUG", "DEBUG_TRACE"],
@@ -63,7 +69,8 @@ cc_binary(
     srcs  = [
         "opam_parse.c",
         "opam_parse.h",
-        "//src:log.h"
+        "//vendored/logc:log.h",
+        "//vendored/uthash:utstring.h"
     ],
     copts = CMD_FLAGS + BOOTSTRAP_INCLUDES + [
         # "-Ibootstrap",
@@ -104,22 +111,22 @@ genrule(
     name = "mkhdrs",
     srcs = [
         "opam_lex.c", "opam_parse.c",
-        "walk_test.c",
-        "//src:utarray.c",
-        "//src:utarray.h",
-        "//src:utstring.h"
+        # "walk_test.c",
+        # "//vendored/uthash:utarray.c",
+        "//vendored/uthash:utarray.h",
+        "//vendored/uthash:utstring.h"
     ],
-    outs = ["opam_lex.h", "opam_parse.h", "walk_test.h"],
+    outs = ["opam_lex.h", "opam_parse.h"], # "walk_test.h"],
     cmd = "\n".join([
         "SRC1=$(location opam_lex.c)",
         "SRCDIR1=`dirname $$SRC1`",
         "$(location //src:makeheaders) \\",
-        "    $(location //src:utarray.c): \\",
-        "    $(location //src:utarray.h) \\",
-        "    $(location //src:utstring.h) \\",
+        # "    $(location //vendored/uthash:utarray.c): \\",
+        "    $(location //vendored/uthash:utarray.h) \\",
+        "    $(location //vendored/uthash:utstring.h) \\",
         "    $(location opam_lex.c) \\",
-        "    $(location opam_parse.c) \\",
-        "    $(location walk_test.c) ",
+        "    $(location opam_parse.c)",
+        # "    $(location walk_test.c) ",
         "cp $${SRCDIR1}/*.h $(@D)",
     ]),
     tools = ["//src:makeheaders"],
