@@ -131,9 +131,11 @@ cc_library(
         "//conditions:default":   []
     }),
     copts = COPTS + [
+
         "-Wall",
         "-Wpedantic",
-        "-Wno-unused-function",
+        "-Werror",
+        # "-Wno-unused-function",
 
         "-Isrc",
         "-Iexternal/src",
@@ -181,10 +183,11 @@ CMD_HDR = "\n".join([
     "SRCDIR1=`dirname $$SRC1`;",
 ])
 
+##FIXME: move to //vendored/makeheaders
 cc_binary(
     name  = "makeheaders",
     srcs  = ["makeheaders.c"],
-    copts = ["-O3"] + select({
+    copts = ["-O3", "-Wno-unused-function"] + select({
         "linux": ["-Wno-stringop-truncation",
                   "-Wno-stringop-overflow"],
         "//conditions:default": []
@@ -435,9 +438,9 @@ cc_library(
         # "debug_opam.h",
         # "//src:utils.c",
         # "//src:utils.h",
-        "log.c",
-        "log.h",
-        "//vendored/uthash:utarray.h",
+        # "log.c",
+        # "log.h",
+        # "//vendored/uthash:utarray.h",
         # "//src:uthash.h",
         # "//src:utstring.h",
     ] + select({
@@ -465,17 +468,24 @@ cc_library(
         "-I$(GENDIR)/external/mibl/src/findlib",
 
         "-Iexternal/libs7/src",
-        # "-Iexternal/libinih",
+
+        "-Ivendored/logc",
+        "-Iexternal/mibl/vendored/logc",
+
+        "-Ivendored/uthash",
+        "-Iexternal/mibl/vendored/uthash",
     ],
     defines = select({
         "//compilation_mode:dbg?": ["DEBUG_TRACE", "DEBUG_MIBL"],
         "//conditions:default":   []
     }),
-    # deps = [
-    #     "//src/findlib",
-    #     # "//src:mibl",
-    #     # "@libs7//src:s7",
-    #     "//external/libinih:inih",
-    # ],
+    deps = [
+        "//vendored/logc",
+        "//vendored/uthash"
+        # "//src/findlib",
+        # # "//src:mibl",
+        # # "@libs7//src:s7",
+        # "//external/libinih:inih",
+    ],
     visibility = ["//visibility:public"]
 )

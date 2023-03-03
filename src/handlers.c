@@ -28,9 +28,9 @@
 UT_array  *segs;
 UT_string *group_tag;
 
-int dunefile_ct = 0;
-int file_ct = 0;
-int dir_ct  = 0;
+extern int dunefile_ct;
+extern int file_ct;
+extern int dir_ct;
 
 void _indent(int i)
 {

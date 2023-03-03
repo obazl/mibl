@@ -1,5 +1,8 @@
 #include <stdbool.h>
 
+#include "log.h"
+#include "utstring.h"
+
 #include "xdg.h"
 
 /* XDG

@@ -79,7 +79,7 @@ s7_pointer _s7_quote = NULL;
 s7_pointer _s7_set_car = NULL;
 s7_pointer _s7_set_cdr = NULL;
 
-int rc;
+extern int rc;
 
 #define MIBL    "mibl"
 #define MIBL_S7 MIBL "/s7"
@@ -696,7 +696,7 @@ LOCAL void _config_s7_load_path_xdg_home(void)
     }
 }
 
-LOCAL void _config_s7_load_path_xdg_sys(void)
+LOCAL __attribute__((unused)) void _config_s7_load_path_xdg_sys(void)
 {
     UT_string *xdg_script_dir;
 
@@ -809,7 +809,7 @@ bazel run is similar, but not identical, to directly invoking the binary built b
 void libc_s7_init(s7_scheme *sc);
 
 /* FIXME: call into libs7 for this */
-LOCAL void s7_config_repl(s7_scheme *sc)
+LOCAL __attribute__((unused)) void s7_config_repl(s7_scheme *sc)
 {
     printf("mibl: s7_repl\n");
 #if (!WITH_C_LOADER)

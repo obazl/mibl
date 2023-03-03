@@ -196,9 +196,9 @@ cc_library(
         "meta_syntaxis.h",
 
         # "//vendored/logc:log.h",
-        "//vendored/uthash:utarray.h",
-        # "//vendored/uthash:uthash.h",
-        "//vendored/uthash:utstring.h",
+        # "//vendored/uthash:utarray.h",
+        # # "//vendored/uthash:uthash.h",
+        # "//vendored/uthash:utstring.h",
         ] + select({
         ":yydebug-enabled": [
             "meta_entries.c",
@@ -206,7 +206,7 @@ cc_library(
         ],
         "//conditions:default":   []
     }),
-    deps = ["//vendored/logc"],
+    deps = ["//vendored/logc", "//vendored/uthash"],
     copts = CMD_FLAGS + [
         ## NOTE: generated meta_syntaxis.c includes header with full
         ## bazel path, e.g.
@@ -214,17 +214,18 @@ cc_library(
         ## so we always need '-I .'
         "-I.",
         "-Isrc",
-        "-Ivendored/logc",
-        "-Ivendored/uthash",
-        "-Iexternal/mibl/vendored/logc",
-        "-Iexternal/mibl/vendored/uthash",
-        "-Iexternal/vendored/uthash",
+
         "-Iexternal/mibl/src",
         "-I$(GENDIR)/src/hdrs",
-        "-I$(GENDIR)/src/findlib",
 
-        "-I$(GENDIR)/mibl/src/findlib",
-        "-I$(GENDIR)/external/mibl/src/findlib"
+        # "-I$(GENDIR)/src/findlib",
+        # "-I$(GENDIR)/mibl/src/findlib",
+        "-I$(GENDIR)/external/mibl/src/findlib",
+
+        "-Ivendored/logc",
+        "-Iexternal/mibl/vendored/logc",
+        "-Ivendored/uthash",
+        "-Iexternal/mibl/vendored/uthash",
     ],
     defines = select({
         ":yydebug-enabled": ["YYDEBUG", "DEBUG_TRACE"],
@@ -553,7 +554,7 @@ genrule(
         "$(location meta_lexis.c)",
         "$(location meta_syntaxis.c)",
         "$(location debug_meta.c)",
-        "$(location //src:log.c):", # do not emit header
+        # "$(location //src:log.c):", # do not emit header
         # "$(location //vendored/logc:log.h)",
         "$(location //src:utils.c)",
         # "$(location //vendored/uthash:utarray.c):",

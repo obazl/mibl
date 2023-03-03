@@ -74,7 +74,7 @@ s7_scheme *s7;                  /* GLOBAL s7 */
 /* s7_pointer _s7_set_car = NULL; */
 /* s7_pointer _s7_set_cdr = NULL; */
 
-int rc;
+extern int rc;
 
 /* #define MIBL    "mibl" */
 /* #define MIBL_S7 MIBL "/s7" */

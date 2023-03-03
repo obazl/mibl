@@ -15,9 +15,8 @@
 
 extern const UT_icd ut_str_icd;
 
-bool dev_mode = false;
-int  verbosity = 0;
-
+extern bool dev_mode;
+extern int  verbosity;
 
 #if INTERFACE
 #define HOME_MIBL ".mibl"

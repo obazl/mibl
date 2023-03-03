@@ -2,6 +2,8 @@
 #include <errno.h>
 #include <stdlib.h>
 
+#include "log.h"
+
 /* #if EXPORT_INTERFACE */
 /* #include "utarray.h" */
 /* #include "uthash.h" */
@@ -9,8 +11,6 @@
 /* #endif */
 
 #include "opam_lexer.h"
-
-#include "log.h"
 
 #if EXPORT_INTERFACE
 #define TOKEN_NAME(x) (char*)#x

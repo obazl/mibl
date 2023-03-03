@@ -32,11 +32,11 @@ cc_binary(
 
         "-Iexternal/libs7/src",
 
-        "-Ivendored/logc",
-        "-Iexternal/mibl/vendored/logc",
+        "-Ivendored/gopt", "-Iexternal/mibl/vendored/gopt",
 
-        "-Ivendored/uthash",
-        "-Iexternal/mibl/vendored/uthash",
+        "-Ivendored/logc", "-Iexternal/mibl/vendored/logc",
+
+        "-Ivendored/uthash", "-Iexternal/mibl/vendored/uthash",
     ],
     defines = select({
         "//compilation_mode:dbg?": ["DEBUG_TRACE", "DEBUG_MIBL"],
@@ -45,8 +45,9 @@ cc_binary(
     deps = [
         "//src:opam_switch_converter",
         # "//src/opam:opam_lexer"
-        "@mibl//vendored/logc",
-        "@mibl//vendored/uthash"
+        "//vendored/gopt",
+        "//vendored/logc",
+        "//vendored/uthash"
    ],
     linkstatic = 1
 )

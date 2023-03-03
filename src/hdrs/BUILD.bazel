@@ -1,27 +1,27 @@
 load("//vendored/makeheaders:BUILD.bzl", "makeheaders")
 
-makeheaders(
-    name = "xhdrs",
-    srcs = [
-        "//src:mkhdrs_srcs",
-        "//src/findlib:mkhdrs_srcs",
-    ],
-    xsrcs = [
-        "//src:mkhdrs_xsrcs",
-        "//src/linux:mkhdrs_srcs"
-    ],
-    #     "//src:log.c",
-    #     "//src:log.h",
-    #     "//src:utarray.c",
-    #     "//src:utarray.h",
-    # ],
-    hdrs = [
-        "//src:mkhdrs_hdrs"
-        # "//src:ansi_colors.h",
-        # "//src:uthash.h",
-        # "//src:utstring.h",
-    ]
-)
+# makeheaders(
+#     name = "xhdrs",
+#     srcs = [
+#         "//src:mkhdrs_srcs",
+#         "//src/findlib:mkhdrs_srcs",
+#     ],
+#     xsrcs = [
+#         "//src:mkhdrs_xsrcs",
+#         "//src/linux:mkhdrs_srcs"
+#     ],
+#     #     "//src:log.c",
+#     #     "//src:log.h",
+#     #     "//src:utarray.c",
+#     #     "//src:utarray.h",
+#     # ],
+#     hdrs = [
+#         "//src:mkhdrs_hdrs"
+#         # "//src:ansi_colors.h",
+#         # "//src:uthash.h",
+#         # "//src:utstring.h",
+#     ]
+# )
 
 ########
 DIRLOCS = [

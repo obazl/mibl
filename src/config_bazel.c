@@ -34,7 +34,7 @@
 /* bool debug; */
 /* bool verbose; */
 
-int rc;
+extern int rc;
 
 char *build_wd; /* BUILD_WORKING_DIRECTORY else NULL */
 char *launch_dir; /* real launch dir */

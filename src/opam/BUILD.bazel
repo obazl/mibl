@@ -16,30 +16,37 @@ cc_library(
     srcs = [
         "opam_parser.c",
         ":opam_parser.h",
-        "opam_syntaxis.c",
-        ":opam_syntaxis.h",
-        "//vendored/logc:log.c", "//vendored/logc:log.h",
-
-        # ":mkhdrs",
+        # "opam_syntaxis.c",
+        # "opam_syntaxis.h",
 
         # # "//src/hdrs",
-        "//vendored/uthash:utarray.h",
-        "//vendored/uthash:uthash.h",
-        "//vendored/uthash:utstring.h",
+        # "//vendored/logc:log.c", "//vendored/logc:log.h",
+        # "//vendored/uthash:utarray.h",
+        # "//vendored/uthash:uthash.h",
+        # "//vendored/uthash:utstring.h",
         ],
     hdrs = [
         "libopamparser.h",
         # "opam_parser.h"
     ],
     copts = [
+        "-Wno-unused-variable", # in lemon-generated code
         "-Isrc",
         "-Isrc/hdrs",
         "-Isrc/opam",
-        "-Ivendored/uthash",
+
         "-Ivendored/logc",
+        "-Iexternal/mibl/vendored/logc",
+
+        "-Ivendored/uthash",
+        "-Iexternal/mibl/vendored/uthash",
+
         "-Iexternal/src",
         "-I$(GENDIR)/src",
+
         "-I$(GENDIR)/src/opam",
+        "-I$(GENDIR)/external/mibl/src/opam",
+
         "-I$(GENDIR)/src/hdrs",
         "-I$(GENDIR)/external/mibl/src/hdrs",
         # "-Isrc",
@@ -57,14 +64,57 @@ cc_library(
         ":lexdebug-fvf": ["LEXDEBUG_FVF"],
         "//conditions:default":   []
     }),
-    deps = ["opam_lexer"],
+    deps = [
+        ":opam_syntaxis",
+        ":opam_lexer",
+        "//vendored/logc",
+        "//vendored/uthash"
+    ],
     visibility = ["//test:__subpackages__"]
 )
 
-# cc_binary(
-#     name  = "lemon",
-#     srcs  = ["lemon.c"],
-# )
+cc_library(
+    name = "opam_syntaxis",
+    srcs = [
+        "opam_syntaxis.c",
+        "opam_syntaxis.h",
+
+        # "//vendored/logc:log.h",
+        # "//vendored/uthash:utarray.h",
+        # # "//vendored/uthash:uthash.h",
+        # "//vendored/uthash:utstring.h",
+    ],
+    deps = ["//vendored/logc", "//vendored/uthash"],
+    copts = CMD_FLAGS + [
+        "-Wno-unused-variable",  # warning from lemon-generated code
+        ## NOTE: generated meta_syntaxis.c includes header with full
+        ## bazel path, e.g.
+        ## #include "bazel-out/darwin-fastbuild/bin/external/mibl/src/findlib/meta_syntaxis.h"
+        ## so we always need '-I .'
+        "-I.",
+        "-Isrc",
+
+        "-Iexternal/mibl/src",
+        "-I$(GENDIR)/src/hdrs",
+
+        # "-I$(GENDIR)/src/opam",
+        # "-I$(GENDIR)/mibl/src/opam",
+        "-I$(GENDIR)/external/mibl/src/opam",
+
+        "-Ivendored/logc",
+        "-Iexternal/mibl/vendored/logc",
+        "-Ivendored/uthash",
+        "-Iexternal/mibl/vendored/uthash",
+    ],
+    defines = select({
+        ":yydebug-enabled": ["YYDEBUG", "DEBUG_TRACE"],
+        "//conditions:default":   []
+    }) + select({
+        ":yytrace-enabled": ["YYTRACE"],
+        "//conditions:default":   []
+    }),
+    visibility = ["//test:__subpackages__"]
+)
 
 lemon(
     name = "gen_opam_syntaxis",
@@ -115,10 +165,20 @@ cc_library(
         "-Ivendored/uthash",
         "-Ivendored/logc",
         "-I$(GENDIR)/src",
+
         "-I$(GENDIR)/src/opam",
+        "-I$(GENDIR)/external/mibl/src/opam",
+
         "-I$(GENDIR)/src/hdrs",
         "-I$(GENDIR)/external/mibl/src/hdrs",
+
+        "-Ivendored/logc",
+        "-Iexternal/mibl/vendored/logc",
+        "-Ivendored/uthash",
+        "-Iexternal/mibl/vendored/uthash",
+
     ] + CMD_FLAGS + BOOTSTRAP_INCLUDES,
+    deps = ["//vendored/logc", "//vendored/uthash"],
     defines = select({
         ":yydebug-enabled": ["YYDEBUG"],
         "//conditions:default":   []

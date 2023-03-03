@@ -9,9 +9,9 @@
 #include "utarray.h"
 
 #if defined(YYDEBUG)
-static int indent = 2;
-static int delta = 2;
-static char *sp = " ";
+extern int indent;
+extern int delta;
+extern char *sp;
 #endif
 
 #if INTERFACE

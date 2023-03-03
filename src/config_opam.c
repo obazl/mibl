@@ -30,11 +30,11 @@
 
 /* const char *errmsg = NULL; */
 
-int rc;
+extern int rc;
 
 /* char *bazel_script_dir = NULL; */
 
-bool enable_jsoo = true;
+extern bool enable_jsoo;
 
 UT_string *opam_switch_id       = NULL;
 

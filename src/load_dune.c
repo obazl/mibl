@@ -28,9 +28,9 @@
 UT_array  *segs;
 UT_string *group_tag;
 
-int dunefile_ct = 0;
-int file_ct = 0;
-int dir_ct  = 0;
+extern int dunefile_ct;
+extern int file_ct;
+extern int dir_ct;
 
 void _indent(int i)
 {
@@ -452,7 +452,7 @@ LOCAL char *_module_name(FTSENT *ftsentry, char *ext)
     return (char *)principal;
 }
 
-LOCAL char *_principal_name(FTSENT *ftsentry, char *ext)
+LOCAL __attribute__((unused)) char *_principal_name(FTSENT *ftsentry, char *ext)
 {
     strlcpy(principal, ftsentry->fts_name, 256);
     principal[ext - ftsentry->fts_name] = '\0';
@@ -1014,7 +1014,7 @@ LOCAL void _update_pkg_script_files(s7_pointer pkg_tbl,
     }
 }
 
-LOCAL void _update_pkg_deps(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
+LOCAL __attribute__((unused)) void _update_pkg_deps(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 {
     char *pkg_name = dirname(ftsentry->fts_path);
     /* char *fname = ftsentry->fts_name; */
@@ -3195,7 +3195,7 @@ LOCAL void _handle_ocamlformat_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
     /* _update_ml(ftsentry, ext); */
 }
 
-LOCAL void _handle_script_file(s7_pointer pkg_tbl,
+LOCAL __attribute__((unused)) void _handle_script_file(s7_pointer pkg_tbl,
                                FTSENT *ftsentry, char *ext)
 {
     /* if (debug) */
