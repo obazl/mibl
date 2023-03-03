@@ -1965,6 +1965,7 @@ LOCAL void _update_pkg_mllib_files(s7_pointer pkg_tbl,
                                    char *pkg_name, char *mname,
                                    char *fname, int ftype)
 {
+    /* TODO:  read the mllib file and populate :submodules list */
 #if defined(DEBUG_TRACE)
     if (trace) {
         log_trace(RED "_update_pkg_mllib_files" CRESET);
@@ -1981,55 +1982,52 @@ LOCAL void _update_pkg_mllib_files(s7_pointer pkg_tbl,
 #endif
 
     s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
-    /* if (debug) log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
+    if (debug) log_debug("pkg_alist: %s", TO_STR(pkg_alist));
 
     if (pkg_alist == s7_f(s7)) {
-#if defined(DEBUG_TRACE)
-        if (debug)
-            log_debug("no dunefile in this directory");
-#endif
+        log_error("no pkg alist found for %s, %s", pkg_name, mname);
         exit(1);
     } else {
         s7_pointer mname_sym   = s7_make_symbol(s7, mname);
 
         s7_pointer assoc_in = _load_assoc_in();
-        s7_pointer keypath = s7_list(s7, 2, mll_kw, static_kw);
-        s7_pointer ocamllex_alist = s7_call(s7, assoc_in,
-                                        s7_list(s7, 2,
-                                                keypath,
-                                                pkg_alist));
+        s7_pointer keypath = s7_list(s7, 2, mllib_kw, static_kw);
+        s7_pointer mllibs_alist = s7_call(s7, assoc_in,
+                                          s7_list(s7, 2,
+                                                  keypath,
+                                                  pkg_alist));
         /* = s7_call(s7, assoc_in, */
         /*           s7_list(s7, 2, modules_kw, pkg_alist)); */
 #if defined(DEBUG_TRACE)
-        if (debug) log_debug("ocamllex_alist %s", TO_STR(ocamllex_alist));
+        if (debug) log_debug("mllibs_alist %s", TO_STR(mllibs_alist));
 #endif
 
-        s7_pointer mll_file = s7_make_symbol(s7, fname);
+        s7_pointer mllib_file = s7_make_symbol(s7, fname);
 
-        /* s7_pointer mll_assoc = s7_list(s7, 2, mname_sym, mll_file); */
-        s7_pointer mll_assoc = s7_cons(s7, mname_sym, mll_file);
+        /* s7_pointer mllib_assoc = s7_list(s7, 2, mname_sym, mllib_file); */
+        s7_pointer mllib_assoc = s7_cons(s7, mname_sym, mllib_file);
 #if defined(DEBUG_TRACE)
-        if (debug) log_debug("mll_assoc: %s", TO_STR(mll_assoc));
+        if (debug) log_debug("mllib_assoc: %s", TO_STR(mllib_assoc));
 #endif
 
-        if (ocamllex_alist == s7_f(s7)) {
+        if (mllibs_alist == s7_f(s7)) {
 #if defined(DEBUG_TRACE)
             if (debug)
                 log_debug("INITIALIZING :lex field");
 #endif
 
             s7_pointer statics_assoc =
-                s7_list(s7, 2, static_kw, mll_assoc);
+                s7_list(s7, 2, static_kw, mllib_assoc);
 
-            s7_pointer ocamllex_assoc = s7_list(s7, 2,
-                                            mll_kw, statics_assoc);
+            s7_pointer mllib_assoc = s7_list(s7, 2,
+                                            mllib_kw, statics_assoc);
 #if defined(DEBUG_TRACE)
-            if (debug) log_debug("ocamllex_assoc: %s", TO_STR(ocamllex_assoc));
+            if (debug) log_debug("mllib_assoc: %s", TO_STR(mllib_assoc));
 #endif
 
             s7_pointer new_pkg_alist = s7_append(s7, pkg_alist,
                                                  s7_list(s7, 1,
-                                                         ocamllex_assoc));
+                                                         mllib_assoc));
             /* if (debug) */
             /*     log_debug("pkg_alist: %s", */
             /*            TO_STR(new_pkg_alist)); */
@@ -2039,13 +2037,13 @@ LOCAL void _update_pkg_mllib_files(s7_pointer pkg_tbl,
 #if defined(DEBUG_TRACE)
             if (debug) {
                 log_debug("UPDATING :signatures");
-                log_debug("ocamllex_alist: %s", TO_STR(ocamllex_alist));
+                log_debug("mllibs_alist: %s", TO_STR(mllibs_alist));
                 log_debug("mname_sym: %s", TO_STR(mname_sym));
             }
 #endif
 
             s7_pointer keypath = s7_list(s7, 3,
-                                         mll_kw,
+                                         mllib_kw,
                                          static_kw,
                                          mname_sym);
 #if defined(DEBUG_TRACE)
@@ -2056,85 +2054,85 @@ LOCAL void _update_pkg_mllib_files(s7_pointer pkg_tbl,
             }
 #endif
 
-            s7_pointer mll_alist = s7_call(s7, assoc_in,
-                                           s7_list(s7, 2,
-                                                   keypath,
-                                                   pkg_alist));
+            s7_pointer mllib_alist = s7_call(s7, assoc_in,
+                                             s7_list(s7, 2,
+                                                     keypath,
+                                                     pkg_alist));
 
 #if defined(DEBUG_TRACE)
             if (debug) {
-                log_debug("mll_alist: %s", TO_STR(mll_alist));
+                log_debug("mllib_alist: %s", TO_STR(mllib_alist));
             }
 #endif
-            if (mll_alist == s7_f(s7)) {
+            if (mllib_alist == s7_f(s7)) {
                 /* new */
 #if defined(DEBUG_TRACE)
                 if (debug)
-                    log_debug(RED "ADDING" CRESET " sig %s to %s",
-                              TO_STR(mname_sym), TO_STR(ocamllex_alist));
-                if (debug) log_debug("ocamllex_alist: %s",
+                    log_debug(RED "ADDING" CRESET " mllib %s to %s",
+                              TO_STR(mname_sym), TO_STR(mllibs_alist));
+                if (debug) log_debug("mllibs_alist: %s",
                                      s7_object_to_c_string(s7,
-                                                           ocamllex_alist));
+                                                           mllibs_alist));
 #endif
 
-                s7_pointer ocamllex_alist_cdr = s7_cdr(ocamllex_alist);
+                s7_pointer mllibs_alist_cdr = s7_cdr(mllibs_alist);
 #if defined(DEBUG_TRACE)
                 if (debug) {
-                    log_debug("ocamllex_alist_cdr: %s",
-                       TO_STR(ocamllex_alist_cdr));
+                    log_debug("mllibs_alist_cdr: %s",
+                       TO_STR(mllibs_alist_cdr));
                 }
 #endif
 
-                /* s7_pointer mll_assoc = */
-                /*     s7_list(s7, 1, s7_list(s7, 2, mname_sym, mll_file)); //mll_assoc)); */
-                /* if (debug) log_debug("new mll_assoc: %s", */
-                /*                      TO_STR(mll_assoc)); */
+                /* s7_pointer mllib_assoc = */
+                /*     s7_list(s7, 1, s7_list(s7, 2, mname_sym, mllib_file)); //mllib_assoc)); */
+                /* if (debug) log_debug("new mllib_assoc: %s", */
+                /*                      TO_STR(mllib_assoc)); */
 
-                s7_pointer new_ocamllex_alist_cdr =
-                    s7_append(s7, ocamllex_alist_cdr,
-                              s7_list(s7, 1, mll_assoc));
+                s7_pointer new_mllibs_alist_cdr =
+                    s7_append(s7, mllibs_alist_cdr,
+                              s7_list(s7, 1, mllib_assoc));
 
 #if defined(DEBUG_TRACE)
 
                 if (debug)
-                    log_debug("new_ocamllex_alist_cdr: %s",
-                       TO_STR(new_ocamllex_alist_cdr));
+                    log_debug("new_mllibs_alist_cdr: %s",
+                       TO_STR(new_mllibs_alist_cdr));
 #endif
 
-                s7_pointer new_ocamllex_alist
-                    = s7_set_cdr(ocamllex_alist, new_ocamllex_alist_cdr);
-                (void)new_ocamllex_alist;
+                s7_pointer new_mllibs_alist
+                    = s7_set_cdr(mllibs_alist, new_mllibs_alist_cdr);
+                (void)new_mllibs_alist;
 #if defined(DEBUG_TRACE)
                 if (debug) {
-                    log_debug("new_ocamllex_alist: %s",
-                              TO_STR(new_ocamllex_alist));
+                    log_debug("new_mllibs_alist: %s",
+                              TO_STR(new_mllibs_alist));
                 }
 #endif
             } else {
                 /* update */
 #if defined(DEBUG_TRACE)
-                if (debug) log_debug(RED "UPDATING" CRESET " mll_alist: %s",
-                                     TO_STR(mll_alist));
+                if (debug) log_debug(RED "UPDATING" CRESET " mllib_alist: %s",
+                                     TO_STR(mllib_alist));
 #endif
 
-                s7_pointer ocamllex_alist_cdr = s7_cdr(mll_alist);
+                s7_pointer mllib_alist_cdr = s7_cdr(mllib_alist);
 #if defined(DEBUG_TRACE)
                 if (debug)
-                    log_debug("ocamllex_alist_cdr: %s",
-                       TO_STR(ocamllex_alist_cdr));
+                    log_debug("mllib_alist_cdr: %s",
+                       TO_STR(mllib_alist_cdr));
 #endif
 
                 s7_pointer msrcs = s7_append(s7,
-                                             ocamllex_alist_cdr,
-                                             s7_list(s7, 1, mll_file));
+                                             mllib_alist_cdr,
+                                             s7_list(s7, 1, mllib_file));
 
-                s7_pointer new_ocamllex_alist
-                    = s7_set_cdr(mll_alist, msrcs);
-                (void)new_ocamllex_alist;
+                s7_pointer new_mllib_alist
+                    = s7_set_cdr(mllib_alist, msrcs);
+                (void)new_mllib_alist;
 #if defined(DEBUG_TRACE)
                 if (debug) {
-                    log_debug("new_ocamllex_alist: %s",
-                              TO_STR(new_ocamllex_alist));
+                    log_debug("new_mllib_alist: %s",
+                              TO_STR(new_mllib_alist));
                     log_debug("new pkgs: %s", TO_STR(pkg_alist));
                 }
 #endif
@@ -2721,6 +2719,7 @@ LOCAL void _update_ml(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 
 /*
   if no entry in pkg-tbl for ctx dir, add one
+  .ml and .mli files only
  */
 LOCAL void _handle_ml_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 {
@@ -3899,7 +3898,8 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
                         if ((strncmp(ext, ".cm", 3) == 0)) {
                             log_debug("skipping .cm? file : %s", ftsentry->fts_name);
                         }
-                        else if ((strncmp(ext, ".ml", 3) == 0)) {
+                        else if (strncmp(ext, ".ml", 3) == 0) {
+                            /* handle_ml_file will analyze the full extension */
                             _handle_ml_file(pkg_tbl, ftsentry, ext);
                         }
                         else if ((strncmp(ext, ".md", 3) == 0)

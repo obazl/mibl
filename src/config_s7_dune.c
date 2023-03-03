@@ -56,6 +56,7 @@ s7_pointer sigs_kw;
 s7_pointer structs_kw;
 s7_pointer mll_kw;
 s7_pointer mly_kw;
+s7_pointer mllib_kw;
 s7_pointer cppo_kw;
 s7_pointer cc_kw;
 s7_pointer cc_srcs_kw;
@@ -1048,6 +1049,7 @@ EXPORT s7_scheme *s7_configure(void)
     structs_kw = s7_make_keyword(s7, "structures");
     mll_kw = s7_make_keyword(s7, "lex");
     mly_kw = s7_make_keyword(s7, "yacc");
+    mllib_kw = s7_make_keyword(s7, "mllib");
     cppo_kw = s7_make_keyword(s7, "cppo");
     files_kw   = s7_make_keyword(s7, "files");
     static_kw  = s7_make_keyword(s7, "static");
