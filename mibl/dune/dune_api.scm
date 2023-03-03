@@ -169,7 +169,9 @@
 
 (define (dune-stanza->mibl ws pkg stanza nstanzas)
   (if *debugging*
-      (format #t "~A: ~A\n" (blue "dune-stanza->mibl") stanza))
+      (begin
+        (format #t "~A: ~A\n" (blue "dune-stanza->mibl") stanza)
+        (format #t "~A: ~A\n" (blue "nstanzas") nstanzas)))
   ;; (format #t "pkg: ~A\n" pkg)
   ;; (format #t "  nstanzas: ~A\n" nstanzas)
   (let* ((stanza-alist (cdr stanza))

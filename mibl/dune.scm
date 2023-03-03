@@ -50,5 +50,7 @@
 (load "dune/lexyacc.scm")
 (load "dune/menhir.scm")
 
+(load "dune/ppx_inline_tests.scm")
+
 (if *debugging*
     (format #t "loaded mibl/dune.scm~%"))

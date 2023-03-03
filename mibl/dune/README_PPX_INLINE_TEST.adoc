@@ -1,0 +1,23 @@
+= ppx_inline_test
+
+
+OBazl assumes that modules using ppx_inline_test are intended as test
+modules and not as ordinary modules that might be included in
+archives. So aggregate stanzas depending on ppx_inline_test are
+converted to `:ppx-inline-test-lib` mibl stanzas.
+
+We add fld `(:test-runner . @ppx_inline_test//lib/runner)`, to use the
+precompiled runner. The emitted starlark targets should pass this as
+the 'main' of the test target.
+
+For each module we add `-inline-test-lib <libname>` to `ppx_args`;
+this is the same for all th emodules.
+
+For each module in the lib, we need to add `-loc-filename <filename>`
+to the `ppx_args` attribute. This will of course be unique to each
+module. This is needed because sometimes inline tests will include the
+source filename in the expected output. It ensures that the src
+filename written into the "corrected" output will match what's in the
+source. Without it the path would be used, which could be different
+for each Bazel run.
+

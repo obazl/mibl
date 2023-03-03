@@ -241,7 +241,9 @@
                                      (let* ((stanza-alist (cdr stanza))
                                             (_ (if *debugging* (format #t "~A: ~A~%" (ured "stanza-alist") stanza-alist)))
                                             (old-manifest (assoc ':manifest stanza-alist))
+                                            (_ (if *debugging* (format #t "~A: ~A~%" (ured "old-manifest") old-manifest)))
                                             (mmods (assoc-in '(:manifest :raw) stanza-alist))
+                                            (_ (if *debugging* (format #t "~A: ~A~%" (ured "mmods") mmods)))
                                             (manifest
                                              (get-manifest pkg :lib #t (cons (cadr mmods) stanza-alist)) ;; (cadr mmods))
                                              ;;(x-get-manifest pkg #t stanza-alist (cadr mmods))
@@ -253,6 +255,8 @@
                                              (format #t "~A: ~A~%" (uyellow "old manifest") old-manifest)
                                              (format #t "~A: ~A~%" (uyellow "manifest") manifest)))
                                        (set-cdr! old-manifest (cdr manifest))
+                                       (if *debugging*
+                                           (format #t "~A: ~A~%" (uyellow "updated old manifest") old-manifest))
                                        ))
 
                                     ;; rule outputs should already be in pkg files
@@ -270,8 +274,10 @@
                                 stanzas)
                           )))
               pkgs)
-    (if *debugging*
-        (format #t "~A: ~A~%" (bgblue "//normalize-manifests") ws))
+    ;; (if *debugging*
+    ;;     (begin
+    ;;       (debug-print-pkgs :@)
+    ;;       (error 'x "")))
     ))
 
 ;; normalize-rule-deps: in some rules the same resource may end up as both tool and dep, e.g. test.exe in yojson/test/pretty:
