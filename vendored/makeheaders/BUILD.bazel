@@ -1,6 +1,12 @@
-;load("@rules_cc//cc:defs.bzl", "cc_binary")
+# load("@rules_cc//cc:defs.bzl", "cc_binary")
 
 package(default_visibility = ["//visibility:public"])
+
+config_setting(name = "linux",
+               constraint_values = ["@platforms//os:linux"])
+
+config_setting(name = "macos",
+               constraint_values = ["@platforms//os:macos"])
 
 ##########
 cc_binary(
