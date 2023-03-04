@@ -1,4 +1,4 @@
-load("@rules_cc//cc:defs.bzl", "cc_binary")
+;load("@rules_cc//cc:defs.bzl", "cc_binary")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -6,6 +6,10 @@ package(default_visibility = ["//visibility:public"])
 cc_binary(
     name  = "makeheaders",
     srcs  = ["makeheaders.c"],
-    copts = ["-O3"],
-    linkstatic=1
+    copts = ["-O3", "-Wno-unused-function"] + select({
+        "linux": ["-Wno-stringop-truncation",
+                  "-Wno-stringop-overflow"],
+        "//conditions:default": []
+    }),
+    linkstatic=1,
 )
