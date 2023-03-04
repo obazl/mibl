@@ -15,7 +15,7 @@
 
 extern const UT_icd ut_str_icd;
 
-extern bool dev_mode;
+extern bool bzl_mode;
 extern int  verbosity;
 
 #if INTERFACE
@@ -150,7 +150,7 @@ LOCAL int _config_handler(void* config, const char* section, const char* name, c
     if (MATCH("srcs", "exclude")) {
 #if defined(DEBUG_TRACE)
         if (debug)
-            log_debug("section: srcs; entry: exclude");
+            log_debug("section: srcs; entry: exclude; val: %s", value);
 #endif
         /* log_debug("\t%s", value); */
         char *token, *sep = " ,\t";
@@ -254,6 +254,10 @@ LOCAL int _config_handler(void* config, const char* section, const char* name, c
 
 EXPORT void mibl_configure(void)
 {
+#if defined(DEBUG_TRACE)
+    if (debug)
+        log_debug("mibl_configure");
+#endif
     /* **************** */
     /* project-local .config/miblrc config file */
 

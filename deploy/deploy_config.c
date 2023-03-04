@@ -36,7 +36,7 @@
 
 extern char *launch_dir; /* real launch dir, bazel_config.c */
 extern char *build_wd; /* BUILD_WORKING_DIRECTORY else NULL */
-extern bool dev_mode;   /* t: we launched from mibl under bazel */
+extern bool bzl_mode;   /* t: we launched from mibl under bazel */
 
 int rc;
 
@@ -84,7 +84,7 @@ LOCAL void _deploy_scm_files(UT_string *manifest)
     ssize_t read_ct;
     int rc = 0;
 
-    /* are we running in dev mode (launched from mibl proj root) or
+    /* are we running in bzl mode (launched by bazel) or
        as an external import? */
     if (strlen(build_wd) != 0) {
         /* bazel_configure detected BUILD_WORKSPACE_DIRECTORY */
@@ -111,7 +111,7 @@ LOCAL void _deploy_scm_files(UT_string *manifest)
             char *r = strstr(fileText,
                              "workspace(name = \"mibl\")");
             if (r != NULL) {
-                dev_mode = true;
+                bzl_mode = true;
                 if (trace)
                     log_debug("WS name: mibl");
                 fclose(wsfile);
@@ -120,7 +120,7 @@ LOCAL void _deploy_scm_files(UT_string *manifest)
         }
     }
     if (debug)
-        log_debug("dev mode? %d", dev_mode);
+        log_debug("dev mode? %d", bzl_mode);
 
     /*
       build scripts list their scm srcs in the 'data' attrib, which
@@ -209,7 +209,7 @@ LOCAL void _deploy_scm_files(UT_string *manifest)
                 */
                 const char *pfx;
                 int pfx_len;
-                if (dev_mode) {
+                if (bzl_mode) {
                     pfx = "mibl/mibl/";
                     pfx_len = strlen(pfx);
                     if (strncmp(dest, pfx, pfx_len) == 0) {

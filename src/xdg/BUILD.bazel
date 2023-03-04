@@ -26,8 +26,10 @@ cc_library(
         "-std=c11",
         "-Wall",
         "-Wpedantic",
+
         "-I$(GENDIR)/src/hdrs",
-        "-Iexternal/src/hdrs",
+        "-I$(GENDIR)/external/mibl/src/hdrs",
+
         "-Ivendored/logc",
         "-Iexternal/mibl/vendored/logc",
         "-Ivendored/uthash",

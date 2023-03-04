@@ -367,10 +367,12 @@ LOCAL void _handle_dir(s7_pointer pkg_tbl, FTS* tree, FTSENT *ftsentry)
         log_info("%-20s%s", "ftsentry->accpath:", ftsentry->fts_accpath);
     }
 #endif
-
+    fflush(stdout);
+    fflush(stderr);
     UT_string *dune_test;
     utstring_new(dune_test);
     utstring_printf(dune_test, "%s/%s", ftsentry->fts_path, "dune");
+    /* log_info("DUNFILE: %s", utstring_body(dune_test)); */
     int rc = access(utstring_body(dune_test), F_OK);
     if (rc) {
 #if defined(DEBUG_TRACE)
@@ -3621,7 +3623,7 @@ bool _include_this(FTSENT *ftsentry)
 #if defined(DEBUG_TRACE)
             log_debug("inclusion test pfx: '%s', path: '%s'",
                       *p, ftsentry->fts_path);
-            log_debug("result: %d\n",
+            log_debug("result: %d",
                       strncmp(*p, ftsentry->fts_path, strlen(*p)));
 #endif
             if (strncmp(*p, ftsentry->fts_path, strlen(*p)) < 1) {
@@ -3708,6 +3710,8 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
         log_debug("cwd: %s", getcwd(NULL, 0));
     }
 #endif
+
+    utstring_free(abs_troot);
 
     errno = 0;
 

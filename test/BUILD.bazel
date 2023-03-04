@@ -58,6 +58,16 @@ cc_test(
     data = [
         "//mibl/dune:srcs"
     ],
+    defines = select({
+        "//bzl/host:debug": ["DEBUG_TRACE", "DEBUG_MIBL"],
+        "//conditions:default":   []
+    }) + select({
+        "//bzl/host:linux": [
+            "_XOPEN_SOURCE=500", # strdup
+            "_DEFAULT_SOURCE"    # dirent DT_* macros
+        ],
+        "//conditions:default":   []
+    }),
     deps = [
         "//src:mibl",
         "//vendored/logc",

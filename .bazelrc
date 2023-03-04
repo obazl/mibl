@@ -4,4 +4,4 @@ common --color=yes
 common:show --subcommands=pretty_print
 common:show --verbose_failures
 
-# try-import .config/user.bazelrc
+try-import .config/user.bazelrc

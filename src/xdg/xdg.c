@@ -38,7 +38,6 @@ UT_string *xdg_state_home;
 
 EXPORT void config_xdg_dirs(void)
 {
-    log_debug("config_xdg_dirs");
 #if defined(DEBUG_TRACE)
     if (trace) log_trace("config_xdg_dirs");
 #endif

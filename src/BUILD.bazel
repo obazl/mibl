@@ -164,6 +164,7 @@ cc_library(
     #     "-ls7",
     # ],
     deps = [
+        "//src/xdg",
         "//vendored/libinih:inih",
         "//vendored/logc",
         "//vendored/uthash",

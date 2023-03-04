@@ -33,7 +33,7 @@
 
 #include "config_s7_dune.h"
 
-/* extern bool debug; */
+extern bool bzl_mode;
 
 /* char *callback_script_file = "dune.scm"; // passed in 'data' attrib */
 char *callback = "camlark_handler"; /* fn in callback_script_file  */
@@ -102,7 +102,7 @@ extern int rc;
    $HOME/.local/share should be used." */
 
 #define XDG_DATA_HOME_SFX ".local/share"
-UT_string *xdg_data_home;
+extern UT_string *xdg_data_home;
 
 #define XDG_CONFIG_HOME_SFX ".config"
 
@@ -170,7 +170,7 @@ EXPORT s7_pointer g_effective_ws_root(s7_scheme *s7,  s7_pointer args)
     return s7_make_string(s7, ews_root);
 }
 
-void initialize_mibl_data_model(s7_scheme *s7)
+EXPORT void initialize_mibl_data_model(s7_scheme *s7)
 {
     /*
      * data model:
@@ -882,7 +882,7 @@ LOCAL __attribute__((unused)) void s7_config_repl(s7_scheme *sc)
 }
 
 /* defined in s7.c, we need the prototype */
-void s7_config_libc_s7(s7_scheme *sc);
+void s7_config_libc_s7(s7_scheme *sc, char *libc_s7_path);
 
 EXPORT void s7_shutdown(s7_scheme *s7)
 {
@@ -890,11 +890,47 @@ EXPORT void s7_shutdown(s7_scheme *s7)
     s7_quit(s7);
 }
 
+#if defined(__APPLE__)
+#define DSO_EXT ".dylib"
+#else
+#define DSO_EXT ".so"
+#endif
+
 void _mibl_s7_init(void)
 {
+#if defined(DEBUG_TRACE)
+    if (trace) log_trace("_mibl_s7_init");
+#endif
+
     s7 = s7_init();             /* @libs7//src:s7.c */
 
-    s7_config_libc_s7(s7);      /* @libs7//src:s7.c*/
+#if defined(DEBUG_TRACE)
+    log_debug("runfiles_root: %s", utstring_body(runfiles_root));
+#endif
+
+    UT_string *libc_s7;
+    utstring_new(libc_s7);
+    char *dso_dir;
+    if (bzl_mode) {
+        dso_dir = utstring_body(runfiles_root);
+#if defined(DEBUG_TRACE)
+        log_debug("bzl mode: %s", dso_dir);
+#endif
+        utstring_printf(libc_s7, "%s/%s",
+                        dso_dir,
+                        "external/libs7/src/libc_s7" DSO_EXT);
+    } else {
+        dso_dir = utstring_body(xdg_data_home);
+        utstring_printf(libc_s7, "%s/%s",
+                        dso_dir,
+                        "mibl/libc_s7" DSO_EXT);
+#if defined(DEBUG_TRACE)
+        log_debug("not bzl mode: %s", dso_dir);
+#endif
+    }
+
+    s7_config_libc_s7(s7, utstring_body(libc_s7)); /* @libs7//src:s7.c*/
+    utstring_free(libc_s7);
     /* libc stuff is in *libc*, which is an environment
      * (i.e. (let? *libc*) => #t)
      * import the stuff we're likely to use into the root env:
@@ -1021,7 +1057,7 @@ EXPORT s7_scheme *s7_configure(void)
     while ( (p=(char**)utarray_next(mibl_config.exclude_dirs, p))) {
 #if defined(DEBUG_TRACE)
         if (debug)
-            printf("Adding to exlusions list: %s\n",*p);
+            log_debug("Adding to exlusions list: %s",*p);
 #endif
         _s7_exclusions = s7_cons(s7, s7_make_string(s7, *p), _s7_exclusions);
     }

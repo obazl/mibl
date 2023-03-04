@@ -29,8 +29,15 @@ ln -sfv $HOME/obazl/libs7/libs7/s7/*scm $HOME/.local/share/mibl/s7
 # ln -sfv $HOME/obazl/mibl/mibl/s7/*scm $HOME/.local/share/mibl/s7
 
 ## copy the executable and lib (do not symlink from Bazel directories)
-cp -fv `realpath bazel-bin/repl/repl` $HOME/.local/bin/mibl
+
+# BAZEL_BIN=bazel-
+BAZEL_BIN=".bazel/"
+
+# DSO_EXT=".so"
+DSO_EXT=".dylib"
+
+cp -fv `realpath ${BAZEL_BIN}bin/repl/repl` $HOME/.local/bin/mibl
 chmod u+rwx $HOME/.local/bin/mibl
 
-cp -fv `realpath bazel-bin/external/libs7/src/libc_s7.so` $HOME/.local/share/mibl
-chmod u+rwx $HOME/.local/share/mibl/libc_s7.so
+cp -fv `realpath ${BAZEL_BIN}bin/external/libs7/src/libc_s7${DSO_EXT}` $HOME/.local/share/mibl
+chmod u+rwx $HOME/.local/share/mibl/libc_s7${DSO_EXT}

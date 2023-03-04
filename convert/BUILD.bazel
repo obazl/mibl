@@ -6,7 +6,7 @@ exports_files(["convert.c"]) # for makeheaders
 
 ##########
 cc_binary(
-    name  = "convert",
+    name  = "convertBORKED",
     linkstatic = True,
     srcs  = [
         "convert.c",

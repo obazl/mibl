@@ -128,6 +128,8 @@ int main(int argc, char *argv[])
 
     /* UT_array *result = sealark_lex_string("'hello'\n#cmt1\n"); */
 
+    s7_shutdown(s7);
+
     log_debug("exiting mibl convert");
     /* dump_nodes(result); */
 }

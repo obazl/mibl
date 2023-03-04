@@ -36,6 +36,8 @@
 
 extern int rc;
 
+extern bool bzl_mode;   /* t: we launched from mibl under bazel */
+
 char *build_wd; /* BUILD_WORKING_DIRECTORY else NULL */
 char *launch_dir; /* real launch dir */
 
@@ -50,7 +52,7 @@ char *traversal_root;           /* maybe not same as ws root */
 /* UT_string *runfiles_root;       /\* bazel only *\/ */
 /* UT_string *config_obazl; // obazl_d; */
 
-#define XDG_LOCAL_SHARE ".local/share"
+/* #define XDG_LOCAL_SHARE ".local/share" */
 
 UT_string *runtime_data_dir;
 
@@ -189,18 +191,27 @@ EXPORT void bazel_configure(void) // char *_exec_root)
     if (debug) log_debug("BUILD_WORKING_DIRECTORY: %s", build_wd);
 #endif
 
+    config_xdg_dirs();
+
     if (build_wd == NULL) {
         /* running outside of bazel */
 #if defined(DEBUG_TRACE)
         if (debug) log_debug("Running outside of Bazel");
 #endif
         build_wd = launch_dir;
+        bzl_mode = false;
+#if defined(DEBUG_TRACE)
+    } else {
+        bzl_mode = true;
+        if (debug) log_debug("Running in bzl mode");
+#endif
     }
 
 #if defined(DEBUG_TRACE)
     if (debug) {
         log_debug("build_wd: %s", build_wd);
         log_debug("launch_dir: %s", launch_dir);
+        log_debug("xdg_data_home: %s", utstring_body(xdg_data_home));
     }
 #endif
 
