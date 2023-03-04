@@ -11,8 +11,8 @@
 
 #include "error_handler_dune.h"
 
-extern bool debug;
-extern bool trace;
+/* extern bool debug; */
+/* extern bool trace; */
 
 s7_pointer old_err_port;
 const char *errmsg = NULL;
@@ -358,7 +358,7 @@ char *dunefile_to_string(UT_string *dunefile_name)
 
 s7_pointer fix_baddot(UT_string *dunefile_name)
 {
-    //FIXME: this duplicates the code in load_dune:_read_dunefile
+    //FIXME: this duplicates the code in load_project:_read_dunefile
 #if defined(DEBUG_TRACE)
     log_debug("fix_baddot");
 #endif

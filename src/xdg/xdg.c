@@ -39,7 +39,7 @@ UT_string *xdg_state_home;
 EXPORT void config_xdg_dirs(void)
 {
 #if defined(DEBUG_TRACE)
-    if (trace) log_trace("config_xdg_dirs");
+    if (trace_xdg) log_trace("config_xdg_dirs");
 #endif
 
     char *s_xdg_data_home = getenv("XDG_DATA_HOME");
@@ -56,5 +56,5 @@ EXPORT void config_xdg_dirs(void)
         //FIXME: existence check?
     }
     if (verbose)
-        log_trace("xdg_data_home: %s", utstring_body(xdg_data_home));
+        log_info("xdg_data_home: %s", utstring_body(xdg_data_home));
 }

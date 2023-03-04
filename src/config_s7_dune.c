@@ -33,6 +33,11 @@
 
 #include "config_s7_dune.h"
 
+/* #if defined(DEBUG_TRACE) */
+/* extern bool debug; */
+/* extern bool debug_miblrc; */
+/* #endif */
+
 extern bool bzl_mode;
 
 /* char *callback_script_file = "dune.scm"; // passed in 'data' attrib */
@@ -995,7 +1000,7 @@ EXPORT s7_scheme *s7_configure(void)
                             g_effective_ws_root,
                             0, 1, 0, NULL);
 
-    s7_define_function(s7, "load-dune", g_load_dune,
+    s7_define_function(s7, "load-dune", g_load_project,
                        0, 2, 0,
                        /* LOAD_DUNE_FORMAL_PARAMS, */
                        LOAD_DUNE_HELP);
@@ -1056,7 +1061,7 @@ EXPORT s7_scheme *s7_configure(void)
     s7_pointer _s7_exclusions = s7_nil(s7);
     while ( (p=(char**)utarray_next(mibl_config.exclude_dirs, p))) {
 #if defined(DEBUG_TRACE)
-        if (debug)
+        if (debug_miblrc)
             log_debug("Adding to exlusions list: %s",*p);
 #endif
         _s7_exclusions = s7_cons(s7, s7_make_string(s7, *p), _s7_exclusions);
@@ -1072,7 +1077,7 @@ EXPORT s7_scheme *s7_configure(void)
     /*                  strsort); */
 
     /* initialize s7 stuff */
-    //FIXME: do this in config, no need to rerun for each load_dune
+    //FIXME: do this in config, no need to rerun for each load_project
     dune_project_sym = s7_make_symbol(s7, "dune-project"),
     dune_stanzas_kw = s7_make_keyword(s7, "dune-stanzas");
     dune_stanzas_sym = s7_make_symbol(s7, "dune");

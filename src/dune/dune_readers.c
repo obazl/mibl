@@ -38,7 +38,7 @@ extern bool trace;
 /* s7_pointer */
 void *read_dune_package(UT_string *dunefile_name)
 {
-    //FIXME: this duplicates the code in load_dune:_read_dunefile
+    //FIXME: this duplicates the code in load_project:_read_dunefile
 #if defined(DEBUG_TRACE)
     if (trace) log_trace("read_dune_package: %s", utstring_body(dunefile_name));
 #endif

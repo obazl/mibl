@@ -351,7 +351,7 @@ EXPORT void convert_dune_project(UT_array *opam_pending_deps)
         log_info("dunefile count: %d", dunefile_ct);
         /* log_info("pkg_tbl: %s", TO_STR(pkg_tbl)); */
 
-        log_info("exiting load_dune");
+        log_info("exiting load_project");
     }
     /* s7_gc_unprotect_at(s7, pkg_tbl_gc_loc); */
 

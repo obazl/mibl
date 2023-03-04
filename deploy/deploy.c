@@ -12,7 +12,7 @@
 /* #include "utarray.h" */
 /* #include "utstring.h" */
 
-#include "load_dune.h"
+#include "load_project.h"
 #include "bazel_config.h"
 
 #include "deploy.h"

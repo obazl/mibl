@@ -19,6 +19,8 @@
 #include "utarray.h"
 #include "utstring.h"
 
+#include "s7.h"
+
 #include "coswitch.h"
 
 
@@ -29,65 +31,50 @@ extern bool trace;
 #endif
 extern bool verbose;
 
+s7_scheme *s7;                  /* GLOBAL s7 */
+
 char *pkg_path = NULL;
 
 UT_array *opam_include_pkgs;
 UT_array *opam_exclude_pkgs;
 
 enum OPTS {
-    OPT_ROOT = 0,
-    OPT_PKG,
-    OPT_PACKAGE,
-    OPT_EMIT,
-    OPT_EMIT_EM,            /* = OPT_EMIT_MIBL */
-    OPT_EMIT_MIBL,
-    OPT_NO_EMIT_MIBL,
-    OPT_EMIT_EB,            /* = OPT_EMIT_BAZEL */
-    OPT_EMIT_BAZEL,
-    OPT_NO_EMIT_BAZEL,
-    OPT_NOEMIT,
-    OPT_MENHIR,
-    OPT_DUMP_EXPORTS,
-    OPT_DUMP_MIBL,
-    OPT_DUMP_PARSETREE,
-    OPT_DUMP_STARLARK,
-    OPT_HELP,
-    OPT_DEBUG,
-    OPT_DEBUG_DE,
-    OPT_DEBUG_EMIT,
-    OPT_DEBUG_DX,
-    OPT_DEBUG_EXECUTABLES,
-    OPT_DEBUG_DM,
-    OPT_DEBUG_MIBL,
-    OPT_DEBUG_DPPX,
-    OPT_DEBUG_PPX,
-    OPT_TRACE,
-    OPT_VERBOSE,
-    OPT_LAST
+    OPT_PKG = 0,
+    FLAG_JSOO,
+    FLAG_CLEAN,
+    FLAG_DEBUG,
+    FLAG_TRACE,
+    FLAG_VERBOSE,
+    FLAG_HELP,
+    LAST
 };
 
 void _print_usage(void) {
     printf("Usage:\t$ bazel run @obazl//convert [flags, options]\n");
-    printf("Flags (note that some flags require double-hyphenation):\n");
-    printf("\t-d  | --debug\t\t\tEnable all debugging flags.\n");
-    printf("\t--dx | --debug-executables\tDebug handling of Dune executable and executables stanzas.\n");
-    printf("\t--de | --debug-emit\t\tDebug emit logic.\n");
-    printf("\t--dm | --debug-mibl\t\tDebug mibl elaboration.\n");
-    printf("\t--dppx | --debug-ppx\t\tDebug ppx stuff.\n");
-    printf("\t--dump-exports\t\tDebug exported syms table.\n");
-    printf("\t--em | --emit-mibl\t\tEmit BUILD.mibl files.\n");
-    printf("\t--no-emit\t\t\tDisable emitting.\n");
-    printf("\t-t  | --trace\t\t\tEnable trace flags.\n");
-    printf("\t-v  | --verbose\t\t\tEnable verbosity. Repeatable.\n");
-    printf("\t--menhir\t\t\tEmit 'menhir' targets for .mly files, instead of ocamlyacc.\n");
 
-    printf("Options:\n");
-    printf("\t-D | -dump <arg>\t\tDump <arg> (parsetree, mibl, or starlark}) to stdout.\n");
-    printf("\t-e | --emit <arg>\t\tEmit BUILD.<arg> files, where <arg> = mibl | bazel. BUILD.bazel always emitted unless --no-emit passed.\n");
+    printf("Flags\n");
+    printf("\t-j, --jsoo\t\t\tImport Js_of_ocaml resources.\n");
+    printf("\t-c, --clean\t\t\tClean coswitch and reset to uninitialized state.\n");
 
-    printf("\t-p | --pkg | --package <arg>"
-           "\tRestrict dump ouput to <arg> (relative pkg path).\n");
+    printf("\t-d, --debug\t\t\tEnable all debugging flags.\n");
+    /* printf("\t-t, --trace\t\t\tEnable all trace flags.\n"); */
+    printf("\t-v, --verbose\t\t\tEnable verbosity. Repeatable.\n");
+}
 
+/* we need s7 to read dune-package files */
+void _mibl_s7_init(void) {
+    s7 = s7_init();
+
+    /* trap error messages */
+    /* close_error_config(); */
+    error_config_opam();
+    init_error_handlers_opam();
+
+    /* tmp dir */
+    char tplt[] = "/tmp/obazl.XXXXXXXXXX";
+    char *tmpdir = mkdtemp(tplt);
+    /* printf("tmpdir: %s\n", tmpdir); */
+    s7_define_variable(s7, "*tmp-dir*", s7_make_string(s7, tmpdir));
 }
 
 int main(int argc, char *argv[])
@@ -96,64 +83,70 @@ int main(int argc, char *argv[])
 
     extern bool enable_jsoo;
 
-    char *opts = "jp:hdmtvx:";
-
     char *opam_switch = NULL;
 
     utarray_new(opam_include_pkgs,&ut_str_icd);
     utarray_new(opam_exclude_pkgs,&ut_str_icd);
 
-    while ((opt = getopt(argc, argv, opts)) != -1) {
-        switch (opt) {
-        case 'f':
-            /* BUILD.bazel or BUILD file */
-            /* utstring_printf(opam_file, "%s", optarg); */
-            break;
-        case 'd':
-#if defined(DEBUG_TRACE)
-            debug = true;
-#endif
-            break;
-        case 'h':
-            log_info("Help: ");
-            exit(EXIT_SUCCESS);
-        case 'j':
-            enable_jsoo = true;
-            break;
-        case 'm':
-#if defined(DEBUG_TRACE)
-            debug_findlib = true;
-#endif
-            break;
-        case 'p':               /* pkg name, not path */
-            printf("PKG: %s\n", optarg);
-            utarray_push_back(opam_include_pkgs, &optarg);
-            /* pkg_path = strdup(optarg); */
-            /* /\* remove trailing '/' *\/ */
-            /* int len = strlen(pkg_path); */
-            /* if (pkg_path[len-1] == '/') { */
-            /*     pkg_path[len-1] = '\0'; */
-            /* } */
-            /* validate - no abs paths, may start with '//" */
-            break;
-        case 't':
-#if defined(DEBUG_TRACE)
-            trace = true;
-#endif
-            break;
-        case 'v':
-            verbose = true;
-            break;
-        case 'x':
-            printf("EXCL %s\n", optarg);
-            utarray_push_back(opam_exclude_pkgs, &optarg);
-            break;
-        default:
-            ;
-            log_error("Usage: %s [-f] [opamfile]", argv[0]);
-            exit(EXIT_FAILURE);
-        }
+    static struct option options[] = {
+        /* 0 */
+        [OPT_PKG] = {.long_name="pkg",.short_name='p',
+                     .flags=GOPT_ARGUMENT_REQUIRED
+        },
+        [FLAG_JSOO] = {.long_name="jsoo", .short_name='j',
+                      .flags=GOPT_ARGUMENT_REQUIRED},
+        [FLAG_CLEAN] = {.long_name="clean",.short_name='c',
+                      .flags=GOPT_ARGUMENT_REQUIRED},
+        [FLAG_DEBUG] = {.long_name="debug",.short_name='d',
+                       .flags=GOPT_ARGUMENT_FORBIDDEN | GOPT_REPEATABLE},
+        [FLAG_TRACE] = {.long_name="trace",.short_name='t',
+                       .flags=GOPT_ARGUMENT_FORBIDDEN},
+        [FLAG_VERBOSE] = {.long_name="verbose",.short_name='v',
+                         .flags=GOPT_ARGUMENT_FORBIDDEN | GOPT_REPEATABLE},
+        [FLAG_HELP] = {.long_name="help",.short_name='h',
+                      .flags=GOPT_ARGUMENT_FORBIDDEN},
+        [LAST] = {.flags = GOPT_LAST}
+    };
+
+    argc = gopt (argv, options);
+    gopt_errors (argv[0], options);
+
+    if (options[FLAG_HELP].count) {
+        _print_usage();
+        exit(EXIT_SUCCESS);
     }
+
+    if (options[FLAG_VERBOSE].count) {
+        /* printf("verbose ct: %d\n", options[FLAG_VERBOSE].count); */
+        verbose = true;
+        verbosity = options[FLAG_VERBOSE].count;
+    }
+
+    if (options[FLAG_DEBUG].count) {
+#if defined(DEBUG_TRACE)
+        debug = true;
+        debug_level = options[FLAG_DEBUG].count;
+#endif
+    }
+
+    if (options[FLAG_TRACE].count) {
+#if defined(DEBUG_TRACE)
+        trace = true;
+#endif
+    }
+
+    if (options[FLAG_JSOO].count) {
+        enable_jsoo = true;
+    }
+
+    if (options[OPT_PKG].count) {
+        utarray_push_back(opam_include_pkgs, &optarg);
+    }
+
+        /* case 'x': */
+        /*     printf("EXCL %s\n", optarg); */
+        /*     utarray_push_back(opam_exclude_pkgs, &optarg); */
+        /*     break; */
 
     bazel_configure();
 
@@ -168,7 +161,7 @@ int main(int argc, char *argv[])
 
     mibl_configure();
 
-    mibl_s7_init();
+    _mibl_s7_init();
 
     /* char *wd = getenv("BUILD_WORKING_DIRECTORY"); */
     /* if (wd) { */

@@ -23,7 +23,7 @@
 /* #endif */
 
 
-#include "load_dune.h"
+#include "load_project.h"
 
 UT_array  *segs;
 UT_string *group_tag;
@@ -75,7 +75,7 @@ LOCAL s7_pointer mibl_read_thunk;
 LOCAL s7_pointer _read_dunefile(char *path) //, char *fname)
 {
 #if defined(DEBUG_TRACE)
-    if (debug) {
+    if (debug_mibl_crawl) {
         log_debug("_read_dunefile %s", path); //, fname);
         /* s7_show_stack(s7); */
     }
@@ -140,7 +140,7 @@ LOCAL s7_pointer _read_dunefile(char *path) //, char *fname)
     /* repeat until all objects read */
     while(true) {
 #if defined(DEBUG_TRACE)
-        if (debug) log_trace("reading stanza");
+        if (debug_mibl_crawl) log_trace("reading stanza");
 #endif
 
         /* s7_show_stack(s7); */
@@ -152,7 +152,7 @@ LOCAL s7_pointer _read_dunefile(char *path) //, char *fname)
         /* s7_pointer stanza = s7_read(s7, dunefile_port); */
 
 #if defined(DEBUG_TRACE)
-        if (debug) log_debug("readed stanza: %s", TO_STR(stanza));
+        if (debug_mibl_crawl) log_debug("readed stanza: %s", TO_STR(stanza));
 #endif
         /* s7_show_stack(s7); */
         /* print_backtrace(s7); */
@@ -160,7 +160,7 @@ LOCAL s7_pointer _read_dunefile(char *path) //, char *fname)
         /* log_error("errmsg: %s", errmsg); */
 
         if ((errmsg) && (*errmsg)) {
-            /* if (debug) */
+            /* if (debug_mibl_crawl) */
             /*     log_error(RED "[%s]" CRESET, errmsg); */
             /* s7_close_input_port(s7, dunefile_port); */
             /* s7_gc_unprotect_at(s7, dune_gc_loc); */
@@ -186,7 +186,7 @@ LOCAL s7_pointer _read_dunefile(char *path) //, char *fname)
                 s7_pointer fixed = fix_baddot(dunefile_name);
                 /* s7_pointer fixed = s7_eval_c_string(s7, "'(foob)"); */
 #if defined(DEBUG_TRACE)
-                if (debug) log_debug(RED "FIXED:" CRESET " %s",
+                if (debug_mibl_crawl) log_debug(RED "FIXED:" CRESET " %s",
                                      TO_STR(fixed));
 #endif
 
@@ -226,7 +226,7 @@ LOCAL s7_pointer _read_dunefile(char *path) //, char *fname)
         }
 
         /* log_debug("SEXP: %s", TO_STR(stanza)); */
-        /* if (debug) */
+        /* if (debug_mibl_crawl) */
         /*     log_debug("stanza: %s", TO_STR(stanza)); */
 
         if (s7_is_pair(stanza)) {
@@ -270,7 +270,7 @@ LOCAL s7_pointer _read_dunefile(char *path) //, char *fname)
     s7_close_input_port(s7, dunefile_port);
 
 #if defined(DEBUG_TRACE)
-    if (debug)
+    if (debug_mibl_crawl)
         log_debug("finished reading dunefile: %s",
                   utstring_body(dunefile_name));
     if (trace) log_debug("readed stanzas: %s", TO_STR(stanzas));
@@ -356,7 +356,7 @@ LOCAL s7_pointer make_pkg_key(char *path)
 LOCAL void _handle_dir(s7_pointer pkg_tbl, FTS* tree, FTSENT *ftsentry)
 {
 #if defined(DEBUG_TRACE)
-    if (debug) {
+    if (debug_mibl_crawl) {
         log_debug("");
         log_debug(BLUB "_handle_dir:" CRESET " %s (%s)",
                   ftsentry->fts_name, ftsentry->fts_path);
@@ -376,7 +376,7 @@ LOCAL void _handle_dir(s7_pointer pkg_tbl, FTS* tree, FTSENT *ftsentry)
     int rc = access(utstring_body(dune_test), F_OK);
     if (rc) {
 #if defined(DEBUG_TRACE)
-        if (debug)
+        if (debug_mibl_crawl)
             log_warn(RED "dunefile not found in: " CRESET "%s",
                       ftsentry->fts_path);
 #endif
@@ -496,21 +496,21 @@ LOCAL bool _exclusions(FTSENT *ftsentry, char *ext)
 LOCAL void _update_pkg_files(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 {
 #if defined(DEBUG_TRACE)
-    if (debug)
+    if (debug_mibl_crawl)
         log_debug("_update_pkg_files: %s, ext: %s",
                   ftsentry->fts_name, ext);
 #endif
 
     if (_exclusions(ftsentry, ext)) {
 #if defined(DEBUG_TRACE)
-        if (debug)
+        if (debug_mibl_crawl)
             log_warn("excluding %s", ftsentry->fts_name);
 #endif
         return;
     }
 
     /* s7_pointer pkg_tbl = s7_name_to_value(s7, "pkg-tbl"); */
-    /* if (debug) */
+    /* if (debug_mibl_crawl) */
     /*     log_debug("pkg_tbl: %s", TO_STR(pkg_tbl)); */
 
     char *pkg_name = dirname(ftsentry->fts_path);
@@ -518,7 +518,7 @@ LOCAL void _update_pkg_files(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
     /* s7_pointer pkg_key = s7_make_string(s7, pkg_name); */
     s7_pointer pkg_key = make_pkg_key(pkg_name);
     s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
-    /* if (debug) */
+    /* if (debug_mibl_crawl) */
     /*     log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
 
     char *file_ext =  strrchr(ftsentry->fts_name, '.');
@@ -527,7 +527,7 @@ LOCAL void _update_pkg_files(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
     if (pkg_alist == s7_f(s7)) {
         // FIXME: should not happen, we always add a pkg entry first
 #if defined(DEBUG_TRACE)
-        if (debug)
+        if (debug_mibl_crawl)
             log_debug("no entry for this pkg: %s", pkg_name);
 #endif
     } else {
@@ -538,12 +538,12 @@ LOCAL void _update_pkg_files(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
                                                  keypath,
                                                  pkg_alist));
 #if defined(DEBUG_TRACE)
-        if (debug) log_debug("files_assoc %s", TO_STR(files_assoc));
+        if (debug_mibl_crawl) log_debug("files_assoc %s", TO_STR(files_assoc));
 #endif
 
         if (files_assoc == s7_f(s7)) {
 #if defined(DEBUG_TRACE)
-            if (debug)
+            if (debug_mibl_crawl)
                 log_debug("initializing (:files (:static (:type . fname))) list");
 #endif
 
@@ -563,7 +563,7 @@ LOCAL void _update_pkg_files(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
                                        static_assoc
                                        ));
 #if defined(DEBUG_TRACE)
-            if (debug)
+            if (debug_mibl_crawl)
                 log_debug("file_list: %s", TO_STR(file_list));
 #endif
 
@@ -571,7 +571,7 @@ LOCAL void _update_pkg_files(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
                                            pkg_alist,
                                            file_list);
 #if defined(DEBUG_TRACE)
-            if (debug)
+            if (debug_mibl_crawl)
                 log_debug("new pkg: %s", TO_STR(new_pkg));
 #endif
 
@@ -583,7 +583,7 @@ LOCAL void _update_pkg_files(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
             s7_pointer files_alist = s7_cdr(files_assoc);
 
 #if defined(DEBUG_TRACE)
-            if (debug) {
+            if (debug_mibl_crawl) {
                 log_debug("updating :files");
                 log_debug("files_alist: %s", TO_STR(files_alist));
                 log_debug("files_alist is pair?: %d",
@@ -604,7 +604,7 @@ LOCAL void _update_pkg_files(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
             s7_pointer addition = s7_list(s7, 1,
                                           s7_make_string(s7, ftsentry->fts_name));
 #if defined(DEBUG_TRACE)
-            if (debug)
+            if (debug_mibl_crawl)
                 log_debug("addition: %s", TO_STR(addition));
 #endif
             s7_pointer new_files_alist =
@@ -616,7 +616,7 @@ LOCAL void _update_pkg_files(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
                         /* file_pair, */
                           );
 #if defined(DEBUG_TRACE)
-            if (debug)
+            if (debug_mibl_crawl)
                 log_debug("new files_alist: %s", TO_STR(new_files_alist));
 #endif
 
@@ -643,21 +643,21 @@ LOCAL void _update_pkg_files(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 LOCAL void _update_cc_src_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 {
 #if defined(DEBUG_TRACE)
-    if (debug)
+    if (debug_mibl_crawl)
         log_debug("_update_cc_src_file: %s, ext: %s",
                   ftsentry->fts_name, ext);
 #endif
 
     if (_exclusions(ftsentry, ext)) {
 #if defined(DEBUG_TRACE)
-        if (debug)
+        if (debug_mibl_crawl)
             log_warn("excluding %s", ftsentry->fts_name);
 #endif
         return;
     }
 
     /* s7_pointer pkg_tbl = s7_name_to_value(s7, "pkg-tbl"); */
-    /* if (debug) */
+    /* if (debug_mibl_crawl) */
     /*     log_debug("pkg_tbl: %s", TO_STR(pkg_tbl)); */
 
     char *pkg_name = dirname(ftsentry->fts_path);
@@ -665,7 +665,7 @@ LOCAL void _update_cc_src_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
     /* s7_pointer pkg_key = s7_make_string(s7, pkg_name); */
     s7_pointer pkg_key = make_pkg_key(pkg_name);
     s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
-    /* if (debug) */
+    /* if (debug_mibl_crawl) */
     /*     log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
 
     char *cc_ext =  strrchr(ftsentry->fts_name, '.');
@@ -674,7 +674,7 @@ LOCAL void _update_cc_src_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
     if (pkg_alist == s7_f(s7)) {
         // FIXME: should not happen, we always add a pkg entry first
 #if defined(DEBUG_TRACE)
-        if (debug)
+        if (debug_mibl_crawl)
             log_debug("no entry for this pkg: %s", pkg_name);
 #endif
     } else {
@@ -685,12 +685,12 @@ LOCAL void _update_cc_src_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
                                                  keypath,
                                                  pkg_alist));
 #if defined(DEBUG_TRACE)
-        if (debug) log_debug("cc_assoc %s", TO_STR(cc_assoc));
+        if (debug_mibl_crawl) log_debug("cc_assoc %s", TO_STR(cc_assoc));
 #endif
 
         if (cc_assoc == s7_f(s7)) {
 #if defined(DEBUG_TRACE)
-            if (debug)
+            if (debug_mibl_crawl)
                 log_debug("initializing (:cc (:static (:type . fname))) list");
 #endif
 
@@ -710,7 +710,7 @@ LOCAL void _update_cc_src_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
                                        static_assoc
                                        ));
 #if defined(DEBUG_TRACE)
-            if (debug)
+            if (debug_mibl_crawl)
                 log_debug("cc_list: %s", TO_STR(cc_list));
 #endif
 
@@ -718,7 +718,7 @@ LOCAL void _update_cc_src_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
                                            pkg_alist,
                                            cc_list);
 #if defined(DEBUG_TRACE)
-            if (debug)
+            if (debug_mibl_crawl)
                 log_debug("new pkg: %s", TO_STR(new_pkg));
 #endif
 
@@ -729,7 +729,7 @@ LOCAL void _update_cc_src_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
                but we need the alist */
             s7_pointer cc_alist = s7_cdr(cc_assoc);
 
-            /* if (debug) { */
+            /* if (debug_mibl_crawl) { */
             /*     log_debug("updating :cc"); */
             /*     log_debug("cc_alist: %s", TO_STR(cc_alist)); */
             /* } */
@@ -775,21 +775,21 @@ LOCAL void _update_cc_src_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 LOCAL void _update_cc_hdr_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 {
 #if defined(DEBUG_TRACE)
-    if (debug)
+    if (debug_mibl_crawl)
         log_debug("_update_cc_hdr_file: %s, ext: %s",
                   ftsentry->fts_name, ext);
 #endif
 
     if (_exclusions(ftsentry, ext)) {
 #if defined(DEBUG_TRACE)
-        if (debug)
+        if (debug_mibl_crawl)
             log_warn("excluding %s", ftsentry->fts_name);
 #endif
         return;
     }
 
     /* s7_pointer pkg_tbl = s7_name_to_value(s7, "pkg-tbl"); */
-    /* if (debug) */
+    /* if (debug_mibl_crawl) */
     /*     log_debug("pkg_tbl: %s", TO_STR(pkg_tbl)); */
 
     char *pkg_name = dirname(ftsentry->fts_path);
@@ -797,7 +797,7 @@ LOCAL void _update_cc_hdr_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
     /* s7_pointer pkg_key = s7_make_string(s7, pkg_name); */
     s7_pointer pkg_key = make_pkg_key(pkg_name);
     s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
-    /* if (debug) */
+    /* if (debug_mibl_crawl) */
     /*     log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
 
     char *cc_ext =  strrchr(ftsentry->fts_name, '.');
@@ -806,7 +806,7 @@ LOCAL void _update_cc_hdr_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
     if (pkg_alist == s7_f(s7)) {
         // FIXME: should not happen, we always add a pkg entry first
 #if defined(DEBUG_TRACE)
-        if (debug)
+        if (debug_mibl_crawl)
             log_debug("no entry for this pkg: %s", pkg_name);
 #endif
     } else {
@@ -817,12 +817,12 @@ LOCAL void _update_cc_hdr_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
                                                  keypath,
                                                  pkg_alist));
 #if defined(DEBUG_TRACE)
-        if (debug) log_debug("cc_assoc %s", TO_STR(cc_assoc));
+        if (debug_mibl_crawl) log_debug("cc_assoc %s", TO_STR(cc_assoc));
 #endif
 
         if (cc_assoc == s7_f(s7)) {
 #if defined(DEBUG_TRACE)
-            if (debug)
+            if (debug_mibl_crawl)
                 log_debug("initializing (:cc (:static (:type . fname))) list");
 #endif
 
@@ -842,7 +842,7 @@ LOCAL void _update_cc_hdr_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
                                        static_assoc
                                        ));
 #if defined(DEBUG_TRACE)
-            if (debug)
+            if (debug_mibl_crawl)
                 log_debug("cc_list: %s", TO_STR(cc_list));
 #endif
 
@@ -850,7 +850,7 @@ LOCAL void _update_cc_hdr_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
                                            pkg_alist,
                                            cc_list);
 #if defined(DEBUG_TRACE)
-            if (debug)
+            if (debug_mibl_crawl)
                 log_debug("new pkg: %s", TO_STR(new_pkg));
 #endif
 
@@ -861,7 +861,7 @@ LOCAL void _update_cc_hdr_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
                but we need the alist */
             s7_pointer cc_alist = s7_cdr(cc_assoc);
 
-            /* if (debug) { */
+            /* if (debug_mibl_crawl) { */
             /*     log_debug("updating :cc"); */
             /*     log_debug("cc_alist: %s", TO_STR(cc_alist)); */
             /* } */
@@ -908,21 +908,21 @@ LOCAL void _update_pkg_script_files(s7_pointer pkg_tbl,
                                     FTSENT *ftsentry, char *ext)
 {
 #if defined(DEBUG_TRACE)
-    if (debug)
+    if (debug_mibl_crawl)
         log_debug("_update_pkg_script_files: %s, ext: %s",
                   ftsentry->fts_name, ext);
 #endif
 
     if (_exclusions(ftsentry, ext)) {
 #if defined(DEBUG_TRACE)
-        if (debug)
+        if (debug_mibl_crawl)
             log_warn("excluding %s", ftsentry->fts_name);
 #endif
         return;
     }
 
     /* s7_pointer pkg_tbl = s7_name_to_value(s7, "pkg-tbl"); */
-    /* if (debug) */
+    /* if (debug_mibl_crawl) */
     /*     log_debug("pkg_tbl: %s", TO_STR(pkg_tbl)); */
 
     char *pkg_name = dirname(ftsentry->fts_path);
@@ -930,13 +930,13 @@ LOCAL void _update_pkg_script_files(s7_pointer pkg_tbl,
     s7_pointer pkg_key = make_pkg_key(pkg_name);
     //s7_make_string(s7, pkg_name);
     s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
-    /* if (debug) */
+    /* if (debug_mibl_crawl) */
     /*     log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
 
     if (pkg_alist == s7_f(s7)) {
         // FIXME: should not happen, we always add a pkg entry first
 #if defined(DEBUG_TRACE)
-        if (debug)
+        if (debug_mibl_crawl)
             log_debug("no entry for this pkg");
 #endif
     } else {
@@ -945,14 +945,14 @@ LOCAL void _update_pkg_script_files(s7_pointer pkg_tbl,
         s7_pointer scripts_list
             = s7_call(s7, assoc, s7_list(s7, 2, scripts_kw, pkg_alist));
 #if defined(DEBUG_TRACE)
-        if (debug)
+        if (debug_mibl_crawl)
             log_debug("scripts_list %s",
                       TO_STR(scripts_list));
 #endif
 
         if (scripts_list == s7_f(s7)) {
 #if defined(DEBUG_TRACE)
-            if (debug)
+            if (debug_mibl_crawl)
                 log_debug("adding :scripts");
 #endif
 
@@ -962,7 +962,7 @@ LOCAL void _update_pkg_script_files(s7_pointer pkg_tbl,
                                 scripts_kw,
                                 s7_make_string(s7, ftsentry->fts_name)));
 #if defined(DEBUG_TRACE)
-            if (debug)
+            if (debug_mibl_crawl)
                 log_debug("file_list: %s", TO_STR(file_list));
 #endif
 
@@ -970,7 +970,7 @@ LOCAL void _update_pkg_script_files(s7_pointer pkg_tbl,
                                            pkg_alist,
                                            file_list);
 #if defined(DEBUG_TRACE)
-            if (debug)
+            if (debug_mibl_crawl)
                 log_debug("new pkg: %s", TO_STR(new_pkg));
 #endif
 
@@ -978,7 +978,7 @@ LOCAL void _update_pkg_script_files(s7_pointer pkg_tbl,
 
         } else {
 #if defined(DEBUG_TRACE)
-            if (debug) {
+            if (debug_mibl_crawl) {
                 log_debug("updating :scripts");
                 /* log_debug("srcs_alist: %s", */
                 /*        TO_STR(srcs_alist)); */
@@ -1031,13 +1031,13 @@ LOCAL __attribute__((unused)) void _update_pkg_deps(s7_pointer pkg_tbl, FTSENT *
     s7_pointer pkg_key = make_pkg_key(pkg_name);
     //s7_make_string(s7, pkg_name);
 #if defined(DEBUG_TRACE)
-    if (debug) log_debug("pkg_key: %s", TO_STR(pkg_key));
+    if (debug_mibl_crawl) log_debug("pkg_key: %s", TO_STR(pkg_key));
 #endif
 
     s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
     (void)pkg_alist;
 #if defined(DEBUG_TRACE)
-    if (debug) log_debug("pkg_alist: %s", TO_STR(pkg_alist));
+    if (debug_mibl_crawl) log_debug("pkg_alist: %s", TO_STR(pkg_alist));
 #endif
 
 }
@@ -1052,7 +1052,7 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
     }
 #endif
 #if defined(DEBUG_TRACE)
-    if (debug) {
+    if (debug_mibl_crawl) {
         log_debug("pkg_name: %s", pkg_name);
         log_debug("fname: %s", fname);
         log_debug("tag: %d", ftype);
@@ -1063,17 +1063,17 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
     s7_pointer pkg_key = make_pkg_key(pkg_name);
     //s7_make_string(s7, pkg_name);
 #if defined(DEBUG_TRACE)
-    if (debug)
+    if (debug_mibl_crawl)
         log_debug("pkg_key: %s", TO_STR(pkg_key));
 #endif
     s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
 #if defined(DEBUG_TRACE)
-    if (debug) log_debug("pkg_alist: %s", TO_STR(pkg_alist));
+    if (debug_mibl_crawl) log_debug("pkg_alist: %s", TO_STR(pkg_alist));
 #endif
 
     if (pkg_alist == s7_f(s7)) {
 #if defined(DEBUG_TRACE)
-        if (debug)
+        if (debug_mibl_crawl)
             log_debug("no dunefile in this directory");
 #endif
     } else {
@@ -1088,7 +1088,7 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
         /* = s7_call(s7, assoc_in, */
         /*           s7_list(s7, 2, modules_kw, pkg_alist)); */
 #if defined(DEBUG_TRACE)
-        if (debug) log_debug("modules_alist %s", TO_STR(modules_alist));
+        if (debug_mibl_crawl) log_debug("modules_alist %s", TO_STR(modules_alist));
 #endif
 
         /* s7_pointer srcs_alist = s7_call(s7, assoc, */
@@ -1117,14 +1117,14 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
                                                       ),
                                       s7_make_symbol(s7, fname));
 #if defined(DEBUG_TRACE)
-        if (debug)
+        if (debug_mibl_crawl)
             log_debug("ml_assoc: %s", TO_STR(ml_assoc));
 #endif
 
         /* if (srcs_alist == s7_f(s7)) { */
         if (modules_alist == s7_f(s7)) {
 #if defined(DEBUG_TRACE)
-            if (debug)
+            if (debug_mibl_crawl)
                 log_debug("INITIALIZING :modules field");
 #endif
             /* (acons :srcs */
@@ -1139,7 +1139,7 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
                                               ml_assoc);
             /* msrcs_alist); */
 #if defined(DEBUG_TRACE)
-            if (debug)
+            if (debug_mibl_crawl)
                 log_debug("module_assoc: %s", TO_STR(module_assoc));
 #endif
 
@@ -1158,20 +1158,20 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
                                                // statics_assoc
                                                module_assoc);
 #if defined(DEBUG_TRACE)
-            if (debug) log_debug("modules_assoc: %s", TO_STR(modules_assoc));
+            if (debug_mibl_crawl) log_debug("modules_assoc: %s", TO_STR(modules_assoc));
 #endif
 
             s7_pointer new_pkg_alist = s7_append(s7, pkg_alist,
                                                  s7_list(s7, 1,
                                                          modules_assoc));
-            /* if (debug) */
+            /* if (debug_mibl_crawl) */
             /*     log_debug("pkg_alist: %s", */
             /*            TO_STR(new_pkg_alist)); */
 
             s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg_alist);
         } else {
 #if defined(DEBUG_TRACE)
-            if (debug) {
+            if (debug_mibl_crawl) {
                 log_debug("UPDATING :modules");
                 log_debug("modules_alist: %s", TO_STR(modules_alist));
                 log_debug("mname_sym: %s", TO_STR(mname_sym));
@@ -1186,7 +1186,7 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
                                          /* static_kw, */
                                          mname_sym);
 #if defined(DEBUG_TRACE)
-            if (debug) {
+            if (debug_mibl_crawl) {
                 /* log_debug("assoc-in: %s", TO_STR(assoc_in)); */
                 log_debug("keypath: %s", TO_STR(keypath));
                 /* log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
@@ -1199,29 +1199,29 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
                                                       pkg_alist));
 
 #if defined(DEBUG_TRACE)
-            if (debug) {
+            if (debug_mibl_crawl) {
                 log_debug("module_alist: %s", TO_STR(module_alist));
             }
 #endif
             if (module_alist == s7_f(s7)) {
                 /* new */
 #if defined(DEBUG_TRACE)
-                if (debug)
+                if (debug_mibl_crawl)
                     log_debug(RED "ADDING" CRESET " module %s to %s",
                               TO_STR(mname_sym), TO_STR(modules_alist));
 #endif
                 /* s7_pointer keypath = s7_list(s7, 1, modules_kw); */
-                /* if (debug) log_debug("trying keypath: %s", */
+                /* if (debug_mibl_crawl) log_debug("trying keypath: %s", */
                 /*                      TO_STR(keypath)); */
 #if defined(DEBUG_TRACE)
-                if (debug) log_debug("modules_alist: %s",
+                if (debug_mibl_crawl) log_debug("modules_alist: %s",
                                      s7_object_to_c_string(s7,
                                                            modules_alist));
 #endif
 
                 s7_pointer modules_alist_cdr = s7_cdr(modules_alist);
 #if defined(DEBUG_TRACE)
-                if (debug)
+                if (debug_mibl_crawl)
                     log_debug("modules_alist_cdr: %s",
                        TO_STR(modules_alist_cdr));
 #endif
@@ -1229,7 +1229,7 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
                 s7_pointer module_assoc =
                     s7_list(s7, 1, s7_list(s7, 2, mname_sym, ml_assoc));
 #if defined(DEBUG_TRACE)
-                if (debug) log_debug("new module_assoc: %s",
+                if (debug_mibl_crawl) log_debug("new module_assoc: %s",
                                      TO_STR(module_assoc));
 #endif
 
@@ -1237,7 +1237,7 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
                     s7_append(s7, modules_alist_cdr, module_assoc);
                     /* s7_cons(s7, module_assoc, modules_alist_cdr); */
 #if defined(DEBUG_TRACE)
-                if (debug) {
+                if (debug_mibl_crawl) {
                     log_debug("new_modules_alist_cdr: %s",
                        TO_STR(new_modules_alist_cdr));
                 }
@@ -1247,7 +1247,7 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
                     = s7_set_cdr(modules_alist, new_modules_alist_cdr);
                 (void)new_modules_alist;
 #if defined(DEBUG_TRACE)
-                if (debug) {
+                if (debug_mibl_crawl) {
                     log_debug("new_modules_alist: %s",
                               TO_STR(new_modules_alist));
                 }
@@ -1255,13 +1255,13 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
             } else {
                 /* update */
 #if defined(DEBUG_TRACE)
-                if (debug) log_debug(RED "UPDATING" CRESET " module_alist: %s",
+                if (debug_mibl_crawl) log_debug(RED "UPDATING" CRESET " module_alist: %s",
                                      TO_STR(module_alist));
 #endif
 
                 s7_pointer modules_alist_cdr = s7_cdr(module_alist);
 #if defined(DEBUG_TRACE)
-                if (debug)
+                if (debug_mibl_crawl)
                     log_debug("modules_alist_cdr: %s",
                        TO_STR(modules_alist_cdr));
 #endif
@@ -1271,7 +1271,7 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
                                              modules_alist_cdr,
                                              s7_list(s7, 1, ml_assoc));
 
-                /* if (debug) { */
+                /* if (debug_mibl_crawl) { */
                 /*     log_debug("setting cdr to: %s", TO_STR(msrcs)); */
                 /* } */
 
@@ -1279,7 +1279,7 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
                     = s7_set_cdr(module_alist, msrcs);
                 (void)new_modules_alist;
 #if defined(DEBUG_TRACE)
-               if (debug) {
+               if (debug_mibl_crawl) {
                     log_debug("new_modules_alist: %s",
                               TO_STR(new_modules_alist));
                     log_debug("new pkgs: %s", TO_STR(pkg_alist));
@@ -1298,7 +1298,7 @@ LOCAL void _update_pkg_sigs(s7_pointer pkg_tbl,
     if (trace) {
         log_trace(RED "_update_pkg_sigs" CRESET);
     }
-    if (debug) {
+    if (debug_mibl_crawl) {
         log_debug("pkg_name: %s", pkg_name);
         /* log_debug("pkg_tbl: %s", TO_STR(pkg_tbl)); */
     }
@@ -1308,15 +1308,15 @@ LOCAL void _update_pkg_sigs(s7_pointer pkg_tbl,
     //s7_make_string(s7, pkg_name);
 
 #if defined(DEBUG_TRACE)
-    if (debug) log_debug("pkg_key: %s", TO_STR(pkg_key));
+    if (debug_mibl_crawl) log_debug("pkg_key: %s", TO_STR(pkg_key));
 #endif
 
     s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
-    /* if (debug) log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
+    /* if (debug_mibl_crawl) log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
 
     if (pkg_alist == s7_f(s7)) {
 #if defined(DEBUG_TRACE)
-        if (debug)
+        if (debug_mibl_crawl)
             log_debug("no dunefile in this directory");
 #endif
     } else {
@@ -1331,25 +1331,25 @@ LOCAL void _update_pkg_sigs(s7_pointer pkg_tbl,
         /* = s7_call(s7, assoc_in, */
         /*           s7_list(s7, 2, modules_kw, pkg_alist)); */
 #if defined(DEBUG_TRACE)
-        if (debug) log_debug("sigs_alist %s", TO_STR(sigs_alist));
+        if (debug_mibl_crawl) log_debug("sigs_alist %s", TO_STR(sigs_alist));
 #endif
 
         s7_pointer mli_file = s7_make_symbol(s7, fname);
         /* s7_pointer mli_assoc = s7_list(s7, 2, */
         /*                               s7_make_keyword(s7, "mli"), */
         /*                               s7_make_string(s7, fname)); */
-        /* if (debug) */
+        /* if (debug_mibl_crawl) */
         /*     log_debug("mli_assoc: %s", TO_STR(mli_assoc)); */
 
         /* s7_pointer sig_assoc = s7_list(s7, 2, mname_sym, mli_file); */
         s7_pointer sig_assoc = s7_cons(s7, mname_sym, mli_file);
 #if defined(DEBUG_TRACE)
-        if (debug) log_debug("sig_assoc: %s", TO_STR(sig_assoc));
+        if (debug_mibl_crawl) log_debug("sig_assoc: %s", TO_STR(sig_assoc));
 #endif
 
         if (sigs_alist == s7_f(s7)) {
 #if defined(DEBUG_TRACE)
-            if (debug)
+            if (debug_mibl_crawl)
                 log_debug("INITIALIZING :signatures field");
 #endif
             /* (:signatures ((:Foo (:mli foo.mli)) */
@@ -1361,20 +1361,20 @@ LOCAL void _update_pkg_sigs(s7_pointer pkg_tbl,
             s7_pointer sigs_assoc = s7_list(s7, 2,
                                             sigs_kw, statics_assoc);
 #if defined(DEBUG_TRACE)
-            if (debug) log_debug("sigs_assoc: %s", TO_STR(sigs_assoc));
+            if (debug_mibl_crawl) log_debug("sigs_assoc: %s", TO_STR(sigs_assoc));
 #endif
 
             s7_pointer new_pkg_alist = s7_append(s7, pkg_alist,
                                                  s7_list(s7, 1,
                                                          sigs_assoc));
-            /* if (debug) */
+            /* if (debug_mibl_crawl) */
             /*     log_debug("pkg_alist: %s", */
             /*            TO_STR(new_pkg_alist)); */
 
             s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg_alist);
         } else {
 #if defined(DEBUG_TRACE)
-            if (debug) {
+            if (debug_mibl_crawl) {
                 log_debug("UPDATING :signatures");
                 log_debug("sigs_alist: %s", TO_STR(sigs_alist));
                 log_debug("mname_sym: %s", TO_STR(mname_sym));
@@ -1386,7 +1386,7 @@ LOCAL void _update_pkg_sigs(s7_pointer pkg_tbl,
                                          static_kw,
                                          mname_sym);
 #if defined(DEBUG_TRACE)
-            if (debug) {
+            if (debug_mibl_crawl) {
                 /* log_debug("assoc-in: %s", TO_STR(assoc_in)); */
                 log_debug("keypath: %s", TO_STR(keypath));
                 /* log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
@@ -1399,24 +1399,24 @@ LOCAL void _update_pkg_sigs(s7_pointer pkg_tbl,
                                                    pkg_alist));
 
 #if defined(DEBUG_TRACE)
-            if (debug) {
+            if (debug_mibl_crawl) {
                 log_debug("sig_alist: %s", TO_STR(sig_alist));
             }
 #endif
             if (sig_alist == s7_f(s7)) {
                 /* new */
 #if defined(DEBUG_TRACE)
-                if (debug)
+                if (debug_mibl_crawl)
                     log_debug(RED "ADDING" CRESET " sig %s to %s",
                               TO_STR(mname_sym), TO_STR(sigs_alist));
-                if (debug) log_debug("sigs_alist: %s",
+                if (debug_mibl_crawl) log_debug("sigs_alist: %s",
                                      s7_object_to_c_string(s7,
                                                            sigs_alist));
 #endif
 
                 s7_pointer sigs_alist_cdr = s7_cdr(sigs_alist);
 #if defined(DEBUG_TRACE)
-                if (debug) {
+                if (debug_mibl_crawl) {
                     log_debug("sigs_alist_cdr: %s",
                        TO_STR(sigs_alist_cdr));
                 }
@@ -1424,7 +1424,7 @@ LOCAL void _update_pkg_sigs(s7_pointer pkg_tbl,
 
                 /* s7_pointer sig_assoc = */
                 /*     s7_list(s7, 1, s7_list(s7, 2, mname_sym, mli_file)); //mli_assoc)); */
-                /* if (debug) log_debug("new sig_assoc: %s", */
+                /* if (debug_mibl_crawl) log_debug("new sig_assoc: %s", */
                 /*                      TO_STR(sig_assoc)); */
 
                 s7_pointer new_sigs_alist_cdr =
@@ -1432,7 +1432,7 @@ LOCAL void _update_pkg_sigs(s7_pointer pkg_tbl,
                               s7_list(s7, 1, sig_assoc));
 
 #if defined(DEBUG_TRACE)
-                if (debug)
+                if (debug_mibl_crawl)
                     log_debug("new_sigs_alist_cdr: %s",
                        TO_STR(new_sigs_alist_cdr));
 #endif
@@ -1441,7 +1441,7 @@ LOCAL void _update_pkg_sigs(s7_pointer pkg_tbl,
                     = s7_set_cdr(sigs_alist, new_sigs_alist_cdr);
                 (void)new_sigs_alist;
 #if defined(DEBUG_TRACE)
-                if (debug) {
+                if (debug_mibl_crawl) {
                     log_debug("new_sigs_alist: %s",
                               TO_STR(new_sigs_alist));
                 }
@@ -1449,13 +1449,13 @@ LOCAL void _update_pkg_sigs(s7_pointer pkg_tbl,
             } else {
                 /* update */
 #if defined(DEBUG_TRACE)
-                if (debug) log_debug(RED "UPDATING" CRESET " sig_alist: %s",
+                if (debug_mibl_crawl) log_debug(RED "UPDATING" CRESET " sig_alist: %s",
                                      TO_STR(sig_alist));
 #endif
 
                 s7_pointer sigs_alist_cdr = s7_cdr(sig_alist);
 #if defined(DEBUG_TRACE)
-                if (debug)
+                if (debug_mibl_crawl)
                     log_debug("sigs_alist_cdr: %s",
                        TO_STR(sigs_alist_cdr));
 #endif
@@ -1467,7 +1467,7 @@ LOCAL void _update_pkg_sigs(s7_pointer pkg_tbl,
                     = s7_set_cdr(sig_alist, msrcs);
                 (void)new_sigs_alist;
 #if defined(DEBUG_TRACE)
-                if (debug) {
+                if (debug_mibl_crawl) {
                     log_debug("new_sigs_alist: %s",
                               TO_STR(new_sigs_alist));
                     log_debug("new pkgs: %s", TO_STR(pkg_alist));
@@ -1486,7 +1486,7 @@ LOCAL void _update_pkg_structs(s7_pointer pkg_tbl,
     if (trace) {
         log_trace(BLU "_update_pkg_structs" CRESET);
     }
-    if (debug) {
+    if (debug_mibl_crawl) {
         log_debug("pkg_name: %s", pkg_name);
         /* log_debug("pkg_tbl: %s", TO_STR(pkg_tbl)); */
     }
@@ -1494,15 +1494,15 @@ LOCAL void _update_pkg_structs(s7_pointer pkg_tbl,
     s7_pointer pkg_key = make_pkg_key(pkg_name);
     // s7_make_string(s7, pkg_name);
 #if defined(DEBUG_TRACE)
-    if (debug) log_debug("pkg_key: %s", TO_STR(pkg_key));
+    if (debug_mibl_crawl) log_debug("pkg_key: %s", TO_STR(pkg_key));
 #endif
 
     s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
-    /* if (debug) log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
+    /* if (debug_mibl_crawl) log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
 
     if (pkg_alist == s7_f(s7)) {
 #if defined(DEBUG_TRACE)
-        if (debug)
+        if (debug_mibl_crawl)
             log_debug("no dunefile in this directory");
 #endif
     } else {
@@ -1521,26 +1521,26 @@ LOCAL void _update_pkg_structs(s7_pointer pkg_tbl,
         /* = s7_call(s7, assoc_in, */
         /*           s7_list(s7, 2, modules_kw, pkg_alist)); */
 #if defined(DEBUG_TRACE)
-        if (debug) log_debug("structs_alist keypath %s", TO_STR(keypath));
-        if (debug) log_debug("structs_alist %s", TO_STR(structs_alist));
+        if (debug_mibl_crawl) log_debug("structs_alist keypath %s", TO_STR(keypath));
+        if (debug_mibl_crawl) log_debug("structs_alist %s", TO_STR(structs_alist));
 #endif
 
         /* s7_pointer ml_assoc = s7_list(s7, 2, */
         /*                               s7_make_keyword(s7, "ml"), */
         /*                               s7_make_string(s7, fname)); */
-        /* if (debug) */
+        /* if (debug_mibl_crawl) */
         /*     log_debug("ml_assoc: %s", TO_STR(ml_assoc)); */
 
         s7_pointer struct_assoc =
             s7_cons(s7, mname_sym, s7_make_symbol(s7, fname));
         /* s7_list(s7, 2, mname_sym, s7_make_symbol(s7, fname)); */
 #if defined(DEBUG_TRACE)
-        if (debug) log_debug("struct_assoc: %s", TO_STR(struct_assoc));
+        if (debug_mibl_crawl) log_debug("struct_assoc: %s", TO_STR(struct_assoc));
 #endif
 
         if (structs_alist == s7_f(s7)) {
 #if defined(DEBUG_TRACE)
-            if (debug)
+            if (debug_mibl_crawl)
                 log_debug("INITIALIZING %s field", TO_STR(keypath));
 #endif
             /* (:structures (:static (:Foo (:ml foo.ml)) */
@@ -1562,14 +1562,14 @@ LOCAL void _update_pkg_structs(s7_pointer pkg_tbl,
                 s7_pointer structs_assoc = s7_list(s7, 2,
                                                    structs_kw, statics_assoc);
 #if defined(DEBUG_TRACE)
-                if (debug) log_debug("structs_assoc: %s", TO_STR(structs_assoc));
+                if (debug_mibl_crawl) log_debug("structs_assoc: %s", TO_STR(structs_assoc));
 #endif
 
                 s7_pointer new_pkg_alist = s7_append(s7, pkg_alist,
                                                      s7_list(s7, 1,
                                                              structs_assoc));
 #if defined(DEBUG_TRACE)
-                if (debug)
+                if (debug_mibl_crawl)
                     log_debug("updated pkg_alist: %s",
                               TO_STR(new_pkg_alist));
 #endif
@@ -1580,7 +1580,7 @@ LOCAL void _update_pkg_structs(s7_pointer pkg_tbl,
 
                 s7_pointer structures_alist_cdr = s7_cdr(structures_alist);
 #if defined(DEBUG_TRACE)
-                if (debug) {
+                if (debug_mibl_crawl) {
                     log_debug("structures_alist_cdr: %s",
                        TO_STR(structures_alist_cdr));
                 }
@@ -1596,7 +1596,7 @@ LOCAL void _update_pkg_structs(s7_pointer pkg_tbl,
                               s7_list(s7, 1, new_struct_assoc));
                 (void)new_structures_alist_cdr;
 #if defined(DEBUG_TRACE)
-                if (debug)
+                if (debug_mibl_crawl)
                     log_debug("new_structures_alist_cdr: %s",
                        TO_STR(new_structures_alist_cdr));
 #endif
@@ -1607,7 +1607,7 @@ LOCAL void _update_pkg_structs(s7_pointer pkg_tbl,
             }
         } else {
 #if defined(DEBUG_TRACE)
-            if (debug) {
+            if (debug_mibl_crawl) {
                 log_debug("UPDATING :structures");
                 log_debug("structs_alist: %s", TO_STR(structs_alist));
                 log_debug("mname_sym: %s", TO_STR(mname_sym));
@@ -1619,7 +1619,7 @@ LOCAL void _update_pkg_structs(s7_pointer pkg_tbl,
                                          static_kw,
                                          mname_sym);
 #if defined(DEBUG_TRACE)
-            if (debug) {
+            if (debug_mibl_crawl) {
                 /* log_debug("assoc-in: %s", TO_STR(assoc_in)); */
                 log_debug("keypath: %s", TO_STR(keypath));
                 /* log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
@@ -1632,24 +1632,24 @@ LOCAL void _update_pkg_structs(s7_pointer pkg_tbl,
                                                    pkg_alist));
 
 #if defined(DEBUG_TRACE)
-            if (debug) {
+            if (debug_mibl_crawl) {
                 log_debug("struct_alist: %s", TO_STR(struct_alist));
             }
 #endif
             if (struct_alist == s7_f(s7)) {
                 /* new */
 #if defined(DEBUG_TRACE)
-                if (debug)
+                if (debug_mibl_crawl)
                     log_debug(RED "ADDING" CRESET " struct %s to %s",
                               TO_STR(mname_sym), TO_STR(structs_alist));
-                if (debug) log_debug("structs_alist: %s",
+                if (debug_mibl_crawl) log_debug("structs_alist: %s",
                                      s7_object_to_c_string(s7,
                                                            structs_alist));
 #endif
 
                 s7_pointer structs_alist_cdr = s7_cdr(structs_alist);
 #if defined(DEBUG_TRACE)
-                if (debug) {
+                if (debug_mibl_crawl) {
                     log_debug("structs_alist_cdr: %s",
                        TO_STR(structs_alist_cdr));
                 }
@@ -1659,14 +1659,14 @@ LOCAL void _update_pkg_structs(s7_pointer pkg_tbl,
                 /*     s7_list(s7, 1, */
                 /*             s7_list(s7, 2, */
                 /*                     mname_sym, s7_make_symbol(s7, fname))); */
-                /* if (debug) log_debug("new struct_assoc: %s", */
+                /* if (debug_mibl_crawl) log_debug("new struct_assoc: %s", */
                 /*                      TO_STR(struct_assoc)); */
 
                 s7_pointer new_structs_alist_cdr =
                     s7_append(s7, structs_alist_cdr,
                               s7_list(s7, 1, struct_assoc));
 #if defined(DEBUG_TRACE)
-                if (debug)
+                if (debug_mibl_crawl)
                     log_debug("new_structs_alist_cdr: %s",
                        TO_STR(new_structs_alist_cdr));
 #endif
@@ -1675,7 +1675,7 @@ LOCAL void _update_pkg_structs(s7_pointer pkg_tbl,
                     = s7_set_cdr(structs_alist, new_structs_alist_cdr);
                 (void)new_structs_alist;
 #if defined(DEBUG_TRACE)
-                if (debug) {
+                if (debug_mibl_crawl) {
                     log_debug("new_structs_alist: %s",
                               TO_STR(new_structs_alist));
                 }
@@ -1683,13 +1683,13 @@ LOCAL void _update_pkg_structs(s7_pointer pkg_tbl,
             } else {
                 /* update */
 #if defined(DEBUG_TRACE)
-                if (debug) log_debug(RED "UPDATING" CRESET " struct_alist: %s",
+                if (debug_mibl_crawl) log_debug(RED "UPDATING" CRESET " struct_alist: %s",
                                      TO_STR(struct_alist));
 #endif
 
                 s7_pointer structs_alist_cdr = s7_cdr(struct_alist);
 #if defined(DEBUG_TRACE)
-                if (debug)
+                if (debug_mibl_crawl)
                     log_debug("structs_alist_cdr: %s",
                        TO_STR(structs_alist_cdr));
 #endif
@@ -1701,7 +1701,7 @@ LOCAL void _update_pkg_structs(s7_pointer pkg_tbl,
                     = s7_set_cdr(struct_alist, msrcs);
                 (void)new_structs_alist;
 #if defined(DEBUG_TRACE)
-                if (debug) {
+                if (debug_mibl_crawl) {
                     log_debug("new_structs_alist: %s",
                               TO_STR(new_structs_alist));
                     log_debug("new pkgs: %s", TO_STR(pkg_alist));
@@ -1720,7 +1720,7 @@ LOCAL void _update_pkg_mll_files(s7_pointer pkg_tbl,
     if (trace) {
         log_trace(RED "_update_pkg_mll_files" CRESET);
     }
-    if (debug) {
+    if (debug_mibl_crawl) {
         log_debug("pkg_name: %s", pkg_name);
         /* log_debug("pkg_tbl: %s", TO_STR(pkg_tbl)); */
     }
@@ -1728,15 +1728,15 @@ LOCAL void _update_pkg_mll_files(s7_pointer pkg_tbl,
     s7_pointer pkg_key = make_pkg_key(pkg_name);
     //s7_make_string(s7, pkg_name);
 #if defined(DEBUG_TRACE)
-    if (debug) log_debug("pkg_key: %s", TO_STR(pkg_key));
+    if (debug_mibl_crawl) log_debug("pkg_key: %s", TO_STR(pkg_key));
 #endif
 
     s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
-    /* if (debug) log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
+    /* if (debug_mibl_crawl) log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
 
     if (pkg_alist == s7_f(s7)) {
 #if defined(DEBUG_TRACE)
-        if (debug)
+        if (debug_mibl_crawl)
             log_debug("no dunefile in this directory");
 #endif
     } else {
@@ -1751,7 +1751,7 @@ LOCAL void _update_pkg_mll_files(s7_pointer pkg_tbl,
         /* = s7_call(s7, assoc_in, */
         /*           s7_list(s7, 2, modules_kw, pkg_alist)); */
 #if defined(DEBUG_TRACE)
-        if (debug) log_debug("ocamllex_alist %s", TO_STR(ocamllex_alist));
+        if (debug_mibl_crawl) log_debug("ocamllex_alist %s", TO_STR(ocamllex_alist));
 #endif
 
         s7_pointer mll_file = s7_make_symbol(s7, fname);
@@ -1759,12 +1759,12 @@ LOCAL void _update_pkg_mll_files(s7_pointer pkg_tbl,
         /* s7_pointer mll_assoc = s7_list(s7, 2, mname_sym, mll_file); */
         s7_pointer mll_assoc = s7_cons(s7, mname_sym, mll_file);
 #if defined(DEBUG_TRACE)
-        if (debug) log_debug("mll_assoc: %s", TO_STR(mll_assoc));
+        if (debug_mibl_crawl) log_debug("mll_assoc: %s", TO_STR(mll_assoc));
 #endif
 
         if (ocamllex_alist == s7_f(s7)) {
 #if defined(DEBUG_TRACE)
-            if (debug)
+            if (debug_mibl_crawl)
                 log_debug("INITIALIZING :lex field");
 #endif
 
@@ -1774,20 +1774,20 @@ LOCAL void _update_pkg_mll_files(s7_pointer pkg_tbl,
             s7_pointer ocamllex_assoc = s7_list(s7, 2,
                                             mll_kw, statics_assoc);
 #if defined(DEBUG_TRACE)
-            if (debug) log_debug("ocamllex_assoc: %s", TO_STR(ocamllex_assoc));
+            if (debug_mibl_crawl) log_debug("ocamllex_assoc: %s", TO_STR(ocamllex_assoc));
 #endif
 
             s7_pointer new_pkg_alist = s7_append(s7, pkg_alist,
                                                  s7_list(s7, 1,
                                                          ocamllex_assoc));
-            /* if (debug) */
+            /* if (debug_mibl_crawl) */
             /*     log_debug("pkg_alist: %s", */
             /*            TO_STR(new_pkg_alist)); */
 
             s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg_alist);
         } else {
 #if defined(DEBUG_TRACE)
-            if (debug) {
+            if (debug_mibl_crawl) {
                 log_debug("UPDATING :signatures");
                 log_debug("ocamllex_alist: %s", TO_STR(ocamllex_alist));
                 log_debug("mname_sym: %s", TO_STR(mname_sym));
@@ -1799,7 +1799,7 @@ LOCAL void _update_pkg_mll_files(s7_pointer pkg_tbl,
                                          static_kw,
                                          mname_sym);
 #if defined(DEBUG_TRACE)
-            if (debug) {
+            if (debug_mibl_crawl) {
                 /* log_debug("assoc-in: %s", TO_STR(assoc_in)); */
                 log_debug("keypath: %s", TO_STR(keypath));
                 /* log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
@@ -1812,24 +1812,24 @@ LOCAL void _update_pkg_mll_files(s7_pointer pkg_tbl,
                                                    pkg_alist));
 
 #if defined(DEBUG_TRACE)
-            if (debug) {
+            if (debug_mibl_crawl) {
                 log_debug("mll_alist: %s", TO_STR(mll_alist));
             }
 #endif
             if (mll_alist == s7_f(s7)) {
                 /* new */
 #if defined(DEBUG_TRACE)
-                if (debug)
+                if (debug_mibl_crawl)
                     log_debug(RED "ADDING" CRESET " sig %s to %s",
                               TO_STR(mname_sym), TO_STR(ocamllex_alist));
-                if (debug) log_debug("ocamllex_alist: %s",
+                if (debug_mibl_crawl) log_debug("ocamllex_alist: %s",
                                      s7_object_to_c_string(s7,
                                                            ocamllex_alist));
 #endif
 
                 s7_pointer ocamllex_alist_cdr = s7_cdr(ocamllex_alist);
 #if defined(DEBUG_TRACE)
-                if (debug) {
+                if (debug_mibl_crawl) {
                     log_debug("ocamllex_alist_cdr: %s",
                        TO_STR(ocamllex_alist_cdr));
                 }
@@ -1837,7 +1837,7 @@ LOCAL void _update_pkg_mll_files(s7_pointer pkg_tbl,
 
                 /* s7_pointer mll_assoc = */
                 /*     s7_list(s7, 1, s7_list(s7, 2, mname_sym, mll_file)); //mll_assoc)); */
-                /* if (debug) log_debug("new mll_assoc: %s", */
+                /* if (debug_mibl_crawl) log_debug("new mll_assoc: %s", */
                 /*                      TO_STR(mll_assoc)); */
 
                 s7_pointer new_ocamllex_alist_cdr =
@@ -1846,7 +1846,7 @@ LOCAL void _update_pkg_mll_files(s7_pointer pkg_tbl,
 
 #if defined(DEBUG_TRACE)
 
-                if (debug)
+                if (debug_mibl_crawl)
                     log_debug("new_ocamllex_alist_cdr: %s",
                        TO_STR(new_ocamllex_alist_cdr));
 #endif
@@ -1855,7 +1855,7 @@ LOCAL void _update_pkg_mll_files(s7_pointer pkg_tbl,
                     = s7_set_cdr(ocamllex_alist, new_ocamllex_alist_cdr);
                 (void)new_ocamllex_alist;
 #if defined(DEBUG_TRACE)
-                if (debug) {
+                if (debug_mibl_crawl) {
                     log_debug("new_ocamllex_alist: %s",
                               TO_STR(new_ocamllex_alist));
                 }
@@ -1863,13 +1863,13 @@ LOCAL void _update_pkg_mll_files(s7_pointer pkg_tbl,
             } else {
                 /* update */
 #if defined(DEBUG_TRACE)
-                if (debug) log_debug(RED "UPDATING" CRESET " mll_alist: %s",
+                if (debug_mibl_crawl) log_debug(RED "UPDATING" CRESET " mll_alist: %s",
                                      TO_STR(mll_alist));
 #endif
 
                 s7_pointer ocamllex_alist_cdr = s7_cdr(mll_alist);
 #if defined(DEBUG_TRACE)
-                if (debug)
+                if (debug_mibl_crawl)
                     log_debug("ocamllex_alist_cdr: %s",
                        TO_STR(ocamllex_alist_cdr));
 #endif
@@ -1882,7 +1882,7 @@ LOCAL void _update_pkg_mll_files(s7_pointer pkg_tbl,
                     = s7_set_cdr(mll_alist, msrcs);
                 (void)new_ocamllex_alist;
 #if defined(DEBUG_TRACE)
-                if (debug) {
+                if (debug_mibl_crawl) {
                     log_debug("new_ocamllex_alist: %s",
                               TO_STR(new_ocamllex_alist));
                     log_debug("new pkgs: %s", TO_STR(pkg_alist));
@@ -1972,7 +1972,7 @@ LOCAL void _update_pkg_mllib_files(s7_pointer pkg_tbl,
     if (trace) {
         log_trace(RED "_update_pkg_mllib_files" CRESET);
     }
-    if (debug) {
+    if (debug_mibl_crawl) {
         log_debug("pkg_name: %s", pkg_name);
         /* log_debug("pkg_tbl: %s", TO_STR(pkg_tbl)); */
     }
@@ -1980,11 +1980,11 @@ LOCAL void _update_pkg_mllib_files(s7_pointer pkg_tbl,
     s7_pointer pkg_key = make_pkg_key(pkg_name);
     //s7_make_string(s7, pkg_name);
 #if defined(DEBUG_TRACE)
-    if (debug) log_debug("pkg_key: %s", TO_STR(pkg_key));
+    if (debug_mibl_crawl) log_debug("pkg_key: %s", TO_STR(pkg_key));
 #endif
 
     s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
-    if (debug) log_debug("pkg_alist: %s", TO_STR(pkg_alist));
+    if (debug_mibl_crawl) log_debug("pkg_alist: %s", TO_STR(pkg_alist));
 
     if (pkg_alist == s7_f(s7)) {
         log_error("no pkg alist found for %s, %s", pkg_name, mname);
@@ -2001,7 +2001,7 @@ LOCAL void _update_pkg_mllib_files(s7_pointer pkg_tbl,
         /* = s7_call(s7, assoc_in, */
         /*           s7_list(s7, 2, modules_kw, pkg_alist)); */
 #if defined(DEBUG_TRACE)
-        if (debug) log_debug("mllibs_alist %s", TO_STR(mllibs_alist));
+        if (debug_mibl_crawl) log_debug("mllibs_alist %s", TO_STR(mllibs_alist));
 #endif
 
         s7_pointer mllib_file = s7_make_symbol(s7, fname);
@@ -2009,12 +2009,12 @@ LOCAL void _update_pkg_mllib_files(s7_pointer pkg_tbl,
         /* s7_pointer mllib_assoc = s7_list(s7, 2, mname_sym, mllib_file); */
         s7_pointer mllib_assoc = s7_cons(s7, mname_sym, mllib_file);
 #if defined(DEBUG_TRACE)
-        if (debug) log_debug("mllib_assoc: %s", TO_STR(mllib_assoc));
+        if (debug_mibl_crawl) log_debug("mllib_assoc: %s", TO_STR(mllib_assoc));
 #endif
 
         if (mllibs_alist == s7_f(s7)) {
 #if defined(DEBUG_TRACE)
-            if (debug)
+            if (debug_mibl_crawl)
                 log_debug("INITIALIZING :lex field");
 #endif
 
@@ -2024,20 +2024,20 @@ LOCAL void _update_pkg_mllib_files(s7_pointer pkg_tbl,
             s7_pointer mllib_assoc = s7_list(s7, 2,
                                             mllib_kw, statics_assoc);
 #if defined(DEBUG_TRACE)
-            if (debug) log_debug("mllib_assoc: %s", TO_STR(mllib_assoc));
+            if (debug_mibl_crawl) log_debug("mllib_assoc: %s", TO_STR(mllib_assoc));
 #endif
 
             s7_pointer new_pkg_alist = s7_append(s7, pkg_alist,
                                                  s7_list(s7, 1,
                                                          mllib_assoc));
-            /* if (debug) */
+            /* if (debug_mibl_crawl) */
             /*     log_debug("pkg_alist: %s", */
             /*            TO_STR(new_pkg_alist)); */
 
             s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg_alist);
         } else {
 #if defined(DEBUG_TRACE)
-            if (debug) {
+            if (debug_mibl_crawl) {
                 log_debug("UPDATING :signatures");
                 log_debug("mllibs_alist: %s", TO_STR(mllibs_alist));
                 log_debug("mname_sym: %s", TO_STR(mname_sym));
@@ -2049,7 +2049,7 @@ LOCAL void _update_pkg_mllib_files(s7_pointer pkg_tbl,
                                          static_kw,
                                          mname_sym);
 #if defined(DEBUG_TRACE)
-            if (debug) {
+            if (debug_mibl_crawl) {
                 /* log_debug("assoc-in: %s", TO_STR(assoc_in)); */
                 log_debug("keypath: %s", TO_STR(keypath));
                 /* log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
@@ -2062,24 +2062,24 @@ LOCAL void _update_pkg_mllib_files(s7_pointer pkg_tbl,
                                                      pkg_alist));
 
 #if defined(DEBUG_TRACE)
-            if (debug) {
+            if (debug_mibl_crawl) {
                 log_debug("mllib_alist: %s", TO_STR(mllib_alist));
             }
 #endif
             if (mllib_alist == s7_f(s7)) {
                 /* new */
 #if defined(DEBUG_TRACE)
-                if (debug)
+                if (debug_mibl_crawl)
                     log_debug(RED "ADDING" CRESET " mllib %s to %s",
                               TO_STR(mname_sym), TO_STR(mllibs_alist));
-                if (debug) log_debug("mllibs_alist: %s",
+                if (debug_mibl_crawl) log_debug("mllibs_alist: %s",
                                      s7_object_to_c_string(s7,
                                                            mllibs_alist));
 #endif
 
                 s7_pointer mllibs_alist_cdr = s7_cdr(mllibs_alist);
 #if defined(DEBUG_TRACE)
-                if (debug) {
+                if (debug_mibl_crawl) {
                     log_debug("mllibs_alist_cdr: %s",
                        TO_STR(mllibs_alist_cdr));
                 }
@@ -2087,7 +2087,7 @@ LOCAL void _update_pkg_mllib_files(s7_pointer pkg_tbl,
 
                 /* s7_pointer mllib_assoc = */
                 /*     s7_list(s7, 1, s7_list(s7, 2, mname_sym, mllib_file)); //mllib_assoc)); */
-                /* if (debug) log_debug("new mllib_assoc: %s", */
+                /* if (debug_mibl_crawl) log_debug("new mllib_assoc: %s", */
                 /*                      TO_STR(mllib_assoc)); */
 
                 s7_pointer new_mllibs_alist_cdr =
@@ -2096,7 +2096,7 @@ LOCAL void _update_pkg_mllib_files(s7_pointer pkg_tbl,
 
 #if defined(DEBUG_TRACE)
 
-                if (debug)
+                if (debug_mibl_crawl)
                     log_debug("new_mllibs_alist_cdr: %s",
                        TO_STR(new_mllibs_alist_cdr));
 #endif
@@ -2105,7 +2105,7 @@ LOCAL void _update_pkg_mllib_files(s7_pointer pkg_tbl,
                     = s7_set_cdr(mllibs_alist, new_mllibs_alist_cdr);
                 (void)new_mllibs_alist;
 #if defined(DEBUG_TRACE)
-                if (debug) {
+                if (debug_mibl_crawl) {
                     log_debug("new_mllibs_alist: %s",
                               TO_STR(new_mllibs_alist));
                 }
@@ -2113,13 +2113,13 @@ LOCAL void _update_pkg_mllib_files(s7_pointer pkg_tbl,
             } else {
                 /* update */
 #if defined(DEBUG_TRACE)
-                if (debug) log_debug(RED "UPDATING" CRESET " mllib_alist: %s",
+                if (debug_mibl_crawl) log_debug(RED "UPDATING" CRESET " mllib_alist: %s",
                                      TO_STR(mllib_alist));
 #endif
 
                 s7_pointer mllib_alist_cdr = s7_cdr(mllib_alist);
 #if defined(DEBUG_TRACE)
-                if (debug)
+                if (debug_mibl_crawl)
                     log_debug("mllib_alist_cdr: %s",
                        TO_STR(mllib_alist_cdr));
 #endif
@@ -2132,7 +2132,7 @@ LOCAL void _update_pkg_mllib_files(s7_pointer pkg_tbl,
                     = s7_set_cdr(mllib_alist, msrcs);
                 (void)new_mllib_alist;
 #if defined(DEBUG_TRACE)
-                if (debug) {
+                if (debug_mibl_crawl) {
                     log_debug("new_mllib_alist: %s",
                               TO_STR(new_mllib_alist));
                     log_debug("new pkgs: %s", TO_STR(pkg_alist));
@@ -2172,7 +2172,7 @@ LOCAL void _update_pkg_mly_files(s7_pointer pkg_tbl,
     if (trace) {
         log_trace(RED "_UPDATE_PKG_MLY_FILES" CRESET);
     }
-    if (debug) {
+    if (debug_mibl_crawl) {
         log_debug("pkg_name: %s", pkg_name);
         /* log_debug("pkg_tbl: %s", TO_STR(pkg_tbl)); */
     }
@@ -2180,15 +2180,15 @@ LOCAL void _update_pkg_mly_files(s7_pointer pkg_tbl,
     s7_pointer pkg_key = make_pkg_key(pkg_name);
     //s7_make_string(s7, pkg_name);
 #if defined(DEBUG_TRACE)
-    if (debug) log_debug("pkg_key: %s", TO_STR(pkg_key));
+    if (debug_mibl_crawl) log_debug("pkg_key: %s", TO_STR(pkg_key));
 #endif
 
     s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
-    /* if (debug) log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
+    /* if (debug_mibl_crawl) log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
 
     if (pkg_alist == s7_f(s7)) {
 #if defined(DEBUG_TRACE)
-        if (debug)
+        if (debug_mibl_crawl)
             log_debug("no dunefile in this directory");
 #endif
         /* return ??? */
@@ -2204,7 +2204,7 @@ LOCAL void _update_pkg_mly_files(s7_pointer pkg_tbl,
         /* = s7_call(s7, assoc_in, */
         /*           s7_list(s7, 2, modules_kw, pkg_alist)); */
 #if defined(DEBUG_TRACE)
-        if (debug) log_debug("ocamlyacc_alist %s", TO_STR(ocamlyacc_alist));
+        if (debug_mibl_crawl) log_debug("ocamlyacc_alist %s", TO_STR(ocamlyacc_alist));
 #endif
 
         s7_pointer mly_file = s7_make_symbol(s7, fname);
@@ -2212,12 +2212,12 @@ LOCAL void _update_pkg_mly_files(s7_pointer pkg_tbl,
         /* s7_pointer mly_assoc = s7_list(s7, 2, mname_sym, mly_file); */
         s7_pointer mly_assoc = s7_cons(s7, mname_sym, mly_file);
 #if defined(DEBUG_TRACE)
-        if (debug) log_debug("mly_assoc: %s", TO_STR(mly_assoc));
+        if (debug_mibl_crawl) log_debug("mly_assoc: %s", TO_STR(mly_assoc));
 #endif
 
         if (ocamlyacc_alist == s7_f(s7)) {
 #if defined(DEBUG_TRACE)
-            if (debug)
+            if (debug_mibl_crawl)
                 log_debug("INITIALIZING :yacc field");
 #endif
 
@@ -2227,20 +2227,20 @@ LOCAL void _update_pkg_mly_files(s7_pointer pkg_tbl,
             s7_pointer ocamlyacc_assoc = s7_list(s7, 2,
                                             mly_kw, statics_assoc);
 #if defined(DEBUG_TRACE)
-            if (debug) log_debug("ocamlyacc_assoc: %s", TO_STR(ocamlyacc_assoc));
+            if (debug_mibl_crawl) log_debug("ocamlyacc_assoc: %s", TO_STR(ocamlyacc_assoc));
 #endif
 
             s7_pointer new_pkg_alist = s7_append(s7, pkg_alist,
                                                  s7_list(s7, 1,
                                                          ocamlyacc_assoc));
-            /* if (debug) */
+            /* if (debug_mibl_crawl) */
             /*     log_debug("pkg_alist: %s", */
             /*            TO_STR(new_pkg_alist)); */
 
             s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg_alist);
         } else {
 #if defined(DEBUG_TRACE)
-            if (debug) {
+            if (debug_mibl_crawl) {
                 log_debug("UPDATING :signatures");
                 log_debug("ocamlyacc_alist: %s", TO_STR(ocamlyacc_alist));
                 log_debug("mname_sym: %s", TO_STR(mname_sym));
@@ -2252,7 +2252,7 @@ LOCAL void _update_pkg_mly_files(s7_pointer pkg_tbl,
                                          static_kw,
                                          mname_sym);
 #if defined(DEBUG_TRACE)
-            if (debug) {
+            if (debug_mibl_crawl) {
                 /* log_debug("assoc-in: %s", TO_STR(assoc_in)); */
                 log_debug("keypath: %s", TO_STR(keypath));
                 /* log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
@@ -2265,24 +2265,24 @@ LOCAL void _update_pkg_mly_files(s7_pointer pkg_tbl,
                                                    pkg_alist));
 
 #if defined(DEBUG_TRACE)
-            if (debug) {
+            if (debug_mibl_crawl) {
                 log_debug("mly_alist: %s", TO_STR(mly_alist));
             }
 #endif
             if (mly_alist == s7_f(s7)) {
                 /* new */
 #if defined(DEBUG_TRACE)
-                if (debug)
+                if (debug_mibl_crawl)
                     log_debug(RED "ADDING" CRESET " sig %s to %s",
                               TO_STR(mname_sym), TO_STR(ocamlyacc_alist));
-                if (debug) log_debug("ocamlyacc_alist: %s",
+                if (debug_mibl_crawl) log_debug("ocamlyacc_alist: %s",
                                      s7_object_to_c_string(s7,
                                                            ocamlyacc_alist));
 #endif
 
                 s7_pointer ocamlyacc_alist_cdr = s7_cdr(ocamlyacc_alist);
 #if defined(DEBUG_TRACE)
-                if (debug) {
+                if (debug_mibl_crawl) {
                     log_debug("ocamlyacc_alist_cdr: %s",
                        TO_STR(ocamlyacc_alist_cdr));
                 }
@@ -2290,7 +2290,7 @@ LOCAL void _update_pkg_mly_files(s7_pointer pkg_tbl,
 
                 /* s7_pointer mly_assoc = */
                 /*     s7_list(s7, 1, s7_list(s7, 2, mname_sym, mly_file)); //mly_assoc)); */
-                /* if (debug) log_debug("new mly_assoc: %s", */
+                /* if (debug_mibl_crawl) log_debug("new mly_assoc: %s", */
                 /*                      TO_STR(mly_assoc)); */
 
                 s7_pointer new_ocamlyacc_alist_cdr =
@@ -2298,7 +2298,7 @@ LOCAL void _update_pkg_mly_files(s7_pointer pkg_tbl,
                               s7_list(s7, 1, mly_assoc));
 
 #if defined(DEBUG_TRACE)
-                if (debug)
+                if (debug_mibl_crawl)
                     log_debug("new_ocamlyacc_alist_cdr: %s",
                        TO_STR(new_ocamlyacc_alist_cdr));
 #endif
@@ -2307,7 +2307,7 @@ LOCAL void _update_pkg_mly_files(s7_pointer pkg_tbl,
                     = s7_set_cdr(ocamlyacc_alist, new_ocamlyacc_alist_cdr);
                 (void)new_ocamlyacc_alist;
 #if defined(DEBUG_TRACE)
-                if (debug) {
+                if (debug_mibl_crawl) {
                     log_debug("new_ocamlyacc_alist: %s",
                               TO_STR(new_ocamlyacc_alist));
                 }
@@ -2315,13 +2315,13 @@ LOCAL void _update_pkg_mly_files(s7_pointer pkg_tbl,
             } else {
                 /* update */
 #if defined(DEBUG_TRACE)
-                if (debug) log_debug(RED "UPDATING" CRESET " mly_alist: %s",
+                if (debug_mibl_crawl) log_debug(RED "UPDATING" CRESET " mly_alist: %s",
                                      TO_STR(mly_alist));
 #endif
 
                 s7_pointer ocamlyacc_alist_cdr = s7_cdr(mly_alist);
 #if defined(DEBUG_TRACE)
-                if (debug)
+                if (debug_mibl_crawl)
                     log_debug("ocamlyacc_alist_cdr: %s",
                        TO_STR(ocamlyacc_alist_cdr));
 #endif
@@ -2334,7 +2334,7 @@ LOCAL void _update_pkg_mly_files(s7_pointer pkg_tbl,
                     = s7_set_cdr(mly_alist, msrcs);
                 (void)new_ocamlyacc_alist;
 #if defined(DEBUG_TRACE)
-                if (debug) {
+                if (debug_mibl_crawl) {
                     log_debug("new_ocamlyacc_alist: %s",
                               TO_STR(new_ocamlyacc_alist));
                     log_debug("new pkgs: %s", TO_STR(pkg_alist));
@@ -2395,7 +2395,7 @@ LOCAL void _update_pkg_cppo_files(s7_pointer pkg_tbl,
     if (verbose) {
         log_trace(RED "_update_pkg_cppo_files" CRESET);
     }
-    if (debug) {
+    if (debug_mibl_crawl) {
         log_debug("pkg_name: %s", pkg_name);
         /* log_debug("pkg_tbl: %s", TO_STR(pkg_tbl)); */
     }
@@ -2403,15 +2403,15 @@ LOCAL void _update_pkg_cppo_files(s7_pointer pkg_tbl,
     s7_pointer pkg_key = make_pkg_key(pkg_name);
     //s7_make_string(s7, pkg_name);
 #if defined(DEBUG_TRACE)
-    if (debug) log_debug("pkg_key: %s", TO_STR(pkg_key));
+    if (debug_mibl_crawl) log_debug("pkg_key: %s", TO_STR(pkg_key));
 #endif
 
     s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
-    /* if (debug) log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
+    /* if (debug_mibl_crawl) log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
 
     if (pkg_alist == s7_f(s7)) {
 #if defined(DEBUG_TRACE)
-        if (debug)
+        if (debug_mibl_crawl)
             log_debug("no dunefile in this directory");
 #endif
     } else {
@@ -2426,7 +2426,7 @@ LOCAL void _update_pkg_cppo_files(s7_pointer pkg_tbl,
         /* = s7_call(s7, assoc_in, */
         /*           s7_list(s7, 2, modules_kw, pkg_alist)); */
 #if defined(DEBUG_TRACE)
-        if (debug) log_debug("ocppo_alist %s", TO_STR(ocppo_alist));
+        if (debug_mibl_crawl) log_debug("ocppo_alist %s", TO_STR(ocppo_alist));
 #endif
 
         s7_pointer cppo_file = s7_make_symbol(s7, fname);
@@ -2434,12 +2434,12 @@ LOCAL void _update_pkg_cppo_files(s7_pointer pkg_tbl,
         s7_pointer cppo_assoc = s7_list(s7, 2, mname_sym, cppo_file);
         /* s7_pointer cppo_assoc = s7_cons(s7, mname_sym, cppo_file); */
 #if defined(DEBUG_TRACE)
-        if (debug) log_debug("cppo_assoc: %s", TO_STR(cppo_assoc));
+        if (debug_mibl_crawl) log_debug("cppo_assoc: %s", TO_STR(cppo_assoc));
 #endif
 
         if (ocppo_alist == s7_f(s7)) {
 #if defined(DEBUG_TRACE)
-            if (debug)
+            if (debug_mibl_crawl)
                 log_debug("INITIALIZING :ocppo field");
 #endif
 
@@ -2449,20 +2449,20 @@ LOCAL void _update_pkg_cppo_files(s7_pointer pkg_tbl,
             s7_pointer ocppo_assoc = s7_list(s7, 2,
                                             cppo_kw, statics_assoc);
 #if defined(DEBUG_TRACE)
-            if (debug) log_debug("ocppo_assoc: %s", TO_STR(ocppo_assoc));
+            if (debug_mibl_crawl) log_debug("ocppo_assoc: %s", TO_STR(ocppo_assoc));
 #endif
 
             s7_pointer new_pkg_alist = s7_append(s7, pkg_alist,
                                                  s7_list(s7, 1,
                                                          ocppo_assoc));
-            /* if (debug) */
+            /* if (debug_mibl_crawl) */
             /*     log_debug("pkg_alist: %s", */
             /*            TO_STR(new_pkg_alist)); */
 
             s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg_alist);
         } else {
 #if defined(DEBUG_TRACE)
-            if (debug) {
+            if (debug_mibl_crawl) {
                 log_debug("UPDATING :signatures");
                 log_debug("ocppo_alist: %s", TO_STR(ocppo_alist));
                 log_debug("mname_sym: %s", TO_STR(mname_sym));
@@ -2474,7 +2474,7 @@ LOCAL void _update_pkg_cppo_files(s7_pointer pkg_tbl,
                                          static_kw,
                                          mname_sym);
 #if defined(DEBUG_TRACE)
-            if (debug) {
+            if (debug_mibl_crawl) {
                 /* log_debug("assoc-in: %s", TO_STR(assoc_in)); */
                 log_debug("keypath: %s", TO_STR(keypath));
                 /* log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
@@ -2487,24 +2487,24 @@ LOCAL void _update_pkg_cppo_files(s7_pointer pkg_tbl,
                                                    pkg_alist));
 
 #if defined(DEBUG_TRACE)
-            if (debug) {
+            if (debug_mibl_crawl) {
                 log_debug("cppo_alist: %s", TO_STR(cppo_alist));
             }
 #endif
             if (cppo_alist == s7_f(s7)) {
                 /* new */
 #if defined(DEBUG_TRACE)
-                if (debug)
+                if (debug_mibl_crawl)
                     log_debug(RED "ADDING" CRESET " sig %s to %s",
                               TO_STR(mname_sym), TO_STR(ocppo_alist));
-                if (debug) log_debug("ocppo_alist: %s",
+                if (debug_mibl_crawl) log_debug("ocppo_alist: %s",
                                      s7_object_to_c_string(s7,
                                                            ocppo_alist));
 #endif
 
                 s7_pointer ocppo_alist_cdr = s7_cdr(ocppo_alist);
 #if defined(DEBUG_TRACE)
-                if (debug) {
+                if (debug_mibl_crawl) {
                     log_debug("ocppo_alist_cdr: %s",
                        TO_STR(ocppo_alist_cdr));
                 }
@@ -2512,7 +2512,7 @@ LOCAL void _update_pkg_cppo_files(s7_pointer pkg_tbl,
 
                 /* s7_pointer cppo_assoc = */
                 /*     s7_list(s7, 1, s7_list(s7, 2, mname_sym, cppo_file)); //cppo_assoc)); */
-                /* if (debug) log_debug("new cppo_assoc: %s", */
+                /* if (debug_mibl_crawl) log_debug("new cppo_assoc: %s", */
                 /*                      TO_STR(cppo_assoc)); */
 
                 s7_pointer new_ocppo_alist_cdr =
@@ -2521,7 +2521,7 @@ LOCAL void _update_pkg_cppo_files(s7_pointer pkg_tbl,
 
 #if defined(DEBUG_TRACE)
 
-                if (debug)
+                if (debug_mibl_crawl)
                     log_debug("new_ocppo_alist_cdr: %s",
                        TO_STR(new_ocppo_alist_cdr));
 #endif
@@ -2530,7 +2530,7 @@ LOCAL void _update_pkg_cppo_files(s7_pointer pkg_tbl,
                     = s7_set_cdr(ocppo_alist, new_ocppo_alist_cdr);
                 (void)new_ocppo_alist;
 #if defined(DEBUG_TRACE)
-                if (debug) {
+                if (debug_mibl_crawl) {
                     log_debug("new_ocppo_alist: %s",
                               TO_STR(new_ocppo_alist));
                 }
@@ -2538,13 +2538,13 @@ LOCAL void _update_pkg_cppo_files(s7_pointer pkg_tbl,
             } else {
                 /* update */
 #if defined(DEBUG_TRACE)
-                if (debug) log_debug(RED "UPDATING" CRESET " cppo_alist: %s",
+                if (debug_mibl_crawl) log_debug(RED "UPDATING" CRESET " cppo_alist: %s",
                                      TO_STR(cppo_alist));
 #endif
 
                 s7_pointer ocppo_alist_cdr = s7_cdr(cppo_alist);
 #if defined(DEBUG_TRACE)
-                if (debug)
+                if (debug_mibl_crawl)
                     log_debug("ocppo_alist_cdr: %s", TO_STR(ocppo_alist_cdr));
                     log_debug("cppo_file: %s", TO_STR(cppo_file));
 #endif
@@ -2558,7 +2558,7 @@ LOCAL void _update_pkg_cppo_files(s7_pointer pkg_tbl,
                     = s7_set_cdr(cppo_alist, msrcs);
                 (void)new_ocppo_alist;
 #if defined(DEBUG_TRACE)
-                if (debug) {
+                if (debug_mibl_crawl) {
                     log_debug("new_ocppo_alist: %s",
                               TO_STR(new_ocppo_alist));
                     log_debug("new pkgs: %s", TO_STR(pkg_alist));
@@ -2821,7 +2821,7 @@ LOCAL void _handle_ml_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 LOCAL void _handle_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 {
 #if defined(DEBUG_TRACE)
-    if (debug)
+    if (debug_mibl_crawl)
         log_debug("_handle_file %s, %s", ftsentry->fts_name, ext);
 #endif
     /* printf("    pkg: %s\n", dirname(ftsentry->fts_path)); */
@@ -2846,7 +2846,7 @@ LOCAL void _handle_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 LOCAL void _handle_dune_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
 {
 #if defined(DEBUG_TRACE)
-    if (debug)
+    if (debug_mibl_crawl)
         log_debug("_handle_dune_file: %s", ftsentry->fts_path);
 #endif
 
@@ -2886,14 +2886,14 @@ LOCAL void _handle_dune_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
 
         s7_pointer pkg_key = make_pkg_key(dirname(ftsentry->fts_path));
 
-        /* if (debug) log_debug("pkg tbl: %s", TO_STR(pkg_tbl)); */
+        /* if (debug_mibl_crawl) log_debug("pkg tbl: %s", TO_STR(pkg_tbl)); */
 #if defined(DEBUG_TRACE)
-        if (debug) log_debug("pkg key: %s", TO_STR(pkg_key));
+        if (debug_mibl_crawl) log_debug("pkg key: %s", TO_STR(pkg_key));
 #endif
 
         s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
 #if defined(DEBUG_TRACE)
-        if (debug)
+        if (debug_mibl_crawl)
             log_debug("pkg_alist: %s", TO_STR(pkg_alist));
 #endif
 
@@ -2916,7 +2916,7 @@ LOCAL void _handle_dune_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
                                         s7_list(s7, 1, stanzas_assoc)));
         } else {
 #if defined(DEBUG_TRACE)
-            if (debug) log_debug("setting cdr of ");
+            if (debug_mibl_crawl) log_debug("setting cdr of ");
 #endif
             s7_set_cdr(stanzas_alist, stanzas);
         }
@@ -2950,11 +2950,11 @@ LOCAL void _handle_dune_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
     /* s7_pointer pkg_key = s7_make_string(s7, dirname(ftsentry->fts_path)); */
     s7_pointer pkg_key = make_pkg_key(dirname(ftsentry->fts_path));
 
-    /* if (debug) log_debug("pkg tbl: %s", TO_STR(pkg_tbl)); */
-    /* if (debug) log_debug("pkg key: %s", TO_STR(pkg_key)); */
+    /* if (debug_mibl_crawl) log_debug("pkg tbl: %s", TO_STR(pkg_tbl)); */
+    /* if (debug_mibl_crawl) log_debug("pkg key: %s", TO_STR(pkg_key)); */
 
     s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
-    /* if (debug) */
+    /* if (debug_mibl_crawl) */
     /*     log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
 
     s7_pointer assoc = _load_assoc();
@@ -2973,18 +2973,18 @@ LOCAL void _handle_dune_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
                           s7_append(s7, pkg_alist,
                                     s7_list(s7, 1, stanzas_assoc)));
     } else {
-        /* if (debug) log_debug("setting cdr of "); */
+        /* if (debug_mibl_crawl) log_debug("setting cdr of "); */
         s7_set_cdr(stanzas_alist, stanzas);
     }
 
-    /* if (debug) */
+    /* if (debug_mibl_crawl) */
     /*     log_debug("updated pkg-tbl: %s", TO_STR(pkg_tbl)); */
 }
 
 LOCAL void _handle_dune_project_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
 {
 #if defined(DEBUG_TRACE)
-    if (debug)
+    if (debug_mibl_crawl)
         log_debug("_handle_dune_project_file: %s", ftsentry->fts_path);
 #endif
 
@@ -3008,12 +3008,12 @@ LOCAL void _handle_dune_project_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
     s7_pointer pkg_key = make_pkg_key(dirname(ftsentry->fts_path));
     // s7_make_string(s7, dirname(ftsentry->fts_path));
 #if defined(DEBUG_TRACE)
-    if (debug)
+    if (debug_mibl_crawl)
         log_debug("pkg_key: %s", TO_STR(pkg_key));
 #endif
 
     s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
-    /* if (debug) */
+    /* if (debug_mibl_crawl) */
     /*     log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
 
     if (pkg_alist == s7_f(s7)) {
@@ -3029,7 +3029,7 @@ LOCAL void _handle_dune_project_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
                           s7_append(s7, pkg_alist,
                                     s7_list(s7, 1,
                                             dune_project_assoc)));
-        /* if (debug) */
+        /* if (debug_mibl_crawl) */
         /*     log_debug("updated pkg-tbl: %s", TO_STR(pkg_tbl)); */
 
         /* return pkg_tbl; */
@@ -3039,19 +3039,19 @@ LOCAL void _handle_dune_project_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
 LOCAL void _update_opam_files(s7_pointer pkg_tbl, FTSENT *ftsentry) //, char *ext)
 {
 #if defined(DEBUG_TRACE)
-    if (debug)
+    if (debug_mibl_crawl)
         log_debug("_update_opam_files: %s", //, ext: %s",
                   ftsentry->fts_name); //, ext);
 #endif
 
     /* if (_exclusions(ftsentry, ext)) { */
-    /*     if (debug) */
+    /*     if (debug_mibl_crawl) */
     /*         log_warn("excluding %s", ftsentry->fts_name); */
     /*     return; */
     /* } */
 
     /* s7_pointer pkg_tbl = s7_name_to_value(s7, "pkg-tbl"); */
-    /* if (debug) */
+    /* if (debug_mibl_crawl) */
     /*     log_debug("pkg_tbl: %s", TO_STR(pkg_tbl)); */
 
     char *pkg_name = dirname(ftsentry->fts_path);
@@ -3059,13 +3059,13 @@ LOCAL void _update_opam_files(s7_pointer pkg_tbl, FTSENT *ftsentry) //, char *ex
     s7_pointer pkg_key = make_pkg_key(pkg_name);
     //s7_make_string(s7, pkg_name);
     s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
-    /* if (debug) */
+    /* if (debug_mibl_crawl) */
     /*     log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
 
     if (pkg_alist == s7_f(s7)) {
         // FIXME: should not happen, we always add a pkg entry first
 #if defined(DEBUG_TRACE)
-        if (debug)
+        if (debug_mibl_crawl)
             log_debug("no entry for this pkg");
 #endif
     } else {
@@ -3074,12 +3074,12 @@ LOCAL void _update_opam_files(s7_pointer pkg_tbl, FTSENT *ftsentry) //, char *ex
         s7_pointer opam_list
             = s7_call(s7, assoc, s7_list(s7, 2, opam_kw, pkg_alist));
 #if defined(DEBUG_TRACE)
-        if (debug) log_debug("opam_list %s", TO_STR(opam_list));
+        if (debug_mibl_crawl) log_debug("opam_list %s", TO_STR(opam_list));
 #endif
 
         if (opam_list == s7_f(s7)) {
 #if defined(DEBUG_TRACE)
-            if (debug)
+            if (debug_mibl_crawl)
                 log_debug("adding :opam list to pkg");
 #endif
 
@@ -3089,7 +3089,7 @@ LOCAL void _update_opam_files(s7_pointer pkg_tbl, FTSENT *ftsentry) //, char *ex
                                 opam_kw,
                                 s7_make_string(s7, ftsentry->fts_name)));
 #if defined(DEBUG_TRACE)
-            if (debug)
+            if (debug_mibl_crawl)
                 log_debug("file_list: %s", TO_STR(file_list));
 #endif
 
@@ -3097,7 +3097,7 @@ LOCAL void _update_opam_files(s7_pointer pkg_tbl, FTSENT *ftsentry) //, char *ex
                                            pkg_alist,
                                            file_list);
 #if defined(DEBUG_TRACE)
-            if (debug)
+            if (debug_mibl_crawl)
                 log_debug("new pkg: %s", TO_STR(new_pkg));
 #endif
 
@@ -3105,7 +3105,7 @@ LOCAL void _update_opam_files(s7_pointer pkg_tbl, FTSENT *ftsentry) //, char *ex
 
         } else {
 #if defined(DEBUG_TRACE)
-            if (debug) {
+            if (debug_mibl_crawl) {
                 log_debug("updating :opam");
                 /* log_debug("srcs_alist: %s", */
                 /*        TO_STR(srcs_alist)); */
@@ -3199,7 +3199,7 @@ LOCAL void _handle_ocamlformat_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
 LOCAL __attribute__((unused)) void _handle_script_file(s7_pointer pkg_tbl,
                                FTSENT *ftsentry, char *ext)
 {
-    /* if (debug) */
+    /* if (debug_mibl_crawl) */
     /*     log_debug("_handle_script_file %s, %s\n", ftsentry->fts_name, ext); */
     /* printf("    pkg: %s\n", dirname(ftsentry->fts_path)); */
 
@@ -3212,7 +3212,7 @@ LOCAL __attribute__((unused)) void _handle_script_file(s7_pointer pkg_tbl,
 LOCAL void _handle_cc_file(s7_pointer pkg_tbl,
                                FTSENT *ftsentry, char *ext)
 {
-    /* if (debug) { */
+    /* if (debug_mibl_crawl) { */
     /*     log_debug("_handle_cc_file %s, %s\n", ftsentry->fts_name, ext); */
     /*     printf("    pkg: %s\n", dirname(ftsentry->fts_path)); */
     /* } */
@@ -3322,7 +3322,7 @@ s7_pointer _merge_pkg_tbls(s7_scheme *s7, s7_pointer ht1, s7_pointer ht2)
 
     while ( ! s7_is_eq(s7_eof_object(s7), _item) ) {
 #if defined(DEBUG_TRACE)
-        if (debug) {
+        if (debug_mibl_crawl) {
             /* log_info("item: %s\n", TO_STR(_item)); */
             log_info("merging key: %s", TO_STR(s7_car(_item)));
             log_info("    val: %s", TO_STR(s7_cdr(_item)));
@@ -3338,7 +3338,7 @@ s7_pointer _merge_pkg_tbls(s7_scheme *s7, s7_pointer ht1, s7_pointer ht2)
     return ht1;
 }
 
-EXPORT s7_pointer g_load_dune(s7_scheme *s7,  s7_pointer args)
+EXPORT s7_pointer g_load_project(s7_scheme *s7,  s7_pointer args)
 {
     /* arg0: rootpath to traverse */
     /* arg1: restrict bazel emit to this pkg */
@@ -3346,8 +3346,8 @@ EXPORT s7_pointer g_load_dune(s7_scheme *s7,  s7_pointer args)
     /* s7_pointer _s7_rootpath = s7_car(args); */
 
 #if defined(DEBUG_TRACE)
-    if (debug) {
-        log_debug(RED "g_load_dune" CRESET ", args: %s", TO_STR(args));
+    if (debug_mibl_crawl) {
+        log_debug(RED "g_load_project" CRESET ", args: %s", TO_STR(args));
         log_debug("build_wd: %s (=BUILD_WORKING_DIRECTORY)", build_wd);
         log_debug("launch_dir: %s", launch_dir);
         log_debug("base ws root: %s", bws_root);
@@ -3366,7 +3366,7 @@ EXPORT s7_pointer g_load_dune(s7_scheme *s7,  s7_pointer args)
 
     s7_int args_ct = s7_list_length(s7, args);
 #if defined(DEBUG_TRACE)
-    if (debug) log_debug("args ct: %d", args_ct);
+    if (debug_mibl_crawl) log_debug("args ct: %d", args_ct);
 #endif
 
     /* s7_define_variable(s7, "*dune-execlib-includes-main*", s7_t(s7)); */
@@ -3376,19 +3376,19 @@ EXPORT s7_pointer g_load_dune(s7_scheme *s7,  s7_pointer args)
     if ( s7_is_null(s7, args)
          || (args_ct == 0) ) {
 #if defined(DEBUG_TRACE)
-        if (debug) log_debug("args null or args ct 0");
+        if (debug_mibl_crawl) log_debug("args null or args ct 0");
 #endif
         rootdir = getcwd(NULL,0);
         pathdir = ".";
 
 
 #if defined(DEBUG_TRACE)
-        if (debug) log_debug("args is null");
+        if (debug_mibl_crawl) log_debug("args is null");
 #endif
         rootdir = getcwd(NULL, 0);
         pathdir = ".";
         /* s7_pointer _pkg_tbl = */
-        load_dune(rootdir, pathdir);
+        load_project(rootdir, pathdir);
         /* if (trace) { */
         log_trace("LOADED DUNE NOARG");
         /* log_trace(RED "-mibl-ws-table:" CRESET " %s\n", */
@@ -3397,7 +3397,7 @@ EXPORT s7_pointer g_load_dune(s7_scheme *s7,  s7_pointer args)
         return s7_name_to_value(s7, "-mibl-ws-table");
     } else if (args_ct < 3) {
 #if defined(DEBUG_TRACE)
-        if (debug) log_debug("args ct < 3");
+        if (debug_mibl_crawl) log_debug("args ct < 3");
 #endif
 
         /* rootpath is always arg 0; ignore arg 1, it is used to set var *emit-bazel-pkg* */
@@ -3408,7 +3408,7 @@ EXPORT s7_pointer g_load_dune(s7_scheme *s7,  s7_pointer args)
 
         if (s7_is_list(s7, arg)) {
 #if defined(DEBUG_TRACE)
-            if (debug)
+            if (debug_mibl_crawl)
                 log_info("Arg 0 is list: %s", TO_STR(arg));
 #endif
 
@@ -3419,7 +3419,7 @@ EXPORT s7_pointer g_load_dune(s7_scheme *s7,  s7_pointer args)
                 rootdir = getcwd(NULL, 0);
                 pathdir = ".";
                 /* s7_pointer _pkg_tbl = */
-                load_dune(rootdir, pathdir);
+                load_project(rootdir, pathdir);
                 /* if (trace) { */
 #if defined(DEBUG_TRACE)
                 log_trace("LOADED DUNE NOARG");
@@ -3447,7 +3447,7 @@ EXPORT s7_pointer g_load_dune(s7_scheme *s7,  s7_pointer args)
                 pathdir = _get_path_dir(item);
                 if (pathdir) {
                     /* FIXME: s7_pointer _pkgs = */
-                    load_dune(rootdir, pathdir);
+                    load_project(rootdir, pathdir);
 #if defined(DEBUG_TRACE)
                     if (trace)
                         printf(RED "LOADED DUNE 1" CRESET "\n");
@@ -3458,7 +3458,7 @@ EXPORT s7_pointer g_load_dune(s7_scheme *s7,  s7_pointer args)
                     /*     _pkg_tbl = _merge_pkg_tbls(s7, _pkg_tbl, _pkgs); */
                     /*     log_debug("merged result: %s", TO_STR(_pkg_tbl)); */
                     /* } else { */
-                    /*     log_error("load_dune returned %s", TO_STR(_pkgs)); */
+                    /*     log_error("load_project returned %s", TO_STR(_pkgs)); */
                     /*     return s7_nil(s7); */
                     /* } */
                 } else {
@@ -3494,7 +3494,7 @@ EXPORT s7_pointer g_load_dune(s7_scheme *s7,  s7_pointer args)
             /* s7_pointer q = s7_name_to_value(s7, "quote"); */
             if (pathdir) {
                 /* s7_pointer _pkg_tbl = */
-                /*     load_dune(rootdir, pathdir); */
+                /*     load_project(rootdir, pathdir); */
 #if defined(DEBUG_TRACE)
                 if (trace)
                     printf(RED "LOADED DUNE 2" CRESET "\n");
@@ -3571,7 +3571,7 @@ bool _include_this(FTSENT *ftsentry)
                   ftsentry->fts_name, ftsentry->fts_path);
 #endif
 
-    /* if (debug) { */
+    /* if (debug_mibl_crawl) { */
     /*     dump_mibl_config(); */
     /* } */
 
@@ -3596,7 +3596,7 @@ bool _include_this(FTSENT *ftsentry)
         ptr = ftsentry->fts_path;
 
 #if defined(DEBUG_TRACE)
-    if (debug) log_debug("srch ptr: %s", ptr);
+    if (debug_mibl_crawl) log_debug("srch ptr: %s", ptr);
 #endif
     char **p;
     p = NULL;
@@ -3644,11 +3644,11 @@ bool _include_this(FTSENT *ftsentry)
     }
 }
 
-EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
+EXPORT s7_pointer load_project(const char *home_sfx, const char *traversal_root)
 {
 #if defined(DEBUG_TRACE)
-    if (debug) {
-        log_debug(BLU "load_dune" CRESET);
+    if (debug_mibl_crawl) {
+        log_debug(BLU "load_project" CRESET);
         log_debug("%-16s%s", "launch_dir:", launch_dir);
         log_debug("%-16s%s", "base ws:", bws_root);
         log_debug("%-16s%s", "effective ws:", ews_root);
@@ -3665,17 +3665,24 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
     UT_string *abs_troot;
     utstring_new(abs_troot);
 #if defined(DEBUG_TRACE)
-    if (debug) log_debug("build_wd: %s", build_wd);
+    if (debug_mibl_crawl) log_debug("build_wd: %s", build_wd);
 #endif
     utstring_printf(abs_troot, "%s/%s",
                     //getcwd(NULL,0),
                     //build_wd,
                     ews_root,
                     traversal_root);
+#if defined(DEBUG_TRACE)
+    if (debug_mibl_crawl) log_debug("abs_troot: %s", utstring_body(abs_troot));
+#endif
     char *abstr = strdup(utstring_body(abs_troot)); //FIXME: free after use
+#if defined(DEBUG_TRACE)
+    if (debug_mibl_crawl) log_debug("abstr: %s", abstr);
+#endif
+
     char *_ews = effective_ws_root(abstr);
 #if defined(DEBUG_TRACE)
-    if (debug) log_debug("ews: %s", _ews);
+    if (debug_mibl_crawl) log_debug("ews: %s", _ews);
 #endif
     ews_root = _ews;
     // put ews_root into the scheme env. so users can use it
@@ -3684,7 +3691,7 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
     /*                    s7_make_string(s7, ews_root)); */
 
 #if defined(DEBUG_TRACE)
-    if (debug) {
+    if (debug_mibl_crawl) {
         log_debug("haystack (troot): %s", utstring_body(abs_troot));
         log_debug("needle (ews): %s", ews_root);
     }
@@ -3705,7 +3712,7 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
         resolved_troot = realpath(".", NULL);
     }
 #if defined(DEBUG_TRACE)
-    if (debug) {
+    if (debug_mibl_crawl) {
         log_debug("resolved resolved_troot: %s", resolved_troot);
         log_debug("cwd: %s", getcwd(NULL, 0));
     }
@@ -3725,7 +3732,7 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
     char *old_cwd = getcwd(NULL, 0);
     if (strncmp(old_cwd, ews_root, strlen(ews_root)) != 0) {
 #if defined(DEBUG_TRACE)
-        if (debug) {
+        if (debug_mibl_crawl) {
             log_debug("chdir: %s => %s\n", old_cwd, ews_root);
         }
 #endif
@@ -3737,7 +3744,7 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
             exit(EXIT_FAILURE);
         }
 #if defined(DEBUG_TRACE)
-        if (debug) log_debug("%-16s%s", "cwd:",  getcwd(NULL, 0));
+        if (debug_mibl_crawl) log_debug("%-16s%s", "cwd:",  getcwd(NULL, 0));
 #endif
     }
 
@@ -3752,8 +3759,8 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
         NULL
     };
 #if defined(DEBUG_TRACE)
-    if (debug) log_debug("_traversal_root: %s", _traversal_root[0]);
-    if (debug) log_debug("real _traversal_root: %s",
+    if (debug_mibl_crawl) log_debug("_traversal_root: %s", _traversal_root[0]);
+    if (debug_mibl_crawl) log_debug("real _traversal_root: %s",
                          realpath(_traversal_root[0], NULL));
 #endif
 
@@ -3779,7 +3786,7 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
     s7_pointer pkg_tbl =
         s7_eval_c_string(s7, "(cadr (assoc-in '(:@ :pkgs) -mibl-ws-table))");
 #if defined(DEBUG_TRACE)
-    if (debug)
+    if (debug_mibl_crawl)
         log_debug("building pkg_tbl: %s", TO_STR(pkg_tbl));
 #endif
     /* s7_int pkg_tbl_gc_loc = s7_gc_protect(s7, pkg_tbl); */
@@ -3800,7 +3807,7 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
                 continue; // do not process post-order visits
             }
 #if defined(DEBUG_TRACE)
-            if (debug) {
+            if (debug_mibl_crawl) {
                 printf("\n");
                 log_debug(CYN "iter ftsentry->fts_name: " CRESET "%s",
                           ftsentry->fts_name);
@@ -3808,7 +3815,7 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
                 log_debug("iter ftsentry->fts_info: %d", ftsentry->fts_info);
             }
 #endif
-            /* if (debug) { */
+            /* if (debug_mibl_crawl) { */
             /*     if (ftsentry->fts_info != FTS_DP) { */
             /*         log_debug(CYN "ftsentry:" CRESET " %s (%s), type: %d", */
             /*                   ftsentry->fts_name, */
@@ -4047,7 +4054,7 @@ EXPORT s7_pointer load_dune(const char *home_sfx, const char *traversal_root)
 
         /* print_backtrace(s7); */
 
-        log_info("exiting load_dune");
+        log_info("exiting load_project");
     }
     /* s7_gc_unprotect_at(s7, pkg_tbl_gc_loc); */
 

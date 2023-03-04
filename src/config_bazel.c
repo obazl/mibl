@@ -31,9 +31,6 @@
 
 #include "config_bazel.h"
 
-/* bool debug; */
-/* bool verbose; */
-
 extern int rc;
 
 extern bool bzl_mode;   /* t: we launched from mibl under bazel */
@@ -73,12 +70,12 @@ char *homedir;
 char *_effective_ws_root(char *dir)
 {
 #if defined(DEBUG_TRACE)
-    if (trace)
-        log_debug("effective_ws_root: %s", dir);
+    if (trace_bazel)
+        log_trace("_effective_ws_root: %s", dir);
 #endif
 
    if (strncmp(homedir, dir, strlen(dir)) == 0) {
-       log_debug("No Bazel workspace file found.");
+       log_warn("No Bazel workspace file found.");
        return NULL;
    }
 
@@ -105,9 +102,17 @@ char *_effective_ws_root(char *dir)
 
 char *effective_ws_root(char *_dir)
 {
+#if defined(DEBUG_TRACE)
+    if (trace_bazel) log_trace("effective_ws_root for: %s", _dir);
+#endif
+
     /* log_debug("effective_ws_root: %s", dir); */
     /* use realpath to remove cwd dot, e.g. /home/uid/foo/bar.  */
+    errno = 0;
     char *d = realpath(_dir, NULL); /* FIXME: d must be freed */
+    if (errno != 0) {
+        perror(NULL);
+    }
     char *dir = strdup(d);
     free(d);
     return _effective_ws_root(dir);
@@ -117,12 +122,12 @@ char *effective_ws_root(char *_dir)
  */
 void _set_base_ws_root(void)
 {
-    /* if (trace) { */
+    /* if (trace_bazel) { */
     /*     printf(RED "_set_base_ws_root" CRESET "\n"); */
     /* } */
     char *_bws_root = getenv("BUILD_WORKSPACE_DIRECTORY");
 #if defined(DEBUG_TRACE)
-    if (debug) log_debug("Bazel BUILD_WORKSPACE_DIRECTORY: %s", bws_root);
+    if (debug_bazel) log_debug("Bazel BUILD_WORKSPACE_DIRECTORY: %s", bws_root);
 #endif
 
     if (_bws_root == NULL) {
@@ -132,7 +137,7 @@ void _set_base_ws_root(void)
         /* effective_ws_root makes a copy */
         bws_root = effective_ws_root(getcwd(NULL,0));
 #if defined(DEBUG_TRACE)
-        if (debug)
+        if (debug_bazel)
             log_debug("Found WS file at %s", bws_root);
 #endif
     } else {
@@ -141,7 +146,7 @@ void _set_base_ws_root(void)
 
     ews_root = strdup(bws_root);  /* by default, effective ws == base ws */
 #if defined(DEBUG_TRACE)
-    if (debug)
+    if (debug_bazel)
         log_debug("base ws root: %s", bws_root);
 #endif
 
@@ -156,8 +161,8 @@ void _set_base_ws_root(void)
 EXPORT void bazel_configure(void) // char *_exec_root)
 {
 #if defined(DEBUG_TRACE)
-    if (trace) {
-        log_debug("bazel_configure");
+    if (trace_bazel) {
+        log_trace("bazel_configure");
     }
 #endif
     launch_dir = getcwd(NULL, 0);
@@ -167,6 +172,7 @@ EXPORT void bazel_configure(void) // char *_exec_root)
      */
 #if defined(DEBUG_TRACE)
 #ifdef BAZEL_CURRENT_REPOSITORY
+    if (debug_bazel)
         log_debug("BAZEL_CURRENT_REPOSITORY: %s", BAZEL_CURRENT_REPOSITORY);
 #endif
 #endif
@@ -175,7 +181,8 @@ EXPORT void bazel_configure(void) // char *_exec_root)
     utstring_new(runfiles_root);
     utstring_printf(runfiles_root, "%s", getcwd(NULL, 0));
 #if defined(DEBUG_TRACE)
-    log_debug("runfiles_root: %s", utstring_body(runfiles_root));
+    if (verbose)
+        log_info("runfiles_root: %s", utstring_body(runfiles_root));
 #endif
 
     /* RUNFILES_MANIFEST_FILE and RUNFILES_DIR are only set for 'bazel
@@ -188,7 +195,7 @@ EXPORT void bazel_configure(void) // char *_exec_root)
     */
 
 #if defined(DEBUG_TRACE)
-    if (debug) log_debug("BUILD_WORKING_DIRECTORY: %s", build_wd);
+    if (debug_bazel) log_debug("BUILD_WORKING_DIRECTORY: %s", build_wd);
 #endif
 
     config_xdg_dirs();
@@ -196,19 +203,19 @@ EXPORT void bazel_configure(void) // char *_exec_root)
     if (build_wd == NULL) {
         /* running outside of bazel */
 #if defined(DEBUG_TRACE)
-        if (debug) log_debug("Running outside of Bazel");
+        if (verbose) log_info("Running outside of Bazel");
 #endif
         build_wd = launch_dir;
         bzl_mode = false;
 #if defined(DEBUG_TRACE)
     } else {
         bzl_mode = true;
-        if (debug) log_debug("Running in bzl mode");
+        if (verbose) log_info("Running in bzl mode");
 #endif
     }
 
 #if defined(DEBUG_TRACE)
-    if (debug) {
+    if (debug_bazel) {
         log_debug("build_wd: %s", build_wd);
         log_debug("launch_dir: %s", launch_dir);
         log_debug("xdg_data_home: %s", utstring_body(xdg_data_home));
@@ -220,7 +227,7 @@ EXPORT void bazel_configure(void) // char *_exec_root)
 
     /* utstring_new(runfiles_root); */
     /* utstring_printf(runfiles_root, "%s", getcwd(NULL, 0)); */
-    /* if (debug) */
+    /* if (debug_bazel) */
     /*     log_debug("runfiles_root: %s", utstring_body(runfiles_root)); */
 
     _set_base_ws_root();

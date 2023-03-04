@@ -41,8 +41,8 @@ extern int spfactor;
 extern char *sp;
 
 #if defined(DEBUG_TRACE)
-extern int indent = 2;
-extern int delta = 2;
+extern int indent;
+extern int delta;
 #endif
 
 extern char *ocaml_ws;

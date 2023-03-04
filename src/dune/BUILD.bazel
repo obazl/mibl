@@ -82,10 +82,11 @@ cc_library(
         "//vendored/logc",
         "@libs7//src:s7",
         # "@libs7//vendored/linenoise",
-    ] + select({
-        "//compilation_mode:dbg?": ["//src:debug"],
-        "//conditions:default": []
-    }),
+    ],
+    # ] + select({
+    #     "//compilation_mode:dbg?": ["//src:debug"],
+    #     "//conditions:default": []
+    # }),
     visibility = ["//visibility:public"]
 )
 

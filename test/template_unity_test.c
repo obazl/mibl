@@ -5,7 +5,7 @@
 /* #include "mibl_config.h" */
 /* #include "s7_config.h" */
 /* #include "ansi_colors.h" */
-/* #include "load_dune.h" */
+/* #include "load_project.h" */
 
 #include "log.h"
 #include "utarray.h"
@@ -37,7 +37,7 @@ void test_function_should_doBlahAndBlah(void) {
     rootdir = "obazl/mibl/test";
     pathdir = "test/cases/dune/stanzas/rule/deps/glob";
 
-    s7_pointer pkg_tbl = load_dune(rootdir, pathdir);
+    s7_pointer pkg_tbl = load_project(rootdir, pathdir);
 
     log_debug(BGRN "pkg_tbl:" CRESET "\n%s",
            s7_object_to_c_string(s7, pkg_tbl));

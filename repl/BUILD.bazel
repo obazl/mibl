@@ -11,7 +11,12 @@ cc_binary(
         # "//src:bazel_config.h"
         # "//vendored/logc:log.c",
         # "//vendored/logc:log.h"
-    ],
+    ] + select({
+        "//compilation_mode:dbg?": [
+            "//src:debug_srcs"
+        ],
+        "//conditions:default": []
+    }),
     copts = select({
         "//bzl/host:macos": ["-std=c11"],
         "//bzl/host:linux": ["-std=gnu11"],

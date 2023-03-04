@@ -5,7 +5,7 @@
 #include "mibl_config.h"
 #include "s7_config.h"
 #include "ansi_colors.h"
-#include "load_dune.h"
+#include "load_project.h"
 
 extern bool debug;
 extern bool trace;
@@ -117,7 +117,7 @@ int main(int argc, char *argv[])
     /* pathdir = "test/dune/stanzas/rule/action/run/cp"; */
     pathdir = "test/dune/stanzas/library/deps/select";
 
-    s7_pointer pkg_tbl = load_dune(rootdir, pathdir);
+    s7_pointer pkg_tbl = load_project(rootdir, pathdir);
     printf("cwd: %s\n", getcwd(NULL, 0));
 
     printf(BGRN "pkg_tbl:" CRESET "\n%s\n", s7_object_to_c_string(s7, pkg_tbl));

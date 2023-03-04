@@ -7,7 +7,7 @@ extern int indent;
 extern int delta;
 extern char *sp;
 
-extern bool debug_symlinks;
+bool debug_meta;
 
 EXPORT void dump_package(int indent, struct obzl_meta_package *pkg)
 {

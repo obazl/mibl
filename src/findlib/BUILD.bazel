@@ -33,6 +33,7 @@ CMD_FLAGS = [
 
 cc_library(
     name = "findlib",
+    # alwayslink = True,
     srcs = [
         "emit_build_bazel.c", "emit_build_bazel.h",
         "emit_jsoo.c", "emit_jsoo.h",
@@ -89,8 +90,8 @@ cc_library(
         "//conditions:default":   []
     }) + select({
         "//compilation_mode:dbg?": [
-            "debug_meta.c",
-            "//src/hdrs:debug_meta.h"
+            "debug_meta.c", "//src/hdrs:debug_meta.h",
+            "debug_findlib.c", "//src/hdrs:debug_findlib.h"
         ],
         "//conditions:default": []
     }),
@@ -174,10 +175,11 @@ cc_library(
         ":meta_syntaxis",
         "//src/dune",
         "//vendored/logc"
-    ] + select({
-        "//compilation_mode:dbg?": ["//src:debug"],
-        "//conditions:default": []
-    }),
+    ],
+    # ] + select({
+    #     "//compilation_mode:dbg?": ["//src:debug"],
+    #     "//conditions:default": []
+    # }),
     visibility = ["//visibility:public"]
 )
 

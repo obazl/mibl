@@ -5,6 +5,12 @@
 
 #include "debug_mibl.h"
 
+bool debug_mibl = false;
+bool debug_mibl_crawl = false;
+bool debug_miblrc   = false;
+
+bool trace_mibl   = false;
+
 void dump_mibl_config(void)
 {
     log_debug("mibl_config:");

@@ -8,3 +8,14 @@ CMD_FLAGS = [
     "//conditions:default":   []
 })
 
+COPTS = [
+    "-x", "c",
+    "-std=c11",
+    "-pedantic-errors",
+] + select({
+    "//bzl/host:linux": [
+        "-D_POSIX_C_SOURCE=200809L", ## strdup, strndup, waitpid, etc.
+        "-D_DEFAULT_SOURCE"],        ## DT_ constants from dirent.h
+    "//conditions:default":   []
+})
+

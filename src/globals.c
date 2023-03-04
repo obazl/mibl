@@ -3,10 +3,6 @@
 #include <stdbool.h>
 #include "globals.h"
 
-bool debug;
-bool debug_findlib = false;
-bool debug_symlinks = true;
-bool trace = false;
 bool verbose = false;
 bool bzl_mode = false;
 bool enable_jsoo = true;

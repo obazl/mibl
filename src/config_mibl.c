@@ -65,7 +65,7 @@ struct mibl_config_s mibl_config = {
 LOCAL int _config_handler(void* config, const char* section, const char* name, const char* value)
 {
 #if defined(DEBUG_TRACE)
-    if (trace)
+    if (trace_mibl)
         log_debug("config_handler section %s: %s=%s", section, name, value);
 #endif
 
@@ -127,7 +127,7 @@ LOCAL int _config_handler(void* config, const char* section, const char* name, c
 
     if (MATCH("mibl", "pkg")) {
 #if defined(DEBUG_TRACE)
-        if (debug) log_debug("section: mibl; entry: pkg");
+        if (debug_mibl) log_debug("section: mibl; entry: pkg");
 #endif
         char *token, *sep = " ,\t";
         token = strtok((char*)value, sep);
@@ -149,7 +149,7 @@ LOCAL int _config_handler(void* config, const char* section, const char* name, c
     /* disallow leading / and ../ */
     if (MATCH("srcs", "exclude")) {
 #if defined(DEBUG_TRACE)
-        if (debug)
+        if (debug_mibl)
             log_debug("section: srcs; entry: exclude; val: %s", value);
 #endif
         /* log_debug("\t%s", value); */
@@ -255,7 +255,7 @@ LOCAL int _config_handler(void* config, const char* section, const char* name, c
 EXPORT void mibl_configure(void)
 {
 #if defined(DEBUG_TRACE)
-    if (debug)
+    if (debug_mibl)
         log_debug("mibl_configure");
 #endif
     /* **************** */
@@ -307,7 +307,7 @@ EXPORT void mibl_configure(void)
     utarray_sort(mibl_config.exclude_dirs, strsort);
 
 #if defined(DEBUG_MIBL)
-    if (debug)
+    if (debug_mibl)
         dump_mibl_config();
 #endif
 }

@@ -43,7 +43,8 @@ cc_binary(
         "//conditions:default":   []
     }),
     deps = [
-        "//src:opam_switch_converter",
+        "//src/coswitch",
+        # "//src:opam_switch_converter",
         # "//src/opam:opam_lexer"
         "//vendored/gopt",
         "//vendored/logc",

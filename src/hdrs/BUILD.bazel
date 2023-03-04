@@ -45,6 +45,8 @@ DIRLOCS = [
     ## opam_syntaxis.c generated
     "SRC8=$(location //src/opam:opam_syntaxis.c);",
     "SRCDIR8=`dirname $$SRC8`;",
+    "SRC9=$(location //src/coswitch:opam_switch_converter.c);",
+    "SRCDIR9=`dirname $$SRC9`;",
 ]
 
 # We need to enumerate rather than use $(SRCS) or a wildcard
@@ -58,22 +60,17 @@ FILELOCS = [
     "$(location //src:config_bazel.c)",
     "$(location //src:config_mibl.c)",
     "$(location //src:config_opam.c)",
-    "$(location //src:config_s7.c)",
+    # "$(location //src:config_s7.c)",
     "$(location //src:config_s7_dune.c)",
-
-    "$(location //src:debug.c)",
-    "$(location //src:debug_findlib.c)",
-    "$(location //src:debug_mibl.c)",
-    "$(location //src:debug_s7.c)",
 
     "$(location //src:error_handler_opam.c)",
     "$(location //src:error_handler_dune.c)",
     "$(location //src:handlers.c)",
     "$(location //src:handlers_opam.c)",
 
-    "$(location //src:load_dune.c)",
+    "$(location //src:load_project.c)",
 
-    "$(location //src:opam_switch_converter.c)",
+    "$(location //src/coswitch:opam_switch_converter.c)",
     "$(location //src:treewalker_project.c)",
     "$(location //src:utils.c)",
 
@@ -100,7 +97,6 @@ FILELOCS = [
     "$(location //src/findlib:meta_settings.c)",
     "$(location //src/findlib:meta_values.c)",
     "$(location //src/findlib:meta_syntaxis.c)",
-    "$(location //src/findlib:debug_meta.c)",
 
     "$(location //src/opam:opam_lexer.c)",
     "$(location //src/opam:opam_lexis.c)",
@@ -112,6 +108,14 @@ FILELOCS = [
     "$(location //coswitch:coswitch.c)",
 
     "$(location //src/xdg:xdg.c)",
+
+    ## FIXME: select on //:compilation_mode: dbg?
+    "$(location //src:debug.c)",
+    "$(location //src:debug_bazel.c)",
+    "$(location //src:debug_mibl.c)",
+    "$(location //src:debug_s7.c)",
+    "$(location //src/findlib:debug_findlib.c)",
+    "$(location //src/findlib:debug_meta.c)",
 ]
 
 # Note the trailing ':', we do not need to emit headers for these.
@@ -132,6 +136,7 @@ CP_CMDS = " ".join([
     "cp $${SRCDIR6}/*.h $(@D);",
     "cp $${SRCDIR7}/*.h $(@D);",
     "cp $${SRCDIR8}/*.h $(@D);",
+    "cp $${SRCDIR9}/*.h $(@D);",
 ])
 
 genrule(
@@ -142,21 +147,16 @@ genrule(
         "//src:config_bazel.c",
         "//src:config_mibl.c",
         "//src:config_opam.c",
-        "//src:config_s7.c",
+        # "//src:config_s7.c",
         "//src:config_s7_dune.c",
-
-        "//src:debug.c",
-        "//src:debug_findlib.c",
-        "//src:debug_mibl.c",
-        "//src:debug_s7.c",
 
         "//src:error_handler_opam.c",
         "//src:error_handler_dune.c",
         "//src:handlers.c",
         "//src:handlers_opam.c",
 
-        "//src:load_dune.c",
-        "//src:opam_switch_converter.c",   # FIXME: rename
+        "//src:load_project.c",
+        "//src/coswitch:opam_switch_converter.c",   # FIXME: rename
         "//src:treewalker_project.c", # FIXME: rename
         "//src:utils.c",
 
@@ -182,7 +182,6 @@ genrule(
         "//src/findlib:meta_properties.c",
         "//src/findlib:meta_settings.c",
         "//src/findlib:meta_values.c",
-        "//src/findlib:debug_meta.c",
 
         "//src/findlib:meta_lexis.c",
         "//src/findlib:meta_syntaxis.c", # //src/findlib/gen_meta_syntaxis
@@ -197,7 +196,16 @@ genrule(
 
         ## runners
         "//convert:convert.c",
-        "//coswitch:coswitch.c"
+        "//coswitch:coswitch.c",
+
+        ## FIXME: select on //:compilation_mode: dbg?
+        "//src:debug.c",
+        "//src:debug_bazel.c",
+        "//src:debug_mibl.c",
+        "//src:debug_s7.c",
+        "//src/findlib:debug_findlib.c",
+        "//src/findlib:debug_meta.c",
+
     ] + select({
         "//bzl/host:linux": ["//src/linux:strlcat.c",
                              "//src/linux:strlcpy.c",
@@ -209,14 +217,17 @@ genrule(
         "config_bazel.h",
         "config_mibl.h",
         "config_opam.h",
-        "config_s7.h",
+        # "config_s7.h",
         "config_s7_dune.h",
         "dune_readers.h",
 
+        ## FIXME: select on //:compilation_mode: dbg?
         "debug.h",
-        "debug_findlib.h",
+        "debug_bazel.h",
         "debug_mibl.h",
         "debug_s7.h",
+        "debug_findlib.h",
+        "debug_meta.h",
 
         "opam_switch_converter.h",
         "treewalker_project.h",
@@ -243,9 +254,8 @@ genrule(
         "opam_parser.h",
         "opam_syntaxis.h",
 
-        "debug_meta.h",
 
-        "load_dune.h",
+        "load_project.h",
         "error_handler_dune.h",
         "error_handler_opam.h",
 
@@ -273,21 +283,23 @@ genrule(
         "//src:config_bazel.c",
         "//src:config_mibl.c",
         "//src:config_opam.c",
-        "//src:config_s7.c",
+        # "//src:config_s7.c",
         "//src:config_s7_dune.c",
 
         "//src:debug.c",
-        "//src:debug_findlib.c",
+        "//src:debug_bazel.c",
         "//src:debug_mibl.c",
         "//src:debug_s7.c",
+        "//src/findlib:debug_findlib.c",
+        "//src/findlib:debug_meta.c",
 
         "//src:error_handler_opam.c",
         "//src:error_handler_dune.c",
         "//src:handlers.c",
         "//src:handlers_opam.c",
 
-        "//src:load_dune.c",
-        "//src:opam_switch_converter.c",
+        "//src:load_project.c",
+        "//src/coswitch:opam_switch_converter.c",
         "//src:treewalker_project.c",
         "//src:utils.c",
 
@@ -313,7 +325,6 @@ genrule(
         "//src/findlib:meta_properties.c",
         "//src/findlib:meta_settings.c",
         "//src/findlib:meta_values.c",
-        "//src/findlib:debug_meta.c",
 
         "//src/findlib:meta_lexis.c",
         "//src/findlib:meta_syntaxis.c", # //src/findlib/gen_meta_syntaxis
@@ -351,22 +362,25 @@ genrule(
         "$(location //src:config_bazel.c)",
         "$(location //src:config_mibl.c)",
         "$(location //src:config_opam.c)",
-        "$(location //src:config_s7.c)",
+        # "$(location //src:config_s7.c)",
         "$(location //src:config_s7_dune.c)",
 
+        ## FIXME: select on //:compilation_mode: dbg?
         "$(location //src:debug.c)",
-        "$(location //src:debug_findlib.c)",
+        "$(location //src:debug_bazel.c)",
         "$(location //src:debug_mibl.c)",
         "$(location //src:debug_s7.c)",
+        "$(location //src/findlib:debug_findlib.c)",
+        "$(location //src/findlib:debug_meta.c)",
 
         "$(location //src:error_handler_opam.c)",
         "$(location //src:error_handler_dune.c)",
         "$(location //src:handlers.c)",
         "$(location //src:handlers_opam.c)",
 
-        "$(location //src:load_dune.c)",
+        "$(location //src:load_project.c)",
 
-        "$(location //src:opam_switch_converter.c)",
+        "$(location //src/coswitch:opam_switch_converter.c)",
         "$(location //src:treewalker_project.c)",
         "$(location //src:utils.c)",
 
@@ -397,7 +411,6 @@ genrule(
         "$(location //src/findlib:meta_settings.c)",
         "$(location //src/findlib:meta_values.c)",
         "$(location //src/findlib:meta_syntaxis.c)",
-        "$(location //src/findlib:debug_meta.c)",
         "$(location //src/xdg:xdg.c)",
 
         "$(location //coswitch:coswitch.c)",
