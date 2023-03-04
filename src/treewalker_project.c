@@ -178,8 +178,7 @@ EXPORT void convert_dune_project(UT_array *opam_pending_deps)
                         }
                     }
                     break;
-                case FTS_DP:
-                    /* postorder directory */
+                case FTS_DP: /* postorder directory */
 #if defined(DEBUG_TRACE)
                     if (trace)
                         log_trace("post-order visit dir: %s (%s) :: (%s)",
@@ -353,6 +352,8 @@ EXPORT void convert_dune_project(UT_array *opam_pending_deps)
 
         log_info("exiting load_project");
     }
+
+    fts_close(tree);
     /* s7_gc_unprotect_at(s7, pkg_tbl_gc_loc); */
 
     return;

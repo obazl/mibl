@@ -86,8 +86,8 @@ EXPORT void opam_configure(char *_opam_switch)
             fprintf(stderr, "FAIL: run_cmd 'opam var ocaml:version'\n");
         } else {
             utstring_printf(opam_switch_id, "%s", result);
-            if (verbose)
-                log_info("opam: using current switch: %s", result);
+            if (verbose && verbosity > 1)
+                log_info(" Current OPAM switch ocaml version: %s", result);
 
 #if defined(DEBUG_TRACE)
             log_debug("cmd result: '%s'", utstring_body(opam_switch_id));
@@ -102,6 +102,8 @@ EXPORT void opam_configure(char *_opam_switch)
         log_fatal("FAIL: run_cmd 'opam var prefix'\n");
         exit(EXIT_FAILURE);
     } else {
+        if (verbose && verbosity > 1)
+            log_info("Current OPAM switch prefix: %s", result);
         utstring_printf(opam_switch_prefix, "%s", result);
         /* default: coswitch == switch */
         utstring_printf(opam_coswitch_prefix, "%s", result);

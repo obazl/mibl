@@ -358,7 +358,7 @@ void _emit_ocaml_stublibs_symlinks(char *_dir)
                     fprintf(stderr, "symlink err: %s", strerror(errno));
                 }
                 log_error("Exiting");
-                fprintf(stderr, "Exiting\n");
+                fprintf(stderr, "Error, exiting\n");
                 exit(EXIT_FAILURE);
             ignore:
                 ;

@@ -54,40 +54,23 @@ cc_binary(
 )
 
 ################################################################
-cc_binary(
-    name  = "clean",
-    visibility = ["//visibility:public"],
-    srcs  = [
-        "coswitch.c",
-        "//src/hdrs:coswitch.h",
-    ],
-    copts = CMD_FLAGS + [
+# cc_binary(
+#     name  = "help",
+#     visibility = ["//visibility:public"],
+#     srcs  = [
+#         "help.c",
+#         # "//src/hdrs:help.h",
+#     ],
+#     copts = CMD_FLAGS + [
+#     ],
+#     defines = select({
+#         "//compilation_mode:dbg?": ["DEBUG_TRACE", "DEBUG_MIBL"],
+#         "//conditions:default":   []
+#     }),
+# )
 
-        "-Isrc",
-        "-Icoswitch",
-        "-Iexternal/mibl/coswitch",
-        "-I$(GENDIR)/external/mibl/coswitch",
-
-        "-I$(GENDIR)/src/hdrs",
-        "-I$(GENDIR)/external/mibl/src/hdrs",
-
-        "-I$(GENDIR)/src",
-        "-I$(GENDIR)/src/opam",
-        "-I$(GENDIR)/test/opam",
-
-        "-Iexternal/mibl/src",
-        "-I$(GENDIR)/external/mibl/src",
-
-        "-Iexternal/libs7/src",
-    ],
-    defines = select({
-        "//compilation_mode:dbg?": ["DEBUG_TRACE", "DEBUG_MIBL"],
-        "//conditions:default":   []
-    }),
-    deps = [
-        "//src:opam_switch_converter",
-        # "//src/opam:opam_lexer"
-    ],
-    linkstatic = 1
+alias(
+    name = "help",
+    actual = "//man",
+    visibility = ["//visibility:public"]
 )
-

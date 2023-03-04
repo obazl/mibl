@@ -298,7 +298,7 @@ EXPORT void mibl_configure(void)
             /* } else { */
             /*     log_debug("Config loaded from %s", utstring_body(obazl_ini_path)); */
         }
-        if (verbose)
+        if (verbose && verbosity > 1)
             log_info("Loaded miblrc config file: %s",
                      utstring_body(obazl_ini_path));
     }

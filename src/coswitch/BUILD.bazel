@@ -1,6 +1,6 @@
 load("//src:BUILD.bzl", COPTS = "COPTS")
 
-exports_files(["opam_switch_converter.c"])
+exports_files(["opam_switch_converter.c", "coswitch_cleaner.c"])
 
 ################################################################
 ####    libcoswitch - converts opam switch
@@ -8,8 +8,10 @@ exports_files(["opam_switch_converter.c"])
 cc_library(
     name = "coswitch",
     srcs = [
-        ":opam_switch_converter.c",
+        "opam_switch_converter.c",
         "//src/hdrs:opam_switch_converter.h",
+        "coswitch_cleaner.c",
+        "//src/hdrs:coswitch_cleaner.h",
         "//src:handlers_srcs",
         "//src:coswitch_srcs",
     ] + select({
@@ -29,9 +31,9 @@ cc_library(
     }),
 
     hdrs = [
-        # "libopam_switch_converter.h",
-        # "@libs7//src:s7.h",
-        # "log.h",
+        "//src/hdrs:libmibl.h",
+        # "//src/hdrs:opam_switch_converter.h",
+        # "//src/hdrs:coswitch_cleaner.h",
     ],
     copts = COPTS + [
         "-Isrc",

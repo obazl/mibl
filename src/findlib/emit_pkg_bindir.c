@@ -304,7 +304,7 @@ void emit_opam_pkg_bindir(const char *pkg) // UT_string *dune_pkg_file)
         if (rc != 0) {
             if (errno != EEXIST) {
                 perror(NULL);
-                fprintf(stderr, "exiting\n");
+                fprintf(stderr, "ERROR,exiting\n");
                 exit(EXIT_FAILURE);
             }
         }
@@ -325,7 +325,7 @@ void emit_opam_pkg_bindir(const char *pkg) // UT_string *dune_pkg_file)
  exit: ;
     /* utstring_free(outpath); */
 #if defined(DEBUG_TRACE)
-    printf("exiting\n");
+    if (trace) printf("exiting emit_opam_pkg_bindir\n");
 #endif
 }
 
@@ -344,7 +344,8 @@ EXPORT void emit_pkg_bindir(const char *pkg)
                     pkg);
 
 #if defined(DEBUG_TRACE)
-    log_debug("CHECKING DUNE-PACKAGE: %s\n", utstring_body(dune_pkg_file));
+    if (trace)
+        log_debug("CHECKING DUNE-PACKAGE: %s\n", utstring_body(dune_pkg_file));
 #endif
     if (access(utstring_body(dune_pkg_file), F_OK) == 0) {
         emit_opam_pkg_bindir(pkg); // dune_pkg_file);

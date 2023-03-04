@@ -29,7 +29,9 @@ extern bool debug;
 extern bool debug_findlib;
 extern bool trace;
 #endif
+
 extern bool verbose;
+extern bool enable_jsoo;
 
 s7_scheme *s7;                  /* GLOBAL s7 */
 
@@ -79,10 +81,6 @@ void _mibl_s7_init(void) {
 
 int main(int argc, char *argv[])
 {
-    int opt;
-
-    extern bool enable_jsoo;
-
     char *opam_switch = NULL;
 
     utarray_new(opam_include_pkgs,&ut_str_icd);
@@ -171,7 +169,10 @@ int main(int argc, char *argv[])
 
     /* walk_tree(opam_lib, pkg_path); */
 
-    convert_findlib_pkgs(opam_include_pkgs, opam_exclude_pkgs);
+    if (options[FLAG_CLEAN].count) {
+    } else {
+        convert_findlib_pkgs(opam_include_pkgs, opam_exclude_pkgs);
+    }
 
     /* UT_array *result = opam_lex_file(utstring_body(opam_file)); */
 

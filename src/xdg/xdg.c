@@ -55,6 +55,6 @@ EXPORT void config_xdg_dirs(void)
         utstring_printf(xdg_data_home, "%s", s_xdg_data_home);
         //FIXME: existence check?
     }
-    if (verbose)
+    if (verbose && verbosity > 1)
         log_info("xdg_data_home: %s", utstring_body(xdg_data_home));
 }
