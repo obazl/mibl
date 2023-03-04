@@ -90,11 +90,11 @@ genrule(
     cmd = "\n".join([
         "SRC1=$(location repl.c)",
         "SRCDIR1=`dirname $$SRC1`",
-        "$(location @makeheaders//:makeheaders) \\",
+        "$(location //vendored/makeheaders) \\",
         "    $(location repl.c) \\",
         "    $(location xen_repl.c)",
         "cp $${SRCDIR1}/*.h $(@D)",
     ]),
-    tools = ["@makeheaders//:makeheaders"],
+    tools = ["//vendored/makeheaders"],
     visibility = ["//visibility:public"]
 )
