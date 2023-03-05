@@ -1,6 +1,6 @@
 filegroup(
     name = "srcs",
-    data = ["mibl.scm", "dune.scm", "meta.scm", "opam.scm"],
+    data = ["mibl.scm", "mibl_pp.scm", "dune.scm", "meta.scm", "opam.scm"],
     visibility = ["//visibility:public"]
 )
 
