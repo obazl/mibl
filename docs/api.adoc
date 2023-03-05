@@ -13,14 +13,14 @@ Sample session:
 (define pkg
   (let* ((_   (load "dune.scm"))
        (arg "dune/stanzas/rule/action/chdir")  <1>
-       (pkgs (load-dune arg))
+       (pkgs (mibl-load-project arg))
        (pkg (hash-table-ref pkgs arg))
        (normed-pkg (dune-pkg->mibl pkg)))
     normed-pkg))
 ----
-<1> Argument to `load-dune` is relative to current working directory
+<1> Argument to `mibl-load-project` is relative to current working directory
 
-Start a repl from `mibl/test`, so that `load-dune` args are relative to `./`.  
+Start a repl from `mibl/test`, so that `mibl-load-project` args are relative to `./`.  
 
 .repl
 [source,scheme]
@@ -63,12 +63,12 @@ mibl>
 ----
 <1> `assoc-in*` returns all assocs matching the last key of keypath, instead of just the first
 
-The `load-dune` function returns a table of "raw" packages, with just
+The `mibl-load-project` function returns a table of "raw" packages, with just
 the dune stanzas unconverted to mibl format. The `dune->mibl` function
 converts the dune code to the mibl format.
 
 ----
-mibl> (define pkg-tbl (load-dune "dune/stanzas/rule/action/with-stdout-to"))
+mibl> (define pkg-tbl (mibl-load-project "dune/stanzas/rule/action/with-stdout-to"))
 mibl> pkg-tbl
 (hash-table "dune/stanzas/rule/action/with-stdout-to" ((:ws-path "/Users/gar/obazl/mibl/test") (:pkg-path "dune/stanzas/rule/action/with-stdout-to") (:realpath "/Users/gar/obazl/mibl/test/dune/stanzas/rule/action/with-stdout-to") (dune (rule (targets registerer.ml) (deps a.ml b.ml (:src_dir TEZOS_PROTOCOL)) (action (with-stdout-to %{targets} (chdir %{workspace_root} (run %{bin:tezos-embedded-protocol-packer} "%{src_dir}" "demo_counter"))))))))
 mibl> (define pkg (hash-table-ref pkg-tbl "dune/stanzas/rule/action/with-stdout-to"))

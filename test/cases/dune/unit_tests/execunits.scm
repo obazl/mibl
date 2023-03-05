@@ -1,7 +1,7 @@
 ;; executable stanzas
 (define pkg
   (let* ((_   (load "dune.scm"))
-       ;; WARNING: arg to load-dune is relative to cwd,
+       ;; WARNING: arg to mibl-load-project is relative to cwd,
        ;; but arg to hash-table-ref below is relative to ws root,
        ;; which may not be the same.
        (arg
@@ -9,7 +9,7 @@
         "test/dune/stanzas/executable/main_deps"
         ;; "test/dune/stanzas/executable/s_packer"
         )
-       (wss (load-dune arg))
+       (wss (mibl-load-project arg))
        (pkgs (cadr (assoc-in '(@ pkgs) wss)))
        (pkg (hash-table-ref pkgs arg))
        (nzs (dune-pkg->mibl pkg))

@@ -29,7 +29,7 @@
         ;; "rules/install/run"
         ;; "rules/install/run/mypgm"
         )
-       (_wss (load-dune arg))
+       (_wss (mibl-load-project arg))
        (@ws (assoc-val :@ _wss))
        (pkgs (car (assoc-val :pkgs @ws)))
        ;; ) pkgs)
@@ -42,7 +42,7 @@
        ;; ) npkgs)
 
        ;; resolve stuff
-       (_ (resolve-labels (assoc-val :@ -mibl-ws-table)))
+       (_ (resolve-labels (assoc-val :@ *mibl-project*)))
        ;; (exports (car (assoc-val :exports (assoc-val :@ _wss))))
        ;; ) exports)
 
@@ -58,7 +58,7 @@
 
 (define _wss
   (let* ((_ (load "starlark.scm"))
-         (wss (load-dune arg)))
+         (wss (mibl-load-project arg)))
     wss))
 
 (define @ws (assoc-val :@ _wss))
@@ -74,7 +74,7 @@
            (let ((mibl-pkg (dune-pkg->mibl :@ (cdr kv))))
              (hash-table-set! pkgs (car kv) mibl-pkg)))
          pkgs))
-       ;; (car (assoc-val :pkgs (assoc-val :@ (load-dune arg))))
+       ;; (car (assoc-val :pkgs (assoc-val :@ (mibl-load-project arg))))
        )
 
 ;; (define mibl-pkg (dune-pkg->mibl :@ pkg))
@@ -84,7 +84,7 @@
 
 (begin
   (load "starlark.scm")
-  (resolve-labels (assoc-val :@ -mibl-ws-table))
+  (resolve-labels (assoc-val :@ *mibl-project*))
   (car (assoc-val :exports (assoc-val :@ _wss))))
 
 (begin

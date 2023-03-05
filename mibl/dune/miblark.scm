@@ -272,7 +272,7 @@
       ))
 
 (define (miblarkize ws)
-  (let* ((@ws (assoc-val ws -mibl-ws-table))
+  (let* ((@ws (assoc-val ws *mibl-project*))
          (pkgs (car (assoc-val :pkgs @ws))))
 
     (for-each (lambda (kv)

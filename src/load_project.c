@@ -3397,7 +3397,9 @@ EXPORT s7_pointer g_load_project(s7_scheme *s7,  s7_pointer args)
         /* s7_pointer _pkg_tbl = */
         load_project(rootdir, pathdir);
         /* if (trace) { */
+#if defined(DEBUG_TRACE)
         log_trace("LOADED DUNE NOARG");
+#endif
         /* log_trace(RED "*mibl-project*:" CRESET " %s\n", */
         /*           TO_STR(s7_name_to_value(s7, "*mibl-project*"))); */
         /* } */
@@ -3532,7 +3534,7 @@ EXPORT s7_pointer g_load_project(s7_scheme *s7,  s7_pointer args)
     } else {
         log_error("Too many args");
         fprintf(stderr,
-                RED "ERROR: unexpected arg count %d for load-dune\n",
+                RED "ERROR: unexpected arg count %d for mibl-load-project\n",
                 (int)args_ct);
         exit(EXIT_FAILURE);
     }

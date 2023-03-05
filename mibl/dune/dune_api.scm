@@ -342,7 +342,7 @@
                 (assoc-val 'dune pkg+))))
 
           ;; (format #t "~A: ~A\n" (red "NEW PKG") pkg+)
-          (let* ((@ws (assoc-val ws -mibl-ws-table))
+          (let* ((@ws (assoc-val ws *mibl-project*))
                  (exports (car (assoc-val :exports @ws))))
             (if *debugging*
                 (format #t "~A: ~A~%" (red "exports table") exports)))

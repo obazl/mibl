@@ -147,7 +147,7 @@ extern UT_string *xdg_data_home;
  */
 
 #if INTERFACE
-#define LOAD_DUNE_HELP "(load-dune rootdir pathdir) rootdir is relative to $HOME; pathdir is relative to rootdir.  Change dir to rootdir and load pathdir, creating pkg-tbl"
+#define LOAD_DUNE_HELP "(mibl-load-project rootdir pathdir) rootdir is relative to $HOME; pathdir is relative to rootdir.  Change dir to rootdir and load pathdir, creating pkg-tbl"
 
 /* NB: we need to escape #\" in C... */
 #define LOAD_DUNE_FORMAL_PARAMS "s"
@@ -1009,7 +1009,7 @@ EXPORT s7_scheme *s7_configure(void)
                             g_effective_ws_root,
                             0, 1, 0, NULL);
 
-    s7_define_function(s7, "load-dune", g_load_project,
+    s7_define_function(s7, "mibl-load-project", g_load_project,
                        0, 2, 0,
                        /* LOAD_DUNE_FORMAL_PARAMS, */
                        LOAD_DUNE_HELP);

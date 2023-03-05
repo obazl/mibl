@@ -52,5 +52,7 @@
 
 (load "dune/ppx_inline_tests.scm")
 
+(load "mibl_pp.scm")
+
 (if *debugging*
     (format #t "loaded mibl/dune.scm~%"))

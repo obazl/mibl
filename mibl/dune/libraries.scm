@@ -265,7 +265,7 @@
 
   ;; add lib names to exports table
   (let* ((pkg-path (car (assoc-val :pkg-path pkg)))
-        (exports (car (assoc-val :exports (assoc-val ws -mibl-ws-table))))
+        (exports (car (assoc-val :exports (assoc-val ws *mibl-project*))))
         (privname (if-let ((privname (assoc-val 'name (cdr stanza))))
                           (car privname) #f))
         (_ (if *debugging* (format #t "~A: ~A~%" (uwhite "privname") privname)))

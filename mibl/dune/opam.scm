@@ -8,7 +8,7 @@
         (format #t "~A: ~A~%" (green "privname") privname)
         (format #t "~A: ~A~%" (green "ws") ws)))
 
-  (let* ((-ws (if (keyword? ws) (assoc-val ws -mibl-ws-table) ws))
+  (let* ((-ws (if (keyword? ws) (assoc-val ws *mibl-project*) ws))
          (ws-path (car (assoc-val :path -ws)))
          (_ (if *debugging* (format #t "~A: ~A~%" (bggreen "wspath") ws-path)))
          (privname (if (eq? kind :bin) (format #f "~A.exe" privname) privname))

@@ -1,5 +1,5 @@
 (load "dune.scm")
-(define pkgs (load-dune ;; "obazl/mibl/test",
+(define pkgs (mibl-load-project ;; "obazl/mibl/test",
              ;; "dune/stanzas/library"
              ;; "dune/tezos/lib_test"
               "d"
@@ -23,7 +23,7 @@ tpkg
 ;; rule stanzas
 (define pkg
   (let* ((_   (load "dune.scm"))
-       ;; WARNING: arg to load-dune is relative to cwd,
+       ;; WARNING: arg to mibl-load-project is relative to cwd,
        ;; but arg to hash-table-ref below is relative to ws root,
        ;; which may not be the same.
        (arg
@@ -79,7 +79,7 @@ tpkg
 
         ;; "dune/stanzas/rule/alias"
         )
-       (pkgs (load-dune arg))
+       (pkgs (mibl-load-project arg))
        (pkg (hash-table-ref pkgs arg))
        ;; ;; (stanzas (assoc :dune-stanzas pkg))
        (nzs (dune-pkg->mibl pkg))
@@ -93,7 +93,7 @@ tpkg
 (define pkg
   (let* ((_   (load "dune.scm"))
        (arg "dune/stanzas/rule/action/chdir")
-       (pkgs (load-dune arg))
+       (pkgs (mibl-load-project arg))
        (pkg (hash-table-ref pkgs arg))
        (normed-pkg (dune-pkg->mibl pkg))
        )
@@ -161,8 +161,8 @@ xpkg
 (cdr e)
 norm
 
-;; (load-dune "proto_000_Ps9mPmXa")
-;; (load-dune "lib_clic")
+;; (mibl-load-project "proto_000_Ps9mPmXa")
+;; (mibl-load-project "lib_clic")
 
 (begin
 (define opam-srcs ".opam/4.14.0/.opam-switch/sources")

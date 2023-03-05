@@ -38,4 +38,4 @@
                           ;; pkgs is a hash-table
                           pkgs)
                 ))
-             -mibl-ws-table))
+             *mibl-project*))

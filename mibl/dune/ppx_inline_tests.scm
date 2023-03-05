@@ -3,7 +3,7 @@
 (define (ppx-inline-tests! ws)
   (if (or *debug-ppx* *debugging*)
       (format #t "~A~%" (ublue "ppx-inline-tests!")))
-  (let* ((@ws (assoc-val ws -mibl-ws-table))
+  (let* ((@ws (assoc-val ws *mibl-project*))
          (pkgs (car (assoc-val :pkgs @ws))))
     ;; (format #t "~A: ~A~%" (uwhite "pkgs") pkgs)
     (for-each (lambda (kv)

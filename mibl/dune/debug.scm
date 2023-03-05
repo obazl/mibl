@@ -1,6 +1,6 @@
 (define (debug-print-exports-table ws)
   (format #t "~A: ~A~%" (ublue "debug-print-exports-table") ws)
-  (let* ((@ws (assoc-val ws -mibl-ws-table))
+  (let* ((@ws (assoc-val ws *mibl-project*))
          (exports (car (assoc-val :exports @ws)))
          (keys (sort! (hash-table-keys exports) sym<?)))
     (format #t "~A:~%" (ured "exports table"))
@@ -12,7 +12,7 @@
 
 (define (debug-print-filegroups ws)
   (format #t "~A: ~A~%" (ublue "debug-print-filegroups") ws)
-  (let* ((@ws (assoc-val ws -mibl-ws-table))
+  (let* ((@ws (assoc-val ws *mibl-project*))
          (filegroups (car (assoc-val :filegroups @ws)))
          (keys (sort! (hash-table-keys filegroups) string<?)))
     ;; (format #t "~A:~%" (red "filegroups table"))
@@ -23,7 +23,7 @@
 (define (debug-print-pkgs ws)
   ;; (if *debug-debug*
   ;;     (format #t "~A~%" (bgred "PKG DUMP")))
-  (let* ((@ws (assoc-val ws -mibl-ws-table))
+  (let* ((@ws (assoc-val ws *mibl-project*))
          (pkgs (car (assoc-val :pkgs @ws)))
          ;; (_ (format #t "~A: ~A~%" (red "pkgs") pkgs))
          (pkg-paths (hash-table-keys pkgs))

@@ -207,7 +207,7 @@
       (format #t "~A: ~A\n" (bgblue "-fixup-stanza!") stanza))
   (case (car stanza)
     ((:install) (values))
-    (else (let* ((ws (assoc-val ws-id -mibl-ws-table))
+    (else (let* ((ws (assoc-val ws-id *mibl-project*))
                  (exports (car (assoc-val :exports ws)))
                  (pkg-path (car (assoc-val :pkg-path pkg)))
                  (stanza-alist (cdr stanza)))
@@ -592,7 +592,7 @@
   (let ((+documentation+ "Map dune target references to bazel labels using exports table.")
         (+signature+ '(resolve-labels! workspace)))
     (lambda (ws-id)
-      (let ((ws (assoc-val ws-id -mibl-ws-table)))
+      (let ((ws (assoc-val ws-id *mibl-project*)))
         (if *debugging*
             (format #t "~%~A for ws: ~A\n"
                 (bgred "resolve-labels!") (assoc :name ws)))

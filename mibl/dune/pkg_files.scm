@@ -631,7 +631,7 @@
 (define (resolve-pkg-file-deps ws)
   (if *debugging*
       (format #t "~%~A: ~A~%" (bgred "resolve-pkg-file-deps for ws") ws))
-  (let* ((@ws (assoc-val ws -mibl-ws-table))
+  (let* ((@ws (assoc-val ws *mibl-project*))
          (pkgs (car (assoc-val :pkgs @ws))))
     (if *debugging*
         (format #t "~A: ~A~%" (uwhite "pkgs") pkgs))

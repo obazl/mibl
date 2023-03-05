@@ -49,21 +49,21 @@ $ bazel run @mibl//repl
 
 Options: `-v` (verbose) and `-d` (debug).
 
-Once in the repl, run `load-dune` to crawl your project and produce a
+Once in the repl, run `mibl-load-project` to crawl your project and produce a
 hash-table of package specs:
 
 [source,scheme]
 ----
-(load-dune "src/lib_stdlib_unix")
+(mibl-load-project "src/lib_stdlib_unix")
 ----
 
-By default, `load-dune` will interpret a single string arg as a file
+By default, `mibl-load-project` will interpret a single string arg as a file
 path relative to the launch directory. You can also give it a list of
 directories to crawl:
 
 [source,scheme]
 ----
-(load-dune '("src/a" "src/b"))
+(mibl-load-project '("src/a" "src/b"))
 ----
 
 
@@ -79,10 +79,10 @@ the `src/foo` and `test/bar` directories of that project (i.e.
 
 [source,scheme]
 ----
-(load-dune "myproj" '("src/foo" "src/bar"))
+(mibl-load-project "myproj" '("src/foo" "src/bar"))
 ----
 
-Finally, running without any args - `(load-dune)` - will crawl the
+Finally, running without any args - `(mibl-load-project)` - will crawl the
 tree rooted at the current directory.
 
 == Running mibl as a standalone executable

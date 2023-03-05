@@ -70,7 +70,7 @@
   (if *debugging*
       (format #t "~A: ~A~%" (ublue "find-in-exports") search-key))
   (let* ((exports (car (assoc-val :exports
-                                  (assoc-val ws -mibl-ws-table)))))
+                                  (assoc-val ws *mibl-project*)))))
     ;; (format #t "~A: ~A~%" (bgblue "exports") exports)
     (hash-table-ref exports search-key)))
 

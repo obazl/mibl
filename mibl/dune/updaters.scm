@@ -9,10 +9,10 @@
         (format #t "~A: ~A~%" (green "tgt") tgt)
         (format #t "~A: ~A~%" (green "pattern") pattern)
         (format #t "~A: ~A~%" (green "ws") ws)
-        ;; (format #t "~A: ~A~%" (green "mibl tbl") -mibl-ws-table)
+        ;; (format #t "~A: ~A~%" (green "mibl tbl") *mibl-project*)
         ))
 
-  (let* ((-ws (if (keyword? ws) (assoc-val ws -mibl-ws-table) ws))
+  (let* ((-ws (if (keyword? ws) (assoc-val ws *mibl-project*) ws))
          ;; (_ (if *debugging* (format #t "~A: ~A~%" (uwhite "-ws") -ws)))
          (filegroups (car (assoc-val :filegroups -ws)))
          (_ (if *debugging* (format #t "filegroups tbl: ~A\n" filegroups)))
@@ -208,7 +208,7 @@
 (define (normalize-manifests! ws)
   (if *debugging*
       (format #t "~A: ~A~%" (bgblue "normalize-manifests") ws))
-  (let* ((@ws (assoc-val ws -mibl-ws-table))
+  (let* ((@ws (assoc-val ws *mibl-project*))
          (pkgs (car (assoc-val :pkgs @ws))))
     (for-each (lambda (kv)
                 (let* ((pkg-key (car kv))
@@ -293,7 +293,7 @@
 (define (normalize-rule-deps! ws)
   (if *debugging*
       (format #t "~A: ~A~%" (bgblue "normalize-rule-deps!") ws))
-  (let* ((@ws (assoc-val ws -mibl-ws-table))
+  (let* ((@ws (assoc-val ws *mibl-project*))
          (pkgs (car (assoc-val :pkgs @ws))))
     (for-each (lambda (kv)
                 (let* ((pkg-key (car kv))
@@ -342,7 +342,7 @@
         (format #t "~A: ~A~%" (bgblue "//normalize-manifests") ws))
     ))
 
-  ;; (let* ((@ws (assoc-val ws -mibl-ws-table))
+  ;; (let* ((@ws (assoc-val ws *mibl-project*))
   ;;        (ws-path (car (assoc-val :path @ws)))
   ;;        (_ (if *debugging* (format #t "~A: ~A~%" (blue "ws-path") ws-path))
   ;;        (pkgs (car (assoc-val :pkgs @ws)))
@@ -381,7 +381,7 @@
 (define (add-filegroups-to-pkgs ws)
   (if *debugging*
       (format #t "~A: ~A~%" (blue "-add-filegroups-to-pkgs") ws))
-  (let* ((@ws (assoc-val ws -mibl-ws-table))
+  (let* ((@ws (assoc-val ws *mibl-project*))
          (ws-path (car (assoc-val :path @ws)))
          (_ (if *debugging* (format #t "~A: ~A~%" (blue "ws-path") ws-path)))
          (pkgs (car (assoc-val :pkgs @ws)))
@@ -808,7 +808,7 @@
         (format #t "~A: (:pkg . ~A) (:tgt . ~A)~%" (uwhite "spec") pkg-path tgt)
         (format #t "~A: ~A\n" (ublue "modes") modes)))
   (let* ((exports (car (assoc-val :exports
-                                  (assoc-val ws -mibl-ws-table))))
+                                  (assoc-val ws *mibl-project*))))
          (key (case pfx
                 ((:exe) (symbol (format #f "bin:~A.exe" nm)))
                 ((:bin) (symbol (format #f "bin:~A.exe" nm)))

@@ -85,7 +85,7 @@
 (define (handle-shared-ppx ws)
   (if (or *debug-ppx* *debugging*)
       (format #t "~A: ~A~%" (ublue "handle-shared-ppx") ws))
-  (let* ((@ws (assoc-val ws -mibl-ws-table))
+  (let* ((@ws (assoc-val ws *mibl-project*))
          (pkgs (car (assoc-val :pkgs @ws))))
     ;; (format #t "~A: ~A~%" (uwhite "pkgs") pkgs)
     (for-each (lambda (kv)
@@ -155,7 +155,7 @@
 (define (handle-shared-deps ws)
   (if *debugging*
       (format #t "~A: ~A~%" (ublue "handle-shared-deps") ws))
-  (let* ((@ws (assoc-val ws -mibl-ws-table))
+  (let* ((@ws (assoc-val ws *mibl-project*))
          (pkgs (car (assoc-val :pkgs @ws))))
     (if *debugging*
         (format #t "~A: ~A~%" (uwhite "pkgs") pkgs))
@@ -236,7 +236,7 @@
 (define (handle-shared-opts ws)
   (if *debugging*
       (format #t "~A: ~A~%" (ublue "handle-shared-opts") ws))
-  (let* ((@ws (assoc-val ws -mibl-ws-table))
+  (let* ((@ws (assoc-val ws *mibl-project*))
          (pkgs (car (assoc-val :pkgs @ws))))
     ;; (format #t "~A: ~A~%" (uwhite "pkgs") pkgs)
     (for-each (lambda (kv)
