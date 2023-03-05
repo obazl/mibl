@@ -577,6 +577,7 @@ LOCAL void _config_user_load_path(void)
 {
     char *_user_script_dir = HOME_MIBL;
     UT_string *user_script_dir;
+    char *homedir = getenv("HOME");
 
     utstring_new(user_script_dir);
     utstring_printf(user_script_dir, "%s/%s",

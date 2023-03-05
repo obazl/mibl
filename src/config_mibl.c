@@ -62,7 +62,7 @@ struct mibl_config_s mibl_config = {
     .libct          = 0
 };
 
-LOCAL int _config_handler(void* config, const char* section, const char* name, const char* value)
+LOCAL int _miblrc_handler(void* config, const char* section, const char* name, const char* value)
 {
 #if defined(DEBUG_TRACE)
     if (trace_mibl)
@@ -283,7 +283,7 @@ EXPORT void mibl_configure(void)
         /*              utstring_body(obazl_ini_path)); */
 
         /* PARSE INI FILE */
-        rc = ini_parse(utstring_body(obazl_ini_path), _config_handler, &mibl_config);
+        rc = ini_parse(utstring_body(obazl_ini_path), _miblrc_handler, &mibl_config);
 
         if (rc < 0) {
             //FIXME: deal with missing .config/miblrc
