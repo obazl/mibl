@@ -3,7 +3,7 @@
 #include <string.h>
 #include <unistd.h>
 
-/* #include "ini.h" */
+#include "gopt.h"
 #include "log.h"
 
 #include "linenoise.h"
@@ -11,11 +11,6 @@
 
 #include "utarray.h"
 #include "utstring.h"
-
-/* #include "load_project.h" */
-/* /\* #include "opam_config.h" *\/ */
-/* #include "bazel_config.h" */
-/* #include "s7_config.h" */
 
 #include "libmibl.h"
 #include "repl.h"
@@ -48,11 +43,6 @@ char *hints(const char *buf, int *color, int *bold) {
         return " World";
     }
     return NULL;
-}
-
-void print_usage(void)
-{
-    printf("Usage: mibl [-m | -k | -v | -h ]\n");
 }
 
 void std_repl()
@@ -119,45 +109,91 @@ void std_repl()
     }
 }
 
+void _print_version(void) {
+    printf("mibl repl v 0.1\n");
+}
+
+void _print_usage(void)
+{
+    printf("Usage: mibl [-m | -k | -v | -h ]\n");
+}
+
+enum OPTS {
+    FLAG_MULTILINE,
+    FLAG_KEYCODES,
+    FLAG_HELP,
+    FLAG_DEBUG,
+    FLAG_TRACE,
+    FLAG_VERBOSE,
+    FLAG_QUIET,
+    FLAG_VERSION,
+    LAST
+};
+
+static struct option options[] = {
+    /* 0 */
+    [FLAG_MULTILINE] = {.long_name="multiline",.short_name='m',
+                        .flags=GOPT_ARGUMENT_FORBIDDEN},
+    [FLAG_KEYCODES] = {.long_name="keycodes",.short_name='k',
+                       .flags=GOPT_ARGUMENT_FORBIDDEN},
+    [FLAG_DEBUG] = {.long_name="debug",.short_name='d',
+                    .flags=GOPT_ARGUMENT_FORBIDDEN | GOPT_REPEATABLE},
+    [FLAG_TRACE] = {.long_name="trace",.short_name='t',
+                    .flags=GOPT_ARGUMENT_FORBIDDEN},
+    [FLAG_VERBOSE] = {.long_name="verbose",.short_name='v',
+                      .flags=GOPT_ARGUMENT_FORBIDDEN | GOPT_REPEATABLE},
+    [FLAG_QUIET] = {.long_name="quiet",.short_name='q',
+                    .flags=GOPT_ARGUMENT_FORBIDDEN},
+    [FLAG_HELP] = {.long_name="help",.short_name='h',
+                   .flags=GOPT_ARGUMENT_FORBIDDEN},
+    [FLAG_VERSION] = {.long_name="version",
+                    .flags=GOPT_ARGUMENT_FORBIDDEN},
+    [LAST] = {.flags = GOPT_LAST}
+};
+
 int main(int argc, char **argv)
 {
-    printf("mibl repl v 0.1\n");
     /* Parse options, with --multiline we enable multi line editing. */
-    int opt;
-    while ((opt = getopt(argc, argv, "edmkhtvV")) != -1) {
-        switch (opt) {
-        case 'd':
+
+    argc = gopt(argv, options);
+    gopt_errors(argv[0], options);
+
+    if (options[FLAG_HELP].count) {
+        _print_usage();
+        exit(EXIT_SUCCESS);
+    }
+
+    if (options[FLAG_VERSION].count) {
+        _print_version();
+        exit(EXIT_SUCCESS);
+    }
+
+    if (options[FLAG_VERBOSE].count) {
+        /* printf("verbose ct: %d\n", options[FLAG_VERBOSE].count); */
+        verbose = true;
+        verbosity = options[FLAG_VERBOSE].count;
+    }
+
+    if (options[FLAG_MULTILINE].count) {
+        linenoiseSetMultiLine(1);
+        if (verbose) printf("Multi-line mode enabled.\n");
+    }
+
+    if (options[FLAG_KEYCODES].count) {
+        linenoisePrintKeyCodes();
+        exit(0);                /* ??? */
+    }
+
+    if (options[FLAG_DEBUG].count) {
 #if defined(DEBUG_TRACE)
-            debug = true;
+        debug = true;
 #endif
-            break;
-        case 't':
+    }
+
+    if (options[FLAG_TRACE].count) {
 #if defined(DEBUG_TRACE)
-            trace = true;
+        trace = true;
 #endif
-            break;
-        case 'm':
-            linenoiseSetMultiLine(1);
-            printf("Multi-line mode enabled.\n");
-            break;
-        case 'k':
-            linenoisePrintKeyCodes();
-            exit(0);
-            break;
-        case 'h':
-            print_usage();
-            exit(EXIT_SUCCESS);
-            break;
-        case 'v':
-            verbose =true;
-            break;
-        case 'V':
-            printf("Version: 1.0\n");
-            break;
-        default:
-            print_usage();
-            exit(EXIT_FAILURE);
-        }
     }
 
    /* initialize in this order: bazel then mibl then s7 */

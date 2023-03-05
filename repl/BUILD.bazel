@@ -39,11 +39,11 @@ cc_binary(
         "-Ivendored/logc",
         "-Iexternal/mibl/vendored/logc",
 
+        "-Ivendored/gopt",
+        "-Iexternal/mibl/vendored/gopt",
+
         "-Ivendored/uthash",
         "-Iexternal/mibl/vendored/uthash",
-
-        # "-Iexternal/libinih",
-        # "-Iexternal/logc/src",
 
         "-Iexternal/libs7/src",
         "-Iexternal/mibl/libs7/src",
@@ -71,12 +71,10 @@ cc_binary(
     ],
     deps = [
         "//src:mibl",
-        # "//external/libinih:inih",
-        "//vendored/uthash",
+        "//vendored/gopt",
         "//vendored/logc",
+        "//vendored/uthash",
         "@libs7//src:s7",
-        # "@libs7//src:c_s7",
-        # "@libs7//vendored/linenoise",
     ],
     visibility = ["//visibility:public"]
 )
