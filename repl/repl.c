@@ -127,10 +127,14 @@ int main(int argc, char **argv)
     while ((opt = getopt(argc, argv, "edmkhtvV")) != -1) {
         switch (opt) {
         case 'd':
+#if defined(DEBUG_TRACE)
             debug = true;
+#endif
             break;
         case 't':
+#if defined(DEBUG_TRACE)
             trace = true;
+#endif
             break;
         case 'm':
             linenoiseSetMultiLine(1);

@@ -70,6 +70,8 @@ UT_string *build_bazel_file;
 
 char *pfxdir = NULL; // ""; // buildfiles";
 
+int symlink_ct;
+
 /* void write_opam_resolver(char *pkg_prefix, char *pkg_name, */
 /*                          obzl_meta_entries *entries) */
 /* { */
@@ -2885,7 +2887,7 @@ void emit_pkg_symlinks(UT_string *dst_dir,
             if (len > 20) {
                 if (strncmp(ptr, "lib/dune/configurator", 21) == 0) {
                     if (verbose)
-                        log_info("Skipping dune/configurator; use @dune-configurator instead.");
+                        log_warn("Skipping dune/configurator; use @dune-configurator instead.");
                     return;
                 } else {
                     log_error("MISMATCH dune/configurator");
@@ -2935,6 +2937,7 @@ void emit_pkg_symlinks(UT_string *dst_dir,
 #endif
             rc = symlink(utstring_body(src),
                          utstring_body(dst));
+            symlink_ct++;
             if (rc != 0) {
                 if (errno != EEXIST) {
                     perror(utstring_body(src));

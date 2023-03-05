@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include "globals.h"
 
+bool quiet   = false;
 bool verbose = false;
 bool bzl_mode = false;
 bool enable_jsoo = true;

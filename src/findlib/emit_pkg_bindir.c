@@ -181,6 +181,7 @@ void emit_opam_pkg_bindir(const char *pkg) // UT_string *dune_pkg_file)
 #endif
         rc = symlink(utstring_body(opam_bin),
                      utstring_body(outpath));
+        symlink_ct++;
         if (rc != 0) {
             if (errno != EEXIST) {
                 perror(NULL);
@@ -192,7 +193,7 @@ void emit_opam_pkg_bindir(const char *pkg) // UT_string *dune_pkg_file)
     fprintf(ostream, "])\n");
     fclose(ostream);
 
-    if (verbose) {
+    if (verbose && verbosity > 1) {
         utstring_renew(outpath);
         utstring_printf(outpath, "%s/%s/bin",
                         utstring_body(opam_coswitch_lib),
@@ -301,6 +302,7 @@ void emit_opam_pkg_bindir(const char *pkg) // UT_string *dune_pkg_file)
 #endif
         rc = symlink(utstring_body(opam_stublib),
                      utstring_body(outpath));
+        symlink_ct++;
         if (rc != 0) {
             if (errno != EEXIST) {
                 perror(NULL);
@@ -312,7 +314,7 @@ void emit_opam_pkg_bindir(const char *pkg) // UT_string *dune_pkg_file)
     fprintf(ostream, "])\n");
     fclose(ostream);
 
-    if (verbose) {
+    if (verbose && verbosity > 1) {
         utstring_renew(outpath);
         utstring_printf(outpath, "%s/%s/stublibs",
                         utstring_body(opam_coswitch_lib),

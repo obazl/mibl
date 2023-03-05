@@ -98,7 +98,7 @@ EXPORT void convert_findlib_pkgs(UT_array *opam_pending_deps,
         log_debug("pendings ct: %d", utarray_len(opam_pending_deps));
 #endif
 
-    if (verbose) {
+    if (verbose && verbosity > 1) {
         log_info("current dir: %s", getcwd(NULL, 0));
         /* printf(YEL "%-16s%s\n" CRESET, "pkg_name:", pkg_name); */
     }
@@ -109,7 +109,7 @@ EXPORT void convert_findlib_pkgs(UT_array *opam_pending_deps,
 
     if (utarray_len(opam_pending_deps) < 1) {
         /* default: all pkgs in switch */
-        if (verbose) {
+        if (verbose && verbosity > 1) {
             log_info("reading opam pkgs in %s", utstring_body(opam_switch_lib));
         }
         errno = 0;
@@ -130,7 +130,7 @@ EXPORT void convert_findlib_pkgs(UT_array *opam_pending_deps,
         }
         closedir(switch_dir);
 
-        if (verbose) {
+        if (verbose && verbosity > 1) {
             log_info("pendings ct: %d", utarray_len(opam_pending_deps));
         }
         /* p = NULL; */
@@ -206,8 +206,6 @@ EXPORT void convert_findlib_pkgs(UT_array *opam_pending_deps,
     UT_string *opam_bzl_file;
     utstring_new(opam_bzl_file);
     utstring_printf(opam_bzl_file, "%s/WORKSPACE.opam.bzl", bws_root);
-    if (verbose)
-        log_info("writing %s", utstring_body(opam_bzl_file));
 
     FILE *ostream = fopen(utstring_body(opam_bzl_file), "w");
     if (ostream == NULL) {
@@ -243,7 +241,7 @@ EXPORT void convert_findlib_pkgs(UT_array *opam_pending_deps,
         q = (char**)utarray_find(opam_exclude_pkgs, p, strsort);
 
         if (q == NULL) {
-            if (verbose)
+            if (verbose && verbosity > 1)
                 log_info("Importing opam pkg: %s", *p);
             fprintf(ostream, "    native.local_repository(\n");
             fprintf(ostream, "        name       = \"%s\",\n", *p);
@@ -260,9 +258,12 @@ EXPORT void convert_findlib_pkgs(UT_array *opam_pending_deps,
 #endif
     /* if (verbose) */
     //FIXME: print this with -v, the others with -vv
+    if ( !quiet )
     printf(GRN "INFO:" CRESET " Imported %d OPAM packages from switch %s\n",
            utarray_len(opam_completed_deps),
            utstring_body(opam_switch_lib));
+    if (verbose && verbosity > 1)
+        printf(GRN "INFO: " CRESET "Created %d symlinks\n", symlink_ct);
     /* FIXME: free opam_completed_deps, opam_pending_deps */
     /* while ( (p=(char**)utarray_next(opam_completed_deps, p))) { */
     /* free(p); */
@@ -278,6 +279,9 @@ EXPORT void convert_findlib_pkgs(UT_array *opam_pending_deps,
     }
 
     fclose(ostream);
+    if (verbose)
+        printf(GRN "INFO: " CRESET "Wrote %s\n", utstring_body(opam_bzl_file));
+
     utstring_free(opam_bzl_file);
 
 

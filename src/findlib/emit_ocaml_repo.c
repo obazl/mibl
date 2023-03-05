@@ -19,6 +19,8 @@
 
 #include "emit_ocaml_repo.h"
 
+extern int verbosity;
+
 LOCAL const char *ws_name = "mibl";
 
 /* extern UT_string *opam_switch_id; */
@@ -217,6 +219,7 @@ void _symlink_ocaml_runtime(char *tgtdir)
             /*        utstring_body(dst)); */
             rc = symlink(utstring_body(src),
                          utstring_body(dst));
+            symlink_ct++;
             if (rc != 0) {
                 if (errno != EEXIST) {
                     perror(utstring_body(src));
@@ -343,6 +346,7 @@ void _emit_ocaml_stublibs_symlinks(char *_dir)
 
             rc = symlink(utstring_body(src),
                          utstring_body(dst));
+            symlink_ct++;
             if (rc != 0) {
                 switch (errno) {
                 case EEXIST:
@@ -507,6 +511,7 @@ void _emit_lib_stublibs_symlinks(char *bzl_switch_lib)
 
             rc = symlink(utstring_body(src),
                          utstring_body(dst));
+            symlink_ct++;
             if (rc != 0) {
                 switch (errno) {
                 case EEXIST:
@@ -779,6 +784,7 @@ void _emit_ocaml_bin_symlinks(char *bzl_switch_lib)  // dest
 
             rc = symlink(utstring_body(src),
                          utstring_body(dst));
+            symlink_ct++;
             if (rc != 0) {
                 switch (errno) {
                 case EEXIST:
@@ -835,6 +841,7 @@ void _symlink_buildfile(char *buildfile, UT_string *to_file)
     errno = 0;
     rc = symlink(utstring_body(src),
                  utstring_body(to_file));
+    symlink_ct++;
     if (rc != 0) {
         switch (errno) {
         case EEXIST:
@@ -924,6 +931,7 @@ void _symlink_ocaml_bigarray(char *tgtdir)
             /*        utstring_body(dst)); */
             rc = symlink(utstring_body(src),
                          utstring_body(dst));
+            symlink_ct++;
             if (rc != 0) {
                 if (errno != EEXIST) {
                     perror(utstring_body(src));
@@ -1089,6 +1097,7 @@ void _symlink_ocaml_compiler_libs(char *tgtdir)
                       utstring_body(dst));
             rc = symlink(utstring_body(src),
                          utstring_body(dst));
+            symlink_ct++;
             if (rc != 0) {
                 if (errno != EEXIST) {
                     perror(utstring_body(src));
@@ -1169,6 +1178,7 @@ void _symlink_ocaml_dynlink(char *tgtdir)
             /*        utstring_body(dst)); */
             rc = symlink(utstring_body(src),
                          utstring_body(dst));
+            symlink_ct++;
             if (rc != 0) {
                 if (errno != EEXIST) {
                     perror(utstring_body(src));
@@ -1269,6 +1279,7 @@ void _symlink_ocaml_num(char *tgtdir)
 #endif
             rc = symlink(utstring_body(src),
                          utstring_body(dst));
+            symlink_ct++;
             if (rc != 0) {
                 if (errno != EEXIST) {
                     perror(utstring_body(src));
@@ -1347,6 +1358,7 @@ void _symlink_ocaml_str(char *tgtdir)
             /*        utstring_body(dst)); */
             rc = symlink(utstring_body(src),
                          utstring_body(dst));
+            symlink_ct++;
             if (rc != 0) {
                 if (errno != EEXIST) {
                     perror(utstring_body(src));
@@ -1429,6 +1441,7 @@ void _symlink_ocaml_threads(char *tgtdir)
             /*        utstring_body(dst)); */
             rc = symlink(utstring_body(src),
                          utstring_body(dst));
+            symlink_ct++;
             if (rc != 0) {
                 if (errno != EEXIST) {
                     perror(utstring_body(src));
@@ -1509,6 +1522,7 @@ void _symlink_ocaml_ocamldoc(char *tgtdir)
             /*        utstring_body(dst)); */
             rc = symlink(utstring_body(src),
                          utstring_body(dst));
+            symlink_ct++;
             if (rc != 0) {
                 if (errno != EEXIST) {
                     perror(utstring_body(src));
@@ -1592,6 +1606,7 @@ void _symlink_ocaml_unix(char *tgtdir)
             /*        utstring_body(dst)); */
             rc = symlink(utstring_body(src),
                          utstring_body(dst));
+            symlink_ct++;
             if (rc != 0) {
                 if (errno != EEXIST) {
                     perror(utstring_body(src));
@@ -1682,6 +1697,7 @@ void _symlink_ocaml_c_hdrs(char *tgtdir)
             errno = 0;
             rc = symlink(utstring_body(src),
                          utstring_body(dst));
+            symlink_ct++;
             if (rc != 0) {
                 if (errno != EEXIST) {
                     fprintf(stdout, "c_hdrs: symlink errno: %d: %s\n",
@@ -1754,6 +1770,7 @@ void _symlink_ocaml_c_libs(char *tgtdir)
             errno = 0;
             rc = symlink(utstring_body(src),
                          utstring_body(dst));
+            symlink_ct++;
             if (rc != 0) {
                 if (errno != EEXIST) {
                     fprintf(stdout, "c_libs symlink errno: %d: %s\n",
@@ -1824,8 +1841,8 @@ EXPORT void emit_ocaml_workspace(char *bzl_switch_lib)  // dest
 
     utstring_printf(ocaml_file, "/WORKSPACE.bazel");
 
-    if (verbose)
-        log_info("writing ws file: %s", utstring_body(ocaml_file));
+    if (verbose && verbosity > 1)
+        log_info("Writing ws file: %s", utstring_body(ocaml_file));
 
     FILE *ostream = fopen(utstring_body(ocaml_file), "w");
     if (ostream == NULL) {

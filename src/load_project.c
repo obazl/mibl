@@ -367,12 +367,13 @@ LOCAL void _handle_dir(s7_pointer pkg_tbl, FTS* tree, FTSENT *ftsentry)
         log_info("%-20s%s", "ftsentry->accpath:", ftsentry->fts_accpath);
     }
 #endif
-    fflush(stdout);
-    fflush(stderr);
     UT_string *dune_test;
     utstring_new(dune_test);
     utstring_printf(dune_test, "%s/%s", ftsentry->fts_path, "dune");
-    /* log_info("DUNFILE: %s", utstring_body(dune_test)); */
+    /* log_info("DUNEFILE: %s", utstring_body(dune_test)); */
+    /* fflush(stdout); */
+    /* fflush(stderr); */
+
     int rc = access(utstring_body(dune_test), F_OK);
     if (rc) {
 #if defined(DEBUG_TRACE)
@@ -417,8 +418,10 @@ LOCAL void _handle_dir(s7_pointer pkg_tbl, FTS* tree, FTSENT *ftsentry)
     if (trace) {
         log_trace(RED "pkg path->key: %s => %s" CRESET,
                   ftsentry->fts_path, TO_STR(pkg_key));
+        log_trace(RED "pkg_tbl: %s" CRESET, TO_STR(pkg_tbl));
     }
 #endif
+
     /* s7_pointer test_assoc = s7_list(s7, 2, */
     /*                                 s7_make_keyword(s7, "test"), */
     /*                                 s7_make_symbol(s7, "dummy")); */
@@ -427,6 +430,7 @@ LOCAL void _handle_dir(s7_pointer pkg_tbl, FTS* tree, FTSENT *ftsentry)
 
     /* MB: result of realpath must be freed */
     char *rpath = realpath(ftsentry->fts_path, NULL);
+    /* log_trace(RED "realpath %s" CRESET, rpath); */
     /* FIXME: check result */
     /* s7_pointer result = */
 
@@ -1984,8 +1988,9 @@ LOCAL void _update_pkg_mllib_files(s7_pointer pkg_tbl,
 #endif
 
     s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
+#if defined(DEBUG_TRACE)
     if (debug_mibl_crawl) log_debug("pkg_alist: %s", TO_STR(pkg_alist));
-
+#endif
     if (pkg_alist == s7_f(s7)) {
         log_error("no pkg alist found for %s, %s", pkg_name, mname);
         exit(1);
@@ -2069,12 +2074,13 @@ LOCAL void _update_pkg_mllib_files(s7_pointer pkg_tbl,
             if (mllib_alist == s7_f(s7)) {
                 /* new */
 #if defined(DEBUG_TRACE)
-                if (debug_mibl_crawl)
+                if (debug_mibl_crawl) {
                     log_debug(RED "ADDING" CRESET " mllib %s to %s",
                               TO_STR(mname_sym), TO_STR(mllibs_alist));
-                if (debug_mibl_crawl) log_debug("mllibs_alist: %s",
+                    log_debug("mllibs_alist: %s",
                                      s7_object_to_c_string(s7,
                                                            mllibs_alist));
+                }
 #endif
 
                 s7_pointer mllibs_alist_cdr = s7_cdr(mllibs_alist);
@@ -2272,12 +2278,13 @@ LOCAL void _update_pkg_mly_files(s7_pointer pkg_tbl,
             if (mly_alist == s7_f(s7)) {
                 /* new */
 #if defined(DEBUG_TRACE)
-                if (debug_mibl_crawl)
+                if (debug_mibl_crawl) {
                     log_debug(RED "ADDING" CRESET " sig %s to %s",
                               TO_STR(mname_sym), TO_STR(ocamlyacc_alist));
-                if (debug_mibl_crawl) log_debug("ocamlyacc_alist: %s",
+                    log_debug("ocamlyacc_alist: %s",
                                      s7_object_to_c_string(s7,
                                                            ocamlyacc_alist));
+                }
 #endif
 
                 s7_pointer ocamlyacc_alist_cdr = s7_cdr(ocamlyacc_alist);
@@ -2494,12 +2501,13 @@ LOCAL void _update_pkg_cppo_files(s7_pointer pkg_tbl,
             if (cppo_alist == s7_f(s7)) {
                 /* new */
 #if defined(DEBUG_TRACE)
-                if (debug_mibl_crawl)
+                if (debug_mibl_crawl) {
                     log_debug(RED "ADDING" CRESET " sig %s to %s",
                               TO_STR(mname_sym), TO_STR(ocppo_alist));
-                if (debug_mibl_crawl) log_debug("ocppo_alist: %s",
-                                     s7_object_to_c_string(s7,
-                                                           ocppo_alist));
+                    log_debug("ocppo_alist: %s",
+                              s7_object_to_c_string(s7,
+                                                    ocppo_alist));
+                }
 #endif
 
                 s7_pointer ocppo_alist_cdr = s7_cdr(ocppo_alist);
@@ -2520,7 +2528,6 @@ LOCAL void _update_pkg_cppo_files(s7_pointer pkg_tbl,
                               s7_list(s7, 1, cppo_assoc));
 
 #if defined(DEBUG_TRACE)
-
                 if (debug_mibl_crawl)
                     log_debug("new_ocppo_alist_cdr: %s",
                        TO_STR(new_ocppo_alist_cdr));
@@ -3361,7 +3368,7 @@ EXPORT s7_pointer g_load_project(s7_scheme *s7,  s7_pointer args)
     initialize_mibl_data_model(s7);
 
     /* FIXME: s7_pointer _pkg_tbl = */
-    /* s7_eval_c_string(s7, "(cadr (assoc-in '(:@ :pkgs) -mibl-ws-table))"); */
+    /* s7_eval_c_string(s7, "(cadr (assoc-in '(:@ :pkgs) *mibl-project*))"); */
     /* printf("pkg_tbl: %s\n", TO_STR(_pkg_tbl)); */
 
     s7_int args_ct = s7_list_length(s7, args);
@@ -3391,10 +3398,10 @@ EXPORT s7_pointer g_load_project(s7_scheme *s7,  s7_pointer args)
         load_project(rootdir, pathdir);
         /* if (trace) { */
         log_trace("LOADED DUNE NOARG");
-        /* log_trace(RED "-mibl-ws-table:" CRESET " %s\n", */
-        /*           TO_STR(s7_name_to_value(s7, "-mibl-ws-table"))); */
+        /* log_trace(RED "*mibl-project*:" CRESET " %s\n", */
+        /*           TO_STR(s7_name_to_value(s7, "*mibl-project*"))); */
         /* } */
-        return s7_name_to_value(s7, "-mibl-ws-table");
+        return s7_name_to_value(s7, "*mibl-project*");
     } else if (args_ct < 3) {
 #if defined(DEBUG_TRACE)
         if (debug_mibl_crawl) log_debug("args ct < 3");
@@ -3424,10 +3431,10 @@ EXPORT s7_pointer g_load_project(s7_scheme *s7,  s7_pointer args)
 #if defined(DEBUG_TRACE)
                 log_trace("LOADED DUNE NOARG");
 #endif
-                /* log_trace(RED "-mibl-ws-table:" CRESET " %s\n", */
-                /*           TO_STR(s7_name_to_value(s7, "-mibl-ws-table"))); */
+                /* log_trace(RED "*mibl-project*:" CRESET " %s\n", */
+                /*           TO_STR(s7_name_to_value(s7, "*mibl-project*"))); */
                 /* } */
-                return s7_name_to_value(s7, "-mibl-ws-table");
+                return s7_name_to_value(s7, "*mibl-project*");
             }
 
             rootdir = getcwd(NULL,0);
@@ -3475,13 +3482,13 @@ EXPORT s7_pointer g_load_project(s7_scheme *s7,  s7_pointer args)
             /*                             s7_list(s7, 2, */
             /*                                     s7_make_keyword(s7, "@"), */
             /*                                     s7_make_keyword(s7, "pkgs")), */
-            /*                             s7_name_to_value(s7, "-mibl-ws-table")), */
+            /*                             s7_name_to_value(s7, "*mibl-project*")), */
             /*                     _pkg_tbl), */
             /*         s7_rootlet(s7)); */
 
-            /* printf("root_ws 1: %s\n", TO_STR(s7_name_to_value(s7, "-mibl-ws-table"))); */
+            /* printf("root_ws 1: %s\n", TO_STR(s7_name_to_value(s7, "*mibl-project*"))); */
 
-            return s7_name_to_value(s7, "-mibl-ws-table");
+            return s7_name_to_value(s7, "*mibl-project*");
         }
         else if (s7_is_string(arg)) {
             /* one string arg == path relative to current wd */
@@ -3504,13 +3511,13 @@ EXPORT s7_pointer g_load_project(s7_scheme *s7,  s7_pointer args)
 
                 //TODO: use s7_eval?
                 /* s7_eval_c_string_with_environment(s7, */
-                /*    "(set-cdr! (assoc-in '(:@ :pkgs) -mibl-ws-table) (list _pkg_tbl))", */
+                /*    "(set-cdr! (assoc-in '(:@ :pkgs) *mibl-project*) (list _pkg_tbl))", */
                 /*    s7_inlet(s7, s7_list(s7, 1, */
                 /*    s7_cons(s7, s7_make_symbol(s7, "_pkg_tbl"), _pkg_tbl)))); */
 
-                /* printf("root_ws 2: %s\n", TO_STR(s7_name_to_value(s7, "-mibl-ws-table"))); */
+                /* printf("root_ws 2: %s\n", TO_STR(s7_name_to_value(s7, "*mibl-project*"))); */
                 /* print_backtrace(s7); */
-                /* return s7_name_to_value(s7, "-mibl-ws-table"); */
+                /* return s7_name_to_value(s7, "*mibl-project*"); */
                 return s7_t(s7);
                 /* return s7_make_string(s7, "FOOBAR"); */
 
@@ -3539,7 +3546,7 @@ EXPORT s7_pointer g_load_project(s7_scheme *s7,  s7_pointer args)
         /* rootdir = "test"; */
 
     /* char *sexp = "(set-cdr! " */
-    /*     "(assoc-in '(:@ :pkgs) -mibl-ws-table) " */
+    /*     "(assoc-in '(:@ :pkgs) *mibl-project*) " */
     /*     "_pkg_tbl)"; */
 
     /* s7_eval_c_string(s7, sexp); */
@@ -3555,12 +3562,12 @@ EXPORT s7_pointer g_load_project(s7_scheme *s7,  s7_pointer args)
     /*                             s7_list(s7, 2, */
     /*                                     s7_make_keyword(s7, "@"), */
     /*                                     s7_make_keyword(s7, "pkgs")), */
-    /*                             s7_name_to_value(s7, "-mibl-ws-table")), */
+    /*                             s7_name_to_value(s7, "*mibl-project*")), */
     /*                     _pkg_tbl), */
     /*         s7_rootlet(s7)); */
 
-    /* printf("root_ws 3: %s\n", TO_STR(s7_name_to_value(s7, "-mibl-ws-table"))); */
-    return s7_name_to_value(s7, "-mibl-ws-table");
+    /* printf("root_ws 3: %s\n", TO_STR(s7_name_to_value(s7, "*mibl-project*"))); */
+    return s7_name_to_value(s7, "*mibl-project*");
 }
 
 bool _include_this(FTSENT *ftsentry)
@@ -3784,7 +3791,7 @@ EXPORT s7_pointer load_project(const char *home_sfx, const char *traversal_root)
     /* s7_define_variable(s7, "pkg-tbl", pkg_tbl); */
 
     s7_pointer pkg_tbl =
-        s7_eval_c_string(s7, "(cadr (assoc-in '(:@ :pkgs) -mibl-ws-table))");
+        s7_eval_c_string(s7, "(cadr (assoc-in '(:@ :pkgs) *mibl-project*))");
 #if defined(DEBUG_TRACE)
     if (debug_mibl_crawl)
         log_debug("building pkg_tbl: %s", TO_STR(pkg_tbl));
@@ -3854,7 +3861,8 @@ EXPORT s7_pointer load_project(const char *home_sfx, const char *traversal_root)
                     } else {
                         if (_include_this(ftsentry)) {
 #if defined(DEBUG_TRACE)
-                            if (trace) log_info(RED "Including" CRESET " %s",
+                            if (trace)
+                                log_info(RED "Including" CRESET " %s",
                                                 ftsentry->fts_path);
 #endif
                             if (strncmp(ftsentry->fts_name, "_build", 6) == 0) {
@@ -4038,7 +4046,7 @@ EXPORT s7_pointer load_project(const char *home_sfx, const char *traversal_root)
     }
 
     /* s7_pointer pkg_tbl = */
-    /*     s7_eval_c_string(s7, "(set-cdr! (assoc-in '(:@ :pkgs) -mibl-ws-table))"); */
+    /*     s7_eval_c_string(s7, "(set-cdr! (assoc-in '(:@ :pkgs) *mibl-project*))"); */
 
     if (verbose) {
         log_info("cwd: %s", getcwd(NULL, 0));
@@ -4049,8 +4057,8 @@ EXPORT s7_pointer load_project(const char *home_sfx, const char *traversal_root)
         log_info("dunefile count: %d", dunefile_ct);
         /* log_info("pkg_tbl: %s", TO_STR(pkg_tbl)); */
 
-        /* s7_pointer wss = s7_eval_c_string(s7, "-mibl-ws-table"); */
-        /* log_info("-mibl-ws-table: %s\n", TO_STR(wss)); */
+        /* s7_pointer wss = s7_eval_c_string(s7, "*mibl-project*"); */
+        /* log_info("*mibl-project*: %s\n", TO_STR(wss)); */
 
         /* print_backtrace(s7); */
 

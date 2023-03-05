@@ -177,6 +177,10 @@ EXPORT s7_pointer g_effective_ws_root(s7_scheme *s7,  s7_pointer args)
 
 EXPORT void initialize_mibl_data_model(s7_scheme *s7)
 {
+#if defined(DEBUG_TRACE)
+    if (debug_mibl)
+        log_trace("initialize_mibl_data_model");
+#endif
     /*
      * data model:
      * wss: alist, keys are ws names with @, values are alists
@@ -212,7 +216,7 @@ EXPORT void initialize_mibl_data_model(s7_scheme *s7)
 
     UT_string *init_sexp;
     utstring_new(init_sexp);
-    utstring_printf(init_sexp, "(define -mibl-ws-table "
+    utstring_printf(init_sexp, "(define *mibl-project* "
                     "`((:@ (:name \"@\") (:path %s) "
                     "(:exports ,(make-hash-table)) "
                     "(:opam ,(make-hash-table)) "
@@ -222,9 +226,12 @@ EXPORT void initialize_mibl_data_model(s7_scheme *s7)
                     bws_root);
 
     s7_pointer wss = s7_eval_c_string(s7, utstring_body(init_sexp));
-    if (debug) // & verbosity > 1)
-        log_info("wss: %s\n", TO_STR(wss));
+    (void)wss;
 
+#if defined(DEBUG_TRACE)
+    if (debug) // & verbosity > 1)
+        log_debug("wss: %s\n", TO_STR(wss));
+#endif
     /* /\* s7_pointer base_entry = s7_make_list(s7, 4, s7_f(s7)); *\/ */
     /* key = s7_make_symbol(s7, "name"); */
     /* datum = s7_make_symbol(s7, "@"); */
@@ -268,7 +275,7 @@ EXPORT void initialize_mibl_data_model(s7_scheme *s7)
     /* if (debug) */
     /*     log_debug("root_ws: %s\n", TO_STR(root_ws)); */
 
-    /* s7_define_variable(s7, "-mibl-ws-table", root_ws); */
+    /* s7_define_variable(s7, "*mibl-project*", root_ws); */
 
     /* return root_ws; */
 }
@@ -952,8 +959,10 @@ void _mibl_s7_init(void)
     /* tmp dir */
     char tplt[] = "/tmp/obazl.XXXXXXXXXX";
     char *tmpdir = mkdtemp(tplt);
+#if defined(DEBUG_TRACE)
     if (debug)
         log_debug("tmpdir: %s", tmpdir);
+#endif
     s7_define_variable(s7, "*tmp-dir*", s7_make_string(s7, tmpdir));
 }
 
