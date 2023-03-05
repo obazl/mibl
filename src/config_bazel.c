@@ -178,16 +178,21 @@ EXPORT void bazel_configure(void) // char *_exec_root)
     }
 #endif
     if (getenv("BAZEL_TEST")) {
-        log_debug("Configuring for 'bazel test' env");
+#if defined(DEBUG_TRACE)
+    if (verbose) log_debug("Configuring for 'bazel test' env");
+#endif
     }
     else if (getenv("BUILD_WORKSPACE_DIRECTORY")) {
-        log_debug("Configuring for 'bazel run' env");
+#if defined(DEBUG_TRACE)
+        if (verbose) log_debug("Configuring for 'bazel run' env");
+#endif
     }
     else {
         fprintf(stderr, RED "ERROR: " CRESET
                 "Non-bazel environment. This tool must be run from a Bazel workspace root using 'bazel run'.\n");
         exit(EXIT_FAILURE);
     }
+
 #if defined(DEBUG_TRACE)
     if (debug_bazel) {
         log_debug("HOME: %s", getenv("HOME"));

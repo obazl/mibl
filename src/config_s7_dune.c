@@ -985,6 +985,8 @@ EXPORT s7_scheme *s7_configure(void)
     s7_define_variable(s7, "*debug-mibl*", s7_f(s7));
     s7_define_variable(s7, "*debug-ppx*", s7_f(s7));
 
+    s7_define_variable(s7, "*mibl-quiet*", s7_f(s7));
+
     s7_define_variable(s7, "*dunefile-count*", s7_make_integer(s7, 0));
 
     /* logging */
