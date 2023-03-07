@@ -24,10 +24,10 @@
 /* #include "ini.h" */
 #include "log.h"
 
-/* #if EXPORT_INTERFACE */
+#if EXPORT_INTERFACE
 #include "utarray.h"
 #include "utstring.h"
-/* #endif */
+#endif
 
 #include "config_bazel.h"
 
@@ -35,13 +35,14 @@ extern int rc;
 
 extern bool bzl_mode;   /* t: we launched from mibl under bazel */
 
+char *build_ws_dir; /* BUILD_WORKSPACE_DIRECTORY else NULL */
 char *build_wd; /* BUILD_WORKING_DIRECTORY else NULL */
 char *launch_dir; /* real launch dir */
 
 /* path args passed to mibl relative to build_wd */
 
 /* UT_string *ws_root; */
-char *bws_root = NULL;     /* base ws root */
+char *rootws = NULL;     /* proj root workspace */
 char *ews_root = NULL;     /* effective ws root */
 
 char *traversal_root;           /* maybe not same as ws root */
@@ -69,8 +70,8 @@ UT_string *obazl_ini_path; // .config
 char *_effective_ws_root(char *dir)
 {
 #if defined(DEBUG_TRACE)
-    /* if (trace) */
-    /*     log_trace("_effective_ws_root: %s", dir); */
+    if (trace)
+        log_trace("_effective_ws_root: %s", dir);
 #endif
 
    /* if (strncmp(homedir, dir, strlen(dir)) == 0) { */
@@ -102,8 +103,11 @@ char *_effective_ws_root(char *dir)
 char *effective_ws_root(char *_dir)
 {
 #if defined(DEBUG_TRACE)
-    /* if (trace) log_trace("effective_ws_root for: %s", _dir); */
+    if (trace) log_trace("effective_ws_root for: %s", _dir);
 #endif
+
+    if (getenv("BAZEL_TEST"))
+        return getcwd(NULL,0);
 
     /* log_debug("effective_ws_root: %s", dir); */
     /* use realpath to remove cwd dot, e.g. /home/uid/foo/bar.  */
@@ -117,43 +121,68 @@ char *effective_ws_root(char *_dir)
     return _effective_ws_root(dir);
 }
 
-/*
- */
-void _set_base_ws_root(void)
+//FIXME: this sets runfiles dir, not root ws!
+void _set_rootws(void)
 {
 #if defined(DEBUG_TRACE)
-    if (trace) log_trace(RED "_set_base_ws_root" CRESET);
-#endif
-    char *_bws_root = getenv("BUILD_WORKSPACE_DIRECTORY");
-#if defined(DEBUG_TRACE)
-    if (debug_bazel) log_debug("Bazel BUILD_WORKSPACE_DIRECTORY: %s", bws_root);
+    if (trace) log_trace(RED "_set_rootws" CRESET);
 #endif
 
-    if (_bws_root == NULL) {
-        /* we're not in Bazel rte, but we may be in a Bazel WS. So
-           look for nearest WORKSPACE.bazel (or WORKSPACE) file
-           ancestor. */
-        /* effective_ws_root makes a copy */
-        bws_root = effective_ws_root(getcwd(NULL,0));
+    if (getenv("BAZEL_TEST")) {
+        rootws = strdup(utstring_body(runfiles_root));
 #if defined(DEBUG_TRACE)
         if (debug_bazel)
-            log_debug("Found WS file at %s", bws_root);
+            log_debug("Running under bazel test; setting bws to runfiles root%s", utstring_body(runfiles_root));
 #endif
-    } else {
-        bws_root = strdup(_bws_root);
+    }
+    else {
+        /* outside of bazel test env, the bazel run env will set these
+           two BUILD_* env vars: */
+        //char *_rootws
+        build_ws_dir= getenv("BUILD_WORKSPACE_DIRECTORY");
+        build_wd    = getenv("BUILD_WORKING_DIRECTORY");
+
+        /* if (verbose && verbosity > 1) { */
+        /*     log_info("BUILD_WORKING_DIRECTORY: %s", build_wd); */
+        /*     log_info("BUILD_WORKSPACE_DIRECTORY: %s", build_ws_dir); */
+        /* } */
+
+        if (build_ws_dir == NULL) { /* _rootws */
+            /* we're not running under bazel run or test, but we may
+               be in a Bazel repo/project. So look for nearest
+               WORKSPACE.bazel (or WORKSPACE) file ancestor. */
+
+            /* FIXME: always treat cwd as ws root? abort if no ws file
+               found? or offer to write one? */
+
+            /* For now we don't care because we only run under bazel. */
+
+            fprintf(stdout, RED "ERROR: " CRESET
+                    "This program must be run under Bazel, using 'bazel run' or 'bazel test'.\n");
+            exit(EXIT_FAILURE);
+
+            /* effective_ws_root makes a copy */
+            rootws = effective_ws_root(getcwd(NULL,0));
+#if defined(DEBUG_TRACE)
+            if (debug_bazel)
+                log_debug("Found WS file at %s", rootws);
+#endif
+        } else {
+            rootws = strdup(build_ws_dir); // _rootws);
+        }
     }
 
-    ews_root = strdup(bws_root);  /* by default, effective ws == base ws */
+    ews_root = strdup(rootws);  /* by default, effective ws == base ws */
 #if defined(DEBUG_TRACE)
     if (debug_bazel)
-        log_debug("base ws root: %s", bws_root);
+        log_debug("base ws root: %s", rootws);
 #endif
 
     /* utstring_new(ws_root); */
-    /* if (bws_root == NULL) */
+    /* if (rootws == NULL) */
     /*     utstring_printf(ws_root, "%s", getcwd(NULL, 0)); */
     /* else */
-    /*     utstring_printf(ws_root, "%s", bws_root); */
+    /*     utstring_printf(ws_root, "%s", rootws); */
 }
 
 /* bazel_configure
@@ -173,39 +202,23 @@ void _set_base_ws_root(void)
 EXPORT void bazel_configure(void) // char *_exec_root)
 {
 #if defined(DEBUG_TRACE)
-    if (trace) {
+    if (trace || debug_bazel) {
         log_trace("bazel_configure");
     }
 #endif
-    if (getenv("BAZEL_TEST")) {
-#if defined(DEBUG_TRACE)
-    if (verbose) log_debug("Configuring for 'bazel test' env");
-#endif
-    }
-    else if (getenv("BUILD_WORKSPACE_DIRECTORY")) {
-#if defined(DEBUG_TRACE)
-        if (verbose) log_debug("Configuring for 'bazel run' env");
-#endif
-    }
-    else {
-        fprintf(stderr, RED "ERROR: " CRESET
-                "Non-bazel environment. This tool must be run from a Bazel workspace root using 'bazel run'.\n");
-        exit(EXIT_FAILURE);
-    }
 
-#if defined(DEBUG_TRACE)
-    if (debug_bazel) {
-        log_debug("HOME: %s", getenv("HOME"));
-        log_debug("PWD: %s", getenv("PWD"));
-        log_debug("BUILD_WORKSPACE_DIRECTORY: %s", getenv("BUILD_WORKSPACE_DIRECTORY"));
-        log_debug("BUILD_WORKING_DIRECTORY: %s", getenv("BUILD_WORKING_DIRECTORY"));
+    /* RUNTIME ENVIRONMENT:
 
-        log_debug("TEST_TMPDIR: %s", getenv("TEST_TMPDIR"));
-        log_debug("RUNFILES_MANIFEST_FILE: %s", getenv("RUNFILES_MANIFEST_FILE"));
-        log_debug("RUNFILES_MANIFEST_ONLY: %s", getenv("RUNFILES_MANIFEST_ONLY"));
-        log_debug("RUNFILES_DIR: %s", getenv("RUNFILES_DIR"));
-    }
-#endif
+       cmd           tgt rule   BAZEL_TEST     BUILD_WORKSPACE_DIRECTORY
+       ---           --------   ----------     -------------------------
+       'bazel test'   test      defined        undefined
+       'bazel run',   test      defined        defined
+       'bazel run',  non-test   undefined      defined
+
+       standalone     n/a       undefined      undefined
+
+     */
+
     launch_dir = getcwd(NULL, 0);
 
     /* NB: the Bazel cc toolchain _may_ set
@@ -213,17 +226,14 @@ EXPORT void bazel_configure(void) // char *_exec_root)
      */
 #if defined(DEBUG_TRACE)
 #ifdef BAZEL_CURRENT_REPOSITORY
+    /* defined for 'bazel run' UNLESS target is a test rule */
     if (debug_bazel)
-        log_debug("BAZEL_CURRENT_REPOSITORY DEFINED: '%s'", BAZEL_CURRENT_REPOSITORY);
+        log_debug("BAZEL_CURRENT_REPOSITORY: '%s'", BAZEL_CURRENT_REPOSITORY);
 #endif
 #endif
     build_wd = getenv("BUILD_WORKING_DIRECTORY");
-#if defined(DEBUG_TRACE)
-    if (verbose)
-        log_info("BUILD_WORKING_DIRECTORY: %s", build_wd);
-#endif
 
-
+    //FIXME: is runfiles_root always === cwd?
     utstring_new(runfiles_root);
     utstring_printf(runfiles_root, "%s", getcwd(NULL, 0));
 #if defined(DEBUG_TRACE)
@@ -231,16 +241,13 @@ EXPORT void bazel_configure(void) // char *_exec_root)
         log_info("runfiles_root: %s", utstring_body(runfiles_root));
 #endif
 
-#if defined(DEBUG_TRACE)
-    if (debug_bazel) log_debug("BUILD_WORKING_DIRECTORY: %s", build_wd);
-#endif
-
     if (getenv("BAZEL_TEST")) {
         bzl_mode = true;
-        if (verbose) log_info("Running under bazel test");
+        if (verbose) log_info("Test rule target: %s",
+                              getenv("TEST_TARGET"));
     }
     else if (build_wd == NULL) {
-        /* running outside of bazel */
+        /* running standalone - outside of bazel */
 #if defined(DEBUG_TRACE)
         if (verbose) log_info("Running outside of Bazel");
 #endif
@@ -252,8 +259,9 @@ EXPORT void bazel_configure(void) // char *_exec_root)
 #endif
 /* #if defined(DEBUG_TRACE) */
     } else {
+        /* running under 'bazel run' */
         bzl_mode = true;
-        if (verbose) log_info("Running in bzl mode");
+        if (verbose) log_info("Running under 'bazel run'");
 /* #endif */
     }
 
@@ -269,13 +277,44 @@ EXPORT void bazel_configure(void) // char *_exec_root)
     /* if (debug_bazel) */
     /*     log_debug("runfiles_root: %s", utstring_body(runfiles_root)); */
 
-    if ( !getenv("BAZEL_TEST") )
-        _set_base_ws_root();        /* Why? does not set anything */
+    /* if ( !getenv("BAZEL_TEST") ) */
+    _set_rootws();
 
     /* mibl_config(); */
     /* utarray_new(src_files,&ut_str_icd); */
 
-#if defined(DEBUG_TRACE)
-    if (debug_bazel) log_debug("bazel_configure done");
-#endif
+    if (verbose && verbosity > 1) {
+        log_info(GRN "Bazel configuration summary:" CRESET);
+        if (getenv("BAZEL_TEST")) {
+            if (getenv("BUILD_WORKSPACE_DIRECTORY")) {
+                log_info("Configured for 'bazel run', TEST_TARGET: %s",
+                         getenv("TEST_TARGET"));
+            } else {
+                log_info("Configured for 'bazel test', TEST_TARGET %s",
+                         getenv("TEST_TARGET"));
+            }
+        }
+        else if (getenv("BUILD_WORKSPACE_DIRECTORY")) {
+            log_info("Configured for 'bazel run' env");
+        }
+        else {
+            //FIXME: support standalone runs
+            fprintf(stderr, RED "ERROR: " CRESET
+                    "Non-bazel environment. This tool must be run from a Bazel workspace root using 'bazel run'.\n");
+            exit(EXIT_FAILURE);
+        }
+        log_debug("\tBAZEL_TEST?: %s", getenv("BAZEL_TEST"));
+        log_debug("\trootws: %s", rootws);
+        log_debug("\tHOME: %s", getenv("HOME"));
+        log_debug("\tPWD: %s", getenv("PWD"));
+        log_debug("\tBUILD_WORKSPACE_DIRECTORY: %s", getenv("BUILD_WORKSPACE_DIRECTORY"));
+        log_debug("\tBUILD_WORKING_DIRECTORY: %s", getenv("BUILD_WORKING_DIRECTORY"));
+
+        log_debug("\tTEST_TMPDIR: %s", getenv("TEST_TMPDIR"));
+        log_debug("\tRUNFILES_MANIFEST_FILE: %s", getenv("RUNFILES_MANIFEST_FILE"));
+        log_debug("\tRUNFILES_MANIFEST_ONLY: %s", getenv("RUNFILES_MANIFEST_ONLY"));
+        log_debug("\tRUNFILES_DIR: %s", getenv("RUNFILES_DIR"));
+        log_debug(GRN "End Bazel configuration summary." CRESET);
+        fflush(NULL);
+    }
 }

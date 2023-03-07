@@ -1,4 +1,4 @@
-(if *debugging*
+(if *debug-loads*
     (format #t "loading dune/expanders.scm\n"))
 
 (load "dune/api_utils.scm")
@@ -1163,4 +1163,7 @@
              ;;  (error 'wtf2 "WTF2? ~A" (car raw-cmds)))
              ;; ))))
 
-;; (display "loaded dune/expanders.scm\n")
+(provide 'expanders.scm)
+
+(if *debug-loads*
+    (format #t "loaded dune/expanders.scm\n"))

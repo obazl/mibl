@@ -14,6 +14,8 @@
 
 #include "debug_s7.h"
 
+bool debug_s7_config = false;
+
 extern bool debug;
 extern bool trace;
 

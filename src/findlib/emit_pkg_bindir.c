@@ -128,7 +128,7 @@ void emit_opam_pkg_bindir(const char *pkg) // UT_string *dune_pkg_file)
     utstring_renew(outpath);
     utstring_printf(outpath, "%s/%s/bin",
                     utstring_body(opam_coswitch_lib),
-                    //bws_root, /* obazl, */
+                    //rootws, /* obazl, */
                     pkg);
     mkdir_r(utstring_body(outpath));
 
@@ -250,7 +250,7 @@ void emit_opam_pkg_bindir(const char *pkg) // UT_string *dune_pkg_file)
     utstring_renew(outpath);
     utstring_printf(outpath, "%s/%s/stublibs",
                     utstring_body(opam_coswitch_lib),
-                    //bws_root, /* obazl, */
+                    //rootws, /* obazl, */
                     pkg);
     mkdir_r(utstring_body(outpath));
 

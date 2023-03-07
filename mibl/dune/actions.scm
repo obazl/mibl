@@ -1,5 +1,7 @@
-(if *debugging*
-    (format #t "dune/dune_actions.scm loading...~%"))
+(if *debug-loads*
+    (format #t "loading dune/dune_actions.scm~%"))
+
+(provide 'actions.scm)
 
 (load "dune/dune_action_run.scm")
 (load "dune/shell_actions.scm")

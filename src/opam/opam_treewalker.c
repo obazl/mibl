@@ -422,7 +422,7 @@ EXPORT void walk_tree(char *opam_switch, char* pkg_name)
         log_debug("%-16s%s", "opam switch:", opam_switch);
         log_debug("%-16s%s", "pkg name:", pkg_name);
         log_debug("%-16s%s", "launch_dir:", launch_dir);
-        log_debug("%-16s%s", "base ws:", bws_root);
+        log_debug("%-16s%s", "base ws:", rootws);
         log_debug("%-16s%s", "effective ws:", ews_root);
 /* #endif */
     if (verbose) {

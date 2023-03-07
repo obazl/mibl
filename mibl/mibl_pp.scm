@@ -663,7 +663,7 @@
 (define (mibl-pp obj)
   (call-with-output-string
    (lambda (p)
-     ((if (keyword? obj) display pretty-print) obj p))))
+     ((if (keyword? obj) display mibl-pretty-print) obj p))))
 
 #|
 (define (pretty-print-all)

@@ -36,8 +36,8 @@ DIRLOCS = [
     ## meta_syntaxis.c is generated so needs special treatment
     "SRC4=$(location //src/findlib:meta_syntaxis.c);",
     "SRCDIR4=`dirname $$SRC4`;",
-    "SRC5=$(location //convert:convert.c);",
-    "SRCDIR5=`dirname $$SRC5`;",
+    # "SRC5=$(location //convert:convert.c);",
+    # "SRCDIR5=`dirname $$SRC5`;",
     "SRC6=$(location //src/xdg:xdg.c);",
     "SRCDIR6=`dirname $$SRC6`;",
     "SRC7=$(location //src/opam:opam_lexer.c);",
@@ -58,7 +58,7 @@ FILELOCS = [
     "$(location //src:ansi_colors.h)",
     "$(location //src:globals.c)",
     "$(location //src:config_bazel.c)",
-    "$(location //src:config_mibl.c)",
+    "$(location //src:mibl.c)",
     "$(location //src:config_opam.c)",
     # "$(location //src:config_s7.c)",
     "$(location //src:config_s7_dune.c)",
@@ -105,7 +105,7 @@ FILELOCS = [
     "$(location //src/opam:opam_syntaxis.c)",
     "$(location //src/opam:opam_package.c):",
 
-    "$(location //convert:convert.c)",
+    # "$(location //convert:convert.c)",
     "$(location //coswitch:coswitch.c)",
 
     "$(location //src/xdg:xdg.c)",
@@ -133,7 +133,7 @@ CP_CMDS = " ".join([
     "cp $${SRCDIR2}/*.h $(@D);",
     "cp $${SRCDIR3}/*.h $(@D);",
     "cp $${SRCDIR4}/*.h $(@D);",
-    "cp $${SRCDIR5}/*.h $(@D);",
+    # "cp $${SRCDIR5}/*.h $(@D);",
     "cp $${SRCDIR6}/*.h $(@D);",
     "cp $${SRCDIR7}/*.h $(@D);",
     "cp $${SRCDIR8}/*.h $(@D);",
@@ -146,7 +146,7 @@ genrule(
         "//src:ansi_colors.h",
         "//src:globals.c",
         "//src:config_bazel.c",
-        "//src:config_mibl.c",
+        "//src:mibl.c",
         "//src:config_opam.c",
         # "//src:config_s7.c",
         "//src:config_s7_dune.c",
@@ -197,7 +197,7 @@ genrule(
         "//src/xdg:xdg.c",
 
         ## runners
-        "//convert:convert.c",
+        # "//convert:convert.c",
         "//coswitch:coswitch.c",
 
         ## FIXME: select on //:compilation_mode: dbg?
@@ -217,7 +217,7 @@ genrule(
     outs = [
         "globals.h",
         "config_bazel.h",
-        "config_mibl.h",
+        "mibl.h",
         "config_opam.h",
         # "config_s7.h",
         "config_s7_dune.h",
@@ -267,7 +267,7 @@ genrule(
 
         "xdg.h",
 
-        "convert.h",
+        # "convert.h",
         "coswitch.h"
     ],
     cmd = " ".join(DIRLOCS) +
@@ -284,7 +284,7 @@ genrule(
         "//src:ansi_colors.h",
         "//src:globals.c",
         "//src:config_bazel.c",
-        "//src:config_mibl.c",
+        "//src:mibl.c",
         "//src:config_opam.c",
         # "//src:config_s7.c",
         "//src:config_s7_dune.c",
@@ -364,7 +364,7 @@ genrule(
         "$(location //src:ansi_colors.h)",
         "$(location //src:globals.c)",
         "$(location //src:config_bazel.c)",
-        "$(location //src:config_mibl.c)",
+        "$(location //src:mibl.c)",
         "$(location //src:config_opam.c)",
         # "$(location //src:config_s7.c)",
         "$(location //src:config_s7_dune.c)",

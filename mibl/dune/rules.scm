@@ -1,6 +1,6 @@
 ;; (display "dune/dune_stanza_rule.scm loading ...") (newline)
 
-(load "dune/expanders.scm")
+(require 'expanders.scm)
 
 (define (normalize-action-rule ws pkg rule-alist targets deps)
   (if *debugging*

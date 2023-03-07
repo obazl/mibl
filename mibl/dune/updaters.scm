@@ -1,5 +1,5 @@
-(if *debugging*
-    (format #t "loading updaters.scm~%"))
+(if *debug-loads*
+    (format #t "loading dune/updaters.scm~%"))
 
 (define (update-filegroups-table! ws client-path pkg-path tgt pattern)
   (if *debugging*
@@ -979,5 +979,5 @@
                          )))
                 (assoc-val :dune pkg))))
 
-(if *debugging*
-    (format #t "loaded updaters.scm~%"))
+(if *debug-loads*
+    (format #t "loaded dune/updaters.scm~%"))

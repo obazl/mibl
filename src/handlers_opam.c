@@ -125,7 +125,7 @@ void handle_dir(FTS* tree, FTSENT *ftsentry)
     if (debug) {
         log_debug("");
         log_debug(BLU "handle_dir:" CRESET);
-        /* log_info("%-20s%s", "base ws:", bws_root); */
+        /* log_info("%-20s%s", "base ws:", rootws); */
         /* log_info("%-20s%s", "effective ws:",ews_root); */
         log_info("%-20s%s", "ftsentry->name:", ftsentry->fts_name);
         log_info("%-20s%s", "ftsentry->path:", ftsentry->fts_path);
@@ -215,7 +215,7 @@ void handle_meta_file(FTSENT *ftsentry)
     if (debug_findlib) {
         log_debug("");
         log_debug(BLU "handle_meta_file:" CRESET);
-        /* log_info("%-20s%s", "base ws:", bws_root); */
+        /* log_info("%-20s%s", "base ws:", rootws); */
         /* log_info("%-20s%s", "effective ws:",ews_root); */
         log_info("%-20s%s", "ftsentry->name:", ftsentry->fts_name);
         log_info("%-20s%s", "ftsentry->path:", ftsentry->fts_path);
@@ -232,7 +232,7 @@ void handle_opam_file(FTSENT *ftsentry)
     if (debug) {
         log_debug("");
         log_debug(BLU "handle_opam_file:" CRESET);
-        /* log_info("%-20s%s", "base ws:", bws_root); */
+        /* log_info("%-20s%s", "base ws:", rootws); */
         /* log_info("%-20s%s", "effective ws:",ews_root); */
         log_info("%-20s%s", "ftsentry->name:", ftsentry->fts_name);
         log_info("%-20s%s", "ftsentry->path:", ftsentry->fts_path);

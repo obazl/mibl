@@ -211,7 +211,7 @@ bool _is_ws_root(FTSENT *ftsentry)
 /*         log_debug(""); */
 /*         /\* log_debug(BLUE "_handle_dir:" CRESET " %s (%s)", *\/ */
 /*         /\*           ftsentry->fts_name, ftsentry->fts_path); *\/ */
-/*         /\* log_info("%-20s%s", "base ws:", bws_root); *\/ */
+/*         /\* log_info("%-20s%s", "base ws:", rootws); *\/ */
 /*         /\* log_info("%-20s%s", "effective ws:",ews_root); *\/ */
 /*         log_info("%-20s%s", "ftsentry->name:", ftsentry->fts_name); */
 /*         log_info("%-20s%s", "ftsentry->path:", ftsentry->fts_path); */

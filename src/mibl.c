@@ -3,15 +3,13 @@
 #include <stdbool.h>
 #include <unistd.h>
 
-/* #if EXPORT_INTERFACE */
-#include "utarray.h"
-#include "utstring.h"
 #include "log.h"
-/* #endif */
 
 #include "ini.h"
 
-#include "config_mibl.h"
+#include "s7.h"
+
+#include "mibl.h"
 
 extern const UT_icd ut_str_icd;
 
@@ -28,13 +26,18 @@ extern int  verbosity;
 #define MIBL_S7 MIBL "/s7"
 /* #define OIBL   "mibl" */
 
+s7_scheme *s7;
+
 UT_string *config_mibl;        /* work string */
 
 #if EXPORT_INTERFACE
+#include "utstring.h"
+#include "utarray.h"
+
 struct mibl_config_s {
     char *schema_version;
     int libct;
-    bool emit_bazel;
+    bool emit_starlark;
     bool emit_mibl;
     bool emit_parsetree;
     bool log_mibl;
@@ -54,7 +57,7 @@ struct mibl_config_s mibl_config = {
     .schema_version = MIBL_SCHEMA_VERSION,
     .emit_parsetree = false,
     .emit_mibl      = false,
-    .emit_bazel  = true,
+    .emit_starlark  = true,
     .log_exports      = false,
     .log_mibl      = false,
     .log_parsetree = false,
@@ -65,8 +68,8 @@ struct mibl_config_s mibl_config = {
 LOCAL int _miblrc_handler(void* config, const char* section, const char* name, const char* value)
 {
 #if defined(DEBUG_TRACE)
-    if (trace_mibl)
-        log_debug("config_handler section %s: %s=%s", section, name, value);
+    if (debug_miblrc)
+        log_debug("_miblrc_handler, section %s: %s=%s", section, name, value);
 #endif
 
     struct mibl_config_s *pconfig = (struct mibl_config_s*)config;
@@ -82,12 +85,12 @@ LOCAL int _miblrc_handler(void* config, const char* section, const char* name, c
     if (MATCH("mibl", "emit")) {
         if (verbose && verbosity > 1) log_debug("miblrc [mibl] emit: %s", value);
         if (strncmp(value, "starlark", 8) == 0) {
-            pconfig->emit_bazel = true;
+            pconfig->emit_starlark = true;
         }
         else if (strncmp(value, "none", 4) == 0) {
             pconfig->emit_parsetree = false;
             pconfig->emit_mibl = false;
-            pconfig->emit_bazel = false;
+            pconfig->emit_starlark = false;
         }
         else if (strncmp(value, "mibl", 4) == 0) {
             pconfig->emit_mibl = true;
@@ -149,7 +152,7 @@ LOCAL int _miblrc_handler(void* config, const char* section, const char* name, c
     /* disallow leading / and ../ */
     if (MATCH("srcs", "exclude")) {
 #if defined(DEBUG_TRACE)
-        if (debug_mibl)
+        if (debug_miblrc)
             log_debug("section: srcs; entry: exclude; val: %s", value);
 #endif
         /* log_debug("\t%s", value); */
@@ -252,6 +255,21 @@ LOCAL int _miblrc_handler(void* config, const char* section, const char* name, c
     return 1;
 }
 
+LOCAL void _log_mibl_config(void)
+{
+    /* log_debug("dump_mibl_config:"); */
+    char **p;
+    p = NULL;
+    while ( (p=(char**)utarray_next(mibl_config.include_dirs,p))) {
+        log_debug("  include: %s",*p);
+    }
+    p = NULL;
+    while ( (p=(char**)utarray_next(mibl_config.exclude_dirs,p))) {
+        log_debug("  exclude: %s",*p);
+    }
+    /* log_debug("dump_mibl_config finished"); */
+}
+
 EXPORT void mibl_configure(void)
 {
 #if defined(DEBUG_TRACE)
@@ -266,9 +284,11 @@ EXPORT void mibl_configure(void)
     utarray_new(mibl_config.include_dirs, &ut_str_icd);
     utarray_new(mibl_config.watch_dirs, &ut_str_icd);
 
+    if (getenv("BAZEL_TEST")) goto summary;
+
     utstring_new(obazl_ini_path);
     utstring_printf(obazl_ini_path, "%s/%s",
-                    bws_root, MIBL_INI_FILE);
+                    rootws, MIBL_INI_FILE);
 
     rc = access(utstring_body(obazl_ini_path), R_OK);
     if (rc) {
@@ -306,8 +326,106 @@ EXPORT void mibl_configure(void)
     utarray_sort(mibl_config.include_dirs, strsort);
     utarray_sort(mibl_config.exclude_dirs, strsort);
 
-#if defined(DEBUG_MIBL)
-    if (debug_mibl)
-        dump_mibl_config();
+ summary:
+    if (verbose && verbosity > 1) {
+        log_info(GRN "mibl configuration summary:" CRESET);
+        _log_mibl_config();
+        log_info(GRN "End mibl configuration summary." CRESET);
+        fflush(NULL);
+    }
+}
+
+UT_string *setter;
+
+EXPORT void mibl_set_flag(char *flag, bool val) {
+    log_debug("mibl_set_flag");
+    utstring_renew(setter);
+    utstring_printf(setter, "(set! %s %s)",
+                    flag, val? "#t": "#f");
+    s7_eval_c_string(s7, utstring_body(setter));
+}
+
+EXPORT struct mibl_config_s *mibl_init(void)
+{
+    /* config in this order: first bazel, then mibl, then s7 */
+    bazel_configure(); // getcwd(NULL, 0));
+
+    mibl_configure();
+
+    log_debug("mibl_configure done");
+    /* if (options[FLAG_ONLY_CONFIG].count) { */
+    /*     log_info("configuration complete, exiting"); */
+    /*     exit(EXIT_SUCCESS); */
+    /* } */
+
+    s7 = s7_configure();
+    log_debug("s7_configure done");
+
+    utstring_new(setter);
+
+    /* if (verbose) */
+    /*     log_info("*load-path*: %s", TO_STR(s7_load_path(s7))); */
+    return &mibl_config;
+}
+
+EXPORT void mibl_run(char *ws, char *main)
+{
+    /* s7_load(s7, "starlark.scm"); */
+
+    s7_load(s7, main);  // "convert_dune.scm");
+
+    /* FIXME: main routine should be '-main' */
+    s7_pointer _main = s7_name_to_value(s7, "dune->obazl");
+
+    if (_main == s7_undefined(s7)) {
+        log_error(RED "Could not find procedure 'dune->obazl'; exiting\n");
+        exit(EXIT_FAILURE);
+    }
+
+    s7_pointer _s7_ws;
+    if (ws) {
+        _s7_ws = s7_make_string(s7, ws);
+    } else {
+        _s7_ws = s7_nil(s7);
+    }
+
+    s7_pointer _s7_args;
+
+    /* if (rootpath) { */
+    /*     _s7_args = s7_list(s7, 2, */
+    /*                        s7_make_string(s7, rootpath), */
+    /*                        _s7_ws); */
+    /* } else { */
+    _s7_args = s7_list(s7, 2,
+                       s7_nil(s7),
+                       _s7_ws);
+    /* } */
+
+#if defined(DEBUG_TRACE)
+    if (debug) log_debug("s7 args: %s", TO_STR(_s7_args));
 #endif
+
+    /* s7_gc_on(s7, s7_f(s7)); */
+
+
+    /* s7_int main_gc_loc = s7_gc_protect(s7, _main); */
+
+    if (verbose && verbosity > 2)
+        log_info("calling s7: %s", TO_STR(_main));
+
+    /* **************************************************************** */
+    /* this does the actual conversion: */
+    s7_pointer result = s7_apply_function(s7, _main, _s7_args);
+    (void)result; /* FIXME: check result */
+    /* **************************************************************** */
+
+    /* log_info("RESULT: %s\n", TO_STR(result)); */
+    s7_gc_unprotect_at(s7, (s7_int)_main);
+
+    char *errmsg = (char*)s7_get_output_string(s7, s7_current_error_port(s7));
+    if ((errmsg) && (*errmsg)) {
+        log_error("[%s\n]", errmsg);
+        s7_quit(s7);
+        exit(EXIT_FAILURE);
+    }
 }

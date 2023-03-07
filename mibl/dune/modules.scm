@@ -1,5 +1,5 @@
-(if *debugging*
-    (format #t "loading modules.scm\n"))
+(if *debug-loads*
+    (format #t "loading dune/modules.scm\n"))
 
 ;; mibl/dune/modules.scm
 
@@ -510,5 +510,5 @@
 ;;         ))
 ;;   )
 
-
-;; (format #t "loaded modules.scm\n")
+(if *debug-loads*
+    (format #t "loaded modules.scm\n"))

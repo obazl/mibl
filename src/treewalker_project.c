@@ -33,7 +33,7 @@ EXPORT void convert_dune_project(UT_array *opam_pending_deps)
     log_debug(BLU "convert_dune_project" CRESET);
     log_debug("%-16s%s", "opam switch:", utstring_body(opam_switch_lib));
     log_debug("%-16s%s", "launch_dir:", launch_dir);
-    log_debug("%-16s%s", "base ws:", bws_root);
+    log_debug("%-16s%s", "base ws:", rootws);
     log_debug("%-16s%s", "effective ws:", ews_root);
 #endif
     return;
@@ -343,7 +343,7 @@ EXPORT void convert_dune_project(UT_array *opam_pending_deps)
 
     if (verbose) {
         log_info("cwd: %s", getcwd(NULL, 0));
-        log_info("bws: %s", bws_root);
+        log_info("bws: %s", rootws);
         log_info("ews: %s", ews_root);
         log_info("dir count: %d", dir_ct);
         log_info("file count: %d", file_ct);

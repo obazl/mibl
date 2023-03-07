@@ -1,4 +1,4 @@
-(if *debugging*
+(if *debug-loads*
     (format #t "loading dune/fields.scm\n"))
 
 ;; mv select targets to pkg :modules
@@ -60,5 +60,5 @@
                                              (cons :conditionals conditionals))))))
                 (filter (lambda (d) (not (null? d))) deps))))))))
 
-(if *debugging*
+(if *debug-loads*
     (format #t "loaded dune/fields.scm\n"))

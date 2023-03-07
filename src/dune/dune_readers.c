@@ -343,10 +343,10 @@ char *dunefile_to_string(UT_string *dunefile_name)
                               utstring_body(dunefile_name));
                     exit(EXIT_FAILURE); //FIXME: exit gracefully
                 } else {
-                    printf("xxxxxxxxxxxxxxxx\n");
+                    // readed < BUFSZ?
                 }
             } else {
-                printf("aaaaaaaaaaaaaaaa\n");
+                // readed BUFSZ bytes?
             }
             /* log_debug("writing"); */
             outFileSizeCounter -= BUFSZ;

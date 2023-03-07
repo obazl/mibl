@@ -360,7 +360,7 @@ LOCAL void _handle_dir(s7_pointer pkg_tbl, FTS* tree, FTSENT *ftsentry)
         log_debug("");
         log_debug(BLUB "_handle_dir:" CRESET " %s (%s)",
                   ftsentry->fts_name, ftsentry->fts_path);
-        log_info("%-20s%s", "base ws:", bws_root);
+        log_info("%-20s%s", "base ws:", rootws);
         log_info("%-20s%s", "effective ws:",ews_root);
         log_info("%-20s%s", "ftsentry->name:", ftsentry->fts_name);
         log_info("%-20s%s", "ftsentry->path:", ftsentry->fts_path);
@@ -2654,7 +2654,7 @@ LOCAL void _update_mli(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
     char *pkg_path = dirname(dname);
     char *mname = _module_name(ftsentry, ext);
 #if defined(DEBUG_TRACE)
-    if (verbose) {
+    if (debug_mibl_crawl) {
         log_info(BLU "_update_mli" CRESET);
         log_info("\tpkg path: %s", pkg_path);
         log_info("\tfts_name: %s", ftsentry->fts_name);
@@ -2695,7 +2695,7 @@ LOCAL void _update_ml(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
     char *mname = _module_name(ftsentry, ext);
 
 #if defined(DEBUG_TRACE)
-    if (verbose) {
+    if (debug_mibl_crawl) {
         log_info(BLU "_update_ml" CRESET);
         log_info("\tpkg path: %s", pkg_path);
         log_info("\tfts_name: %s", ftsentry->fts_name);
@@ -2733,9 +2733,11 @@ LOCAL void _update_ml(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 LOCAL void _handle_ml_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 {
 #if defined(DEBUG_TRACE)
-    log_debug("_handle_ml_file");
-    log_debug("\tfts_name: %s", ftsentry->fts_name, ext);
-    log_debug("\tfts_path: %s", ftsentry->fts_path, ext);
+    if (debug_mibl_crawl) {
+        log_debug("_handle_ml_file");
+        log_debug("\tfts_name: %s", ftsentry->fts_name, ext);
+        log_debug("\tfts_path: %s", ftsentry->fts_path, ext);
+    }
 #endif
     /* char *ext = strrchr(ftsentry->fts_name, '.'); */
     /* _indent(ftsentry->fts_level); */
@@ -2825,11 +2827,123 @@ LOCAL void _handle_ml_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
     /* printf("\n"); */
 }
 
-LOCAL void _handle_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
+LOCAL void _handle_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
+{
+    file_ct++;
+
+    if (strncmp(ftsentry->fts_name,"BUILD.bazel", 11)==0){
+        /* skip BUILD.bazel files */
+        return;
+    }
+
+    if (strncmp(ftsentry->fts_name,"DUNEFILE.mibl", 13)==0){
+        /* skip BUILD.bazel files */
+        return;
+    }
+    /* TODO: skip *.bzl files */
+    /* TODO: skip standard files: READMEs, LICENSE, etc. */
+    /* _handle_regular_file(ftsentry); */
+    if (strncmp(ftsentry->fts_name, "dune-project", 12)
+        == 0) {
+        _handle_dune_project_file(pkg_tbl, ftsentry);
+        return; // break;
+    }
+    if ((strncmp(ftsentry->fts_name, "dune", 4) == 0)
+        /* don't read dune.foo */
+        && (strlen(ftsentry->fts_name) == 4)) {
+        _handle_dune_file(pkg_tbl, ftsentry);
+        /* break; */
+        return; // continue;
+    }
+
+    char *ext = strrchr(ftsentry->fts_name, '.');
+
+    if (ext) {
+        if ((strncmp(ext, ".cm", 3) == 0)) {
+            log_debug("skipping .cm? file : %s", ftsentry->fts_name);
+        }
+        else if (strncmp(ext, ".ml", 3) == 0) {
+            /* handle_ml_file will analyze the full extension */
+            _handle_ml_file(pkg_tbl, ftsentry, ext);
+        }
+        else if ((strncmp(ext, ".md", 3) == 0)
+                 && (strlen(ext) == 3)) {
+            _handle_ml_file(pkg_tbl, ftsentry, ext);
+        }
+        else if ((strncmp(ext, ".sh", 3) == 0)
+                 && (strlen(ext) == 3)) {
+            _handle_generic_file(pkg_tbl, ftsentry, ext);
+            /*_handle_script_file(pkg_tbl, ftsentry, ext);*/
+        }
+        else if ((strncmp(ext, ".py", 3) == 0)
+                 && (strlen(ext) == 3)) {
+            _handle_generic_file(pkg_tbl, ftsentry, ext);
+            /*_handle_script_file(pkg_tbl, ftsentry, ext);*/
+        }
+        else if ((strncmp(ext, ".opam", 5) == 0)
+                 && (strlen(ext) == 5)) {
+            _handle_opam_file(pkg_tbl, ftsentry);
+        }
+        else if (fnmatch("*.opam.template",
+                         ftsentry->fts_name, 0) == 0) {
+            _handle_opam_template_file(pkg_tbl, ftsentry);
+        }
+        else if (strncmp(ext, ".ocamlformat", 12) == 0) {
+            _handle_ocamlformat_file(pkg_tbl, ftsentry);
+        }
+        else if ((strncmp(ext, ".c", 2) == 0)
+                 && (strlen(ext) == 2)) {
+            _update_cc_src_file(pkg_tbl, ftsentry, ext);
+            /* _handle_cc_file(pkg_tbl, ftsentry, ext); */
+        }
+        else if ((strncmp(ext, ".h", 2) == 0)
+                 && (strlen(ext) == 2)) {
+            _update_cc_hdr_file(pkg_tbl, ftsentry, ext);
+            /* _handle_cc_file(pkg_tbl, ftsentry, ext); */
+        }
+        else if ((strncmp(ext, ".cc", 3) == 0)
+                 && (strlen(ext) == 3)) {
+            _handle_cc_file(pkg_tbl, ftsentry, ext);
+        }
+        else if ((strncmp(ext, ".hh", 3) == 0)
+                 && (strlen(ext) == 3)) {
+            _handle_cc_file(pkg_tbl, ftsentry, ext);
+        }
+        else if ((strncmp(ext, ".cpp", 4) == 0)
+                 && (strlen(ext) == 4)) {
+            _handle_cc_file(pkg_tbl, ftsentry, ext);
+        }
+        else if ((strncmp(ext, ".hpp", 4) == 0)
+                 && (strlen(ext) == 4)) {
+            _handle_cc_file(pkg_tbl, ftsentry, ext);
+        }
+        else if ((strncmp(ext, ".cxx", 4) == 0)
+                 && (strlen(ext) == 4)) {
+            _handle_cc_file(pkg_tbl, ftsentry, ext);
+        }
+        else if ((strncmp(ext, ".hxx", 4) == 0)
+                 && (strlen(ext) == 4)) {
+            _handle_cc_file(pkg_tbl, ftsentry, ext);
+        }
+        else {
+            _handle_generic_file(pkg_tbl, ftsentry, ext);
+        }
+    } else {
+        /* no extension */
+        if (strstr(ftsentry->fts_name, "opam")) {
+            _handle_opam_file(pkg_tbl, ftsentry);
+        }
+        else {
+            _handle_generic_file(pkg_tbl, ftsentry, ext);
+        }
+    }
+}
+
+LOCAL void _handle_generic_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 {
 #if defined(DEBUG_TRACE)
     if (debug_mibl_crawl)
-        log_debug("_handle_file %s, %s", ftsentry->fts_name, ext);
+        log_debug("_handle_generic_file %s, %s", ftsentry->fts_name, ext);
 #endif
     /* printf("    pkg: %s\n", dirname(ftsentry->fts_path)); */
 
@@ -3230,7 +3344,7 @@ LOCAL void _handle_cc_file(s7_pointer pkg_tbl,
     _update_cc_src_file(pkg_tbl, ftsentry, ext);
 }
 
-LOCAL void _handle_symlink(s7_pointer pkg_tbl, FTS *tree, FTSENT *ftsentry)
+LOCAL __attribute__((unused)) void _handle_symlink(s7_pointer pkg_tbl, FTS *tree, FTSENT *ftsentry)
 {
     if (strncmp(ftsentry->fts_name, "bazel-", 6) == 0) {
         /* skip Bazel dirs, e.g. bazel-bin */
@@ -3253,9 +3367,9 @@ LOCAL void _handle_symlink(s7_pointer pkg_tbl, FTS *tree, FTSENT *ftsentry)
 
     /* printf("%d. ", ftsentry->fts_level); */
 
-    if (strncmp(ftsentry->fts_name, "dune", 4) == 0) {
-        printf(RED);
-    }
+    /* if (strncmp(ftsentry->fts_name, "dune", 4) == 0) { */
+    /*     printf(RED); */
+    /* } */
 
     /* printf("%s ", ftsentry->fts_name); */
     /* printf(YEL); */
@@ -3263,11 +3377,12 @@ LOCAL void _handle_symlink(s7_pointer pkg_tbl, FTS *tree, FTSENT *ftsentry)
     linklen = readlink(ftsentry->fts_path,
                        linkbuf, BUFSZ);
     if (linklen < 0) {
-        printf(RED "ERROR on readlink: %s \n",
+        printf(RED "ERROR: " CRESET " on readlink: %s \n",
                strerror(errno));
-    /* } else { */
-    /*     printf("%.*s" CRESET "\n", linklen, linkbuf); */
+    } else {
+        printf("SYMLINK %.*s\n", linklen, linkbuf);
     }
+    fflush(stdout);
 }
 
 /* control traversal order */
@@ -3352,16 +3467,18 @@ EXPORT s7_pointer g_load_project(s7_scheme *s7,  s7_pointer args)
 
     /* s7_pointer _s7_rootpath = s7_car(args); */
 
-#if defined(DEBUG_TRACE)
-    if (debug_mibl_crawl) {
+    /* trace = true; */
+
+/* #if defined(DEBUG_TRACE) */
+    /* if (debug_mibl_crawl) { */
         log_debug(RED "g_load_project" CRESET ", args: %s", TO_STR(args));
         log_debug("build_wd: %s (=BUILD_WORKING_DIRECTORY)", build_wd);
         log_debug("launch_dir: %s", launch_dir);
-        log_debug("base ws root: %s", bws_root);
+        log_debug("base ws root: %s", rootws);
         log_debug("effective ws root: %s", ews_root);
         log_debug("cwd: %s", getcwd(NULL, 0));
-    }
-#endif
+/*     } */
+/* #endif */
 
     /* s7_pointer wss =  */
     ///s7_pointer root_ws =
@@ -3387,13 +3504,6 @@ EXPORT s7_pointer g_load_project(s7_scheme *s7,  s7_pointer args)
 #endif
         rootdir = getcwd(NULL,0);
         pathdir = ".";
-
-
-#if defined(DEBUG_TRACE)
-        if (debug_mibl_crawl) log_debug("args is null");
-#endif
-        rootdir = getcwd(NULL, 0);
-        pathdir = ".";
         /* s7_pointer _pkg_tbl = */
         load_project(rootdir, pathdir);
         /* if (trace) { */
@@ -3404,6 +3514,7 @@ EXPORT s7_pointer g_load_project(s7_scheme *s7,  s7_pointer args)
         /*           TO_STR(s7_name_to_value(s7, "*mibl-project*"))); */
         /* } */
         return s7_name_to_value(s7, "*mibl-project*");
+
     } else if (args_ct < 3) {
 #if defined(DEBUG_TRACE)
         if (debug_mibl_crawl) log_debug("args ct < 3");
@@ -3412,7 +3523,7 @@ EXPORT s7_pointer g_load_project(s7_scheme *s7,  s7_pointer args)
         /* rootpath is always arg 0; ignore arg 1, it is used to set var *emit-bazel-pkg* */
         s7_pointer arg = s7_car(args);
 #if defined(DEBUG_TRACE)
-        log_debug("arg 0: %", TO_STR(arg));
+        log_debug("arg 0: %s", TO_STR(arg));
 #endif
 
         if (s7_is_list(s7, arg)) {
@@ -3502,8 +3613,9 @@ EXPORT s7_pointer g_load_project(s7_scheme *s7,  s7_pointer args)
             pathdir = _get_path_dir(arg);
             /* s7_pointer q = s7_name_to_value(s7, "quote"); */
             if (pathdir) {
-                /* s7_pointer _pkg_tbl = */
-                /*     load_project(rootdir, pathdir); */
+                s7_pointer _pkg_tbl =
+                    load_project(rootdir, pathdir);
+                (void)_pkg_tbl;
 #if defined(DEBUG_TRACE)
                 if (trace)
                     printf(RED "LOADED DUNE 2" CRESET "\n");
@@ -3653,13 +3765,91 @@ bool _include_this(FTSENT *ftsentry)
     }
 }
 
+/* deprecated - do this in scheme code */
+/* LOCAL __attribute__((unused)) void _emit_pkg_parsetrees(s7_pointer pkg_tbl) */
+/* { */
+/* #if defined(DEBUG_TRACE) */
+/*     if (trace) log_trace("_emit_pkg_parsetrees"); */
+/* #endif */
+/*     /\* log_info("\tpkg_tbl: %s", TO_STR(pkg_tbl)); *\/ */
+
+/*     char *ws_root = getenv("BUILD_WORKSPACE_DIRECTORY"); */
+
+/*     s7_pointer env = s7_inlet(s7, */
+/*                               s7_list(s7, 2, */
+/*                                       s7_cons(s7, */
+/*                                               s7_make_symbol(s7, "pkg-tbl"), */
+/*                                               pkg_tbl), */
+/*                                       s7_cons(s7, */
+/*                                               s7_make_symbol(s7, "ws-root"), */
+/*                                               s7_make_string(s7, ws_root)) */
+/*                                       )); */
+/*     /\* log_debug("env: %s", TO_STR(env)); *\/ */
+/*     char * exec_sexp = */
+/*         "(for-each (lambda (k)" */
+/*         "            (let* ((pkg (hash-table-ref pkg-tbl k))" */
+/*         "                  (pkg-path (car (assoc-val :pkg-path pkg)))" */
+/*         "                  (outpath (string-append ws-root \"/\" pkg-path \"/DUNEFILE.mibl\")))" */
+/*         "              (call-with-output-file outpath" */
+/*         "                 (lambda (p)" */
+/*         "                    (mibl-pretty-print pkg p)))))" */
+/*         /\* flush-output-port? *\/ */
+/*         "          (hash-table-keys pkg-tbl))" */
+/*         ; */
+/*         /\* "              (format #t \"OUTPATH: ~A~%\" outpath)))" *\/ */
+
+/*     s7_pointer x = s7_eval_c_string_with_environment(s7, exec_sexp, env); */
+
+/*     (void)x; */
+/*     fflush(stdout); */
+/* } */
+
+/* deprecated - do this in scheme code */
+/* LOCAL __attribute__((unused)) void _emit_ws_parsetree(s7_pointer pkg_tbl) */
+/* { */
+/* #if defined(DEBUG_TRACE) */
+/*     if (trace) log_trace("_emit_ws_parsetree"); */
+/* #endif */
+/*     /\* log_info("\tpkg_tbl: %s", TO_STR(pkg_tbl)); *\/ */
+
+/*     char *ws_root = getenv("BUILD_WORKSPACE_DIRECTORY"); */
+
+/*     s7_pointer env = s7_inlet(s7, */
+/*                               s7_list(s7, 2, */
+/*                                       s7_cons(s7, */
+/*                                               s7_make_symbol(s7, "pkg-tbl"), */
+/*                                               pkg_tbl), */
+/*                                       s7_cons(s7, */
+/*                                               s7_make_symbol(s7, "ws-root"), */
+/*                                               s7_make_string(s7, ws_root)) */
+/*                                       )); */
+/*     /\* log_debug("env: %s", TO_STR(env)); *\/ */
+/*     char * exec_sexp = */
+/*         "(for-each (lambda (k)" */
+/*         "            (let* ((pkg (hash-table-ref pkg-tbl k))" */
+/*         "                  (pkg-path (car (assoc-val :pkg-path pkg)))" */
+/*         "                  (outpath (string-append ws-root \"/\" pkg-path \"/PARSETREE.mibl\")))" */
+/*         "              (call-with-output-file outpath" */
+/*         "                 (lambda (p)" */
+/*         "                    (mibl-pretty-print pkg p)))))" */
+/*         /\* flush-output-port? *\/ */
+/*         "          (hash-table-keys pkg-tbl))" */
+/*         ; */
+/*         /\* "              (format #t \"OUTPATH: ~A~%\" outpath)))" *\/ */
+
+/*     s7_pointer x = s7_eval_c_string_with_environment(s7, exec_sexp, env); */
+
+/*     (void)x; */
+/*     fflush(stdout); */
+/* } */
+
 EXPORT s7_pointer load_project(const char *home_sfx, const char *traversal_root)
 {
 #if defined(DEBUG_TRACE)
     if (debug_mibl_crawl) {
         log_debug(BLU "load_project" CRESET);
         log_debug("%-16s%s", "launch_dir:", launch_dir);
-        log_debug("%-16s%s", "base ws:", bws_root);
+        log_debug("%-16s%s", "base ws:", rootws);
         log_debug("%-16s%s", "effective ws:", ews_root);
         log_debug("%-16s%s", "home_sfx:", home_sfx);
         log_debug("%-16s%s", "traversal_root:", traversal_root);
@@ -3800,24 +3990,23 @@ EXPORT s7_pointer load_project(const char *home_sfx, const char *traversal_root)
 #endif
     /* s7_int pkg_tbl_gc_loc = s7_gc_protect(s7, pkg_tbl); */
 
-    char *ext;
-
     if (verbose) {
-        log_info(GRN "Beginning traversal" CRESET " at %s",
+        log_info(GRN "Traversal root:" CRESET " %s",
                  _traversal_root[0]);
                  // resolved_troot);
-        log_info(GRN " with cwd:" CRESET " at %s", getcwd(NULL, 0));
+        fflush(NULL);
+        /* log_info(GRN " with cwd:" CRESET " at %s", getcwd(NULL, 0)); */
     }
 
     /* TRAVERSAL STARTS HERE */
     if (NULL != tree) {
         while( (ftsentry = fts_read(tree)) != NULL) {
+            /* log_debug("fts iteration"); */
             if (ftsentry->fts_info == FTS_DP) {
                 continue; // do not process post-order visits
             }
 #if defined(DEBUG_TRACE)
             if (debug_mibl_crawl) {
-                printf("\n");
                 log_debug(CYN "iter ftsentry->fts_name: " CRESET "%s",
                           ftsentry->fts_name);
                 log_debug("iter ftsentry->fts_path: %s", ftsentry->fts_path);
@@ -3891,113 +4080,11 @@ EXPORT s7_pointer load_project(const char *home_sfx, const char *traversal_root)
 #endif
                     break;
                 case FTS_F : // regular file
-                    file_ct++;
-
-                    if (strncmp(ftsentry->fts_name,"BUILD.bazel", 11)==0){
-                            /* skip BUILD.bazel files */
-                            break;
-                    }
-                    /* TODO: skip *.bzl files */
-                    /* TODO: skip standard files: READMEs, LICENSE, etc. */
-                    /* _handle_regular_file(ftsentry); */
-                    if (strncmp(ftsentry->fts_name, "dune-project", 12)
-                        == 0) {
-                        _handle_dune_project_file(pkg_tbl, ftsentry);
-                        break;
-                    }
-                    if ((strncmp(ftsentry->fts_name, "dune", 4) == 0)
-                        /* don't read dune.foo */
-                        && (strlen(ftsentry->fts_name) == 4)) {
-                        _handle_dune_file(pkg_tbl, ftsentry);
-                        /* break; */
-                        continue;
-                    }
-
-                    ext = strrchr(ftsentry->fts_name, '.');
-
-                    if (ext) {
-                        if ((strncmp(ext, ".cm", 3) == 0)) {
-                            log_debug("skipping .cm? file : %s", ftsentry->fts_name);
-                        }
-                        else if (strncmp(ext, ".ml", 3) == 0) {
-                            /* handle_ml_file will analyze the full extension */
-                            _handle_ml_file(pkg_tbl, ftsentry, ext);
-                        }
-                        else if ((strncmp(ext, ".md", 3) == 0)
-                                 && (strlen(ext) == 3)) {
-                            _handle_ml_file(pkg_tbl, ftsentry, ext);
-                        }
-                        else if ((strncmp(ext, ".sh", 3) == 0)
-                                 && (strlen(ext) == 3)) {
-                            _handle_file(pkg_tbl, ftsentry, ext);
-                            /*_handle_script_file(pkg_tbl, ftsentry, ext);*/
-                        }
-                        else if ((strncmp(ext, ".py", 3) == 0)
-                                 && (strlen(ext) == 3)) {
-                            _handle_file(pkg_tbl, ftsentry, ext);
-                            /*_handle_script_file(pkg_tbl, ftsentry, ext);*/
-                        }
-                        else if ((strncmp(ext, ".opam", 5) == 0)
-                                 && (strlen(ext) == 5)) {
-                            _handle_opam_file(pkg_tbl, ftsentry);
-                        }
-                        else if (fnmatch("*.opam.template",
-                                         ftsentry->fts_name, 0) == 0) {
-                            _handle_opam_template_file(pkg_tbl, ftsentry);
-                        }
-                        else if (strncmp(ext, ".ocamlformat", 12) == 0) {
-                            _handle_ocamlformat_file(pkg_tbl, ftsentry);
-                        }
-                        else if ((strncmp(ext, ".c", 2) == 0)
-                                 && (strlen(ext) == 2)) {
-                            _update_cc_src_file(pkg_tbl, ftsentry, ext);
-                            /* _handle_cc_file(pkg_tbl, ftsentry, ext); */
-                        }
-                        else if ((strncmp(ext, ".h", 2) == 0)
-                                 && (strlen(ext) == 2)) {
-                            _update_cc_hdr_file(pkg_tbl, ftsentry, ext);
-                            /* _handle_cc_file(pkg_tbl, ftsentry, ext); */
-                        }
-                        else if ((strncmp(ext, ".cc", 3) == 0)
-                                 && (strlen(ext) == 3)) {
-                            _handle_cc_file(pkg_tbl, ftsentry, ext);
-                        }
-                        else if ((strncmp(ext, ".hh", 3) == 0)
-                                 && (strlen(ext) == 3)) {
-                            _handle_cc_file(pkg_tbl, ftsentry, ext);
-                        }
-                        else if ((strncmp(ext, ".cpp", 4) == 0)
-                                 && (strlen(ext) == 4)) {
-                            _handle_cc_file(pkg_tbl, ftsentry, ext);
-                        }
-                        else if ((strncmp(ext, ".hpp", 4) == 0)
-                                 && (strlen(ext) == 4)) {
-                            _handle_cc_file(pkg_tbl, ftsentry, ext);
-                        }
-                        else if ((strncmp(ext, ".cxx", 4) == 0)
-                                 && (strlen(ext) == 4)) {
-                            _handle_cc_file(pkg_tbl, ftsentry, ext);
-                        }
-                        else if ((strncmp(ext, ".hxx", 4) == 0)
-                                 && (strlen(ext) == 4)) {
-                            _handle_cc_file(pkg_tbl, ftsentry, ext);
-                        }
-                        else {
-                            _handle_file(pkg_tbl, ftsentry, ext);
-                        }
-                    } else {
-                        /* no extension */
-                        if (strstr(ftsentry->fts_name, "opam")) {
-                            _handle_opam_file(pkg_tbl, ftsentry);
-                        }
-                        else {
-                            _handle_file(pkg_tbl, ftsentry, ext);
-                        }
-                    }
+                    _handle_file(pkg_tbl, ftsentry);
                     break;
                 case FTS_SL: // symlink
-                    file_ct++;
-                    _handle_symlink(pkg_tbl, tree, ftsentry);
+                    _handle_file(pkg_tbl, ftsentry);
+                    /* _handle_symlink(pkg_tbl, tree, ftsentry); */
                     break;
                 case FTS_SLNONE:
                     /* symlink to non-existent target */
@@ -4050,21 +4137,42 @@ EXPORT s7_pointer load_project(const char *home_sfx, const char *traversal_root)
     /* s7_pointer pkg_tbl = */
     /*     s7_eval_c_string(s7, "(set-cdr! (assoc-in '(:@ :pkgs) *mibl-project*))"); */
 
-    if (verbose) {
-        log_info("cwd: %s", getcwd(NULL, 0));
-        log_info("bws: %s", bws_root);
-        log_info("ews: %s", ews_root);
-        log_info("dir count: %d", dir_ct);
-        log_info("file count: %d", file_ct);
-        log_info("dunefile count: %d", dunefile_ct);
-        /* log_info("pkg_tbl: %s", TO_STR(pkg_tbl)); */
+    fflush(NULL);
+
+    if (verbose && verbosity > 1) {
+        fprintf(stderr, "");
+        fprintf(stdout, "");
+        fflush(NULL);
+        log_info(GRN "Traversal summary:" CRESET);
+        log_info("\tBUILD_WORKSPACE_DIRECTORY: %s",
+                 getenv("BUILD_WORKSPACE_DIRECTORY"));
+        log_info("\ttraversal root: %s", _traversal_root[0]);
+        log_info("\tcwd:    %s", getcwd(NULL, 0));
+        log_info("\trootws: %s", rootws);
+        /* log_info("ews: %s", ews_root); */
+        log_info("\tdir count: %d", dir_ct);
+        log_info("\tfile count: %d", file_ct);
+        log_info("\tdunefile count: %d", dunefile_ct);
+
+        /* FIXME: do we need gc_protect here? */
+        s7_int gc_loc;
+	gc_loc = s7_gc_protect(s7, s7_current_error_port(s7));
+
+        /* log_info("pkg_tbl:"); */
+        /* fprintf(stderr, "%s\n", TO_STR(pkg_tbl)); */
+        log_info("*mibl-project:");
+        fprintf(stdout, "%s\n", NM_TO_STR("*mibl-project*"));
+        s7_flush_output_port(s7, s7_current_output_port(s7));
+        s7_flush_output_port(s7, s7_current_error_port(s7));
+        s7_gc_unprotect_at(s7, gc_loc);
+        fflush(NULL);
 
         /* s7_pointer wss = s7_eval_c_string(s7, "*mibl-project*"); */
         /* log_info("*mibl-project*: %s\n", TO_STR(wss)); */
 
         /* print_backtrace(s7); */
-
-        log_info("exiting load_project");
+        fflush(NULL);
+        /* log_info("exiting load_project"); */
     }
     /* s7_gc_unprotect_at(s7, pkg_tbl_gc_loc); */
 
@@ -4073,7 +4181,12 @@ EXPORT s7_pointer load_project(const char *home_sfx, const char *traversal_root)
     utstring_printf(setter, "(set! *dunefile-count* %d)", dunefile_ct);
     s7_eval_c_string(s7, utstring_body(setter));
 
-    /* log_info("dunefile count: %d", dunefile_ct); */
+    /* if (emit_parsetree || mibl_config.emit_parsetree) { */
+    /*     _emit_ws_parsetree(pkg_tbl); */
+    /* } */
+
+    printf("*mibl-project*: %s\n",
+           TO_STR(s7_name_to_value(s7, "*mibl-project*")));
 
     return pkg_tbl;
 }

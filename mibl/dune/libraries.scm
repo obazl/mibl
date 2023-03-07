@@ -1,5 +1,5 @@
-(if *debugging*
-    (format #t "dune/dune_stanza_library.scm loading ...~%"))
+(if *debug-loads*
+    (format #t "loading dune/libraries.scm~%"))
 
 ;; (load "dune_stanza_fields.scm")
 ;; (load "lookup_tables.scm")
@@ -398,5 +398,5 @@
       (list (cons kind mibl-stanza))
       )))
 
-;; (display "loaded dune/dune_stanza_library.scm") (newline)
-
+(if *debug-loads*
+    (format #t "loaded dune/libraries.scm~%"))

@@ -38,6 +38,11 @@
 /* extern bool debug_miblrc; */
 /* #endif */
 
+bool debug_scm   = false;
+bool debug_loads = false;
+
+bool emit_parsetree = false;
+
 extern bool bzl_mode;
 
 /* char *callback_script_file = "dune.scm"; // passed in 'data' attrib */
@@ -45,6 +50,9 @@ char *callback = "camlark_handler"; /* fn in callback_script_file  */
 
 #if EXPORT_INTERFACE
 #define TO_STR(x) s7_object_to_c_string(s7, x)
+#define NM_TO_STR(x) s7_object_to_c_string(s7, s7_name_to_value(s7, x))
+#define TO_BOOL(x) s7_boolean(s7, s7_name_to_value(s7, x))
+
 #endif
 
 s7_scheme *s7;                  /* GLOBAL s7 */
@@ -223,15 +231,29 @@ EXPORT void initialize_mibl_data_model(s7_scheme *s7)
                     "(:shared-ppx ,(make-hash-table)) "
                     "(:filegroups ,(make-hash-table)) "
                     "(:pkgs ,(make-hash-table)))))",
-                    bws_root);
+                    rootws);
 
     s7_pointer wss = s7_eval_c_string(s7, utstring_body(init_sexp));
     (void)wss;
 
-#if defined(DEBUG_TRACE)
-    if (debug) // & verbosity > 1)
-        log_debug("wss: %s\n", TO_STR(wss));
-#endif
+    /* s7_pointer x = s7_name_to_value(s7, "*mibl-project*"); */
+    /* if (x== s7_undefined(s7)) { */
+    /*     log_error("unbound symbol: *mibl-project*"); */
+    /* } */
+    /* char *xs = s7_object_to_c_string(s7, x); */
+    /* /\* fflush(stdout); *\/ */
+    /* fprintf(stdout, "WWWW: %s\n", xs); */
+
+    if (verbose && verbosity > 1) {
+        log_info(GRN "*mibl-project*:" CRESET " %s",
+                 NM_TO_STR("*mibl-project*"));
+        fflush(stdout);
+        printf("XXXX %s\n", NM_TO_STR("*mibl-project*"));
+        /* fflush(stdout); */
+    }
+    /* printf("2YYYYYYYYYYYYYYYY\n"); */
+    /* log_info("YYYYYYYYYYYYYYYY"); */
+
     /* /\* s7_pointer base_entry = s7_make_list(s7, 4, s7_f(s7)); *\/ */
     /* key = s7_make_symbol(s7, "name"); */
     /* datum = s7_make_symbol(s7, "@"); */
@@ -243,7 +265,7 @@ EXPORT void initialize_mibl_data_model(s7_scheme *s7)
     /*     log_debug("root_ws: %s\n", TO_STR(root_ws)); */
 
     /* key   = s7_make_symbol(s7, "path"); */
-    /* datum = s7_make_string(s7, bws_root); */
+    /* datum = s7_make_string(s7, rootws); */
     /* root_ws = s7_call(s7, _s7_append, */
     /*                   s7_list(s7, 2, root_ws, */
     /*                           s7_list(s7, 1, */
@@ -282,7 +304,9 @@ EXPORT void initialize_mibl_data_model(s7_scheme *s7)
 
 s7_pointer _init_scheme_fns(s7_scheme *s7)
 {
-    /* log_debug("_init_scheme_fns\n"); */
+#if defined(DEBUG_TRACE)
+    if (debug_s7_config) log_debug("_init_scheme_fns");
+#endif
 
     if (_s7_set_cdr == NULL) {
         _s7_set_cdr = s7_name_to_value(s7, "set-cdr!");
@@ -411,7 +435,44 @@ s7_pointer _load_string_lt()
     return string_lt;
 }
 
-LOCAL void _config_s7_load_path_bazel_runfiles(char *manifest)
+/* setting *load-path* in bazel env: two strategies
+   1. generic: iterate over runfiles, add each dir containing .scm files
+   2. specific: we know where the scm dirs are, just hardcode them
+
+   this is not a general purpose routine for use with any runfiles, so
+   we use strategy 2, listing runfiles dirs that should be available
+   when run under bazel run or bazel test.
+*/
+char *scm_runfiles_dirs[] = {
+    "mibl",
+    "mibl/dune",
+    "mibl/meta",
+    "mibl/opam",
+    "external/libs7/libs7",
+    "" /* do not remove terminating null */
+};
+char **scm_dir;
+
+
+LOCAL void _config_s7_load_path_bazel_test_env(void)
+{
+    s7_pointer tmp_load_path = s7_list(s7, 0);
+
+    scm_dir = scm_runfiles_dirs;
+    char *tmpdir;
+    while (strlen(*scm_dir) != 0) {
+        tmpdir = realpath(*scm_dir, NULL);
+        tmp_load_path =
+            s7_append(s7, tmp_load_path,
+                      s7_list(s7, 1,
+                              s7_make_string(s7, tmpdir)));
+        free(tmpdir);
+        (void)*scm_dir++;
+    }
+    s7_define_variable(s7, "*load-path*", tmp_load_path);
+}
+
+LOCAL void _config_s7_load_path_bazel_run_env(char *manifest)
 {
     FILE * fp;
     char * line = NULL;
@@ -552,7 +613,7 @@ LOCAL void _config_s7_load_path_bazel_runfiles(char *manifest)
     s7_define_variable(s7, "*load-path*", tmp_load_path);
 }
 
-LOCAL void _config_s7_load_path_bws_root(void)
+LOCAL void _config_s7_load_path_rootws(void)
 {
     /* char *project_script_dir = PROJ_MIBL; */
 
@@ -763,38 +824,26 @@ EXPORT void set_load_path(void) // char *scriptfile)
 
     /* FIXME: reliable way to detect if we're run by bazel */
 
-    /* https://docs.bazel.build/versions/main/user-manual.html#run
-bazel run is similar, but not identical, to directly invoking the binary built by Bazel and its behavior is different depending on whether the binary to be invoked is a test or not. When the binary is not a test, the current working directory will be the runfiles tree of the binary. When the binary is a test, the current working directory will be the exec root and a good-faith attempt is made to replicate the environment tests are usually run in.
-  */
+    /* https://docs.bazel.build/versions/main/user-manual.html#run */
 
-    /* so if we find MANIFEST, we're running a test? */
-    /* UT_string *manifest; */
-    /* utstring_new(manifest); */
-    /* utstring_printf(manifest, "../MANIFEST"); */
-    /* if (debug) */
-    /*     log_debug("MANIFEST: %s", utstring_body(manifest)); */
+    /* bazel run is similar, but not identical, to directly invoking
+       the binary built by Bazel and its behavior is different
+       depending on whether the binary to be invoked is a test or not.
+       When the binary is not a test, the current working directory
+       will be the runfiles tree of the binary. When the binary is a
+       test, the current working directory will be the exec root and a
+       good-faith attempt is made to replicate the environment tests
+       are usually run in.
+  */
+    /* BAZEL_TEST will be in the env when run under bazel test */
 
     char *manifest = "../MANIFEST";
-    rc = access(manifest, R_OK);
 
-    if (rc) {
-        if (verbose) log_info("Configuring for non-bazel env.");
-        _config_s7_load_path_xdg_home();
-        /* _config_s7_load_path_xdg_sys(); */
-        _config_user_load_path();
-    } else {
-        if (verbose) log_info("Configuring for bazel env.");
-        /* Running under bazel: do NOT put XDG dirs in load-path. This
-           ensures a pristine runtime env. The user can always add
-           directories to load-path. The only exception is the
-           project-local script directory in <projroot>/.mibl . */
-/*         s7_pointer lp = s7_load_path(s7); */
-/* #if defined(DEBUG_TRACE) */
-/*         if (debug) { */
-/*             log_debug("1 *LOAD-PATH*: %s", TO_STR(lp)); */
-/*         } */
-/* #endif */
-        _config_s7_load_path_bazel_runfiles(manifest);
+    if (getenv("BAZEL_TEST")) {
+#if defined(DEBUG_TRACE)
+        if (verbose) log_info("Configuring s7 for bazel test env.");
+#endif
+        _config_s7_load_path_bazel_test_env();
         s7_pointer lp = s7_load_path(s7);
         (void)lp;
 #if defined(DEBUG_TRACE)
@@ -803,7 +852,37 @@ bazel run is similar, but not identical, to directly invoking the binary built b
         }
 #endif
     }
-    _config_s7_load_path_bws_root();
+    else {
+        rc = access(manifest, R_OK);
+
+        if (rc) {
+            if (verbose) log_info("Configuring for non-bazel env.");
+            _config_s7_load_path_xdg_home();
+            /* _config_s7_load_path_xdg_sys(); */
+            _config_user_load_path();
+        } else {
+            if (verbose) log_info("Configuring for bazel env.");
+            /* Running under bazel: do NOT put XDG dirs in load-path. This
+               ensures a pristine runtime env. The user can always add
+               directories to load-path. The only exception is the
+               project-local script directory in <projroot>/.mibl . */
+            /*         s7_pointer lp = s7_load_path(s7); */
+            /* #if defined(DEBUG_TRACE) */
+            /*         if (debug) { */
+            /*             log_debug("1 *LOAD-PATH*: %s", TO_STR(lp)); */
+            /*         } */
+            /* #endif */
+            _config_s7_load_path_bazel_run_env(manifest);
+            s7_pointer lp = s7_load_path(s7);
+            (void)lp;
+#if defined(DEBUG_TRACE)
+            if (debug) {
+                log_debug("2 *LOAD-PATH*: %s", TO_STR(lp));
+            }
+#endif
+        }
+    }
+    _config_s7_load_path_rootws();
 
     s7_add_to_load_path(s7, ".");
 
@@ -894,9 +973,6 @@ LOCAL __attribute__((unused)) void s7_config_repl(s7_scheme *sc)
 #endif
 }
 
-/* defined in s7.c, we need the prototype */
-void s7_config_libc_s7(s7_scheme *sc, char *libc_s7_path);
-
 EXPORT void s7_shutdown(s7_scheme *s7)
 {
     close_error_config();
@@ -925,6 +1001,7 @@ void _mibl_s7_init(void)
     utstring_new(libc_s7);
     char *dso_dir;
     if (bzl_mode) {
+        /* running under bazel run or test */
         dso_dir = utstring_body(runfiles_root);
 #if defined(DEBUG_TRACE)
         log_debug("bzl mode: %s", dso_dir);
@@ -933,6 +1010,7 @@ void _mibl_s7_init(void)
                         dso_dir,
                         "external/libs7/src/libc_s7" DSO_EXT);
     } else {
+        /* running standalone, outside of bazel */
         dso_dir = utstring_body(xdg_data_home);
         utstring_printf(libc_s7, "%s/%s",
                         dso_dir,
@@ -967,21 +1045,61 @@ void _mibl_s7_init(void)
     s7_define_variable(s7, "*tmp-dir*", s7_make_string(s7, tmpdir));
 }
 
-/* FIXME: rename s7_configure_for_dune */
-EXPORT s7_scheme *s7_configure(void)
+/* s7 kws and syms used by tree-crawlers to create parsetree mibl */
+void _define_s7_keywords_and_symbols(void)
+{
+
+    /* initialize s7 stuff */
+    dune_project_sym = s7_make_symbol(s7, "dune-project"),
+    dune_stanzas_kw = s7_make_keyword(s7, "dune-stanzas");
+    dune_stanzas_sym = s7_make_symbol(s7, "dune");
+    ws_path_kw = s7_make_keyword(s7, "ws-path");
+    pkg_path_kw = s7_make_keyword(s7, "pkg-path");
+    realpath_kw = s7_make_keyword(s7, "realpath");
+
+    modules_kw = s7_make_keyword(s7, "modules");
+    sigs_kw = s7_make_keyword(s7, "signatures");
+    structs_kw = s7_make_keyword(s7, "structures");
+    mll_kw = s7_make_keyword(s7, "lex");
+    mly_kw = s7_make_keyword(s7, "yacc");
+    mllib_kw = s7_make_keyword(s7, "mllib");
+    cppo_kw = s7_make_keyword(s7, "cppo");
+    files_kw   = s7_make_keyword(s7, "files");
+    static_kw  = s7_make_keyword(s7, "static");
+    dynamic_kw = s7_make_keyword(s7, "dynamic");
+
+    opam_kw  = s7_make_keyword(s7, "opam");
+
+    scripts_kw = s7_make_keyword(s7, "scripts");
+    cc_kw = s7_make_keyword(s7, "cc");
+    cc_srcs_kw = s7_make_keyword(s7, "cc-srcs");
+    cc_hdrs_kw = s7_make_keyword(s7, "cc-hdrs");
+}
+
+/* policy: global vars are earmuffed */
+void _define_s7_global_vars(void)
 {
 #if defined(DEBUG_TRACE)
-    if (debug)
-        log_debug("s7_configure");
+    if (debug_s7_config)
+        log_debug("_define_s7_global_vars");
 #endif
 
-    _mibl_s7_init();
+    if (rootws) {
+        s7_define_variable(s7, "*ws-root*", s7_make_string(s7, rootws));
+    } else {
+        /* should have been set by bazel_configure */
+        log_error("rootws not set\n");
+        exit(EXIT_FAILURE);
+    }
 
-    s7_define_variable(s7, "*debugging*", s7_f(s7));
+    s7_define_variable(s7, "*debugging*",
+                       debug_scm? s7_t(s7) : s7_f(s7));
     s7_define_variable(s7, "*debug-alias*", s7_f(s7));
     s7_define_variable(s7, "*debug-emit*", s7_f(s7));
     s7_define_variable(s7, "*debug-executables*", s7_f(s7));
     s7_define_variable(s7, "*debug-genrules*", s7_f(s7));
+    s7_define_variable(s7, "*debug-loads*",
+                       debug_loads? s7_t(s7) : s7_f(s7));
     s7_define_variable(s7, "*debug-mibl*", s7_f(s7));
     s7_define_variable(s7, "*debug-ppx*", s7_f(s7));
 
@@ -1000,22 +1118,11 @@ EXPORT s7_scheme *s7_configure(void)
     s7_define_variable(s7, "*emit-parsetree*", s7_f(s7));
     s7_define_variable(s7, "*emit-starlark*", s7_f(s7));
 
-    if (bws_root) {
-        s7_define_variable(s7, "ws-root", s7_make_string(s7, bws_root));
-    } else {
-        /* should have been set by bazel_configure */
-        log_error("bws_root not set\n");
-        exit(EXIT_FAILURE);
-    }
-
-    s7_define_safe_function(s7, "effective-ws-root",
-                            g_effective_ws_root,
-                            0, 1, 0, NULL);
-
-    s7_define_function(s7, "mibl-load-project", g_load_project,
-                       0, 2, 0,
-                       /* LOAD_DUNE_FORMAL_PARAMS, */
-                       LOAD_DUNE_HELP);
+    /* flags controlling starlark emitters */
+    s7_define_variable(s7, "*js-emit-rules-jsoo*", s7_t(s7));
+    s7_define_variable(s7, "*js-emit-rules-js*", s7_t(s7));
+    s7_define_variable(s7, "*js-emit-rules-swc*", s7_f(s7));
+    s7_define_variable(s7, "*js-emit-rules-closure*", s7_f(s7));
 
     /* generate obazl code for top-down namespacing */
     s7_define_variable(s7, "*ns-topdown*", s7_t(s7));
@@ -1052,11 +1159,7 @@ EXPORT s7_scheme *s7_configure(void)
     */
     s7_define_variable(s7, "*dune-execlib-includes-main*", s7_f(s7));
 
-    s7_define_variable(s7, "*emit-rules-jsoo*", s7_t(s7));
-    s7_define_variable(s7, "*emit-rules-js*", s7_t(s7));
-    s7_define_variable(s7, "*emit-rules-swc*", s7_f(s7));
-    s7_define_variable(s7, "*emit-rules-closure*", s7_f(s7));
-
+    /* miblrc:  *dump-pkgs*, *scan-exclusions* */
     /* populate pkgs list, so scheme code can use it */
     char **p = NULL;
     s7_pointer _s7_pkgs = s7_nil(s7);
@@ -1088,32 +1191,50 @@ EXPORT s7_scheme *s7_configure(void)
     /*                  /\* &ftsentry->fts_path, *\/ */
     /*                  strsort); */
 
-    /* initialize s7 stuff */
-    //FIXME: do this in config, no need to rerun for each load_project
-    dune_project_sym = s7_make_symbol(s7, "dune-project"),
-    dune_stanzas_kw = s7_make_keyword(s7, "dune-stanzas");
-    dune_stanzas_sym = s7_make_symbol(s7, "dune");
-    ws_path_kw = s7_make_keyword(s7, "ws-path");
-    pkg_path_kw = s7_make_keyword(s7, "pkg-path");
-    realpath_kw = s7_make_keyword(s7, "realpath");
+}
 
-    modules_kw = s7_make_keyword(s7, "modules");
-    sigs_kw = s7_make_keyword(s7, "signatures");
-    structs_kw = s7_make_keyword(s7, "structures");
-    mll_kw = s7_make_keyword(s7, "lex");
-    mly_kw = s7_make_keyword(s7, "yacc");
-    mllib_kw = s7_make_keyword(s7, "mllib");
-    cppo_kw = s7_make_keyword(s7, "cppo");
-    files_kw   = s7_make_keyword(s7, "files");
-    static_kw  = s7_make_keyword(s7, "static");
-    dynamic_kw = s7_make_keyword(s7, "dynamic");
+EXPORT void log_s7_config(void)
+{
+    log_info(GRN "s7 configuration summary:" CRESET);
+    s7_pointer lp = s7_load_path(s7);
+    log_info("*features*: %s", NM_TO_STR("*features*"));
+    log_info("*load-path*: %s", TO_STR(lp));
+    log_info("*autoload*: %s", NM_TO_STR("*autoload*"));
+    log_info("*libraries*: %s", NM_TO_STR("*libraries*"));
 
-    opam_kw  = s7_make_keyword(s7, "opam");
+    log_info("*debugging* %d", TO_BOOL("*debugging*"));
+    log_info("*debug-scm* %d", TO_BOOL("*debug-scm*"));
+    log_info("*debug-loads* %d", TO_BOOL("*debug-loads*"));
+    log_info("*emit-mibl* %d", TO_BOOL("*emit-mibl*"));
+    log_info("*emit-parsetree* %d", TO_BOOL("*emit-parsetree*"));
+    log_info("*emit-starlark* %d", TO_BOOL("*emit-starlark*"));
 
-    scripts_kw = s7_make_keyword(s7, "scripts");
-    cc_kw = s7_make_keyword(s7, "cc");
-    cc_srcs_kw = s7_make_keyword(s7, "cc-srcs");
-    cc_hdrs_kw = s7_make_keyword(s7, "cc-hdrs");
+    log_info(GRN "End s7 configuration summary." CRESET);
+    fflush(NULL);
+}
+
+/* FIXME: rename s7_configure_for_dune */
+EXPORT s7_scheme *s7_configure(void)
+{
+#if defined(DEBUG_TRACE)
+    if (debug)
+        log_debug("s7_configure");
+#endif
+
+    _mibl_s7_init();
+
+    _define_s7_keywords_and_symbols();
+
+    _define_s7_global_vars();
+
+    s7_define_safe_function(s7, "effective-ws-root",
+                            g_effective_ws_root,
+                            0, 1, 0, NULL);
+
+    s7_define_function(s7, "mibl-load-project", g_load_project,
+                       0, 2, 0,
+                       /* LOAD_DUNE_FORMAL_PARAMS, */
+                       LOAD_DUNE_HELP);
 
     set_load_path(); //callback_script_file);
 
@@ -1122,11 +1243,24 @@ EXPORT s7_scheme *s7_configure(void)
     /* s7_config_repl(s7); */
     /* s7_repl(s7); */
 
-    s7_load(s7, "dune.scm");
+    if (!s7_load(s7, "dune.scm")) {
+        log_error("Can't load dune.scm");
+        exit(EXIT_FAILURE);
+    }
+
+    if (!s7_load(s7, "mibl_pp.scm")) {
+        log_error("Can't load mibl_pp.scm");
+        exit(EXIT_FAILURE);
+    }
 
     _init_scheme_fns(s7);       /* call _after_ loading dune.scm */
 
-    chdir(bws_root);            /* always run from base ws root */
+    chdir(rootws);            /* always run from base ws root */
+
+    if (verbose && verbosity > 1) {
+        log_s7_config();
+    }
 
     return s7;
 }
+

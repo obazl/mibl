@@ -17,8 +17,9 @@
 
 bool debug       = false;
 int  debug_level = 0;
-bool trace       = false;
 bool debug_xdg   = false;
+
+bool trace       = false;
 bool trace_xdg   = false;
 
 /* #if defined(DEBUG) */

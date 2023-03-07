@@ -1,5 +1,5 @@
-(if *debugging*
-    (format #t "loading: mibl/dune/flags.scm\n"))
+(if *debug-loads*
+    (format #t "loading: dune/flags.scm\n"))
 
 ;; WARNING: in principle we could see '(flags (:standard \ ...))'.
 ;; Haven't seen it in the wild, but we have seen:
@@ -261,6 +261,6 @@
         ;; else no flags
         (values '() '() '() '())))
 
-(if *debugging*
-    (format #t "loaded: mibl/dune/flags.scm\n"))
+(if *debug-loads*
+    (format #t "loaded: dune/flags.scm\n"))
 

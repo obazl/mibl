@@ -1,3 +1,6 @@
+(if *debug-loads*
+    (format #t "loading dune/dune-action-deps.scm\n"))
+
 ;; NB: the dune syms use undersccores
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -691,5 +694,5 @@
     (sandbox ,handle-sandbox-dep)
     (include ,handle-include-dep)))
 
-(if *debugging*
+(if *debug-loads*
     (format #t "loaded dune/dune-action-deps.scm\n"))

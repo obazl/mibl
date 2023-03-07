@@ -93,7 +93,7 @@ EXPORT void convert_findlib_pkgs(UT_array *opam_pending_deps,
         log_debug(BLU "convert_findlib_pkgs" CRESET);
         log_debug("%-16s%s", "opam switch:", utstring_body(opam_switch_lib));
         log_debug("%-16s%s", "launch_dir:", launch_dir);
-        log_debug("%-16s%s", "base ws:", bws_root);
+        log_debug("%-16s%s", "base ws:", rootws);
         log_debug("%-16s%s", "effective ws:", ews_root);
         log_debug("pendings ct: %d", utarray_len(opam_pending_deps));
 #endif
@@ -205,7 +205,7 @@ EXPORT void convert_findlib_pkgs(UT_array *opam_pending_deps,
     /* finally write WORKSPACE.opam.bzl to import deps repos */
     UT_string *opam_bzl_file;
     utstring_new(opam_bzl_file);
-    utstring_printf(opam_bzl_file, "%s/WORKSPACE.opam.bzl", bws_root);
+    utstring_printf(opam_bzl_file, "%s/WORKSPACE.opam.bzl", rootws);
 
     FILE *ostream = fopen(utstring_body(opam_bzl_file), "w");
     if (ostream == NULL) {

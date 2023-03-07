@@ -1,7 +1,10 @@
-(if *debugging*
-    (format #t "mibl: dune.scm loading...~%"))
+(if *debug-loads*
+    (format #t "loading dune.scm~%"))
 
-(load "alist.scm")
+(autoload 'expanders.scm "dune/expanders.scm")
+
+(unless (provided? 'alist.scm)
+  (load "alist.scm"))
 ;; (load "srfi.scm")
 (load "libc/regex.scm")
 (load "string.scm")
@@ -29,7 +32,7 @@
 
 (load "dune/cc.scm")
 (load "dune/executables.scm")
-(load "dune/expanders.scm")
+;; (load "dune/expanders.scm")
 (load "dune/fields.scm")
 (load "dune/flags.scm")
 (load "dune/labels.scm")
@@ -54,5 +57,7 @@
 
 (load "mibl_pp.scm")
 
-(if *debugging*
-    (format #t "loaded mibl/dune.scm~%"))
+(provide 'dune.scm)
+
+(if *debug-loads*
+    (format #t "loaded dune.scm~%"))

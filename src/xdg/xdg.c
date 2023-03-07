@@ -1,7 +1,10 @@
 #include <stdbool.h>
 
 #include "log.h"
+
+#if EXPORT_INTERFACE
 #include "utstring.h"
+#endif
 
 #include "xdg.h"
 

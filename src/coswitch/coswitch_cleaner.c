@@ -149,7 +149,7 @@ EXPORT void clean_coswitch(void)
     //FIXME: this assumes cwd is proj root
     UT_string *opam_bzl_file;
     utstring_new(opam_bzl_file);
-    utstring_printf(opam_bzl_file, "%s/WORKSPACE.opam.bzl", bws_root);
+    utstring_printf(opam_bzl_file, "%s/WORKSPACE.opam.bzl", rootws);
 
     FILE *ostream = fopen(utstring_body(opam_bzl_file), "w");
     if (ostream == NULL) {
