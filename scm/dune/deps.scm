@@ -1,5 +1,5 @@
 (define (analyze-libdeps libdeps)
-  (if *debugging*
+  (if *mibl-debugging*
       (format #t "~A: ~A\n" (ublue "analyze-libdeps") libdeps))
   ;; libdeps: raw dune (libraries) fld cdr
   (let recur ((raw libdeps) ;; 'libraries' fld
@@ -7,11 +7,11 @@
               (selects '())
               ;; (modules '()) ;; not needed?
               )
-    (if *debugging*
+    (if *mibl-debugging*
         (format #t "~A: ~A~%" (uwhite "recurring on") raw))
     (if (null? raw)
         (let* ((seldeps (map (lambda (s)
-                               (if *debugging*
+                               (if *mibl-debugging*
                                    (format #t "select: ~A\n" s))
                                (let ((seldeps (assoc-val :deps s))) seldeps))
                              selects))
@@ -20,15 +20,15 @@
                                  accum
                                  (cons x accum)))
                            '() seldeps))
-               ;; (_ (if *debugging* (format #t "FOLDED: ~A\n" seldeps)))
+               ;; (_ (if *mibl-debugging* (format #t "FOLDED: ~A\n" seldeps)))
                (conditionals (map (lambda (s)
-                                    (if *debugging*
+                                    (if *mibl-debugging*
                                         (format #t "S: ~A\n" s))
                                     (let ((conditionals (alist-delete
                                                          '(:deps) s)))
                                       conditionals))
                                   selects)))
-          (if *debugging*
+          (if *mibl-debugging*
               (begin
                 (format #t "~A: ~A~%" (blue "select seldeps") seldeps)
                 (format #t "~A: ~A\n" (blue "select conditionals") conditionals)
@@ -50,7 +50,7 @@
               ((select)
             ;; (if (equal? (caar raw) 'select)
                (let ((the-selects (analyze-select (car raw))))
-                 (if *debugging*
+                 (if *mibl-debugging*
                      (format #t "~A: ~A~%" (cyan "the-selects") the-selects))
                  (update-selects-list! the-selects)
                  (recur (cdr raw)
@@ -60,7 +60,7 @@
                         ;; (libdep->module-name modules)
                         )))
               ((re_export)
-               (if *debugging*
+               (if *mibl-debugging*
                    (format #t "~A: ~A~%" (bgyellow "re_export") raw))
                (recur (cdr raw)
                       (cons (cadar raw) directs)

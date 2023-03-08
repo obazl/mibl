@@ -1,7 +1,7 @@
 ;; (display "dune/dune_utils.scm\n")
 
 (define (label-list->label-string l)
-  (if *debugging*
+  (if *mibl-debugging*
       (format #t "~A: ~A~%" (ublue "label-list->label-string") l))
   (format #f "//~A:~A"
           (assoc-val :pkg l)
@@ -82,7 +82,7 @@
 ;;      stanzas))
 
 (define (handle-read-error path fname args)
-  (if *debugging*
+  (if *mibl-debugging*
       (format #t "HANDLE-READ-ERROR ~A\n" path))
   (let ((msg (caadr args)))
     (display

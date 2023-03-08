@@ -5,7 +5,7 @@
 ;; apodoses in 'select' clauses are not pkg-level build targets
 ;; remove them from :structures, :signatures
 (define (-mark-apodoses! pkg)
-  (if *debugging*
+  (if *mibl-debugging*
       (format #t "~A: ~A\n" (ublue "-mark-apodoses!") (assoc-val :pkg-path pkg)))
   ;; (if (equal? (car (assoc-val :pkg-path pkg)) "compiler/tests-ocaml/lib-bytes-utf")
   ;;     (begin
@@ -19,39 +19,39 @@
                                                (car (assoc-val :selectors x)))
                                               (defaults-alist
                                                 (car (assoc-val :default x))))
-                                          (if *debugging*
+                                          (if *mibl-debugging*
                                               (format #t "SELS ~A\n" sels-alist))
                                           (cons
                                            defaults-alist
                                            (map cdr sels-alist))))
                                       (cdr conditionals))))
                 (apodoses (map symbol->string apodoses)))
-            (if *debugging*
+            (if *mibl-debugging*
                 (format #t "MARKING ~A\n" apodoses))
 
             (let ((sigs-static (assoc-in '(:signatures :static) pkg))
                   (structs-static (assoc-in '(:structures :static) pkg)))
-              (if *debugging*
+              (if *mibl-debugging*
                   (format #t "structs-static: ~A\n" structs-static))
               (for-each (lambda (s)
-                          (if *debugging*
+                          (if *mibl-debugging*
                               (format #t "struct: ~A\n" s))
                           (if (member (last (last s)) apodoses)
                               (set-car! s :_)))
                         (cdr sigs-static))
               (for-each (lambda (s)
-                          (if *debugging*
+                          (if *mibl-debugging*
                               (format #t "struct: ~A\n" s))
                           (if (member (last (last s)) apodoses)
                               (set-car! s :_)))
                         (cdr structs-static))
               ))
-          (if *debugging*
+          (if *mibl-debugging*
               (format #t "~A~%" (uwhite "no conditionals")))
           ))
 
 (define (-trim-pkg! pkg)
-  (if *debugging*
+  (if *mibl-debugging*
       (format #t "~A: ~A~%" (blue "-trim-pkg!") pkg)) ;; (assoc-val :pkg-path pkg))
 
   ;; remove null lists from :mibl alist
@@ -72,7 +72,7 @@
                 (assoc-update! :signatures
                                pkg
                                (lambda (old)
-                                 (if *debugging*
+                                 (if *mibl-debugging*
                                      (format #t "OLD: ~A\n" old))
                                  (set-cdr! old '())))))
   (if-let ((sigs (assoc-in '(:signatures :dynamic) pkg)))
@@ -80,7 +80,7 @@
               (assoc-update! :signatures
                              pkg
                              (lambda (old)
-                               (if *debugging*
+                               (if *mibl-debugging*
                                    (format #t "OLD: ~A\n" old))
                                (set-cdr! old '())))))
 
@@ -94,7 +94,7 @@
               (assoc-update! :structures
                              pkg
                              (lambda (old)
-                               (if *debugging*
+                               (if *mibl-debugging*
                                    (format #t "OLD: ~A\n" old))
                                (set-cdr! old '())))))
 
@@ -103,7 +103,7 @@
               (assoc-update! :structures
                              pkg
                              (lambda (old)
-                               (if *debugging*
+                               (if *mibl-debugging*
                                    (format #t "OLD: ~A\n" old))
                                (set-cdr! old '())))))
 
@@ -112,7 +112,7 @@
                 (dissoc! '(:structures) pkg))))
 
 (define (dune-env->mibl ws pkg stanza)
-  (if *debugging*
+  (if *mibl-debugging*
       (format #t "~A: ~A~%" (ublue "dune-env->mibl") stanza))
   ;; (env
   ;;  (<profile1> <settings1>)
@@ -123,7 +123,7 @@
          (res
           (map
            (lambda (profile)
-             (if *debugging*
+             (if *mibl-debugging*
                  (format #t "~A: ~A~%" (uwhite "env profile") profile))
              (cons (symbol->keyword (car profile))
                    (map (lambda (fld-assoc)
@@ -162,20 +162,20 @@
                 res))))
 
 (define (dune-tuareg->mibl ws pkg stanza)
-  (if *debugging*
+  (if *mibl-debugging*
       (format #t "~A: ~A~%" (ublue "dune-tuareg->mibl") stanza))
   (list (list :tuareg
                (list 'FIXME))))
 
 (define (dune-stanza->mibl ws pkg stanza nstanzas)
-  (if *debugging*
+  (if *mibl-debugging*
       (begin
         (format #t "~A: ~A\n" (blue "dune-stanza->mibl") stanza)
         (format #t "~A: ~A\n" (blue "nstanzas") nstanzas)))
   ;; (format #t "pkg: ~A\n" pkg)
   ;; (format #t "  nstanzas: ~A\n" nstanzas)
   (let* ((stanza-alist (cdr stanza))
-         ;; (_ (if *debugging* (format #t "stanza-alist ~A\n" stanza-alist)))
+         ;; (_ (if *mibl-debugging* (format #t "stanza-alist ~A\n" stanza-alist)))
          ;; (_ (if-let ((nm (assoc 'name stanza-alist)))
          ;;            (format #t "name: ~A\n" nm)
          ;;            (format #t "unnamed\n")))
@@ -205,7 +205,7 @@
             ((executable)
              (let* ((mibl-stanza (dune-executable->mibl ws pkg :executable stanza))
                     (x (append (cdr nstanzas) mibl-stanza)))
-               (if *debugging*
+               (if *mibl-debugging*
                    (begin
                      (format #t  "~A: ~A~%" (yellow "mibl-stanza") mibl-stanza)
                      (format #t  "~A: ~A~%" (yellow "x") x)))
@@ -237,13 +237,13 @@
 
                    ;; earlier versions may use it, so we convert to
                    ;; std rule stanza with alias fld
-                   (if *debugging*
+                   (if *mibl-debugging*
                        (format #t "~A: ~A~%" (red "stanza before") stanza))
                    (let ((n (car (assoc-val 'name stanza-alist))))
                      (set! stanza (cons :rule
                                         `((alias ,n)
                                           ,@(dissoc '(name) (cdr stanza))))))
-                   (if *debugging*
+                   (if *mibl-debugging*
                        (format #t "~A: ~A~%" (red "stanza after") stanza))
                    (set-cdr! nstanzas
                              (append
@@ -315,7 +315,7 @@
     pkg))
 
 (define (dune-pkg->mibl ws pkg)
-  (if *debugging*
+  (if *mibl-debugging*
       (format #t "~A: ~A\n" (blue "dune-pkg->mibl")
               (assoc-val :pkg-path pkg)))
   ;; (format #t "~A: ~A\n" (green "ws") ws)
@@ -344,12 +344,12 @@
           ;; (format #t "~A: ~A\n" (red "NEW PKG") pkg+)
           (let* ((@ws (assoc-val ws *mibl-project*))
                  (exports (car (assoc-val :exports @ws))))
-            (if *debugging*
+            (if *mibl-debugging*
                 (format #t "~A: ~A~%" (red "exports table") exports)))
 
           pkg+)
         (begin
-          (if *debugging*
+          (if *mibl-debugging*
               (format #t "~A: ~A\n"
                   (red "WARNING: pkg w/o dunefile")
                   (assoc-val :pkg-path pkg)))

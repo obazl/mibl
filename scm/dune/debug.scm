@@ -25,7 +25,7 @@
   (newline))
 
 (define (Xmibl-debug-print-pkgs ws)
-  ;; (if *debug-debug*
+  ;; (if *mibl-debug-debug*
   ;;     (format #t "~A~%" (bgred "PKG DUMP")))
   (let* ((@ws (assoc-val ws *mibl-project*))
          (pkgs (car (assoc-val :pkgs @ws)))
@@ -35,19 +35,19 @@
          )
     (format #t "WS name: ~A~%" (assoc-val :name @ws))
     (format #t "WS path: ~A~%" (assoc-val :path @ws))
-    (if *debugging*
+    (if *mibl-debugging*
         (begin
           (format #t "~A: ~A ~A~%" (bggreen "workspace") (assoc :name @ws) (assoc :path @ws))
-          (format #t "~A: ~A~%" (green "*dump-pkgs*") *dump-pkgs*)
+          (format #t "~A: ~A~%" (green "*mibl-dump-pkgs*") *mibl-dump-pkgs*)
           (format #t "~A: ~A~%" (green "pkg-paths") pkg-paths)))
     (for-each (lambda (k)
                 (let ((pkg (hash-table-ref pkgs k)))
-                  ;; (if *debugging*
+                  ;; (if *mibl-debugging*
                   ;;     (begin
                   ;;       (format #t "~A: ~A~%" (green "k") k)
                   ;;       (format #t "~A: ~A~%" (green "pkg") pkg)))
-                  (if (or (null? *dump-pkgs*)
-                          (member k *dump-pkgs*))
+                  (if (or (null? *mibl-dump-pkgs*)
+                          (member k *mibl-dump-pkgs*))
                       (begin
                         (format #t "~%~A: ~A~%" (bggreen "Package") (green k)) ;; (assoc-val :pkg-path pkg))
                         ;; (format #t "~A: ~A~%" (green "pkg") pkg) ;; (assoc-val :pkg-path pkg))

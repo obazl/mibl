@@ -1,6 +1,6 @@
 (define (update-opam-table! ws kind opam-pkg pubname pkg-path privname)
   ;; kind:  :lib, :bin, :man, :files, :sub
-  (if *debugging*
+  (if *mibl-debugging*
       (begin
         (format #t "~A path: ~A~%" (bgmagenta "update-opam-table!") pubname)
         (format #t "~A: ~A~%" (green "kind") kind)
@@ -10,23 +10,23 @@
 
   (let* ((-ws (if (keyword? ws) (assoc-val ws *mibl-project*) ws))
          (ws-path (car (assoc-val :path -ws)))
-         (_ (if *debugging* (format #t "~A: ~A~%" (bggreen "wspath") ws-path)))
+         (_ (if *mibl-debugging* (format #t "~A: ~A~%" (bggreen "wspath") ws-path)))
          (privname (if (eq? kind :bin) (format #f "~A.exe" privname) privname))
          (opam (car (assoc-val :opam -ws)))
-         (_ (if *debugging* (format #t "opam tbl: ~A\n" opam)))
+         (_ (if *mibl-debugging* (format #t "opam tbl: ~A\n" opam)))
          (opam-segs (string-split (format #f "~A" opam-pkg) #\.))
          (opam-pkg (if (null? (cdr opam-segs))
                        (car opam-segs) (car opam-segs)))
          (opam-pkg (string->symbol opam-pkg))
          (opam-subpkgs (if (null? (cdr opam-segs))
                           #f (cdr opam-segs))))
-    (if *debugging*
+    (if *mibl-debugging*
         (begin
           (format #t "~A: ~A~%" (uwhite "opam-pkg") opam-pkg)
           (format #t "~A: ~A~%" (uwhite "opam-subpkgs") opam-subpkgs)))
     (if-let ((opkg (hash-table-ref opam opam-pkg)))
             (begin
-              (if *debugging*
+              (if *mibl-debugging*
                   (format #t "~A: ~A~%" (uwhite "old opam-pkg") opkg))
               (if opam-subpkgs
                   ;; TODO: merge with existing :sub items
@@ -49,7 +49,7 @@
                   ;;                  `((,kind ,pkg-path ,privname)))
                   ))
             (begin
-              (if *debugging*
+              (if *mibl-debugging*
                   (format #t "~A: ~A~%" (uwhite "adding opam-pkg") opam-pkg))
               (if opam-subpkgs
                   ;; TODO: merge with existing :sub items
@@ -63,7 +63,7 @@
                                           `(,kind (,pubname
                                                   (,pkg-path . ,privname)))
                                           `(,kind (,pkg-path . ,privname))))))))
-    (if *debugging*
+    (if *mibl-debugging*
         (format #t "~A: ~A\n" (ured "updated opam tbl") opam))
     ))
 

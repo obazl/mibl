@@ -15,7 +15,7 @@
     _wss))
 
 (define (-miblize ws)
-  (if #t ;; *debugging*
+  (if #t ;; *mibl-debugging*
       (format #t "~A: ~A~%" (blue "-miblize") ws))
   (let* ((@ws (assoc-val ws *mibl-project*))
          (pkgs (car (assoc-val :pkgs @ws)))
@@ -36,7 +36,7 @@
         ;; (_ (for-each (lambda (k)
         ;;                (format #t "~A: ~A~%" (blue "pkg") k))
         ;;              (sort! (hash-table-keys pkgs) string<?)))
-    (if #t ;; *debugging*
+    (if #t ;; *mibl-debugging*
         (format #t "~A: ~A~%" (blue "mpkg ct") (length mpkg-alist)))
     mpkg-alist))
 
@@ -55,33 +55,34 @@
                 )
               pkgs)))
 
-(define* (-dune->mibl return root-path pkg-path)
-  ;; (set! *debugging* #t)
-  (if *debugging*
-      (format #t "convert_dune.scm::dune->obazl: ~A, ~A~%" root-path pkg-path))
+(define* (-dune->mibl return root-path ws-path)
+  ;; (set! *mibl-debugging* #t)
+  (if *mibl-debugging*
+      (format #t "convert_dune.scm::dune->obazl: ~A, ~A~%" root-path ws-path))
   ;; (format #t "*mibl-project*: ~A~%" *mibl-project*)
   ;; (format #t "BYE~%"))
 
-  (if *debugging*
-      (format #t "~A: ~A~%" (bgred "*emit-bazel-pkg*") *emit-bazel-pkg*))
+  (if *mibl-debugging*
+      (format #t "~A: ~A~%" (bgred "*mibl-emit-bazel-pkg*")
+              *mibl-emit-bazel-pkg*))
 
-  (set! *build-dyads* #t)
-  (set! *shared-deps* '("compiler/tests-compiler")) ;;  "toplevel/bin"))
+  (set! *mibl-build-dyads* #t)
+  (set! *mibl-shared-deps* '("compiler/tests-compiler")) ;;  "toplevel/bin"))
 
-  ;; (set! *wrapped-libs-to-ns-archives* #f)
-  ;; (set! *unwrapped-libs-to-archives* #f)
+  ;; (set! *mibl-wrapped-libs-to-ns-archives* #f)
+  ;; (set! *mibl-unwrapped-libs-to-archives* #f)
 
   ;; NB: :@ is key of the root workspace in *mibl-project*
-  ;; (set! *debugging* #t)
+  ;; (set! *mibl-debugging* #t)
 
-  (-mibl-load-project root-path pkg-path)
-  (if *show-parsetree*
+  (-mibl-load-project root-path ws-path)
+  (if *mibl-show-parsetree*
       (begin
         (format #t "PARSETREE~%")
         (mibl-debug-print-pkgs :@)
         (return)))
 
-  (let* (;;(_wss (-mibl-load-project root-path pkg-path))
+  (let* (;;(_wss (-mibl-load-project root-path ws-path))
          (mpkgs (-miblize :@))
          (mpkgs (add-filegroups-to-pkgs :@))
          (mpkgs (normalize-manifests! :@))
@@ -95,7 +96,7 @@
 
     (handle-shared-ppx :@)
 
-    (if *shared-deps*
+    (if *mibl-shared-deps*
         (begin
           (handle-shared-deps :@)
           (handle-shared-opts :@)
@@ -103,9 +104,12 @@
 
     ;; (ppx-inline-tests! :@)
 
-    (if *show-mibl*
+    (if *mibl-emit-wss*
+        (emit-mibl-wss))
+
+    (if *mibl-show-mibl*
         (begin
-          (format #t "~A~%" (bgred "DUMP MIBL"))
+          (format #t "~A~%" (bgred "MIBL"))
           (mibl-debug-print-pkgs :@)
           ;; (mibl-pretty-print *mibl-project*)
           (return)))
@@ -114,22 +118,17 @@
 
     ;; end dune-specific?
 
-    ;; (if *emit-mibl*
+    ;; (if *mibl-emit-mibl*
     ;;     (emit-mibl))
         ;; (emit-mibl :@))
 
     ;; ;; (ws->opam-bundles :@)
 
-    (if *show-mibl*
-      (begin
-        (format #t "STARLARK~%")
-        (mibl-debug-print-pkgs :@)))
-
-    ;; (if *debugging*
+    ;; (if *mibl-debugging*
     ;;     (format #t "~A: ~A~%" (green "selectors"))
     ;;         (remove-duplicates *select-protases*))
 
-    (if *show-exports*
+    (if *mibl-show-exports*
         (mibl-debug-print-exports-table :@))
 
     ;; (-dump-ppx :@)
@@ -137,14 +136,17 @@
     ;; (mibl-debug-print-filegroups :@)
 
     ;; (-dump-opam :@)
-
-    (if (not *mibl-quiet*)
-        (format #t "~A: Converted ~A dunefiles.~%" (green "INFO") *dunefile-count*)))
+    )
+  (if (not *mibl-quiet*)
+        (begin
+          (format #t "~A: Workspace root: ~A~%" (green "INFO") ws-path)
+          (format #t "~A: Processed ~A dunefiles.~%" (green "INFO") *mibl-dunefile-count*)))
   '())
 
-(define* (-main root-path pkg-path)
+(define* (-main root-path ws-path)
+  (set! *mibl-debugging* #t)
   (call-with-exit (lambda (return)
-                    (-dune->mibl return root-path pkg-path))))
+                    (-dune->mibl return root-path ws-path))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -153,9 +155,9 @@
 ;;   ;; (format #t "*mibl-project*: ~A~%" *mibl-project*)
 ;;   ;; (format #t "BYE~%"))
 
-;;   (set! *build-dyads* #f)
-;;   ;; (set! *wrapped-libs-to-ns-archives* #f)
-;;   ;; (set! *unwrapped-libs-to-archives* #f)
+;;   (set! *mibl-build-dyads* #f)
+;;   ;; (set! *mibl-wrapped-libs-to-ns-archives* #f)
+;;   ;; (set! *mibl-unwrapped-libs-to-archives* #f)
 
 ;;   (let* ((_wss (-mibl-load-project path))
 ;;          (_ (mibl-debug-print-pkgs :@))
@@ -172,7 +174,7 @@
 
 ;;          (handle-shared-ppx :@)
 
-;;          ;; (if *shared-deps*
+;;          ;; (if *mibl-shared-deps*
 ;;          ;;     (begin
 ;;          ;;       (handle-shared-deps :@)
 ;;          ;;       (handle-shared-opts :@)

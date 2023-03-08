@@ -25,11 +25,11 @@
 ;; see https://dune.readthedocs.io/en/stable/tests.html?highlight=generate_runner#defining-your-own-inline-test-backend
 
 (define (-inline-tests->args ws pkg inline-tests)
-  (if *debugging*
+  (if *mibl-debugging*
       (format #t "~A: ~A\n" (ublue "-inline-tests->args") inline-tests))
   (let* ((result
           (map (lambda (fld)
-                 (if *debugging*
+                 (if *mibl-debugging*
                      (format #t "~A: ~A~%" (uwhite "fld") fld))
                  (case (car fld)
                    ((flags)
@@ -47,24 +47,24 @@
          (result (append
                   '((:opts ("-inline-test-lib" . $LIBNAME)))
                   '((:inline-tests #t)) result)))
-    (if *debugging*
+    (if *mibl-debugging*
         (format #t "~A: ~A~%" (bgred "result") result))
     result))
 
 ;; handle both (preprocess) and (inline_tests) (and what else?)
 (define (inline-tests->mibl ws pkg inline-tests stanza-alist)
-  (if *debugging*
+  (if *mibl-debugging*
       (format #t "~A: ~A~%" (ublue "inline-tests->mibl") inline-tests))
   (let ((ilts (-inline-tests->args ws pkg inline-tests)))
-    (if *debugging*
+    (if *mibl-debugging*
         (format #t "~A: ~A~%" (ublue "ilts") ilts))
     (if-let ((pp-assoc (assoc 'preprocess stanza-alist)))
             (begin
-              (if *debugging*
+              (if *mibl-debugging*
                   (format #t "~A: ~A~%" (blue "pp-assoc") pp-assoc))
               (if-let ((ppx (preprocess-fld->mibl pp-assoc stanza-alist)))
                       (begin
-                        (if *debugging*
+                        (if *mibl-debugging*
                             (format #t "~A: ~A~%" (bgyellow "ppx") ppx))
                         `(:ppx ,@(append (cdr ppx)
                                        ilts)))
@@ -75,11 +75,11 @@
             `(:inline-tests ,@ilts))))
 
 (define (dune-test->mibl ws pkg stanza)
-  (if *debugging*
+  (if *mibl-debugging*
       (format #t "~A: ~A~%" (blue "dune-test->mibl") stanza))
 
   (let* ((pkg-path (assoc-val :pkg-path pkg))
-         (_ (if *debugging* (format #t "~A: ~A~%" (white "pkg-path") pkg-path)))
+         (_ (if *mibl-debugging* (format #t "~A: ~A~%" (white "pkg-path") pkg-path)))
          (stanza-alist (cdr stanza))
          (privname (assoc 'name stanza-alist)))
     (let ((t (list :test ;; (car stanza)
@@ -96,11 +96,11 @@
                               (normalize-stanza-fld-foreign_stubs (cdr fld-assoc)))
                              (else fld-assoc)))
                          (cdr stanza))))))
-      (if *debugging*
+      (if *mibl-debugging*
           (format #t "~A: ~A~%" (red "mibl t stanza") t))
       t)))
 
 (define (normalize-stanza-tests pkg-path ocaml-srcs stanza)
-  (if (or *debug-executables* *debugging*)
+  (if (or *mibl-debug-executables* *mibl-debugging*)
       (format #t "~A: ~A~%" (ublue "normalize-stanza-tests") stanza))
   (dune-executables->mibl :test pkg-path ocaml-srcs stanza))

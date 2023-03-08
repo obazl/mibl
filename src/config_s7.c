@@ -1122,81 +1122,81 @@ void _define_s7_global_vars(void)
 #endif
 
     if (rootws) {
-        s7_define_variable(s7, "*ws-root*", s7_make_string(s7, rootws));
+        s7_define_variable(s7, "*mibl-ws-root*", s7_make_string(s7, rootws));
     } else {
         /* should have been set by bazel_configure */
         log_error("rootws not set\n");
         exit(EXIT_FAILURE);
     }
 
-    s7_define_variable(s7, "*debugging*",
+    s7_define_variable(s7, "*mibl-debugging*",
                        debug_scm? s7_t(s7) : s7_f(s7));
-    s7_define_variable(s7, "*debug-alias*", s7_f(s7));
-    s7_define_variable(s7, "*debug-emit*", s7_f(s7));
-    s7_define_variable(s7, "*debug-executables*", s7_f(s7));
-    s7_define_variable(s7, "*debug-genrules*", s7_f(s7));
+    s7_define_variable(s7, "*mibl-debug-alias*", s7_f(s7));
+    s7_define_variable(s7, "*mibl-debug-emit*", s7_f(s7));
+    s7_define_variable(s7, "*mibl-debug-executables*", s7_f(s7));
+    s7_define_variable(s7, "*mibl-debug-genrules*", s7_f(s7));
     s7_define_variable(s7, "*mibl-debug-loads*", s7_f(s7));
-    s7_define_variable(s7, "*debug-mibl*", s7_f(s7));
-    s7_define_variable(s7, "*debug-ppx*", s7_f(s7));
+    s7_define_variable(s7, "*mibl-debug-mibl*", s7_f(s7));
+    s7_define_variable(s7, "*mibl-debug-ppx*", s7_f(s7));
 
     s7_define_variable(s7, "*mibl-quiet*", s7_f(s7));
 
-    s7_define_variable(s7, "*dunefile-count*", s7_make_integer(s7, 0));
+    s7_define_variable(s7, "*mibl-dunefile-count*", s7_make_integer(s7, 0));
 
     /* logging */
-    s7_define_variable(s7, "*show-exports*", s7_f(s7));
-    s7_define_variable(s7, "*show-mibl*", s7_f(s7));
-    s7_define_variable(s7, "*show-parsetree*", s7_f(s7));
-    s7_define_variable(s7, "*show-starlark*", s7_f(s7));
+    s7_define_variable(s7, "*mibl-show-exports*", s7_f(s7));
+    s7_define_variable(s7, "*mibl-show-mibl*", s7_f(s7));
+    s7_define_variable(s7, "*mibl-show-parsetree*", s7_f(s7));
+    s7_define_variable(s7, "*mibl-show-starlark*", s7_f(s7));
 
     /* emit to files (e.g. BUILD.bazel) */
-    s7_define_variable(s7, "*emit-mibl*", s7_f(s7));
-    s7_define_variable(s7, "*emit-parsetree*", s7_f(s7));
-    s7_define_variable(s7, "*emit-starlark*", s7_f(s7));
+    s7_define_variable(s7, "*mibl-emit-mibl*", s7_f(s7));
+    s7_define_variable(s7, "*mibl-emit-parsetree*", s7_f(s7));
+    s7_define_variable(s7, "*mibl-emit-starlark*", s7_f(s7));
 
     /* flags controlling starlark emitters */
-    s7_define_variable(s7, "*js-emit-rules-jsoo*", s7_t(s7));
-    s7_define_variable(s7, "*js-emit-rules-js*", s7_t(s7));
-    s7_define_variable(s7, "*js-emit-rules-swc*", s7_f(s7));
-    s7_define_variable(s7, "*js-emit-rules-closure*", s7_f(s7));
+    s7_define_variable(s7, "*mibl-js-emit-rules-jsoo*", s7_t(s7));
+    s7_define_variable(s7, "*mibl-js-emit-rules-js*", s7_t(s7));
+    s7_define_variable(s7, "*mibl-js-emit-rules-swc*", s7_f(s7));
+    s7_define_variable(s7, "*mibl-js-emit-rules-closure*", s7_f(s7));
 
     /* generate obazl code for top-down namespacing */
-    s7_define_variable(s7, "*ns-topdown*", s7_t(s7));
+    s7_define_variable(s7, "*mibl-ns-topdown*", s7_t(s7));
 
     /* map dune library (wrapped) to :ns-archive or :ns-library */
-    s7_define_variable(s7, "*wrapped-libs-to-ns-archives*", s7_t(s7));
+    s7_define_variable(s7, "*mibl-wrapped-libs-to-ns-archives*", s7_t(s7));
 
     /* true: map dune library (unwrapped) to :archive
        false: map to :library */
-    s7_define_variable(s7, "*unwrapped-libs-to-archives*", s7_t(s7));
+    s7_define_variable(s7, "*mibl-unwrapped-libs-to-archives*", s7_t(s7));
 
     /* emit menhir target instead of ocamlyacc */
-    s7_define_variable(s7, "*menhir*", s7_f(s7));
+    s7_define_variable(s7, "*mibl-menhir*", s7_f(s7));
 
     /* emit ocaml_signature for every sigfile target */
-    s7_define_variable(s7, "*build-dyads*", s7_t(s7));
+    s7_define_variable(s7, "*mibl-build-dyads*", s7_t(s7));
 
     /* put ppx driver in same pkg as the ppx_executable */
-    s7_define_variable(s7, "*local-ppx-driver*", s7_f(s7));
-    s7_define_variable(s7, "*ppxlib-ppx-driver*", s7_t(s7));
+    s7_define_variable(s7, "*mibl-local-ppx-driver*", s7_f(s7));
+    s7_define_variable(s7, "*mibl-ppxlib-ppx-driver*", s7_t(s7));
 
     /* use ":" for locally defined ppxes */
-    s7_define_variable(s7, "*shared-ppx-pkg*", s7_make_string(s7, "bzl/ppx"));
+    s7_define_variable(s7, "*mibl-shared-ppx-pkg*", s7_make_string(s7, "bzl/ppx"));
 
     /* list of pkgs whose stanzas share deps */
     /* FIXME: by default we always shared deps across stanzas, per pkg */
-    s7_define_variable(s7, "*shared-deps*", s7_list(s7, 0));
+    s7_define_variable(s7, "*mibl-shared-deps*", s7_list(s7, 0));
 
     /* only emit bazel code for pkg listed here (string); nil means no
        exclusion. set by cli -p option */
-    s7_define_variable(s7, "*emit-bazel-pkg*", s7_f(s7));
+    s7_define_variable(s7, "*mibl-emit-bazel-pkg*", s7_f(s7));
 
     /* executable 'main' attr may be a module or an 'execlib'.
        if this flag is true, use execlib; otherwise use module.
     */
-    s7_define_variable(s7, "*dune-execlib-includes-main*", s7_f(s7));
+    s7_define_variable(s7, "*mibl-dune-execlib-includes-main*", s7_f(s7));
 
-    /* miblrc:  *dump-pkgs*, *scan-exclusions* */
+    /* miblrc:  *mibl-dump-pkgs*, *mibl-scan-exclusions* */
     /* populate pkgs list, so scheme code can use it */
     char **p = NULL;
     s7_pointer _s7_pkgs = s7_nil(s7);
@@ -1206,7 +1206,7 @@ void _define_s7_global_vars(void)
 #endif
         _s7_pkgs = s7_cons(s7, s7_make_string(s7, *p), _s7_pkgs);
     }
-    s7_define_variable(s7, "*dump-pkgs*", _s7_pkgs);
+    s7_define_variable(s7, "*mibl-dump-pkgs*", _s7_pkgs);
 
     /* populate exclusions list, so scheme code can use it */
     p = NULL;
@@ -1222,7 +1222,7 @@ void _define_s7_global_vars(void)
     if (mibl_debug)
         log_debug("exclusions list: %s", TO_STR(_s7_exclusions));
 #endif
-    s7_define_variable(s7, "*scan-exclusions*", _s7_exclusions);
+    s7_define_variable(s7, "*mibl-scan-exclusions*", _s7_exclusions);
 }
 
 EXPORT void show_s7_config(void)
@@ -1234,48 +1234,17 @@ EXPORT void show_s7_config(void)
     log_info("*autoload*: %s", NM_TO_STR("*autoload*"));
     log_info("*libraries*: %s", NM_TO_STR("*libraries*"));
 
-    log_info("*ws-root* %d", TO_BOOL("*ws-root*"));
-    log_info("*debugging* %d", TO_BOOL("*debugging*"));
-    log_info("*debug-alias* %d", TO_BOOL("*debug-alias*"));
-    log_info("*debug-emit* %d", TO_BOOL("*debug-emit*"));
-    log_info("*debug-executables* %d", TO_BOOL("*debug-executables*"));
-    log_info("*debug-genrules* %d", TO_BOOL("*debug-genrules*"));
-    log_info("*mibl-debug-loads* %d", TO_BOOL("*mibl-debug-loads*"));
-    log_info("*debug-mibl* %d", TO_BOOL("*debug-mibl*"));
-    log_info("*debug-ppx* %d", TO_BOOL("*debug-ppx*"));
-    log_info("*debug-scm* %d", TO_BOOL("*debug-scm*"));
-
-    log_info("*emit-mibl* %d", TO_BOOL("*emit-mibl*"));
-    log_info("*emit-parsetree* %d", TO_BOOL("*emit-parsetree*"));
-    log_info("*emit-starlark* %d", TO_BOOL("*emit-starlark*"));
-
-    log_info("*js-emit-rules-jsoo* %d", TO_BOOL("*js-emit-rules-jsoo*"));
-    log_info("*js-emit-rules-js* %d", TO_BOOL("*js-emit-rules-js*"));
-    log_info("*js-emit-rules-swc* %d", TO_BOOL("*js-emit-rules-swc*"));
-    log_info("*js-emit-rules-closure* %d", TO_BOOL("*js-emit-rules-closure*"));
-    log_info("*show-exports* %d", TO_BOOL("*show-exports*"));
-    log_info("*show-mibl* %d", TO_BOOL("*show-mibl*"));
-    log_info("*show-parsetree* %d", TO_BOOL("*show-parsetree*"));
-    log_info("*show-starlark* %d", TO_BOOL("*show-starlark*"));
-    log_info("*dump-pkgs* %s", NM_TO_STR("*dump-pkgs*"));
-
-    log_info("*dunefile-count* %d", TO_BOOL("*dunefile-count*"));
-    log_info("*mibl-quiet* %d", TO_BOOL("*mibl-quiet*"));
-
-    log_info("*ns-topdown* %d", TO_BOOL("*ns-topdown*"));
-    log_info("*wrapped-libs-to-ns-archives* %d", TO_BOOL("*wrapped-libs-to-ns-archives*"));
-    log_info("*unwrapped-libs-to-archives* %d", TO_BOOL("*unwrapped-libs-to-archives*"));
-    log_info("*menhir* %d", TO_BOOL("*menhir*"));
-    log_info("*build-dyads* %d", TO_BOOL("*build-dyads*"));
-    log_info("*local-ppx-driver* %d", TO_BOOL("*local-ppx-driver*"));
-    log_info("*ppxlib-ppx-driver* %d", TO_BOOL("*ppxlib-ppx-driver*"));
-    log_info("*shared-ppx-pkg* %d", TO_BOOL("*shared-ppx-pkg*"));
-    log_info("*shared-deps* %d", TO_BOOL("*shared-deps*"));
-    log_info("*emit-bazel-pkg* %d", TO_BOOL("*emit-bazel-pkg*"));
-    log_info("*dune-execlib-includes-main* %d", TO_BOOL("*dune-execlib-includes-main*"));
-    log_info("*scan-exclusions*: %s", NM_TO_STR("*scan-exclusions*"));
-
-    log_info("*foobar* %d", TO_BOOL("*foobar*"));
+    char *exec_sexp =
+        "  (let ((mibls (filter (lambda (kv) "
+        "                         (string-prefix? \"*mibl-\" "
+        "                            (format #f \"~A\" (car kv)))) "
+        "                       (let->list (rootlet))))) "
+        "    (for-each (lambda (kv) "
+        "                (format #t \"~A~%\" kv)) "
+        "              (sort! mibls (lambda (a b) "
+        "                             (sym<? (car a) (car b))))))) "
+        ;
+    s7_eval_c_string(s7, exec_sexp);
 
     log_info(GRN "End s7 configuration summary." CRESET);
     fflush(NULL);

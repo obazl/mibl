@@ -1,5 +1,5 @@
 (define (-split-menhir-opts options)
-  (if *debugging*
+  (if *mibl-debugging*
       (format #t "~A: ~A~%" (ublue "-split-menhir-opts") options))
 
   ;; --external-tokens Js_token
@@ -26,14 +26,14 @@
            )))
 
 (define (-normalize-menhir-fld-flags args)
-  (if *debugging*
+  (if *mibl-debugging*
       (format #t "~A: ~A\n" (ublue "-normalize-menhir-fld-flags") args))
   (let* ((top-std (any (lambda (flag) (equal? flag :standard))
                        args))
          (clean-flags (if top-std
                           (remove #|:item|# :standard args)
                           args)))
-    (if *debugging*
+    (if *mibl-debugging*
         (begin
           (format #t "ARGS: ~A\n" args)
           (format #t "TOP-STD: ~A\n" top-std)
@@ -43,7 +43,7 @@
                   ((options bools exclusions) (split-opts (reverse opts)))
                   ((external-tokens unused-tokens other-options)
                    (-split-menhir-opts options)))
-      (if *debugging*
+      (if *mibl-debugging*
           (format #t "~A: ~A~%" (uwhite "unused-tokens") unused-tokens))
       (let ((result
              (remove
@@ -65,15 +65,15 @@
         `,@result))))
 
 (define (menhir->mibl ws pkg stanza)
-  (if *debugging*
+  (if *mibl-debugging*
       (format #t "~A: ~A~%" (bgblue "menhir->mibl") stanza))
   (let* ((stanza-alist (cdr stanza))
          (parsers (assoc-val 'modules stanza-alist)))
-    (if *debugging*
+    (if *mibl-debugging*
         (format #t "~A: ~A~%" (uwhite "menir parsers") parsers))
     (let ((spec
            (map (lambda (fld)
-                  (if *debugging*
+                  (if *mibl-debugging*
                       (format #t "~A: ~A~%" (uwhite "menhir fld") fld))
                   (case (car fld)
                     ((modules)
@@ -89,7 +89,7 @@
                      (error 'MENHIR
                             (format #f "unrecognized menhir fld: ~A" fld)))))
                 (cdr stanza))))
-      (if *debugging*
+      (if *mibl-debugging*
           (format #t "~A: ~A~%" (bgmagenta "menhir spec") spec))
       ;; (error 'x "stop menhir")
       (let* ((cmd-unused (if-let ((unused (assoc-val :unused-tokens spec)))
@@ -115,7 +115,7 @@
                           (flatten (map (lambda (g)
                                           (cons pkg-path g))
                                         (assoc-val :grammars spec))))))
-        (if *debugging*
+        (if *mibl-debugging*
             (begin
               (format #t "~A: ~A~%" (ublue "cmd-unused") cmd-unused)
               (format #t "~A: ~A~%" (ublue "cmd-options") cmd-options)
@@ -126,7 +126,7 @@
         (let* ((deps (string-trim '(#\newline) (system cmd #t)))
                (deps (string-split deps #\newline)))
           (for-each (lambda (dep)
-                      (if *debugging*
+                      (if *mibl-debugging*
                           (format #t "~A: ~A~%" (bgyellow "processing ocamldep") dep))
                       (let ((segs (string-split dep #\:)))
                         ;; (format #t "~A: ~A~%" (yellow "segs") segs)
@@ -138,15 +138,15 @@
                                    (mdeps (string-trim '(#\space) (cadr segs)))
                                    (mdeps (string-split mdeps #\space))
                                    (mdeps (map string->symbol mdeps))
-                                   (_ (if *debugging* (format #t "~A: ~A~%" (red "mdeps") mdeps)))
+                                   (_ (if *mibl-debugging* (format #t "~A: ~A~%" (red "mdeps") mdeps)))
                                    ;; eliminate mdeps not in this pkg
                                    (mdeps (filter (lambda (d) (is-module-in-pkg d pkg)) mdeps))
-                                   (_ (if *debugging* (format #t "~A: ~A~%" (red "filtered mdeps") mdeps)))
+                                   (_ (if *mibl-debugging* (format #t "~A: ~A~%" (red "filtered mdeps") mdeps)))
                                    )
 
                               (if (not (null? mdeps))
                                   (begin
-                                    (if *debugging*
+                                    (if *mibl-debugging*
                                         (begin
                                           (format #t "~A ~A to ~A~%" (bgyellow "adding mdeps") mdeps fname)
                                           (format #t "~A: ~A~%" (uyellow "in pkg") pkg)))
@@ -161,7 +161,7 @@
 
                               ;; mdeps is list of ocamldeps of fname with corresponding files in this pkg
                               ;; we retrieve the pkg-dep for fname and add the mdeps to it
-                              (if *debugging*
+                              (if *mibl-debugging*
                                   (begin
                                     (format #t "~A: ~A~%" (yellow "ocamldep fname") fname)
                                     (format #t "~A: ~A~%" (yellow "ocamldep kind") kind)
@@ -169,7 +169,7 @@
                               (if (not (null? mdeps))
                                   (if-let ((m-assoc (find-m-file-in-pkg fname pkg)))
                                           (begin
-                                            (if *debugging*
+                                            (if *mibl-debugging*
                                                 (format #t "~A: ~A~%" (red "m-assoc in pkg") m-assoc))
                                             (if (proper-list? m-assoc)
                                                 ;; its a module entry, (A (:ml a.ml) (:mli a.mli))
@@ -184,7 +184,7 @@
                                                   )
                                                 ;; else its a struct entry, (A a.ml)
                                                 (begin
-                                                  (if *debugging*
+                                                  (if *mibl-debugging*
                                                       (begin
                                                         (format #t "~A: ~A~%" (bgred "STRUCT ENTRY") m-assoc)
                                                         (format #t "~A: ~A~%" (bgred "adding mdeps") mdeps)))
@@ -193,7 +193,7 @@
                                                                 (cons (cdr m-assoc)
                                                                       mdeps))))))
                                           ;;else
-                                          (if *debugging*
+                                          (if *mibl-debugging*
                                               (format #t "~A: ~A~%" (blue "not found") m-assoc)))
                                   ;; else mdeps is null
                                   )))))
@@ -202,10 +202,10 @@
                            (car tok) #f)))
           (if tok
               (begin
-                (if *debugging*
+                (if *mibl-debugging*
                     (format #t "~A: ~A~%" (bgred "tok") tok))
                 (alist-update-in! spec '(:deps) (lambda (old) (remove tok old))))))
-        (if *debugging*
+        (if *mibl-debugging*
             (format #t "~A: ~A~%" (ured "menhir spec") spec))
         ;; (error 'STOP "STOP menhir")
         (list (cons :menhir spec))))))
@@ -214,7 +214,7 @@
   ;; a) verify srcfile exists?
   ;; b) update pkg-modules and/or pkg-structures
     ;; (let* ((ext "mly")
-    ;;        (_ (if *debugging* (format #t "~A: ~A~%" (uwhite "ext") ext)))
+    ;;        (_ (if *mibl-debugging* (format #t "~A: ~A~%" (uwhite "ext") ext)))
     ;;        (resolved (map (lambda (principal-fname)
     ;;                         ;;FIXME: verify file is in pkg :ocamllex
     ;;                         (let* ((mllfile (format #f "~A.~A" principal-fname ext))

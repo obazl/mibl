@@ -3494,7 +3494,7 @@ EXPORT s7_pointer g_load_project(s7_scheme *s7,  s7_pointer args)
     if (mibl_debug_mibl_crawl) log_debug("args ct: %d", args_ct);
 #endif
 
-    /* s7_define_variable(s7, "*dune-execlib-includes-main*", s7_t(s7)); */
+    /* s7_define_variable(s7, "*mibl-dune-execlib-includes-main*", s7_t(s7)); */
 
     const char *rootdir, *pathdir;
 
@@ -3521,7 +3521,7 @@ EXPORT s7_pointer g_load_project(s7_scheme *s7,  s7_pointer args)
         if (mibl_debug_mibl_crawl) log_debug("args ct < 3");
 #endif
 
-        /* rootpath is always arg 0; ignore arg 1, it is used to set var *emit-bazel-pkg* */
+        /* rootpath is always arg 0; ignore arg 1, it is used to set var mibl-emit-bazel-pkg* */
         s7_pointer arg = s7_car(args);
 #if defined(DEBUG_TRACE)
         log_debug("arg 0: %s", TO_STR(arg));
@@ -4193,7 +4193,7 @@ EXPORT s7_pointer load_project(const char *home_sfx, const char *traversal_root)
 
     UT_string *setter;
     utstring_new(setter);
-    utstring_printf(setter, "(set! *dunefile-count* %d)", dunefile_ct);
+    utstring_printf(setter, "(set! *mibl-dunefile-count* %d)", dunefile_ct);
     s7_eval_c_string(s7, utstring_body(setter));
 
     /* if (emit_parsetree || mibl_config.emit_parsetree) { */

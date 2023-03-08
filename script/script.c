@@ -33,6 +33,10 @@ enum OPTS {
     FLAG_SHOW_PARSETREE,
     FLAG_DEBUG,
     FLAG_DEBUG_LOAD_PROJECT,
+
+    FLAG_EMIT_WSS,
+    FLAG_EMIT_PKGS,
+
     FLAG_TRACE,
     FLAG_VERBOSE,
     FLAG_QUIET,
@@ -59,43 +63,25 @@ int _update_mibl_config(struct option options[],
 
 void _update_s7_globals(struct option options[])
 {
-    mibl_s7_set_flag("*foobar*", true);
-
-    /* mibl_s7_set_flag("*debugging*", true); */
+    /* mibl_s7_set_flag("*mibl-debugging*", true); */
     mibl_s7_set_flag("*mibl-quiet*", ((options[FLAG_QUIET].count) > 0));
 
-    mibl_s7_set_flag("*debugging*", options[FLAG_DEBUG].count);
-    /* mibl_s7_set_flag("*debug-emit*", */
-    /*                 ((options[FLAG_DEBUG_DE].count) */
-    /*                  || (options[FLAG_DEBUG_EMIT].count))); */
-    /* mibl_s7_set_flag("*debug-executables*", */
-    /*                 ((options[FLAG_DEBUG_DX].count) */
-    /*                  || (options[FLAG_DEBUG_EXECUTABLES].count))); */
-    /* mibl_s7_set_flag("*debug-mibl*", */
-    /*                 ((options[FLAG_DEBUG_DM].count) */
-    /*                  || (options[FLAG_DEBUG_MIBL].count))); */
-    /* mibl_s7_set_flag("*debug-ppx*", */
-    /*                 ((options[FLAG_DEBUG_DPPX].count) */
-    /*                  || (options[FLAG_DEBUG_PPX].count))); */
-
-    /* if ((options[FLAG_LEXPORTS].count) */
-    /*     || (options[FLAG_SHOW_EXPORTS].count)) */
-    /*     mibl_s7_set_flag("*show-exports*", true); */
-    /* else if (mibl_config.show_exports) */
-    /*     mibl_s7_set_flag("*show-exports*", true); */
+    mibl_s7_set_flag("*mibl-debugging*", options[FLAG_DEBUG].count);
 
     if (options[FLAG_SHOW_MIBL].count)
-        mibl_s7_set_flag("*show-mibl*", true);
+        mibl_s7_set_flag("*mibl-show-mibl*", true);
     else if (mibl_config.show_mibl)
-        mibl_s7_set_flag("*show-mibl*", true);
+        mibl_s7_set_flag("*mibl-show-mibl*", true);
 
     if (options[FLAG_SHOW_PARSETREE].count)
-        mibl_s7_set_flag("*show-parsetree*", true);
+        mibl_s7_set_flag("*mibl-show-parsetree*", true);
     else if (mibl_config.show_parsetree)
-        mibl_s7_set_flag("*show-parsetree*", true);
+        mibl_s7_set_flag("*mibl-show-parsetree*", true);
 
-    /* mibl_s7_set_flag("*emit-starlark*", ((options[FLAG_EMIT_STARLARK].count) > 0)); */
-    /* mibl_s7_set_flag("*menhir*", ((options[FLAG_MENHIR].count) >0)); */
+    if (options[FLAG_EMIT_WSS].count)
+        mibl_s7_set_flag("*mibl-emit-wss*", true);
+    if (options[FLAG_EMIT_PKGS].count)
+        mibl_s7_set_flag("*mibl-emit-pkgs*", true);
 }
 
 void _print_version(void) {
@@ -142,6 +128,12 @@ static struct option options[] = {
                     .flags=GOPT_ARGUMENT_FORBIDDEN | GOPT_REPEATABLE},
     [FLAG_DEBUG_LOAD_PROJECT] = {.long_name="debug-load-project",
                                  .flags=GOPT_ARGUMENT_FORBIDDEN},
+
+    [FLAG_EMIT_WSS] = {.long_name="emit-wss",
+                       .flags=GOPT_ARGUMENT_FORBIDDEN},
+    [FLAG_EMIT_PKGS] = {.long_name="emit-pkgs",
+                       .flags=GOPT_ARGUMENT_FORBIDDEN},
+
     [FLAG_TRACE] = {.long_name="trace",.short_name='t',
                     .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_VERBOSE] = {.long_name="verbose",.short_name='v',

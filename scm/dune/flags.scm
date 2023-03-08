@@ -12,7 +12,7 @@
 
 ;; split opts into boolean flags and (opt arg) pairs
 (define (split-opts opts)
-  (if *debugging*
+  (if *mibl-debugging*
       (format #t "~A: ~A\n" (ublue "split-opts") opts))
   ;; assumption: :standard has been removed
   ;; cases: arg is list or not: (flags (a b ...)) v. (flags a b ...)
@@ -25,7 +25,7 @@
               (options '())
               (flags '())
               (orphans '()))
-    (if *debugging*
+    (if *mibl-debugging*
         (begin
           (format #t "~A: ~A\n" (green "opts") opts)
           (format #t "~A: ~A\n" (green "ostack") ostack)))
@@ -44,7 +44,7 @@
           (if (number? opt)
               (if (null? ostack)
                   (begin
-                    (if *debugging*
+                    (if *mibl-debugging*
                         (format #t "WARNING: numeric opt ~A without predecing optname\n" opt))
                     (recur (cdr opts)
                            ostack options flags (cons opt orphans)))
@@ -57,7 +57,7 @@
                              (cons opt ostack) options flags orphans)
                       ;; prev must be a flag, new goes on ostack
                       (begin
-                        (if *debugging*
+                        (if *mibl-debugging*
                             (format #t "~A: current: ~A, prev: ~A~%"
                                 (bgred "hyphen prev") opt (car ostack)))
                         ;; special case: dashed warning nbrs following -w, e.g. -w -27
@@ -65,7 +65,7 @@
                                 (string-prefix? "-" (format #f (car ostack))))
                             ;; current is arg to prev -<opt>
                             (begin
-                              (if *debugging*
+                              (if *mibl-debugging*
                                   (begin
                                     (format #t "~A~%" (red "XXXXXXXXXXXXXXXX"))
                                     (format #t "~A: ~A~%" (red "ostack") ostack)
@@ -81,7 +81,7 @@
                                        orphans)))
                             ;; else prev is flag, push current to ostack
                             (begin
-                              (if *debugging*
+                              (if *mibl-debugging*
                                   (format #t "~A~%" (green "ZZZZZZZZZZZZZZZZ")))
                               (recur (cdr opts)
                                      (list opt) ;; ostack
@@ -98,7 +98,7 @@
                             (recur '() ostack options flags
                                    (append orphans (cdr opts))))
                           (begin
-                            (if *debugging*
+                            (if *mibl-debugging*
                                 (format #t
                                     "WARNING: value ~A without preceding -opt\n"
                                     opt))
@@ -167,7 +167,7 @@
     (values link-std flags)))
 
 (define (normalize-stanza-fld-flags flags kind)
-  (if *debugging*
+  (if *mibl-debugging*
       (format #t "~A: ~A\n" (ublue "normalize-stanza-fld-flags") flags))
   (if flags
       ;; (let* ((flags (if (list? (cadr flags))

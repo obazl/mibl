@@ -1,5 +1,5 @@
 (define (prune-mibl-exec mibl-exec)
-  (if *debugging*
+  (if *mibl-debugging*
       (format #t "~A: ~A~%" (ured "PRUNE-mibl-exec") mibl-exec))
   (let ((pruned (filter (lambda (fld)
                           ;;(format #t "~A: ~A~%" (magenta "fld") (cdr fld))
@@ -9,7 +9,7 @@
     (list (cons :rule pruned))))
 
 (define (prune-mibl-rule mibl-rule)
-  (if *debugging*
+  (if *mibl-debugging*
       (format #t "~A: ~A~%" (ured "PRUNE-mibl-rule") mibl-rule))
   (let ((pruned (filter (lambda (fld)
                           ;;(format #t "~A: ~A~%" (magenta "fld") (cdr fld))
@@ -20,18 +20,18 @@
 
 ;; returns (sym pfx sfx)
 (define (parse-pct-var arg)
-  (if *debugging*
+  (if *mibl-debugging*
       (format #t "~A: ~A~%" (ublue "parse-pct-var") arg))
   (let* ((v (format #f "~A" arg))
          (len (length v))
          (vstr (substring v 2 (- len 1)))
          (sym (string->symbol vstr)))
-    (if *debugging*
+    (if *mibl-debugging*
         (begin
           (format #t "vstr ~A\n" vstr)
           (format #t "sym ~A\n" sym)))
     (let ((splits (string-split vstr #\:)))
-      (if *debugging*
+      (if *mibl-debugging*
           (format #t "~A: ~A~%" (white "splits") splits))
       (if (equal? (list vstr) splits)
           (values sym #f sym)
@@ -39,13 +39,13 @@
                   (string->symbol (string-join (cdr splits) ":")))))))
 
 (define (pct-var->keyword v)
-  (if *debugging*
+  (if *mibl-debugging*
       (format #t "~A: ~A~%" (blue "pct-var->var") v))
   (let* ((v (format #f "~A" v))
          (len (length v))
          (vstr (substring v 2 (- len 1)))
          (kw (string->keyword vstr)))
-    (if *debugging*
+    (if *mibl-debugging*
         (begin
           (format #t "vstr ~A\n" vstr)
           (format #t "kw ~A\n" kw)))
@@ -53,13 +53,13 @@
 
 ;;;;;;;;;;;;;;;;;;
 (define (parse-subcmd dsl subcmd cmd-list)
-  (if *debugging*
+  (if *mibl-debugging*
       (format #t "parse-subcmd: ~A\n\t~A\n\t~A\n" dsl subcmd cmd-list))
   (if (null? dsl)
       subcmd
       (if (pair? (car dsl))
           (let ((subcmd (parse-subcmd (car dsl) '() '())))
-            (if *debugging*
+            (if *mibl-debugging*
                 (format #t "SUBCMD: ~A\n" subcmd))
             (parse-action-dsl (cdr dsl) initial-cmd
                               (append cmd-list subcmd)))
@@ -67,11 +67,11 @@
                         cmd-list))))
 
 (define (cmd-list->cmd-alist dsl)
-  (if *debugging*
+  (if *mibl-debugging*
       (format #t "CMD-LIST->CMD-ALIST: ~A\n" dsl))
   (let recur ((dsl dsl)
               (cmd-alist '()))
-    (if *debugging*
+    (if *mibl-debugging*
         (begin
           (format #t "recur dsl: ~A\n" dsl)
           (format #t "recur cmds: ~A\n" cmd-alist)))
@@ -85,7 +85,7 @@
           (let-values (((subcmd trailing)
                         (let* subrecur ((subdsl dsl)
                                         (subcmd '()))
-                              (if *debugging*
+                              (if *mibl-debugging*
                                   (begin
                                     (format #t "subrecur subdsl: ~A\n" subdsl)
                                     (format #t "subrecur cmds: ~A\n" subcmd)))
@@ -126,6 +126,6 @@
 ;;          ;; action may be a sequence of subactions, e.g.
 ;;          ;; (chdir %{foo} (run ${bar} ...))
 ;;          (cmd-list (parse-action-dsl dsl '() '()))
-;;          (_ (if *debugging* (format #t "cmd-list: ~A\n" cmd-list)))
+;;          (_ (if *mibl-debugging* (format #t "cmd-list: ~A\n" cmd-list)))
 ;;          )
 ;;     cmd-list))

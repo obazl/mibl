@@ -10,11 +10,11 @@
 ;; FIXME: returns #f for non-existent paths
 ;; use ->canonical-path instead
 (define (normalize-pkg-path path ws-root)
-  (if *debugging*
+  (if *mibl-debugging*
       (format #t "~A: ~A~%" (blue "normalize-pkg-path") path))
   ;; path is not in pkg-path dir
   (let ((rp (realpath path '())))
-    (if *debugging*
+    (if *mibl-debugging*
         (begin
           (format #t "f rel path: ~A\n" path)
           (format #t "f realpath: ~A\n" rp)
@@ -61,7 +61,7 @@
 ;; rsrc-list: :signatures or :structures
 ;; may remove item from list
 (define (find-module-in-rsrc-list!? m-name tgt rsrc-list)
-  (if *debugging*
+  (if *mibl-debugging*
       (begin
         (format #t "~A: ~A~%" (blue "find-module-in-rsrc-list!?") m-name)
         (format #t "~A: ~A~%" (white "tgt") tgt)
@@ -73,32 +73,32 @@
              (fileset (if statics statics
                           (if dynamics dynamics
                               '()))))
-        (if *debugging*
+        (if *mibl-debugging*
             (begin
               (format #t "~A: ~A~%" (white "statics") statics)
               (format #t "~A: ~A~%" (white "dynamics") dynamics)))
 
         (let ((match (find-if (lambda (sig)
-                                (if *debugging*
+                                (if *mibl-debugging*
                                     (format #t "~A: ~A~%" (green "sig") sig))
                                 (equal? (format #f "~A" m-name)
                                         (format #f "~A" (car sig))))
                               (cdr fileset))))
-          (if *debugging*
+          (if *mibl-debugging*
               (format #t "~A: ~A~%" (red "MATCH") match))
           (if match
               ;; remove from pkg files, then return
               (begin
-                (if *debugging*
+                (if *mibl-debugging*
                     (format #t "~A: ~A from: ~A~%" (red "removing") match fileset))
                 (let ((new (dissoc (list (car match)) (cdr fileset))))
-                  (if *debugging*
+                  (if *mibl-debugging*
                       (format #t "~A: ~A~%" (red "new fs") new))
                   (set-cdr! fileset new)
                   match))
 
               (let ((match (find-if (lambda (sig)
-                                      (if *debugging*
+                                      (if *mibl-debugging*
                                           (format #t "dynamic ~A: ~A~%" (green "sig") sig))
                                       #f)
                                     (if dynamics
@@ -110,11 +110,11 @@
       #f))
 
 (define (-remove-from-pkg-files kind sig pkg)
-  (if *debugging*
+  (if *mibl-debugging*
       (format #t "~A: ~A, ~A~%" (blue "-remove-from-pkg-files") kind sig))
   ;; (format #t "~A: ~A~%" (blue "pkg") pkg)
   (let ((fileset (assoc kind pkg)))
-    (if *debugging*
+    (if *mibl-debugging*
         (format #t "~A: ~A~%" (cyan "fileset") fileset)))
   )
 

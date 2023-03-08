@@ -24,23 +24,23 @@
 ;; e.g. gen/bip39_generator.exe
 ;; FIXME: rename, works for any file, not just tools
 (define (normalize-toolname pkg-path tool)
-  (if *debugging*
+  (if *mibl-debugging*
       (format #t "normalize-toolname: ~A\n" tool))
   (let* ((segs (string-split tool #\/))
          (seg-ct (length segs)))
     (let recur ((segs segs)
                 (result pkg-path))
-      (if *debugging*
+      (if *mibl-debugging*
           (format #t "recur segs: ~A, result: ~A\n" segs result))
       (if (null? segs)
           result
           (cond
             ((equal? (car segs) ".")
-             (if *debugging*
+             (if *mibl-debugging*
                  (format #t "~A\n" "tool DOT seg"))
              (recur (cdr segs) result))
             ((equal? (car segs) "..")
-             (if *debugging*
+             (if *mibl-debugging*
                  (format #t "~A\n" "tool DOTDOT seg"))
              (let ((last-slash (string-index-right result
                                                    (lambda (ch)
@@ -56,7 +56,7 @@
                ;;                           (- (length result) last-slash)))
                ))
             (else
-             (if *debugging*
+             (if *mibl-debugging*
                  (format #t "ELSE car segs: ~A\n" (car segs)))
              (if (null? (cdr segs))
                  (recur (cdr segs) (string-append result "/" (car segs)))
@@ -68,7 +68,7 @@
   ;;                       exe)
 
 (define (resolve-local-toolname pkg-path toolname action stanza)
-  (if *debugging*
+  (if *mibl-debugging*
       (begin
         (format #t "RESOLVE-local-toolname: ~A:: ~A\n" pkg-path toolname)
         (format #t " stanza: ~A\n" stanza)))
@@ -87,7 +87,7 @@
      (else
       (if deps
           (begin
-            (if *debugging*
+            (if *mibl-debugging*
                 (format #t "rlt DEPS:: ~A\n" deps))
             ;; e.g. (deps (:exe gen/bip39_generator.exe) ...)
             ;; e.g. (deps (:gen gen.exe))
@@ -97,7 +97,7 @@
                   (if (equal? (string-append ":" toolname)
                               (symbol->string (caar deps-list)))
                       (let ((exe (symbol->string (cadr (car deps-list)))))
-                        (if *debugging*
+                        (if *mibl-debugging*
                             (format #t "pkg ~A;  exe: ~A\n" pkg-path exe))
                         (normalize-toolname pkg-path exe)
                         ;; (if (string-prefix? "./" exe)
@@ -217,7 +217,7 @@
 ;; etc.
 (define (run-action->deps pkg-path tool rule-alist)
   ;; if the tool is listed in the deps, remove it
-  (if *debugging*
+  (if *mibl-debugging*
       (begin
         (format #t "RUN-ACTION->DEPS: ~A\n" pkg-path)
         (format #t "rule-alist: ~A\n" rule-alist)))
@@ -237,7 +237,7 @@
     (if-let ((deps (assoc-val 'deps rule-alist)))
             (let recur ((deps deps)
                         (result '()))
-              (if *debugging*
+              (if *mibl-debugging*
                   (format #t "deps: ~A\n" (if (null? deps) '() deps)))
               ;; (format #t "result: ~A\n" result)
               (if (null? deps)
@@ -252,7 +252,7 @@
                         ;;  (recur (cdr deps) (cons (car deps) result)))
 
                         ((glob_files)
-                         (if *debugging*
+                         (if *mibl-debugging*
                              (format #t "GLOB dep: ~A\n" (car deps)))
                          (recur (cdr deps) (cons (car deps) result)))
 
@@ -267,7 +267,7 @@
                         ;;  (format #t "UNIVERSE dep: ~A\n" (car deps))
                         ;;  (recur (cdr deps) (cons (car deps) result)))
                         ((package)
-                         (if *debugging*
+                         (if *mibl-debugging*
                              (format #t "WARNING: dep fld 'package' not yet supported: ~A\n" (car deps)))
                          (recur (cdr deps) (cons (car deps) result)))
                         ;; ((env_var)
@@ -310,45 +310,45 @@
 
 ;; (define (normalize-run-action pkg-path action stanza srcfiles)
 (define (normalize-run-action pkg action-alist targets deps)
-  (if *debugging*
+  (if *mibl-debugging*
       (format #t "NORMALIZE-run-action: ~A\n" action-alist))
   (let* ((stanza-type :run-cmd)
          ;; (rule-alist stanza-alist) ;; (cdr stanza))
          ;; (action-alist (assoc-val 'action rule-alist))
-         (_ (if *debugging* (format #t "action-alist: ~A\n" action-alist)))
+         (_ (if *mibl-debugging* (format #t "action-alist: ~A\n" action-alist)))
          (run-alist (assoc-val 'run action-alist))
-         (_ (if *debugging* (format #t "run-alist: ~A\n" run-alist)))
+         (_ (if *mibl-debugging* (format #t "run-alist: ~A\n" run-alist)))
 
          (pkg-path (assoc-val :pkg-path pkg))
-         ;; (_ (if *debugging* (format #t "pkg-path: ~A\n" pkg-path)))
+         ;; (_ (if *mibl-debugging* (format #t "pkg-path: ~A\n" pkg-path)))
 
          (tool (run-action->toolname pkg-path run-alist))
-         (_ (if *debugging* (format #t "TOOL: ~A\n" tool)))
+         (_ (if *mibl-debugging* (format #t "TOOL: ~A\n" tool)))
 
          ;; (tool-tag (normalize-tool-tag (cadadr action)))
-         ;; (_ (if *debugging* (format #t "TOOL-TAG: ~A\n" tool-tag)))
+         ;; (_ (if *mibl-debugging* (format #t "TOOL-TAG: ~A\n" tool-tag)))
 
          ;; (run-list (cadr action)) ;; (run <tool> <arg1> ...)
-         ;; ;; (_ (if *debugging* (format #t "run-list: ~A\n" run-list)))
+         ;; ;; (_ (if *mibl-debugging* (format #t "run-list: ~A\n" run-list)))
 
          ;; (target (if-let ((target (assoc 'target rule-alist)))
          ;;                 (cadr target) #f))
-         ;; ;; (_ (if *debugging* (format #t "target: ~A\n" target)))
+         ;; ;; (_ (if *mibl-debugging* (format #t "target: ~A\n" target)))
          ;; (targets (if-let ((targets (assoc 'targets rule-alist)))
          ;;                  (cadr targets)
          ;;                  #f))
-         ;; ;; (_ (if *debugging* (format #t "targets: ~A\n" targets)))
+         ;; ;; (_ (if *mibl-debugging* (format #t "targets: ~A\n" targets)))
 
          ;; ;;FIXME: run actions for "alias runtest" etc. have no target(s) fld
          ;; (outfile (if target target
          ;;              (if targets targets
          ;;                  '())))
 
-         ;; ;; (_ (if *debugging* (format #t "outfile: ~A\n" outfile)))
+         ;; ;; (_ (if *mibl-debugging* (format #t "outfile: ~A\n" outfile)))
 
          (args (cdr run-alist))
           ;;(run-action->args pkg-path action run-list))
-         (_ (if *debugging* (format #t "CMD ARGS: ~A\n" args)))
+         (_ (if *mibl-debugging* (format #t "CMD ARGS: ~A\n" args)))
 
          ;; (dsl run-list)
 
@@ -356,7 +356,7 @@
          ;;  (expand-rule-deps pkg stanza-alist)
          ;;  ;;(run-action->deps pkg-path tool rule-alist)
          ;;  )
-         (_ (if *debugging* (format #t "CMD DEPS: ~A\n" deps)))
+         (_ (if *mibl-debugging* (format #t "CMD DEPS: ~A\n" deps)))
 
          ;; ;;        (dsl (cadr (cdadr action)))
          ;; ;;        ;; dsl may contain embedded actions, e.g. 'chdir', 'setenv', etc.

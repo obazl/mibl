@@ -2,31 +2,31 @@
 
 ;; FIXME: do not convert to sh-test unless runtool is a shell script
 (define (X-alias-args->miblark pkg stanza)
-  (if *debugging*
+  (if *mibl-debugging*
       (format #t "~A: ~A~%" (ublue "-alias-args->miblark") stanza))
   (if-let ((args (assoc-in '(:actions :cmd :args) (cdr stanza))))
           ;;FIXME assuming one cmd
           (let* ((stanza-alist (cdr stanza))
-                 (_ (if *debugging* (format #t "~A: ~A~%" (uwhite "stanza-alist") stanza-alist)))
+                 (_ (if *mibl-debugging* (format #t "~A: ~A~%" (uwhite "stanza-alist") stanza-alist)))
                  (alias (cadr (assoc :alias stanza-alist)))
-                 (_ (if *debugging* (format #t "~A: ~A~%" (uwhite "alias") alias)))
+                 (_ (if *mibl-debugging* (format #t "~A: ~A~%" (uwhite "alias") alias)))
                  (args (cdr args))
-                 (_ (if *debugging* (format #t "~A: ~A~%" (uwhite "alias args") args)))
+                 (_ (if *mibl-debugging* (format #t "~A: ~A~%" (uwhite "alias args") args)))
                  (cmd-ct (length (assoc-in* '(:actions :cmd) stanza-alist)))
-                 (_ (if *debugging* (format #t "~A: ~A~%" (uwhite "cmd ct") cmd-ct)))
+                 (_ (if *mibl-debugging* (format #t "~A: ~A~%" (uwhite "cmd ct") cmd-ct)))
                  (deps (if-let ((deps (assoc :deps stanza-alist)))
                                (cdr deps) '()))
-                 (_ (if *debugging* (format #t "~A: ~A~%" (uwhite "deps") deps)))
+                 (_ (if *mibl-debugging* (format #t "~A: ~A~%" (uwhite "deps") deps)))
                  (outputs (if-let ((outputs (assoc :outputs stanza-alist)))
                                (cdr outputs) '()))
-                 (_ (if *debugging* (format #t "~A: ~A~%" (uwhite "outputs") outputs)))
+                 (_ (if *mibl-debugging* (format #t "~A: ~A~%" (uwhite "outputs") outputs)))
 
                  ;; (tool (format #f "~A" (keyword->symbol (car args))))
-                 ;; (_ (if *debugging* (format #t "~A: ~A~%" (uwhite "tool") tool)))
+                 ;; (_ (if *mibl-debugging* (format #t "~A: ~A~%" (uwhite "tool") tool)))
 
                  ;;FIXME: handle progn (multiple cmds)
                  (tool (assoc-in '(:actions :cmd :tool) stanza-alist))
-                 (_ (if *debugging* (format #t "~A: ~A~%" (uwhite "tool") tool)))
+                 (_ (if *mibl-debugging* (format #t "~A: ~A~%" (uwhite "tool") tool)))
                  ;; (error 'X "STOP miblark tool")
 
                  )
@@ -67,7 +67,7 @@
             ;;   ;;                     ;; append tools
             ;;   ;;                     (format #t "~A: ~A~%" (ured "tool-deps") tool-deps)
             ;;   ;;                     ;; add ::tools to (:deps ...)
-            ;;   ;;                     (let ((_ (if *debugging* (format #t "~A: ~A~%" (ured "deps") deps)))
+            ;;   ;;                     (let ((_ (if *mibl-debugging* (format #t "~A: ~A~%" (ured "deps") deps)))
             ;;   ;;                           (deps-list (cdr deps))
             ;;   ;;                           (tools (list (cons ::tools tool-args))))
             ;;   ;;                       (set-cdr! deps (append tools deps-list)))
@@ -84,7 +84,7 @@
 ;; rule stanza containing (alias) fld?
 ;; if alias name contains 'test' convert to :sh-test
 (define (-alias->miblark stanza)
-  (if *debugging*
+  (if *mibl-debugging*
       (format #t "~A: ~A~%" (ublue "-alias->miblark") stanza))
   (if-let ((alias-assoc (assoc :alias (cdr stanza))))
           (if (assoc-in '(:actions :cmd) (cdr stanza))
@@ -92,17 +92,17 @@
                     (cmd-ct (length (assoc-in* '(:actions :cmd) (cdr stanza))))
                     ;;FIXME assuming one cmd
                     (args (assoc-in '(:actions :cmd :args) (cdr stanza))))
-                (if *debugging*
+                (if *mibl-debugging*
                     (begin
                       (format #t "~A: ~A~%" (ured "ALIAS") alias)
                       (format #t "~A: ~A~%" (ured "cmd ct") cmd-ct)
                       (format #t "~A: ~A~%" (ured "args") args)))
                 ;; if :args contains executable, mark as :test
                 (let ((tool-args (fold (lambda (arg accum)
-                                         (if *debugging*
+                                         (if *mibl-debugging*
                                              (format #t "~A: ~A~%" (ured "arg") arg))
                                          (let ((argstr (format #f "~A" arg)))
-                                           (if *debugging*
+                                           (if *mibl-debugging*
                                                (format #t "~A: ~A~%" (ured "argstr") argstr))
                                            ;; FIXME what about local sh scripts?
                                            (cond
@@ -120,16 +120,16 @@
                                        '() (cdr args))))
                   (if tool-args
                       (begin
-                        (if *debugging*
+                        (if *mibl-debugging*
                             (format #t "~A: ~A~%" (ured "found executable tool args") tool-args))
                         (if-let ((deps (assoc :deps (cdr stanza))))
                                 (let ((tool-deps (assoc ::tools (cdr deps))))
                                   (if tool-deps
                                       ;; append tools
-                                      (if *debugging*
+                                      (if *mibl-debugging*
                                           (format #t "~A: ~A~%" (ured "tool-deps") tool-deps))
                                       ;; add ::tools to (:deps ...)
-                                      (let ((_ (if *debugging* (format #t "~A: ~A~%" (ured "deps") deps)))
+                                      (let ((_ (if *mibl-debugging* (format #t "~A: ~A~%" (ured "deps") deps)))
                                             (deps-list (cdr deps))
                                             (tools (list (cons ::tools tool-args))))
                                         (set-cdr! deps (append tools deps-list)))
@@ -144,7 +144,7 @@
                         (set! -sh-test-id (+ 1 -sh-test-id))
                         )
                       (begin
-                        (if *debugging*
+                        (if *mibl-debugging*
                             (format #t "~A: ~A~%" (ured "NO executable tools") tools))
                         (error 'FIXME "alias without run tool")))
                   ))
@@ -153,7 +153,7 @@
                 (error 'fixme
                        (format #f "~A: ~A~%" (ured "ALIAS w/o actions") stanza))))
           (begin
-            (if *debugging*
+            (if *mibl-debugging*
                 (format #t "~A: ~A~%" (ured "NO ALIAS") stanza))
             #| nop |#)))
 
@@ -161,7 +161,7 @@
 ;; depending on action tool
 ;; :executable by :test if deps include unit test pkg
 (define (mibl-pkg->miblark pkg)
-  (if *debugging*
+  (if *mibl-debugging*
       (format #t "~A: ~A~%" (blue "mibl-pkg->miblark") pkg)) ;;(assoc-val :pkg-path pkg))
 
   (set! -sh-test-id 0)
@@ -169,26 +169,26 @@
   (if-let ((dune-pkg (assoc :mibl pkg)))
           (for-each
            (lambda (stanza)
-             (if *debugging*
+             (if *mibl-debugging*
                  (format #t "~A: ~A~%" (magenta "stanza") stanza))
              ;; first do write-file etc.
              (case (car stanza)
                ((:rule)
                 ;; if multiple cmds (progn) do not miblarkize
-                (if *debugging*
+                (if *mibl-debugging*
                     (format #t "~A: ~A~%" (red "cmd ct:")
                         (length (assoc-in* '(:actions :cmd) (cdr stanza)))))
                 (if (< (length (assoc-in* '(:actions :cmd) (cdr stanza))) 2)
                     (let ((tool (assoc-in '(:actions :cmd :tool) (cdr stanza))))
-                      (if *debugging*
+                      (if *mibl-debugging*
                           (format #t "~A: ~A~%" (green "tool") tool))
                       (if tool
                           (let ((tool (cadr tool)))
-                            (if *debugging*
+                            (if *mibl-debugging*
                                 (format #t "~A: ~A~%" (green "tool") tool))
                             (case tool
                               ((:write-file) ;;FIXME: what if we have write-file in an alias rule?
-                               (if *debugging*
+                               (if *mibl-debugging*
                                    (format #t "~A: ~A~%" (red "miblarking") stanza))
                                (set-car! stanza :write-file))
                               ((:cppo) (set-car! stanza :cppo))
@@ -217,12 +217,12 @@
                             (set-cdr! stanza (dissoc '(:ns) (cdr stanza))))))))
 
                ((:executable)
-                (if *debugging*
+                (if *mibl-debugging*
                     (format #t "~A: ~A~%" (uwhite "miblarkizing executable") (car stanza)))
                 (let* ((stanza-alist (cdr stanza))
                        (compile-deps (assoc-in '(:compile :deps :resolved) stanza-alist))
                        (exec-lib (assoc :exec-lib stanza-alist)))
-                  (if *debugging*
+                  (if *mibl-debugging*
                       (begin
                         (format #t "~A: ~A~%" (uwhite "compile-deps") compile-deps)
                         (format #t "~A: ~A~%" (uwhite "exec-lib") exec-lib)))
@@ -234,27 +234,27 @@
                   (if (truthy? exec-lib)
                       (if-let ((pkg-exec-libs (assoc :exec-libs (cdr dune-pkg))))
                               (begin
-                                (if *debugging*
+                                (if *mibl-debugging*
                                     (format #t "~A: ~A~%" (ublue "found pkg-exec-libs") pkg-exec-libs))
                                 (if (number? (cdr exec-lib))
                                     (begin) ;; already done
                                     (if (member (cdr exec-lib) (cdr pkg-exec-libs)
                                                 (lambda (a b)
-                                                  (if *debugging*
+                                                  (if *mibl-debugging*
                                                       (format #t "~A: a: ~A, b: ~A~%" (red "comparing") a b))
                                                   (equal? a (assoc-val :modules (cdr b)))))
-                                        (if *debugging*
+                                        (if *mibl-debugging*
                                             (format #t "~A: ~A~%" (ublue "match") exec-lib))
                                         (let* ((ct (length (cdr pkg-exec-libs)))
                                                (new (list (cons (+ 1 ct)
                                                                 `((:modules ,@(cdr exec-lib)))))))
-                                          (if *debugging*
+                                          (if *mibl-debugging*
                                               (format #t "~A: ~A~%" (ublue "mismatch; adding") exec-lib))
                                           (set-cdr! pkg-exec-libs (append (cdr pkg-exec-libs) new))))))
                               (let* ((opts (if-let ((opts (assoc-val :opts stanza-alist)))
                                                   `((:opts ,@opts)) '()))
                                      (new `((:exec-libs (1 (:modules ,@(cdr exec-lib)) ,@opts)))))
-                                (if *debugging*
+                                (if *mibl-debugging*
                                     (format #t "~A: ~A~%" (ublue "adding :exec-libs to stanzas") exec-lib))
                                 (set-cdr! dune-pkg (append (cdr dune-pkg) new))
                                 (set-cdr! exec-lib 1))
@@ -276,7 +276,7 @@
          (pkgs (car (assoc-val :pkgs @ws))))
 
     (for-each (lambda (kv)
-                (if *debugging*
+                (if *mibl-debugging*
                     (format #t "~A: ~A~%" (blue "miblarkizing") kv))
                 ;; dir may have dune-project but no dune file:
                 (if (not (null? (cdr kv)))
