@@ -65,7 +65,7 @@ void emit_opam_pkg_bindir(const char *pkg) // UT_string *dune_pkg_file)
                           /* bool emitted_bootstrapper) */
 {
 #if defined(DEBUG_TRACE)
-    if (trace) log_trace("emit_opam_pkg_bindir");
+    if (mibl_trace) log_trace("emit_opam_pkg_bindir");
 #endif
 
     /* read dune-package file. if it exports executables:
@@ -107,7 +107,7 @@ void emit_opam_pkg_bindir(const char *pkg) // UT_string *dune_pkg_file)
                     utstring_body(opam_coswitch_lib),
                     pkg);
 #if defined(DEBUG_TRACE)
-    if (debug)
+    if (mibl_debug)
         log_debug("checking ws: %s", utstring_body(outpath));
 #endif
     if (access(utstring_body(outpath), F_OK) != 0) {
@@ -229,7 +229,7 @@ void emit_opam_pkg_bindir(const char *pkg) // UT_string *dune_pkg_file)
                     pkg);
 
 #if defined(DEBUG_TRACE)
-    if (debug)
+    if (mibl_debug)
         log_debug("checking ws: %s", utstring_body(outpath));
 #endif
     if (access(utstring_body(outpath), F_OK) != 0) {
@@ -327,7 +327,7 @@ void emit_opam_pkg_bindir(const char *pkg) // UT_string *dune_pkg_file)
  exit: ;
     /* utstring_free(outpath); */
 #if defined(DEBUG_TRACE)
-    if (trace) printf("exiting emit_opam_pkg_bindir\n");
+    if (mibl_trace) printf("exiting emit_opam_pkg_bindir\n");
 #endif
 }
 
@@ -337,7 +337,7 @@ UT_string *dune_pkg_file;
 EXPORT void emit_pkg_bindir(const char *pkg)
 {
 #if defined(DEBUG_TRACE)
-    if (trace) log_trace("emit_pkg_bindir");
+    if (mibl_trace) log_trace("emit_pkg_bindir");
 #endif
 
     utstring_renew(dune_pkg_file);
@@ -346,7 +346,7 @@ EXPORT void emit_pkg_bindir(const char *pkg)
                     pkg);
 
 #if defined(DEBUG_TRACE)
-    if (trace)
+    if (mibl_trace)
         log_debug("CHECKING DUNE-PACKAGE: %s\n", utstring_body(dune_pkg_file));
 #endif
     if (access(utstring_body(dune_pkg_file), F_OK) == 0) {

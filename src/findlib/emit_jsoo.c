@@ -44,7 +44,7 @@ void emit_bazel_jsoo(FILE* ostream,
 
     /* static UT_string *archive_srcfile; // FIXME: dealloc? */
 
-    if (debug)
+    if (mibl_debug)
         log_debug("_filedeps_path: '%s'", _filedeps_path);
 #endif
 

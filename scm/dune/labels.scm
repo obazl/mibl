@@ -128,7 +128,7 @@
                              (format #f "~A" dep)))
                        (_ (if *debugging* (format #t "~A: ~A~%" (uwhite "trying2") key)))
                        ;; (_ (if *debugging* (format #t "~A: ~A~%" (bgblue "exports") exports)))
-                       ;; (_ (debug-print-exports-table ws-id))
+                       ;; (_ (mibl-debug-print-exports-table ws-id))
                        (resolved (hash-table-ref exports key)))
                   (if resolved
                       (let* ((pkg (assoc-val :pkg resolved))
@@ -211,7 +211,7 @@
                  (exports (car (assoc-val :exports ws)))
                  (pkg-path (car (assoc-val :pkg-path pkg)))
                  (stanza-alist (cdr stanza)))
-            ;; (debug-print-exports-table ws-id)
+            ;; (mibl-debug-print-exports-table ws-id)
 
             (-fixup-conditionals! ws-id pkg stanza)
 
@@ -607,7 +607,7 @@
                           (format #t "~A: ~A~%" (ublue "resolving pkg") (car kv)))
                       ;; (format #t "pkg: ~A~%" (cdr kv))
                       (let ((pkg (cdr kv)))
-                        (if-let ((stanzas (assoc-val :dune (cdr kv))))
+                        (if-let ((stanzas (assoc-val :mibl (cdr kv))))
                                 (for-each (lambda (stanza)
                                             (-fixup-stanza! ws-id pkg stanza)
                                             (if *debugging*

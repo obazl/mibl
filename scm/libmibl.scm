@@ -1,4 +1,4 @@
-(if *debug-loads*
+(if *mibl-debug-loads*
     (format #t "loading libmibl.scm~%"))
 
 (load "dune.scm")
@@ -7,7 +7,7 @@
 (define (emit-mibl-pkg pkg)
   (if *debugging*
       (format #t "~A: ~A~%" (yellow "emit-mibl-pkg") pkg)
-      ;; (if (not (assoc :dune pkg))
+      ;; (if (not (assoc :mibl pkg))
       ;;     (format #t "~A: ~A~%" (red "Missing :dune") (assoc-val :pkg-path pkg)))
       )
   (load "s7/write.scm")

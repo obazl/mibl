@@ -1,4 +1,4 @@
-(if *debug-loads*
+(if *mibl-debug-loads*
     (format #t "loading dune/expanders.scm\n"))
 
 (load "dune/api_utils.scm")
@@ -78,7 +78,7 @@
   (if *debugging*
       (format #t "~A: ~A pkg: ~A~%" (ublue "-find-executable-for-name") nm (assoc-val :pkg-path pkg)))
   (let ((nm (if (keyword? nm) (keyword->symbol nm)))
-        (stanzas (assoc-val :dune pkg)))
+        (stanzas (assoc-val :mibl pkg)))
     (if *debugging*
         (format #t "~A: ~A~%" (blue "stanzas") stanzas))
     (find-if (lambda (stanza)
@@ -1165,5 +1165,5 @@
 
 (provide 'expanders.scm)
 
-(if *debug-loads*
+(if *mibl-debug-loads*
     (format #t "loaded dune/expanders.scm\n"))

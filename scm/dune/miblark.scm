@@ -166,7 +166,7 @@
 
   (set! -sh-test-id 0)
 
-  (if-let ((dune-pkg (assoc :dune pkg)))
+  (if-let ((dune-pkg (assoc :mibl pkg)))
           (for-each
            (lambda (stanza)
              (if *debugging*

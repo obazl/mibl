@@ -11,7 +11,7 @@
   ;;     (begin
   ;;       (format #t "~A: ~A~%" (bgred "pkg") pkg))
   ;;       (error 'x "apod"))
-   (if-let ((conditionals (assoc-in '(:dune :library :conditionals) pkg)))
+   (if-let ((conditionals (assoc-in '(:mibl :library :conditionals) pkg)))
          ;; conditionals val: list of alists
           (let* ((apodoses (apply append
                                  (map (lambda (x)
@@ -54,15 +54,15 @@
   (if *debugging*
       (format #t "~A: ~A~%" (blue "-trim-pkg!") pkg)) ;; (assoc-val :pkg-path pkg))
 
-  ;; remove null lists from :dune alist
-  (let ((dune (assoc :dune pkg)))
+  ;; remove null lists from :mibl alist
+  (let ((dune (assoc :mibl pkg)))
     (set-cdr! dune (remove '() (cdr dune))))
   ;; deps
-  (if-let ((deps (assoc-in '(:dune :rule :deps) pkg)))
+  (if-let ((deps (assoc-in '(:mibl :rule :deps) pkg)))
           (begin
             ;; (format #t "~A: ~A~%" (red "trimming deps") deps)
             (if (null? (cdr deps))
-                (alist-update-in! pkg '(:dune :rule)
+                (alist-update-in! pkg '(:mibl :rule)
                                   (lambda (old)
                                     (dissoc! '(:deps) old))))))
 
@@ -319,7 +319,7 @@
       (format #t "~A: ~A\n" (blue "dune-pkg->mibl")
               (assoc-val :pkg-path pkg)))
   ;; (format #t "~A: ~A\n" (green "ws") ws)
-  (let* ((nstanzas (list :dune )) ;; hack to make sure pkg is always an alist
+  (let* ((nstanzas (list :mibl )) ;; hack to make sure pkg is always an alist
          (pkg+ (append pkg (list nstanzas)))
          ;;(pkg+ pkg)
          )

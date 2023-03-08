@@ -47,7 +47,7 @@ From within a Bazel project:
 $ bazel run @mibl//repl
 ----
 
-Options: `-v` (verbose) and `-d` (debug).
+Options: `-v` (verbose) and `-d` (mibl_debug).
 
 Once in the repl, run `mibl-load-project` to crawl your project and produce a
 hash-table of package specs:

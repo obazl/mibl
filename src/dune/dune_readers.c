@@ -40,12 +40,12 @@ void *read_dune_package(UT_string *dunefile_name)
 {
     //FIXME: this duplicates the code in load_project:_read_dunefile
 #if defined(DEBUG_TRACE)
-    if (trace) log_trace("read_dune_package: %s", utstring_body(dunefile_name));
+    if (mibl_trace) log_trace("read_dune_package: %s", utstring_body(dunefile_name));
 #endif
 
     char *dunestring = dunefile_to_string(dunefile_name);
 /* #if defined(DEBUG_TRACE) */
-/*     if (debug) log_debug("readed str: %s", dunestring); */
+/*     if (mibl_debug) log_debug("readed str: %s", dunestring); */
 /* #endif */
 
     /* stanza accumulator */
@@ -65,19 +65,19 @@ void *read_dune_package(UT_string *dunefile_name)
     }
 
 #if defined(DEBUG_TRACE)
-    if (debug) log_debug("s7 reading stanzas");
+    if (mibl_debug) log_debug("s7 reading stanzas");
 #endif
 
     /* read all stanzas in dunefile */
     while(true) {
 /* #if defined(DEBUG_TRACE) */
-/*         if (debug) log_debug("iter"); */
+/*         if (mibl_debug) log_debug("iter"); */
 /* #endif */
         s7_pointer stanza = s7_read(s7, sport);
         /* FIXME: error checks */
         /* errmsg = s7_get_output_string(s7, s7_current_error_port(s7)); */
         /* if ((errmsg) && (*errmsg)) { */
-        /*     if (debug) log_error("[%s\n]", errmsg); */
+        /*     if (mibl_debug) log_error("[%s\n]", errmsg); */
         /*     s7_close_input_port(s7, sport); */
         /*     s7_quit(s7); */
         /*     exit(EXIT_FAILURE); */
@@ -92,7 +92,7 @@ void *read_dune_package(UT_string *dunefile_name)
     }
     s7_close_input_port(s7, sport);
 #if defined(DEBUG_TRACE)
-    if (debug) log_debug("finished reading");
+    if (mibl_debug) log_debug("finished reading");
 #endif
 
     /* s7_gc_unprotect_at(s7, baddot_gc_loc); */
@@ -108,7 +108,7 @@ EXPORT UT_array *get_pkg_executables(void *_stanzas)
 /* UT_string *dune_pkg_file) */
 {
 #if defined(DEBUG_TRACE)
-    if (trace) log_trace("get_pkg_executables");
+    if (mibl_trace) log_trace("get_pkg_executables");
 #endif
     s7_pointer stanzas = (s7_pointer) _stanzas;
     UT_string *outpath;
@@ -141,7 +141,7 @@ EXPORT UT_array *get_pkg_executables(void *_stanzas)
         return bins;
 
 #if defined(DEBUG_TRACE)
-    if (debug) {
+    if (mibl_debug) {
         /* log_debug("Pkg: %s", utstring_body(dune_pkg_file)); */
         log_debug(RED "executables" CRESET ": %s", TO_STR(executables));
     }
@@ -206,7 +206,7 @@ EXPORT UT_array *get_pkg_stublibs(char *pkg, void *_stanzas)
 /* UT_string *dune_pkg_file) */
 {
 #if defined(DEBUG_TRACE)
-    if (trace) log_trace("get_pkg_stublibs");
+    if (mibl_trace) log_trace("get_pkg_stublibs");
 #endif
     s7_pointer stanzas = (s7_pointer) _stanzas;
 /* #if defined(DEBUG_TRACE) */
@@ -243,7 +243,7 @@ EXPORT UT_array *get_pkg_stublibs(char *pkg, void *_stanzas)
         return stubs;
 
 #if defined(DEBUG_TRACE)
-    if (debug) {
+    if (mibl_debug) {
         /* log_debug("Pkg: %s", utstring_body(dune_pkg_file)); */
         log_debug(RED "STUBLIBS" CRESET ": %s", TO_STR(stublibs));
     }
@@ -284,7 +284,7 @@ EXPORT UT_array *get_pkg_stublibs(char *pkg, void *_stanzas)
 char *dunefile_to_string(UT_string *dunefile_name)
 {
 #if defined(DEBUG_TRACE)
-    if (trace)
+    if (mibl_trace)
         log_trace("dunefile_to_string: %s", utstring_body(dunefile_name));
 #endif
     /* core/dune file size: 45572 */
@@ -305,13 +305,13 @@ char *dunefile_to_string(UT_string *dunefile_name)
         exit(EXIT_FAILURE);
     } else {
 #if defined(DEBUG_TRACE)
-        if (debug) log_debug("fopened %s", utstring_body(dunefile_name));
+        if (mibl_debug) log_debug("fopened %s", utstring_body(dunefile_name));
 #endif
     }
     fseek(instream, 0, SEEK_END);
     uint64_t fileSize = ftell(instream);
 #if defined(DEBUG_TRACE)
-    if (debug) log_debug("filesize: %d", fileSize);
+    if (mibl_debug) log_debug("filesize: %d", fileSize);
 #endif
 
     if (fileSize > BUFSZ) {
@@ -354,7 +354,7 @@ char *dunefile_to_string(UT_string *dunefile_name)
         else {
             read_ct = fread(inbuf, 1, (size_t) outFileSizeCounter, instream);
 #if defined(DEBUG_TRACE)
-            if (debug) log_debug("read_ct: %d", read_ct);
+            if (mibl_debug) log_debug("read_ct: %d", read_ct);
 #endif
             if (read_ct != outFileSizeCounter) {
                 if (ferror(instream) != 0) {
@@ -379,7 +379,7 @@ char *dunefile_to_string(UT_string *dunefile_name)
         }
     } while (outFileSizeCounter > 0);
 #if defined(DEBUG_TRACE)
-    if (debug) {
+    if (mibl_debug) {
         log_debug(RED "readed" CRESET " %d bytes", read_ct);
         /* log_debug(RED "readed string:" CRESET " '%s'", inbuf); */
     }
@@ -398,21 +398,21 @@ char *dunefile_to_string(UT_string *dunefile_name)
 
         if (cursor == NULL) {
 /* #if defined(DEBUG_TRACE) */
-/*             if (debug) log_debug("remainder: '%s'", inptr); */
+/*             if (mibl_debug) log_debug("remainder: '%s'", inptr); */
 /* #endif */
             size_t ct = strlcpy(outptr, (const char*)inptr, fileSize); // strlen(outptr));
             (void)ct;           /* prevent -Wunused-variable */
 /* #if defined(DEBUG_TRACE) */
-/*             if (debug) log_debug("concatenated: '%s'", outptr); */
+/*             if (mibl_debug) log_debug("concatenated: '%s'", outptr); */
 /* #endif */
             break;
         } else {
 #if defined(DEBUG_TRACE)
-            if (debug) log_error("FOUND and fixing \".)\" at pos: %d", cursor - inbuf);
+            if (mibl_debug) log_error("FOUND and fixing \".)\" at pos: %d", cursor - inbuf);
 #endif
             size_t ct = strlcpy(outptr, (const char*)inptr, cursor - inptr);
 #if defined(DEBUG_TRACE)
-            if (debug) {
+            if (mibl_debug) {
                 log_debug("copied %d chars", ct);
                 /* log_debug("to buf: '%s'", outptr); */
             }

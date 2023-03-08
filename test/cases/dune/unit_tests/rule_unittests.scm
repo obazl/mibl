@@ -87,7 +87,7 @@ tpkg
     nzs))
 
 
-(let ((rules (cdr (assoc-in '(:dune :rule) pkg))))
+(let ((rules (cdr (assoc-in '(:mibl :rule) pkg))))
   (map car rules))
 
 (define pkg

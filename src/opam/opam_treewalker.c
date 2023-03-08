@@ -93,7 +93,7 @@ char **tc;
 /*         /\* process the "." passed to fts_open, skip any others *\/ */
 /*         if (ftsentry->fts_pathlen > 1) { */
 /*             // do not process children of hidden dirs */
-/*             /\* if (trace) *\/ */
+/*             /\* if (mibl_trace) *\/ */
 /*             /\*     log_trace(RED "Excluding" CRESET " hidden dir: %s\n", *\/ */
 /*             /\*               ftsentry->fts_path); //, ftsentry->fts_name); *\/ */
 /*             return true; */
@@ -122,7 +122,7 @@ char **tc;
 /*     int rc = chdir(opam_switch); (void)rc; */
 
 /* #if defined(DEBUG_TRACE) */
-/*     if (debug) log_debug("%-16s%s", "cwd:",  getcwd(NULL, 0)); */
+/*     if (mibl_debug) log_debug("%-16s%s", "cwd:",  getcwd(NULL, 0)); */
 /* #endif */
 /*     log_debug("%-16s%s", "cwd:",  getcwd(NULL, 0)); */
 
@@ -166,7 +166,7 @@ char **tc;
 /*             /\* if (ftsentry->fts_info == FTS_DP) { continue; } // do not process post-order visits *\/ */
 
 /* #if defined(DEBUG_TRACE) */
-/*             if (debug) { */
+/*             if (mibl_debug) { */
 /*                 printf("\n"); */
 /*                 log_debug(CYN "iter ftsentry->fts_name: " CRESET "%s", */
 /*                           ftsentry->fts_name); */
@@ -272,7 +272,7 @@ LOCAL void _walk_findlib_all(char *opam_switch)
     int rc = chdir(opam_switch); (void)rc;
 
 #if defined(DEBUG_TRACE)
-    if (debug) log_debug("%-16s%s", "cwd:",  getcwd(NULL, 0));
+    if (mibl_debug) log_debug("%-16s%s", "cwd:",  getcwd(NULL, 0));
 #endif
     log_debug("%-16s%s", "cwd:",  getcwd(NULL, 0));
 
@@ -316,7 +316,7 @@ LOCAL void _walk_findlib_all(char *opam_switch)
             /* if (ftsentry->fts_info == FTS_DP) { continue; } // do not process post-order visits */
 
 #if defined(DEBUG_TRACE)
-            if (debug) {
+            if (mibl_debug) {
                 printf("\n");
                 log_debug(CYN "iter ftsentry->fts_name: " CRESET "%s",
                           ftsentry->fts_name);

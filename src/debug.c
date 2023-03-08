@@ -15,11 +15,11 @@
 
 #include "debug.h"
 
-bool debug       = false;
-int  debug_level = 0;
-bool debug_xdg   = false;
+bool mibl_debug       = false;
+int  mibl_debug_level = 0;
+bool mibl_debug_xdg   = false;
 
-bool trace       = false;
+bool mibl_trace       = false;
 bool trace_xdg   = false;
 
 /* #if defined(DEBUG) */

@@ -44,11 +44,11 @@ UT_string *xdg_home_install_root; // $HOME/.local/share/mibl
 UT_string *xdg_install_dir;
 UT_string *xdg_home_bin;
 
-//FIXME: use #ifdef DEBUG_TRACE instead of if(trace)
+//FIXME: use #ifdef DEBUG_TRACE instead of if(mibl_trace)
 
 EXPORT void deploy(void)
 {
-    if (trace)
+    if (mibl_trace)
         log_debug("deploy_configure");
 
     /* FIXME: s7_config detects manifest too */
@@ -89,7 +89,7 @@ LOCAL void _deploy_scm_files(UT_string *manifest)
     if (strlen(build_wd) != 0) {
         /* bazel_configure detected BUILD_WORKSPACE_DIRECTORY */
 
-        if (trace)
+        if (mibl_trace)
             log_debug("BUILD WD: %s", build_wd);
         UT_string *ws_file;
         utstring_new(ws_file);
@@ -112,14 +112,14 @@ LOCAL void _deploy_scm_files(UT_string *manifest)
                              "workspace(name = \"mibl\")");
             if (r != NULL) {
                 bzl_mode = true;
-                if (trace)
+                if (mibl_trace)
                     log_debug("WS name: mibl");
                 fclose(wsfile);
             }
             fclose(wsfile);
         }
     }
-    if (debug)
+    if (mibl_debug)
         log_debug("dev mode? %d", bzl_mode);
 
     /*
@@ -134,7 +134,7 @@ LOCAL void _deploy_scm_files(UT_string *manifest)
         /* exit(EXIT_FAILURE); */
     }
 
-    if (debug)
+    if (mibl_debug)
         log_debug("Reading MANIFEST");
 
     /* char *mibl_mibl = NULL; */
@@ -157,7 +157,7 @@ LOCAL void _deploy_scm_files(UT_string *manifest)
         char *dest;
         token = strtok((char*)line, sep);
         dest = token;
-        if (trace)
+        if (mibl_trace)
             log_debug("dest: %s", dest);
 
         if (token != NULL) {
@@ -170,7 +170,7 @@ LOCAL void _deploy_scm_files(UT_string *manifest)
         /* log_debug("bn: %s", basename(token)); */
         if ( (strncmp(basename(token),
                       "libc_s7.so", 10) == 0) ) {
-            if (trace)
+            if (mibl_trace)
                 log_info("FOUND LIBC_S7.SO: %s", dest);
             _copy_file(token, utstring_body(xdg_home_install_root));
             continue;
@@ -179,7 +179,7 @@ LOCAL void _deploy_scm_files(UT_string *manifest)
                       "repl", 4) == 0) ) {
             char *bn = basename(token);
             if (strlen(bn) == 4) {
-                if (trace)
+                if (mibl_trace)
                     log_info("FOUND REPL tok: %s", basename(token));
                 _copy_file(token, utstring_body(xdg_home_bin));
                 continue;
@@ -250,7 +250,7 @@ LOCAL void _deploy_scm_files(UT_string *manifest)
                             xdg_install(token, destdir);
                         }
                     } else {
-                        if (trace)
+                        if (mibl_trace)
                             log_debug("checking libs7");
                         pfx = "__main__/external/libs7/libs7/";
                         pfx_len = strlen(pfx);
@@ -275,7 +275,7 @@ LOCAL void _deploy_scm_files(UT_string *manifest)
 
 LOCAL void xdg_install(char *src, char *dst)
 {
-    if (trace) {
+    if (mibl_trace) {
         log_debug("xdg_install src: %s", src);
         log_debug("xdg_install_dir: %s", utstring_body(xdg_home_install_root));
     }
@@ -291,7 +291,7 @@ LOCAL void xdg_install(char *src, char *dst)
     utstring_renew(destdir);
     utstring_concat(destdir, xdg_home_install_root);
     utstring_printf(destdir, "/%s", dst);
-    if (trace)
+    if (mibl_trace)
         log_debug("install_dir: %s", utstring_body(destdir));
     _copy_file(src, utstring_body(destdir));
 }
@@ -324,7 +324,7 @@ LOCAL void _config_xdg_home_load_paths()
     } else {
         utstring_printf(xdg_data_home, "%s", tmp);
     }
-    if (trace)
+    if (mibl_trace)
         log_debug("xdg_data_home: %s", utstring_body(xdg_data_home));
 
     /* xdg_home_install_root is fixed */
@@ -332,7 +332,7 @@ LOCAL void _config_xdg_home_load_paths()
     utstring_printf(xdg_home_install_root,
                     "%s/.local/share/mibl",
                     utstring_body(xdg_data_home));
-    if (trace)
+    if (mibl_trace)
         log_debug("xdg_home_install_root: %s",
               utstring_body(xdg_home_install_root));
 
@@ -546,7 +546,7 @@ LOCAL void _copy_file(char *src, char *dst)
     if (strncmp(basename(src), "repl", 4) == 0) {
         char *bn = basename(src);
         if (strlen(bn) == 4) {
-            if (trace)
+            if (mibl_trace)
                 log_debug("setting permissions on %s", utstring_body(outpath));
             chmod(utstring_body(outpath), S_IRWXU | S_IRGRP | S_IXGRP);
         }

@@ -1,4 +1,4 @@
-(if *debug-loads*
+(if *mibl-debug-loads*
     (format #t "loading dune.scm~%"))
 
 (autoload 'expanders.scm "dune/expanders.scm")
@@ -59,5 +59,5 @@
 
 (provide 'dune.scm)
 
-(if *debug-loads*
+(if *mibl-debug-loads*
     (format #t "loaded dune.scm~%"))

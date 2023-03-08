@@ -1,4 +1,4 @@
-(if *debug-loads*
+(if *mibl-debug-loads*
     (format #t "loading dune/updaters.scm~%"))
 
 (define (update-filegroups-table! ws client-path pkg-path tgt pattern)
@@ -213,7 +213,7 @@
     (for-each (lambda (kv)
                 (let* ((pkg-key (car kv))
                        (pkg (cdr kv))
-                       (stanzas (assoc-val :dune (cdr kv))))
+                       (stanzas (assoc-val :mibl (cdr kv))))
                   ;; (format #t "~%~A: ~A~%" (bgcyan "pkg key") pkg-key)
 
                   ;; (format #t "~A: ~A~%" (bgmagenta ":structures before") (assoc :structures pkg))
@@ -276,7 +276,7 @@
               pkgs)
     ;; (if *debugging*
     ;;     (begin
-    ;;       (debug-print-pkgs :@)
+    ;;       (mibl-debug-print-pkgs :@)
     ;;       (error 'x "")))
     ))
 
@@ -298,7 +298,7 @@
     (for-each (lambda (kv)
                 (let* ((pkg-key (car kv))
                        (pkg (cdr kv))
-                       (stanzas (assoc-val :dune (cdr kv))))
+                       (stanzas (assoc-val :mibl (cdr kv))))
                   (if *debugging*
                       (format #t "~A: ~A~%" (bgcyan "pkg key") pkg-key))
 
@@ -977,7 +977,7 @@
                                (if *debugging*
                                    (format #t "~A: ~A~%" (cyan "compile-deps (after)") compile-deps))))))
                          )))
-                (assoc-val :dune pkg))))
+                (assoc-val :mibl pkg))))
 
-(if *debug-loads*
+(if *mibl-debug-loads*
     (format #t "loaded dune/updaters.scm~%"))

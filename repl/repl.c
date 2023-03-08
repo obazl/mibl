@@ -208,7 +208,7 @@ int main(int argc, char **argv)
     initialize_mibl_data_model(s7);
 
     /* chdir(launch_dir); */
-    /* if (debug) */
+    /* if (mibl_debug) */
     /*     log_debug("Set CWD to launch dir: %s", launch_dir); */
 
     /* s7_repl(s7); */

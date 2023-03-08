@@ -70,7 +70,7 @@ UT_string *obazl_ini_path; // .config
 char *_effective_ws_root(char *dir)
 {
 #if defined(DEBUG_TRACE)
-    if (trace)
+    if (mibl_trace)
         log_trace("_effective_ws_root: %s", dir);
 #endif
 
@@ -103,7 +103,7 @@ char *_effective_ws_root(char *dir)
 char *effective_ws_root(char *_dir)
 {
 #if defined(DEBUG_TRACE)
-    if (trace) log_trace("effective_ws_root for: %s", _dir);
+    if (mibl_trace) log_trace("effective_ws_root for: %s", _dir);
 #endif
 
     if (getenv("BAZEL_TEST"))
@@ -122,16 +122,23 @@ char *effective_ws_root(char *_dir)
 }
 
 //FIXME: this sets runfiles dir, not root ws!
-void _set_rootws(void)
+void _set_rootws(char *ws_root)
 {
 #if defined(DEBUG_TRACE)
-    if (trace) log_trace(RED "_set_rootws" CRESET);
+    if (mibl_trace) log_trace(RED "_set_rootws: " CRESET
+                              "%s", ws_root);
 #endif
 
+    UT_string *_root_ws;
+    utstring_new(_root_ws);
+
     if (getenv("BAZEL_TEST")) {
-        rootws = strdup(utstring_body(runfiles_root));
+        /* rootws = strdup(utstring_body(runfiles_root)); */
+        utstring_printf(_root_ws, "%s", utstring_body(runfiles_root));
+        if (ws_root)
+            utstring_printf(_root_ws, "/%s", ws_root);
 #if defined(DEBUG_TRACE)
-        if (debug_bazel)
+        if (mibl_debug_bazel)
             log_debug("Running under bazel test; setting bws to runfiles root%s", utstring_body(runfiles_root));
 #endif
     }
@@ -142,10 +149,10 @@ void _set_rootws(void)
         build_ws_dir= getenv("BUILD_WORKSPACE_DIRECTORY");
         build_wd    = getenv("BUILD_WORKING_DIRECTORY");
 
-        /* if (verbose && verbosity > 1) { */
-        /*     log_info("BUILD_WORKING_DIRECTORY: %s", build_wd); */
-        /*     log_info("BUILD_WORKSPACE_DIRECTORY: %s", build_ws_dir); */
-        /* } */
+        if (verbose && verbosity > 1) {
+            log_info("BUILD_WORKING_DIRECTORY: %s", build_wd);
+            log_info("BUILD_WORKSPACE_DIRECTORY: %s", build_ws_dir);
+        }
 
         if (build_ws_dir == NULL) { /* _rootws */
             /* we're not running under bazel run or test, but we may
@@ -164,17 +171,21 @@ void _set_rootws(void)
             /* effective_ws_root makes a copy */
             rootws = effective_ws_root(getcwd(NULL,0));
 #if defined(DEBUG_TRACE)
-            if (debug_bazel)
+            if (mibl_debug_bazel)
                 log_debug("Found WS file at %s", rootws);
 #endif
         } else {
-            rootws = strdup(build_ws_dir); // _rootws);
+            /* rootws = strdup(build_ws_dir); // _rootws); */
+            utstring_printf(_root_ws, "%s", build_ws_dir);
+            if (ws_root)
+                utstring_printf(_root_ws, "/%s", ws_root);
         }
     }
 
+    rootws = strdup(utstring_body(_root_ws));
     ews_root = strdup(rootws);  /* by default, effective ws == base ws */
 #if defined(DEBUG_TRACE)
-    if (debug_bazel)
+    if (mibl_debug_bazel)
         log_debug("base ws root: %s", rootws);
 #endif
 
@@ -234,10 +245,10 @@ EXPORT void show_bazel_config(void)
    might under 'bazel run', e.g. in order to write files into the
    source tree.
  */
-EXPORT void bazel_configure(void) // char *_exec_root)
+EXPORT void bazel_configure(char *ws_root) // char *_exec_root)
 {
 #if defined(DEBUG_TRACE)
-    if (trace || debug_bazel) {
+    if (mibl_trace || mibl_debug_bazel) {
         log_trace("bazel_configure");
     }
 #endif
@@ -262,7 +273,7 @@ EXPORT void bazel_configure(void) // char *_exec_root)
 #if defined(DEBUG_TRACE)
 #ifdef BAZEL_CURRENT_REPOSITORY
     /* defined for 'bazel run' UNLESS target is a test rule */
-    if (debug_bazel)
+    if (mibl_debug_bazel)
         log_debug("BAZEL_CURRENT_REPOSITORY: '%s'", BAZEL_CURRENT_REPOSITORY);
 #endif
 #endif
@@ -301,7 +312,7 @@ EXPORT void bazel_configure(void) // char *_exec_root)
     }
 
 #if defined(DEBUG_TRACE)
-    if (debug_bazel) {
+    if (mibl_debug_bazel) {
         log_debug("build_wd: %s", build_wd);
         log_debug("launch_dir: %s", launch_dir);
     }
@@ -309,12 +320,12 @@ EXPORT void bazel_configure(void) // char *_exec_root)
 
     /* utstring_new(runfiles_root); */
     /* utstring_printf(runfiles_root, "%s", getcwd(NULL, 0)); */
-    /* if (debug_bazel) */
+    /* if (mibl_debug_bazel) */
     /*     log_debug("runfiles_root: %s", utstring_body(runfiles_root)); */
 
     /* if ( !getenv("BAZEL_TEST") ) */
-    _set_rootws();
-
+    _set_rootws(ws_root);
+    log_debug("rootws: %s", rootws);
     /* mibl_config(); */
     /* utarray_new(src_files,&ut_str_icd); */
 

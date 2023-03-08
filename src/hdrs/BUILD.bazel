@@ -59,9 +59,10 @@ FILELOCS = [
     "$(location //src:globals.c)",
     "$(location //src:config_bazel.c)",
     "$(location //src:mibl.c)",
+    "$(location //src:mibl_s7.c)",
     "$(location //src:config_opam.c)",
     # "$(location //src:config_s7.c)",
-    "$(location //src:config_s7_dune.c)",
+    "$(location //src:config_s7.c)",
 
     "$(location //src:error_handler_opam.c)",
     "$(location //src:error_handler_dune.c)",
@@ -147,9 +148,10 @@ genrule(
         "//src:globals.c",
         "//src:config_bazel.c",
         "//src:mibl.c",
+        "//src:mibl_s7.c",
         "//src:config_opam.c",
         # "//src:config_s7.c",
-        "//src:config_s7_dune.c",
+        "//src:config_s7.c",
 
         "//src:error_handler_opam.c",
         "//src:error_handler_dune.c",
@@ -218,9 +220,10 @@ genrule(
         "globals.h",
         "config_bazel.h",
         "mibl.h",
+        "mibl_s7.h",
         "config_opam.h",
         # "config_s7.h",
-        "config_s7_dune.h",
+        "config_s7.h",
         "dune_readers.h",
 
         ## FIXME: select on //:compilation_mode: dbg?
@@ -285,9 +288,10 @@ genrule(
         "//src:globals.c",
         "//src:config_bazel.c",
         "//src:mibl.c",
+        "//src:mibl_s7.c",
         "//src:config_opam.c",
         # "//src:config_s7.c",
-        "//src:config_s7_dune.c",
+        "//src:config_s7.c",
 
         "//src:debug.c",
         "//src:debug_bazel.c",
@@ -365,9 +369,10 @@ genrule(
         "$(location //src:globals.c)",
         "$(location //src:config_bazel.c)",
         "$(location //src:mibl.c)",
+        "$(location //src:mibl_s7.c)",
         "$(location //src:config_opam.c)",
         # "$(location //src:config_s7.c)",
-        "$(location //src:config_s7_dune.c)",
+        "$(location //src:config_s7.c)",
 
         ## FIXME: select on //:compilation_mode: dbg?
         "$(location //src:debug.c)",

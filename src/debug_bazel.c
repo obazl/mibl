@@ -1,4 +1,4 @@
 #include <stdbool.h>
 
-bool debug_bazel = false;
-bool trace_bazel = false;
+bool mibl_debug_bazel = false;
+bool mibl_trace_bazel = false;

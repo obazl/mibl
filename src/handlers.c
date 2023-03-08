@@ -48,12 +48,12 @@ UT_string *dunefile_name;
 bool include_this(FTSENT *ftsentry)
 {
 #if defined(DEBUG_TRACE)
-    if (trace)
+    if (mibl_trace)
         log_trace(MAG "_include_this?" CRESET " %s (%s)",
                   ftsentry->fts_name, ftsentry->fts_path);
 #endif
 
-    /* if (debug) { */
+    /* if (mibl_debug) { */
     /*     dump_mibl_config(); */
     /* } */
 
@@ -78,7 +78,7 @@ bool include_this(FTSENT *ftsentry)
         ptr = ftsentry->fts_path;
 
 #if defined(DEBUG_TRACE)
-    if (debug) log_debug("srch ptr: %s", ptr);
+    if (mibl_debug) log_debug("srch ptr: %s", ptr);
 #endif
     char **p;
     p = NULL;
@@ -103,7 +103,7 @@ bool include_this(FTSENT *ftsentry)
         p = NULL;
         while ( (p=(char**)utarray_next(mibl_config.include_dirs, p))) {
 #if defined(DEBUG_TRACE)
-            if (debug) {
+            if (mibl_debug) {
                 log_debug("inclusion test pfx: '%s', path: '%s'",
                           *p, ftsentry->fts_path);
                 log_debug("result: %d\n",
@@ -135,7 +135,7 @@ EXPORT int compare_fts(const FTSENT** one, const FTSENT** two)
 bool _is_ws_root(FTSENT *ftsentry)
 {
 #if defined(DEBUG_TRACE)
-    if (trace)
+    if (mibl_trace)
         log_trace("_is_ws_root: %s", ftsentry->fts_path);
 #endif
 
@@ -148,7 +148,7 @@ bool _is_ws_root(FTSENT *ftsentry)
     /* log_debug("RC: %d", rc); */
     if (!rc) {
 #if defined(DEBUG_TRACE)
-        if (trace) log_trace("true");
+        if (mibl_trace) log_trace("true");
 #endif
         return true;
     } else {
@@ -158,13 +158,13 @@ bool _is_ws_root(FTSENT *ftsentry)
         rc = access(utstring_body(pathdir), R_OK);
         if (!rc) {
 #if defined(DEBUG_TRACE)
-            if (trace) log_trace("true");
+            if (mibl_trace) log_trace("true");
 #endif
             return true;
         }
     }
 #if defined(DEBUG_TRACE)
-    if (trace) log_trace("false");
+    if (mibl_trace) log_trace("false");
 #endif
     return false;
 }
@@ -175,7 +175,7 @@ bool _is_ws_root(FTSENT *ftsentry)
 /*         /\* process the "." passed to fts_open, skip any others *\/ */
 /*         if (ftsentry->fts_pathlen > 1) { */
 /*             // do not process children of hidden dirs */
-/*             /\* if (trace) *\/ */
+/*             /\* if (mibl_trace) *\/ */
 /*             /\*     log_trace(RED "Excluding" CRESET " hidden dir: %s\n", *\/ */
 /*             /\*               ftsentry->fts_path); //, ftsentry->fts_name); *\/ */
 /*             return true; */
@@ -207,7 +207,7 @@ bool _is_ws_root(FTSENT *ftsentry)
 /* void handle_dir(FTS* tree, FTSENT *ftsentry) */
 /* { */
 /* #if defined(DEBUG_TRACE) */
-/*     if (debug) { */
+/*     if (mibl_debug) { */
 /*         log_debug(""); */
 /*         /\* log_debug(BLUE "_handle_dir:" CRESET " %s (%s)", *\/ */
 /*         /\*           ftsentry->fts_name, ftsentry->fts_path); *\/ */
@@ -224,7 +224,7 @@ bool _is_ws_root(FTSENT *ftsentry)
 /*     utstring_printf(dune_test, "%s/%s", ftsentry->fts_path, "dune"); */
 /*     int rc = access(utstring_body(dune_test), F_OK); */
 /*     if (rc) { */
-/*         /\* if (debug) *\/ */
+/*         /\* if (mibl_debug) *\/ */
 /*             /\* log_warn(RED "dunefile not found in: " CRESET "%s", *\/ */
 /*             /\*           ftsentry->fts_path); *\/ */
 /*         /\* return; *\/ */

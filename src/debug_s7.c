@@ -14,10 +14,10 @@
 
 #include "debug_s7.h"
 
-bool debug_s7_config = false;
+bool mibl_debug_s7_config = false;
 
-extern bool debug;
-extern bool trace;
+/* extern bool mibl_debug; */
+/* extern bool mibl_trace; */
 
 /* #if defined(DEBUG) */
 /* https://stackoverflow.com/questions/6934659/how-to-make-backtrace-backtrace-symbols-print-the-function-names */

@@ -10,9 +10,11 @@
 #include "script.h"
 
 #if defined(DEBUG_TRACE)
-extern bool debug;
-extern bool trace;
+extern bool mibl_debug;
+extern bool mibl_debug_mibl_crawl;
+extern bool mibl_trace;
 #endif
+
 extern bool verbose;
 
 extern char *ews_root;
@@ -24,10 +26,13 @@ extern struct mibl_config_s mibl_config;
 
 enum OPTS {
     OPT_MAIN,
+    OPT_WS,
     FLAG_HELP,
     FLAG_SHOW_CONFIG,
     FLAG_SHOW_MIBL,
+    FLAG_SHOW_PARSETREE,
     FLAG_DEBUG,
+    FLAG_DEBUG_LOAD_PROJECT,
     FLAG_TRACE,
     FLAG_VERBOSE,
     FLAG_QUIET,
@@ -54,36 +59,43 @@ int _update_mibl_config(struct option options[],
 
 void _update_s7_globals(struct option options[])
 {
-    /* mibl_set_flag("*debugging*", true); */
-    mibl_set_flag("*mibl-quiet*", ((options[FLAG_QUIET].count) > 0));
+    mibl_s7_set_flag("*foobar*", true);
 
-    mibl_set_flag("*debugging*", options[FLAG_DEBUG].count);
-    /* mibl_set_flag("*debug-emit*", */
+    /* mibl_s7_set_flag("*debugging*", true); */
+    mibl_s7_set_flag("*mibl-quiet*", ((options[FLAG_QUIET].count) > 0));
+
+    mibl_s7_set_flag("*debugging*", options[FLAG_DEBUG].count);
+    /* mibl_s7_set_flag("*debug-emit*", */
     /*                 ((options[FLAG_DEBUG_DE].count) */
     /*                  || (options[FLAG_DEBUG_EMIT].count))); */
-    /* mibl_set_flag("*debug-executables*", */
+    /* mibl_s7_set_flag("*debug-executables*", */
     /*                 ((options[FLAG_DEBUG_DX].count) */
     /*                  || (options[FLAG_DEBUG_EXECUTABLES].count))); */
-    /* mibl_set_flag("*debug-mibl*", */
+    /* mibl_s7_set_flag("*debug-mibl*", */
     /*                 ((options[FLAG_DEBUG_DM].count) */
     /*                  || (options[FLAG_DEBUG_MIBL].count))); */
-    /* mibl_set_flag("*debug-ppx*", */
+    /* mibl_s7_set_flag("*debug-ppx*", */
     /*                 ((options[FLAG_DEBUG_DPPX].count) */
     /*                  || (options[FLAG_DEBUG_PPX].count))); */
 
     /* if ((options[FLAG_LEXPORTS].count) */
     /*     || (options[FLAG_SHOW_EXPORTS].count)) */
-    /*     mibl_set_flag("*show-exports*", true); */
+    /*     mibl_s7_set_flag("*show-exports*", true); */
     /* else if (mibl_config.show_exports) */
-    /*     mibl_set_flag("*show-exports*", true); */
+    /*     mibl_s7_set_flag("*show-exports*", true); */
 
     if (options[FLAG_SHOW_MIBL].count)
-        mibl_set_flag("*show-mibl*", true);
+        mibl_s7_set_flag("*show-mibl*", true);
     else if (mibl_config.show_mibl)
-        mibl_set_flag("*show-mibl*", true);
+        mibl_s7_set_flag("*show-mibl*", true);
 
-    /* mibl_set_flag("*emit-starlark*", ((options[FLAG_EMIT_STARLARK].count) > 0)); */
-    /* mibl_set_flag("*menhir*", ((options[FLAG_MENHIR].count) >0)); */
+    if (options[FLAG_SHOW_PARSETREE].count)
+        mibl_s7_set_flag("*show-parsetree*", true);
+    else if (mibl_config.show_parsetree)
+        mibl_s7_set_flag("*show-parsetree*", true);
+
+    /* mibl_s7_set_flag("*emit-starlark*", ((options[FLAG_EMIT_STARLARK].count) > 0)); */
+    /* mibl_s7_set_flag("*menhir*", ((options[FLAG_MENHIR].count) >0)); */
 }
 
 void _print_version(void) {
@@ -99,6 +111,7 @@ void _print_usage(void) {
     printf("Flags:\n");
     printf("\t    --show-config\tPrint configuration to stdout and exit.\n");
     printf("\t    --show-mibl\t\tPrint mibl to stdout.\n");
+    printf("\t    --show-parsetree\t\tPrint parsetree to stdout and exit.\n");
     printf("\t-d, --debug\t\tEnable all debugging flags.\n");
     printf("\t-t, --trace\t\tEnable trace flags.\n");
     printf("\t-v, --verbose\t\tEnable verbosity. Repeatable.\n");
@@ -114,15 +127,21 @@ void _print_usage(void) {
 static struct option options[] = {
     /* 0 */
     [OPT_MAIN] = {.long_name="main",.short_name='m',
-                  .flags=GOPT_ARGUMENT_REQUIRED},
+                  .flags=GOPT_ARGUMENT_REQUIRED | GOPT_REPEATABLE},
+    [OPT_WS] = {.long_name="workspace",.short_name='w',
+                .flags=GOPT_ARGUMENT_REQUIRED},
     [FLAG_HELP] = {.long_name="help",.short_name='h',
                    .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_SHOW_CONFIG] = {.long_name="show-config",
                           .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_SHOW_MIBL] = {.long_name="show-mibl",
                           .flags=GOPT_ARGUMENT_FORBIDDEN},
+    [FLAG_SHOW_PARSETREE] = {.long_name="show-parsetree",
+                          .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_DEBUG] = {.long_name="debug",.short_name='d',
                     .flags=GOPT_ARGUMENT_FORBIDDEN | GOPT_REPEATABLE},
+    [FLAG_DEBUG_LOAD_PROJECT] = {.long_name="debug-load-project",
+                                 .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_TRACE] = {.long_name="trace",.short_name='t',
                     .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_VERBOSE] = {.long_name="verbose",.short_name='v',
@@ -159,35 +178,28 @@ int main(int argc, char **argv, char **envp)
 
     if (options[FLAG_DEBUG].count) {
 #if defined(DEBUG_TRACE)
-        debug = true;
+        mibl_debug = true;
+#endif
+    }
+
+    if (options[FLAG_DEBUG_LOAD_PROJECT].count) {
+#if defined(DEBUG_TRACE)
+        mibl_debug_mibl_crawl = true;
+#else
+        log_error("--debug-load-project requires debug build, -c dbg");
+        exit(EXIT_FAILURE);
 #endif
     }
 
     if (options[FLAG_TRACE].count) {
         /* printf("trace ct: %d\n", options[FLAG_TRACE].count); */
 #if defined(DEBUG_TRACE)
-        trace = true;
+        mibl_trace = true;
 #endif
     }
 
-/*     if (options[FLAG_SHOW_CONFIG].count) { */
-/* #if defined(DEBUG_TRACE) */
-/*         debug_bazel = true; */
-/*         debug_mibl = true; */
-/*         debug_s7_config = true; */
-/* #else */
-/*         log_error("--debug-config only valid with -c dbg"); */
-/*         exit(EXIT_FAILURE); */
-/* #endif */
-/*     } */
-
-    if (!options[OPT_MAIN].count) {
-        if (!options[FLAG_SHOW_CONFIG].count) {
-            /* default to mibl_main.scm */
-        }
-    }
-
-    struct mibl_config_s *mibl_config = mibl_init(NULL);
+    struct mibl_config_s *mibl_config = mibl_s7_init(NULL, /* script dir */
+                                                     options[OPT_WS].argument);
 
     if (_update_mibl_config(options, mibl_config)) exit(EXIT_FAILURE);
 
@@ -198,15 +210,17 @@ int main(int argc, char **argv, char **envp)
         show_mibl_config();
         show_s7_config();
 
+        printf("arg0: %s\n", argv[0]);
+
+        /* dump env vars: */
         /* for (char **env = envp; *env != 0; env++) { */
         /*     char *thisEnv = *env; */
         /*     printf("%s\n", thisEnv); */
         /* } */
-        if (!options[OPT_MAIN].count)
-            exit(EXIT_SUCCESS);
+        exit(EXIT_SUCCESS);
     }
 
-    mibl_run(options[OPT_MAIN].argument, NULL);
+    mibl_s7_run(options[OPT_MAIN].argument, options[OPT_WS].argument);
 
     if (verbose)
         log_info("script exit...");

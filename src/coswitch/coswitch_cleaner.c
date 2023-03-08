@@ -45,7 +45,7 @@ int _select(const struct dirent *de) {
 EXPORT void clean_coswitch(void)
 {
 #if defined(DEBUG_TRACE)
-    if (debug) {
+    if (mibl_debug) {
         log_debug(BLU "clean_coswitch" CRESET);
         log_debug("%-16s%s", "opam switch:", utstring_body(opam_switch_lib));
         log_debug("current dir: %s", getcwd(NULL, 0));
@@ -77,7 +77,7 @@ EXPORT void clean_coswitch(void)
     int n;
 
 #if defined(DEBUG_TRACE)
-    if (debug) {
+    if (mibl_debug) {
         log_info(GRN "Beginning traversal" CRESET " at %s", _pkg_path[0]);
         log_info(GRN " with cwd:" CRESET " at %s", getcwd(NULL, 0));
     }
@@ -93,7 +93,7 @@ EXPORT void clean_coswitch(void)
                 n = scandir(ftsentry->fts_path, &namelist, _select, alphasort);
                 if (n == 0) {
 #if defined(DEBUG_TRACE)
-                    if (debug)
+                    if (mibl_debug)
                         log_info("removing EMPTY DIR: %s", ftsentry->fts_path);
 #endif
                     rmdir(ftsentry->fts_path);
@@ -115,7 +115,7 @@ EXPORT void clean_coswitch(void)
             case FTS_F : // regular file
                 if (strncmp("BUILD.bazel", ftsentry->fts_name, 11) == 0) {
 #if defined(DEBUG_TRACE)
-                    if (debug)
+                    if (mibl_debug)
                         log_info("Removing %s", ftsentry->fts_path);
 #endif
                     remove(ftsentry->fts_path);
@@ -124,7 +124,7 @@ EXPORT void clean_coswitch(void)
                 }
                 if (strncmp("WORKSPACE.bazel", ftsentry->fts_name, 15) == 0) {
 #if defined(DEBUG_TRACE)
-                    if (debug)
+                    if (mibl_debug)
                         log_info("Removing %s", ftsentry->fts_path);
 #endif
                     remove(ftsentry->fts_path);
@@ -134,7 +134,7 @@ EXPORT void clean_coswitch(void)
                 break;
             case FTS_SL: // symlink
 #if defined(DEBUG_TRACE)
-                if (debug)
+                if (mibl_debug)
                     log_info("unlinking %s", ftsentry->fts_path);
 #endif
                 unlink(ftsentry->fts_path);

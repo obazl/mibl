@@ -16,7 +16,7 @@ LOCAL bool _this_is_hidden(FTSENT *ftsentry)
         /* process the "." passed to fts_open, skip any others */
         if (ftsentry->fts_pathlen > 1) {
             // do not process children of hidden dirs
-            /* if (trace) */
+            /* if (mibl_trace) */
             /*     log_trace(RED "Excluding" CRESET " hidden dir: %s\n", */
             /*               ftsentry->fts_path); //, ftsentry->fts_name); */
             return true;
@@ -53,7 +53,7 @@ EXPORT void convert_dune_project(UT_array *opam_pending_deps)
     char *old_cwd = getcwd(NULL, 0);
     if (strncmp(old_cwd, ews_root, strlen(ews_root)) != 0) {
 #if defined(DEBUG_TRACE)
-        if (debug) {
+        if (mibl_debug) {
             log_debug("chdir: %s => %s\n", old_cwd, ews_root);
         }
 #endif
@@ -65,7 +65,7 @@ EXPORT void convert_dune_project(UT_array *opam_pending_deps)
             exit(EXIT_FAILURE);
         }
 #if defined(DEBUG_TRACE)
-        if (debug) log_debug("%-16s%s", "cwd:",  getcwd(NULL, 0));
+        if (mibl_debug) log_debug("%-16s%s", "cwd:",  getcwd(NULL, 0));
 #endif
     }
 
@@ -80,7 +80,7 @@ EXPORT void convert_dune_project(UT_array *opam_pending_deps)
         NULL
     };
 #if defined(DEBUG_TRACE)
-    if (debug) {
+    if (mibl_debug) {
         log_debug("_pkg_path: %s", _pkg_path[0]);
         log_debug("real _pkg_path: %s",
                   realpath(_pkg_path[0], NULL));
@@ -120,7 +120,7 @@ EXPORT void convert_dune_project(UT_array *opam_pending_deps)
                 continue; // do not process post-order visits
             }
 #if defined(DEBUG_TRACE)
-            if (debug) {
+            if (mibl_debug) {
                 printf("\n");
                 log_debug(CYN "iter ftsentry->fts_name: " CRESET "%s",
                           ftsentry->fts_name);
@@ -128,7 +128,7 @@ EXPORT void convert_dune_project(UT_array *opam_pending_deps)
                 log_debug("iter ftsentry->fts_info: %d", ftsentry->fts_info);
             }
 #endif
-            /* if (debug) { */
+            /* if (mibl_debug) { */
             /*     if (ftsentry->fts_info != FTS_DP) { */
             /*         log_debug(CYN "ftsentry:" CRESET " %s (%s), type: %d", */
             /*                   ftsentry->fts_name, */
@@ -140,7 +140,7 @@ EXPORT void convert_dune_project(UT_array *opam_pending_deps)
                 {
                 case FTS_D : // dir visited in pre-order
 #if defined(DEBUG_TRACE)
-                    if (trace)
+                    if (mibl_trace)
                         log_trace("pre-order visit dir: %s (%s) :: (%s)",
                                   ftsentry->fts_name,
                                   ftsentry->fts_path,
@@ -148,7 +148,7 @@ EXPORT void convert_dune_project(UT_array *opam_pending_deps)
 #endif
                     if (_this_is_hidden(ftsentry)) {
 #if defined(DEBUG_TRACE)
-                        if (trace)
+                        if (mibl_trace)
                             log_trace(RED "Excluding" CRESET " hidden dir: %s",
                                       ftsentry->fts_path);
 #endif
@@ -162,7 +162,7 @@ EXPORT void convert_dune_project(UT_array *opam_pending_deps)
                     } else {
                         if (include_this(ftsentry)) {
 #if defined(DEBUG_TRACE)
-                            if (trace) log_info(RED "Including" CRESET " %s",
+                            if (mibl_trace) log_info(RED "Including" CRESET " %s",
                                                 ftsentry->fts_path);
 #endif
                             if (strncmp(ftsentry->fts_name, "_build", 6) == 0) {
@@ -180,7 +180,7 @@ EXPORT void convert_dune_project(UT_array *opam_pending_deps)
                     break;
                 case FTS_DP: /* postorder directory */
 #if defined(DEBUG_TRACE)
-                    if (trace)
+                    if (mibl_trace)
                         log_trace("post-order visit dir: %s (%s) :: (%s)",
                                   ftsentry->fts_name,
                                   ftsentry->fts_path,

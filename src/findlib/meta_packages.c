@@ -144,7 +144,7 @@ obzl_meta_values *resolve_setting_values(obzl_meta_setting *_setting,
                                          obzl_meta_settings *_settings)
 {
 #if defined(DEBUG_TRACE)
-    if (trace)
+    if (mibl_trace)
         log_debug("resolve_setting_values, opcode: %d", _setting->opcode);
 #endif
     obzl_meta_values * vals = obzl_meta_setting_values(_setting);
@@ -213,7 +213,7 @@ EXPORT int pkg_deps(struct obzl_meta_package *_pkg,
                     UT_array *completed_deps)
 {
 /* #if defined(DEBUG_TRACE) */
-/*     if (trace) log_trace("pkg_deps"); */
+/*     if (mibl_trace) log_trace("pkg_deps"); */
 /* #endif */
     utarray_sort(completed_deps,strsort);
 
@@ -323,7 +323,7 @@ EXPORT int pkg_deps(struct obzl_meta_package *_pkg,
 
             char *s = strdup((char*)*dep_name);
 /* #if defined(DEBUG_TRACE) */
-/*             if (debug) log_debug("DEP: '%s'", s); */
+/*             if (mibl_debug) log_debug("DEP: '%s'", s); */
 /* #endif */
 
             /* FIXME: drop trailing dot segs - only record topelevels */
@@ -339,7 +339,7 @@ EXPORT int pkg_deps(struct obzl_meta_package *_pkg,
             p = (char**)utarray_find(completed_deps, &s, strsort);
             if (p != NULL) {
 /* #if defined(DEBUG_TRACE) */
-/*                 if (debug) */
+/*                 if (mibl_debug) */
 /*                     log_debug(" found completed dep: %s", *p); */
 /* #endif */
             } else {
@@ -347,12 +347,12 @@ EXPORT int pkg_deps(struct obzl_meta_package *_pkg,
                 p = (char**)utarray_find(pending_deps, &s, strsort);
                 if (p != NULL) {
 /* #if defined(DEBUG_TRACE) */
-/*                     if (debug) */
+/*                     if (mibl_debug) */
 /*                         log_debug(" pending dep already added: %s", *p); */
 /* #endif */
                 } else {
 /* #if defined(DEBUG_TRACE) */
-/*                     if (debug) log_debug(" adding new pending dep: %s", s); */
+/*                     if (mibl_debug) log_debug(" adding new pending dep: %s", s); */
 /* #endif */
                     utarray_push_back(pending_deps, &s);
                 }

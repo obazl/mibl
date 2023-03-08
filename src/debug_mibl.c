@@ -5,10 +5,10 @@
 
 #include "debug_mibl.h"
 
-bool debug_mibl = false;
-bool debug_mibl_crawl = false;
-bool debug_miblrc   = false;
+bool mibl_debug_mibl = false;
+bool mibl_debug_mibl_crawl = false;
+bool mibl_debug_miblrc   = false;
 
-bool trace_mibl   = false;
+bool mibl_trace_mibl   = false;
 
 

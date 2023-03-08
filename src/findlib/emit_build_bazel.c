@@ -495,7 +495,7 @@ void emit_bazel_attribute(FILE* ostream,
     /* log_debug(" PROP: %s", property); */
 
 #if defined(DEBUG_TRACE)
-    if (debug)
+    if (mibl_debug)
         log_debug("## _filedeps_path: '%s'\n", _filedeps_path);
 #endif
 
@@ -734,7 +734,7 @@ void emit_bazel_attribute(FILE* ostream,
             /*     /\* if (access(utstring_body(archive_srcfile), F_OK) == 0) *\/ */
             /*     /\*     fprintf(ostream, "            \"%s\",\n", cmxa_a); *\/ */
             /*     /\* else *\/ */
-            /*     /\*     if (debug) { *\/ */
+            /*     /\*     if (mibl_debug) { *\/ */
             /*     /\*         log_debug("## missing %s\n", *\/ */
             /*     /\*                   utstring_body(archive_srcfile)); *\/ */
             /*     /\*     } *\/ */
@@ -998,7 +998,7 @@ void emit_bazel_archive_attr(FILE* ostream,
 
     /* static UT_string *archive_srcfile; // FIXME: dealloc? */
 
-    if (debug)
+    if (mibl_debug)
         log_debug("_filedeps_path: '%s'", _filedeps_path);
 #endif
 
@@ -2828,19 +2828,19 @@ void emit_pkg_symlinks(UT_string *dst_dir,
                        char *pkg_name)
 {
 #if defined(DEBUG_TRACE)
-    if (debug)
+    if (mibl_debug)
         log_debug("emit_symlinks for pkg: %s", pkg_name);
 #endif
 /*     if ((strncmp(pkg_name, "dune", 4) == 0)) { */
 /*         || (strncmp(utstring_body(src_dir), "dune/configurator", 17) == 0)) { */
 /* #if defined(DEBUG_TRACE) */
-/*         if (debug) */
+/*         if (mibl_debug) */
 /*             log_debug("Skipping 'dune' stuff\n"); */
 /* #endif */
 /*         return; */
 /*     } */
 #if defined(DEBUG_TRACE)
-    if (debug) {
+    if (mibl_debug) {
         log_debug("\tpkg_symlinks src_dir: %s", utstring_body(src_dir));
         log_debug("\tpkg_symlinks dst_dir: %s", utstring_body(dst_dir));
     }
@@ -2870,7 +2870,7 @@ void emit_pkg_symlinks(UT_string *dst_dir,
                         "topkg/../topkg-care",
                         19) == 0) {
 #if defined(DEBUG_TRACE)
-                if (debug)
+                if (mibl_debug)
                     log_debug("Skipping missing 'topkg-care'");
 #endif
                 if (verbose)
@@ -2910,7 +2910,7 @@ void emit_pkg_symlinks(UT_string *dst_dir,
         //Condition to check regular file.
         if(direntry->d_type==DT_REG){
 /* #if defined(DEBUG_TRACE) */
-/*             if (debug) { */
+/*             if (mibl_debug) { */
 /*                 log_debug("dirent: %s/%s", */
 /*                           utstring_body(opamdir), direntry->d_name); */
 /*             } */
@@ -2929,7 +2929,7 @@ void emit_pkg_symlinks(UT_string *dst_dir,
                             pkg_name,
                             direntry->d_name);
 #if defined(DEBUG_TRACE)
-            if (debug) {
+            if (mibl_debug) {
                 log_debug("pkg symlinking");
                 fprintf(stderr, "  from %s\n", utstring_body(src));
                 fprintf(stderr, "  to   %s\n", utstring_body(dst));
@@ -3151,7 +3151,7 @@ EXPORT void emit_build_bazel(// char *ws_name,
     /*     utstring_printf(bazel_pkg_root, "/%s", pkg_name); */
     /* } */
 #if defined(DEBUG_TRACE)
-    if (debug)
+    if (mibl_debug)
         log_debug("bazel_pkg_root: %s", utstring_body(bazel_pkg_root));
 #endif
 

@@ -14,7 +14,7 @@
 
 #if defined(DEBUG_TRACE)
 extern bool debug;
-extern int  debug_level;
+extern int  mibl_debug_level;
 extern bool debug_miblrc;
 extern bool debug_mibl_crawl;
 extern bool trace;
@@ -177,7 +177,6 @@ extern bool debug_bazel;
 extern bool debug_mibl;
 extern bool debug_mibl_crawl;
 extern bool debug_scm;
-extern bool debug_loads;
 extern bool debug_s7_config;
 extern bool trace;
 extern bool trace_bazel;
@@ -209,7 +208,7 @@ int main(int argc, char **argv)
         if (verbose)
             log_info("debug ct: %d", options[FLAG_DEBUG].count);
         debug = true;
-        debug_level = options[FLAG_DEBUG].count;
+        mibl_debug_level = options[FLAG_DEBUG].count;
 #endif
     }
 
@@ -252,11 +251,7 @@ int main(int argc, char **argv)
 #endif
     }
     if (options[FLAG_DEBUG_SCM_LOADS].count) {
-#if defined(DEBUG_TRACE)
-        debug_loads = true;
-#else
-        log_warn("--debug-scm-loads only takes effect for debug builds (-c dbg)");
-#endif
+        mibl_s7_set_flag("*mibl-debug-loads*", true);
     }
 
     if (options[FLAG_TRACE].count) {

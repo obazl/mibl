@@ -26,7 +26,7 @@ s7_pointer _s7_error_handler_opam(s7_scheme *s7, s7_pointer args)
 
     if (strstr(s7_string(s7_car(args)), "unexpected close paren:") != NULL) {
 #if defined(DEBUG_TRACE)
-        if (debug)
+        if (mibl_debug)
             printf(RED "Error: BAD DOT" CRESET "\n");
 #endif
 
@@ -125,7 +125,7 @@ void init_error_handlers_opam(void)
 
 void error_config_opam(void)
 {
-    /* if (trace) log_trace(BLU "error_config" CRESET); */
+    /* if (mibl_trace) log_trace(BLU "error_config" CRESET); */
 
     old_err_port = s7_set_current_error_port(s7, s7_open_output_string(s7));
     if (old_err_port != s7_nil(s7)) {

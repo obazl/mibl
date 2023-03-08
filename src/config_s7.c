@@ -31,7 +31,7 @@
 #include "s7.h"
 /* #endif */
 
-#include "config_s7_dune.h"
+#include "config_s7.h"
 
 /* #if defined(DEBUG_TRACE) */
 /* extern bool debug; */
@@ -39,7 +39,6 @@
 /* #endif */
 
 bool debug_scm   = false;
-bool debug_loads = false;
 
 bool emit_parsetree = false;
 
@@ -186,7 +185,7 @@ EXPORT s7_pointer g_effective_ws_root(s7_scheme *s7,  s7_pointer args)
 EXPORT void initialize_mibl_data_model(s7_scheme *s7)
 {
 #if defined(DEBUG_TRACE)
-    if (debug_mibl)
+    if (mibl_debug_mibl)
         log_trace("initialize_mibl_data_model");
 #endif
     /*
@@ -204,7 +203,7 @@ EXPORT void initialize_mibl_data_model(s7_scheme *s7)
      */
 
 #if defined(DEBUG_TRACE)
-    if (trace)
+    if (mibl_trace)
         log_debug("_initialize_mibl_data_model");
 #endif
 
@@ -261,7 +260,7 @@ EXPORT void initialize_mibl_data_model(s7_scheme *s7)
     /*                              s7_list(s7, 2, root_ws, */
     /*                                      s7_list(s7, 1, */
     /*                                   s7_list(s7, 2, key, datum)))); */
-    /* if (debug) */
+    /* if (mibl_debug) */
     /*     log_debug("root_ws: %s\n", TO_STR(root_ws)); */
 
     /* key   = s7_make_symbol(s7, "path"); */
@@ -270,7 +269,7 @@ EXPORT void initialize_mibl_data_model(s7_scheme *s7)
     /*                   s7_list(s7, 2, root_ws, */
     /*                           s7_list(s7, 1, */
     /*                                   s7_list(s7, 2, key, datum)))); */
-    /* if (debug) */
+    /* if (mibl_debug) */
     /*     log_debug("root_ws: %s\n", TO_STR(root_ws)); */
 
     /* /\* table of "exports" - libs etc. possibly referenced as deps *\/ */
@@ -280,7 +279,7 @@ EXPORT void initialize_mibl_data_model(s7_scheme *s7)
     /*                   s7_list(s7, 2, root_ws, */
     /*                           s7_list(s7, 1, */
     /*                                   s7_list(s7, 2, key, datum)))); */
-    /* if (debug) */
+    /* if (mibl_debug) */
     /*     log_debug("root_ws: %s\n", TO_STR(root_ws)); */
 
     /* key   = s7_make_symbol(s7, "pkgs"); */
@@ -289,12 +288,12 @@ EXPORT void initialize_mibl_data_model(s7_scheme *s7)
     /*                   s7_list(s7, 2, root_ws, */
     /*                           s7_list(s7, 1, */
     /*                                   s7_list(s7, 2, key, datum)))); */
-    /* if (debug) */
+    /* if (mibl_debug) */
     /*     log_debug("root_ws: %s\n", TO_STR(root_ws)); */
 
     /* root_ws = s7_list(s7, 1, root_ws); */
 
-    /* if (debug) */
+    /* if (mibl_debug) */
     /*     log_debug("root_ws: %s\n", TO_STR(root_ws)); */
 
     /* s7_define_variable(s7, "*mibl-project*", root_ws); */
@@ -305,7 +304,7 @@ EXPORT void initialize_mibl_data_model(s7_scheme *s7)
 s7_pointer _init_scheme_fns(s7_scheme *s7)
 {
 #if defined(DEBUG_TRACE)
-    if (debug_s7_config) log_debug("_init_scheme_fns");
+    if (mibl_debug_s7_config) log_debug("_init_scheme_fns");
 #endif
 
     if (_s7_set_cdr == NULL) {
@@ -480,15 +479,17 @@ char **scm_dir;
 LOCAL void _config_s7_load_path_bazel_test_env(void)
 {
     s7_pointer tmp_load_path = s7_list(s7, 0);
+#if defined(DEBUG_TRACE)
 #ifdef BAZEL_CURRENT_REPOSITORY
     log_debug("bazel_current_repo: " BAZEL_CURRENT_REPOSITORY);
+#endif
 #endif
     scm_dir = scm_runfiles_dirs;
     char *tmpdir;
     while (strlen(*scm_dir) != 0) {
-        log_debug("scm_dir: %s", *scm_dir);
+        /* log_debug("scm_dir: %s", *scm_dir); */
         tmpdir = realpath(*scm_dir, NULL);
-        log_debug("tmpscm: %s", tmpdir);
+        /* log_debug("tmpscm: %s", tmpdir); */
         tmp_load_path =
             s7_append(s7, tmp_load_path,
                       s7_list(s7, 1,
@@ -532,7 +533,7 @@ LOCAL __attribute__((unused)) void _config_s7_load_path_bazel_run_env(char *mani
     }
 
 #if defined(DEBUG_TRACE)
-    if (debug)
+    if (mibl_debug)
         log_debug("Reading MANIFEST");
 #endif
 
@@ -575,7 +576,7 @@ LOCAL __attribute__((unused)) void _config_s7_load_path_bazel_run_env(char *mani
         if ( (strncmp(basename(token),
                       "libc_s7.so", 10) == 0) ) {
 #if defined(DEBUG_TRACE)
-            if (trace)
+            if (mibl_trace)
                 log_info("FOUND LIBC_S7.SO: %s", token);
 #endif
 
@@ -689,7 +690,7 @@ LOCAL void _config_user_load_path(void)
 LOCAL void _config_s7_load_path_xdg_home(void)
 {
 #if defined(DEBUG_TRACE)
-    if (trace)
+    if (mibl_trace)
         log_trace("_config_s7_load_path_xdg_home");
 #endif
 
@@ -845,7 +846,7 @@ EXPORT void set_load_path(void) // char *scriptfile)
     /* char *_wd = getcwd(NULL, 0); */
 
 #if defined(DEBUG_TRACE)
-    if (debug) {
+    if (mibl_debug) {
         s7_pointer lp = s7_load_path(s7);
         log_debug("*load-path*: %s", s7_object_to_c_string(s7, lp));
     }
@@ -880,7 +881,7 @@ EXPORT void set_load_path(void) // char *scriptfile)
         s7_pointer lp = s7_load_path(s7);
         (void)lp;
 #if defined(DEBUG_TRACE)
-        if (debug) {
+        if (mibl_debug) {
             log_debug("2 *LOAD-PATH*: %s", TO_STR(lp));
         }
 #endif
@@ -901,7 +902,7 @@ EXPORT void set_load_path(void) // char *scriptfile)
                project-local script directory in <projroot>/.mibl . */
             /*         s7_pointer lp = s7_load_path(s7); */
             /* #if defined(DEBUG_TRACE) */
-            /*         if (debug) { */
+            /*         if (mibl_debug) { */
             /*             log_debug("1 *LOAD-PATH*: %s", TO_STR(lp)); */
             /*         } */
             /* #endif */
@@ -910,11 +911,11 @@ EXPORT void set_load_path(void) // char *scriptfile)
             _config_s7_load_path_bazel_test_env();
             s7_pointer lp = s7_load_path(s7);
             (void)lp;
-/* #if defined(DEBUG_TRACE) */
-/*             if (debug) { */
-                log_debug("2 *LOAD-PATH*: %s", TO_STR(lp));
-/*             } */
-/* #endif */
+#if defined(DEBUG_TRACE)
+            if (mibl_debug) {
+                log_debug("3 *LOAD-PATH*: %s", TO_STR(lp));
+            }
+#endif
         }
     }
     _config_s7_load_path_rootws();
@@ -928,7 +929,7 @@ EXPORT void set_load_path(void) // char *scriptfile)
     /* log_debug("new lp: %s", s7_object_to_c_string(s7, new_lp)); */
 
 
-    /* if (debug) { */
+    /* if (mibl_debug) { */
     /*     s7_pointer lp = s7_load_path(s7); */
     /*     log_debug("*load-path*: %s", s7_object_to_c_string(s7, lp)); */
     /* } */
@@ -1023,13 +1024,14 @@ EXPORT void s7_shutdown(s7_scheme *s7)
 void _mibl_s7_init(void)
 {
 #if defined(DEBUG_TRACE)
-    if (trace) log_trace("_mibl_s7_init");
+    if (mibl_trace) log_trace("_mibl_s7_init");
 #endif
 
     s7 = s7_init();             /* @libs7//src:s7.c */
 
 #if defined(DEBUG_TRACE)
-    log_debug("runfiles_root: %s", utstring_body(runfiles_root));
+    if (mibl_debug)
+        log_debug("runfiles_root: %s", utstring_body(runfiles_root));
 #endif
 
     UT_string *libc_s7;
@@ -1074,7 +1076,7 @@ void _mibl_s7_init(void)
     char tplt[] = "/tmp/obazl.XXXXXXXXXX";
     char *tmpdir = mkdtemp(tplt);
 #if defined(DEBUG_TRACE)
-    if (debug)
+    if (mibl_debug)
         log_debug("tmpdir: %s", tmpdir);
 #endif
     s7_define_variable(s7, "*tmp-dir*", s7_make_string(s7, tmpdir));
@@ -1115,7 +1117,7 @@ void _define_s7_keywords_and_symbols(void)
 void _define_s7_global_vars(void)
 {
 #if defined(DEBUG_TRACE)
-    if (debug_s7_config)
+    if (mibl_debug_s7_config)
         log_debug("_define_s7_global_vars");
 #endif
 
@@ -1133,8 +1135,7 @@ void _define_s7_global_vars(void)
     s7_define_variable(s7, "*debug-emit*", s7_f(s7));
     s7_define_variable(s7, "*debug-executables*", s7_f(s7));
     s7_define_variable(s7, "*debug-genrules*", s7_f(s7));
-    s7_define_variable(s7, "*debug-loads*",
-                       debug_loads? s7_t(s7) : s7_f(s7));
+    s7_define_variable(s7, "*mibl-debug-loads*", s7_f(s7));
     s7_define_variable(s7, "*debug-mibl*", s7_f(s7));
     s7_define_variable(s7, "*debug-ppx*", s7_f(s7));
 
@@ -1201,7 +1202,7 @@ void _define_s7_global_vars(void)
     s7_pointer _s7_pkgs = s7_nil(s7);
     while ( (p=(char**)utarray_next(mibl_config.pkgs, p))) {
 #if defined(DEBUG_TRACE)
-        if (debug) printf("Adding to pkgs list: %s\n", *p);
+        if (mibl_debug) printf("Adding to pkgs list: %s\n", *p);
 #endif
         _s7_pkgs = s7_cons(s7, s7_make_string(s7, *p), _s7_pkgs);
     }
@@ -1212,13 +1213,13 @@ void _define_s7_global_vars(void)
     s7_pointer _s7_exclusions = s7_nil(s7);
     while ( (p=(char**)utarray_next(mibl_config.exclude_dirs, p))) {
 #if defined(DEBUG_TRACE)
-        if (debug_miblrc)
+        if (mibl_debug_miblrc)
             log_debug("Adding to exlusions list: %s",*p);
 #endif
         _s7_exclusions = s7_cons(s7, s7_make_string(s7, *p), _s7_exclusions);
     }
 #if defined(DEBUG_TRACE)
-    if (debug)
+    if (mibl_debug)
         log_debug("exclusions list: %s", TO_STR(_s7_exclusions));
 #endif
     s7_define_variable(s7, "*scan-exclusions*", _s7_exclusions);
@@ -1239,7 +1240,7 @@ EXPORT void show_s7_config(void)
     log_info("*debug-emit* %d", TO_BOOL("*debug-emit*"));
     log_info("*debug-executables* %d", TO_BOOL("*debug-executables*"));
     log_info("*debug-genrules* %d", TO_BOOL("*debug-genrules*"));
-    log_info("*debug-loads* %d", TO_BOOL("*debug-loads*"));
+    log_info("*mibl-debug-loads* %d", TO_BOOL("*mibl-debug-loads*"));
     log_info("*debug-mibl* %d", TO_BOOL("*debug-mibl*"));
     log_info("*debug-ppx* %d", TO_BOOL("*debug-ppx*"));
     log_info("*debug-scm* %d", TO_BOOL("*debug-scm*"));
@@ -1274,15 +1275,17 @@ EXPORT void show_s7_config(void)
     log_info("*dune-execlib-includes-main* %d", TO_BOOL("*dune-execlib-includes-main*"));
     log_info("*scan-exclusions*: %s", NM_TO_STR("*scan-exclusions*"));
 
+    log_info("*foobar* %d", TO_BOOL("*foobar*"));
+
     log_info(GRN "End s7 configuration summary." CRESET);
     fflush(NULL);
 }
 
 /* FIXME: rename s7_configure_for_dune */
-EXPORT s7_scheme *s7_configure(char *main_script)
+EXPORT s7_scheme *s7_configure(char *main_script, char *ws_root)
 {
 #if defined(DEBUG_TRACE)
-    if (debug)
+    if (mibl_debug)
         log_debug("s7_configure");
 #endif
 
@@ -1309,11 +1312,11 @@ EXPORT s7_scheme *s7_configure(char *main_script)
         utstring_new(tmp);
         utstring_printf(tmp, "../%s", main_script);
         char *realmain = realpath(utstring_body(tmp), NULL);
-        log_debug("realmain %s", realmain);
+        /* log_debug("realmain %s", realmain); */
 
         s7_pointer result = s7_add_to_load_path(s7, realmain);
         (void)result;
-        log_info("*load-path*: %s", TO_STR(s7_load_path(s7)));
+        /* log_info("*load-path*: %s", TO_STR(s7_load_path(s7))); */
     }
     /* init_glob(s7); */
 
@@ -1333,11 +1336,10 @@ EXPORT s7_scheme *s7_configure(char *main_script)
 
     _init_scheme_fns(s7);       /* call _after_ loading dune.scm */
 
-    chdir(rootws);            /* always run from base ws root */
+    /* chdir(rootws);            /\* always run from base ws root *\/ */
 
     /* if (verbose && verbosity > 1) { */
     /*     show_s7_config(); */
     /* } */
     return s7;
 }
-

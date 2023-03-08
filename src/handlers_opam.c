@@ -50,7 +50,7 @@ UT_string *dunefile_name;
 /* bool _is_ws_root(FTSENT *ftsentry) */
 /* { */
 /* #if defined(DEBUG_TRACE) */
-/*     if (trace) */
+/*     if (mibl_trace) */
 /*         log_trace("_is_ws_root: %s", ftsentry->fts_path); */
 /* #endif */
 
@@ -63,7 +63,7 @@ UT_string *dunefile_name;
 /*     /\* log_debug("RC: %d", rc); *\/ */
 /*     if (!rc) { */
 /* #if defined(DEBUG_TRACE) */
-/*         if (trace) log_trace("true"); */
+/*         if (mibl_trace) log_trace("true"); */
 /* #endif */
 /*         return true; */
 /*     } else { */
@@ -73,13 +73,13 @@ UT_string *dunefile_name;
 /*         rc = access(utstring_body(pathdir), R_OK); */
 /*         if (!rc) { */
 /* #if defined(DEBUG_TRACE) */
-/*             if (trace) log_trace("true"); */
+/*             if (mibl_trace) log_trace("true"); */
 /* #endif */
 /*             return true; */
 /*         } */
 /*     } */
 /* #if defined(DEBUG_TRACE) */
-/*     if (trace) log_trace("false"); */
+/*     if (mibl_trace) log_trace("false"); */
 /* #endif */
 /*     return false; */
 /* } */
@@ -90,7 +90,7 @@ LOCAL bool _this_is_hidden(FTSENT *ftsentry)
         /* process the "." passed to fts_open, skip any others */
         if (ftsentry->fts_pathlen > 1) {
             // do not process children of hidden dirs
-            /* if (trace) */
+            /* if (mibl_trace) */
             /*     log_trace(RED "Excluding" CRESET " hidden dir: %s\n", */
             /*               ftsentry->fts_path); //, ftsentry->fts_name); */
             return true;
@@ -122,7 +122,7 @@ LOCAL bool _this_is_hidden(FTSENT *ftsentry)
 void handle_dir(FTS* tree, FTSENT *ftsentry)
 {
 #if defined(DEBUG_TRACE)
-    if (debug) {
+    if (mibl_debug) {
         log_debug("");
         log_debug(BLU "handle_dir:" CRESET);
         /* log_info("%-20s%s", "base ws:", rootws); */
@@ -138,7 +138,7 @@ void handle_dir(FTS* tree, FTSENT *ftsentry)
     /* utstring_printf(dune_test, "%s/%s", ftsentry->fts_path, "dune"); */
     /* int rc = access(utstring_body(dune_test), F_OK); */
     /* if (rc) { */
-    /*     /\* if (debug) *\/ */
+    /*     /\* if (mibl_debug) *\/ */
     /*         /\* log_warn(RED "dunefile not found in: " CRESET "%s", *\/ */
     /*         /\*           ftsentry->fts_path); *\/ */
     /*     /\* return; *\/ */
@@ -212,7 +212,7 @@ void handle_meta_file(FTSENT *ftsentry)
 {
     opam_meta_ct++;
 #if defined(DEBUG_TRACE)
-    if (debug_findlib) {
+    if (mibl_debug_findlib) {
         log_debug("");
         log_debug(BLU "handle_meta_file:" CRESET);
         /* log_info("%-20s%s", "base ws:", rootws); */
@@ -229,7 +229,7 @@ void handle_meta_file(FTSENT *ftsentry)
 void handle_opam_file(FTSENT *ftsentry)
 {
 #if defined(DEBUG_TRACE)
-    if (debug) {
+    if (mibl_debug) {
         log_debug("");
         log_debug(BLU "handle_opam_file:" CRESET);
         /* log_info("%-20s%s", "base ws:", rootws); */
@@ -271,7 +271,7 @@ void handle_symlink(FTS *tree, FTSENT *ftsentry)
 void opam_handle_fts_d(FTS *tree, FTSENT *ftsentry)
 {
 #if defined(DEBUG_TRACE)
-    if (trace)
+    if (mibl_trace)
         log_trace("pre-order visit dir: %s (%s) :: (%s)",
                   ftsentry->fts_name,
                   ftsentry->fts_path,
@@ -279,7 +279,7 @@ void opam_handle_fts_d(FTS *tree, FTSENT *ftsentry)
 #endif
     if (_this_is_hidden(ftsentry)) {
 #if defined(DEBUG_TRACE)
-        if (trace)
+        if (mibl_trace)
             log_trace(RED "Excluding" CRESET " hidden dir: %s",
                       ftsentry->fts_path);
 #endif
@@ -295,7 +295,7 @@ void opam_handle_fts_d(FTS *tree, FTSENT *ftsentry)
 
         /*                         if (_include_this(ftsentry)) { */
         /* #if defined(DEBUG_TRACE) */
-        /*                             if (trace) log_info(RED "Including" CRESET " %s", */
+        /*                             if (mibl_trace) log_info(RED "Including" CRESET " %s", */
         /*                                                 ftsentry->fts_path); */
         /* #endif */
         /*                             if (strncmp(ftsentry->fts_name, "_build", 6) == 0) { */

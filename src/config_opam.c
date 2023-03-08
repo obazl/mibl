@@ -51,7 +51,7 @@ UT_string *opam_coswitch_lib    = NULL;
 EXPORT void opam_configure(char *_opam_switch)
 {
 #if defined(DEBUG_TRACE)
-    if (trace)
+    if (mibl_trace)
         log_trace("opam_configure: '%s'", _opam_switch);
     log_trace("cwd: %s\n", getcwd(NULL, 0));
 #endif

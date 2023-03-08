@@ -306,7 +306,7 @@
                                 (if *debugging*
                                     (format #t "~A ~A to ~A~%" (bgyellow "updating stanza :deps") mdeps fname))
                                 ;; (format #t "~A: ~A~%" (uyellow "in pkg") pkg)
-                                (if (assoc-val :dune pkg)
+                                (if (assoc-val :mibl pkg)
                                     (update-stanza-deps pkg fname mdeps))
                                 (if *debugging*
                                     (format #t "~A: ~A~%" (red "pkg (after)") pkg))
@@ -675,5 +675,5 @@
               ;;                             )
               ;;                           (cdr stanza))
               ;;                 ))
-              ;;           (assoc-val :dune pkg))
+              ;;           (assoc-val :mibl pkg))
               pkgs)))

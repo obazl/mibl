@@ -1,4 +1,4 @@
-(define (debug-print-exports-table ws)
+(define (mibl-debug-print-exports-table ws)
   (format #t "~A: ~A~%" (ublue "debug-print-exports-table") ws)
   (let* ((@ws (assoc-val ws *mibl-project*))
          (exports (car (assoc-val :exports @ws)))
@@ -10,7 +10,7 @@
 ;; (format #t "~A: ~A~%" (red "exports keys") (hash-table-keys exports))
 ;; (format #t "~A: ~A~%" (red "exports table") exports)))
 
-(define (debug-print-filegroups ws)
+(define (mibl-debug-print-filegroups ws)
   (format #t "~A: ~A~%" (ublue "debug-print-filegroups") ws)
   (let* ((@ws (assoc-val ws *mibl-project*))
          (filegroups (car (assoc-val :filegroups @ws)))
@@ -20,7 +20,11 @@
                 (format #t " ~A => ~A~%" k (filegroups k)))
               keys)))
 
-(define (debug-print-pkgs ws)
+(define (mibl-debug-print-pkgs ws)
+  (mibl-pretty-print (assoc-val ws *mibl-project*))
+  (newline))
+
+(define (Xmibl-debug-print-pkgs ws)
   ;; (if *debug-debug*
   ;;     (format #t "~A~%" (bgred "PKG DUMP")))
   (let* ((@ws (assoc-val ws *mibl-project*))
@@ -29,6 +33,8 @@
          (pkg-paths (hash-table-keys pkgs))
          (pkg-paths (sort! pkg-paths string<?))
          )
+    (format #t "WS name: ~A~%" (assoc-val :name @ws))
+    (format #t "WS path: ~A~%" (assoc-val :path @ws))
     (if *debugging*
         (begin
           (format #t "~A: ~A ~A~%" (bggreen "workspace") (assoc :name @ws) (assoc :path @ws))
@@ -84,7 +90,7 @@
                         (format #t "~A: ~A~%" (ugreen "pkg-cc-srcs") (assoc-val :cc-srcs pkg))
                         (format #t "~A: ~A~%" (ugreen "pkg-ppx") (assoc-val :shared-ppx pkg))
                         (format #t "~A: ~A~%" (ugreen "pkg-files") (assoc-val :files pkg))
-                        (if-let ((dune (assoc :dune pkg)))
+                        (if-let ((dune (assoc :mibl pkg)))
                                 (for-each (lambda (stanza)
                                             (format #t "~A: ~A~%" (ucyan "stanza") stanza))
                                           (cdr dune)))))))

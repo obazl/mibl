@@ -181,19 +181,19 @@ EXPORT void convert_findlib_pkgs(UT_array *opam_pending_deps,
     emit_ocaml_workspace(bazel_ws_root);
 
 #if defined(DEBUG_TRACE)
-    if (trace) log_trace("done");
+    if (mibl_trace) log_trace("done");
 #endif
 
     UT_string *dune_pkg_file;    /* FIXME: free */
     utstring_new(dune_pkg_file); /* global, in emit_pkg_bindir.c */
     while ( (p=(const char**)utarray_next(opam_completed_deps, p))) {
 #if defined(DEBUG_TRACE)
-        if (debug) log_info("opam pkg:  %s", *p);
+        if (mibl_debug) log_info("opam pkg:  %s", *p);
 #endif
         emit_pkg_bindir(*p);
     }
 #if defined(DEBUG_TRACE)
-    if (debug) {
+    if (mibl_debug) {
         log_debug("pending list:");
         while ( (p=(const char**)utarray_next(opam_pending_deps, p))) {
             log_info("  %s", *p);

@@ -14,7 +14,7 @@
 
 #if defined(DEBUG_TRACE)
 extern bool debug;
-extern int  debug_level;
+extern int  mibl_debug_level;
 extern bool debug_miblrc;
 extern bool trace;
 #endif
@@ -150,7 +150,7 @@ int main(int argc, char **argv)
     if (options[FLAG_DEBUG].count) {
 #if defined(DEBUG_TRACE)
         debug = true;
-        debug_level = options[FLAG_DEBUG].count;
+        mibl_debug_level = options[FLAG_DEBUG].count;
 #endif
     }
 

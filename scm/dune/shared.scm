@@ -6,7 +6,7 @@
       (format #t "~A: ~A~%" (ublue "-handle-pkg-shared-ppx") pkg-kv))
   (let* ((pkg (cdr pkg-kv))
          (pkg-shared-ppx '())
-         (dune (assoc :dune pkg)))
+         (dune (assoc :mibl pkg)))
     (if dune
         (for-each (lambda (stanza)
                     (if (or *debug-ppx* *debugging*)
@@ -105,7 +105,7 @@
       (format #t "~A: ~A~%" (ublue "handle-shared-deps") pkg-kv))
   (let* ((pkg (cdr pkg-kv))
          (pkg-shared-deps '()))
-    (if-let ((dune (assoc :dune pkg)))
+    (if-let ((dune (assoc :mibl pkg)))
             (begin
               (for-each (lambda (stanza)
                           (if *debugging*
@@ -191,7 +191,7 @@
       (format #t "~A: ~A~%" (ublue "handle-shared-opts") pkg-kv))
   (let* ((pkg (cdr pkg-kv))
          (pkg-shared-opts '()))
-    (if-let ((dune (assoc :dune pkg)))
+    (if-let ((dune (assoc :mibl pkg)))
             (begin
               (for-each (lambda (stanza)
                           (if *debugging*

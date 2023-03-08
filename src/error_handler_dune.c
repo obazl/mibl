@@ -50,7 +50,7 @@ s7_pointer _s7_read_thunk_catcher(s7_scheme *s7, s7_pointer args)
         s7_pointer fixed = fix_baddot(dunefile_name);
         /* s7_pointer fixed = s7_eval_c_string(s7, "'(foob)"); */
 #if defined(DEBUG_TRACE)
-        if (debug) log_debug(RED "FIXED:" CRESET " %s",
+        if (mibl_debug) log_debug(RED "FIXED:" CRESET " %s",
                              TO_STR(fixed));
         /* s7_show_stack(s7); */
         /* print_backtrace(s7); */
@@ -103,7 +103,7 @@ s7_pointer _s7_error_handler(s7_scheme *s7, s7_pointer args)
 
     if (strstr(s7_string(s7_car(args)), "unexpected close paren:") != NULL) {
 #if defined(DEBUG_TRACE)
-        if (debug)
+        if (mibl_debug)
             printf(RED "Error: BAD DOT" CRESET "\n");
 #endif
 
@@ -202,7 +202,7 @@ void init_error_handlers(void)
 
 void error_config(void)
 {
-    /* if (trace) log_trace(BLU "error_config" CRESET); */
+    /* if (mibl_trace) log_trace(BLU "error_config" CRESET); */
 
     old_err_port = s7_set_current_error_port(s7, s7_open_output_string(s7));
     if (old_err_port != s7_nil(s7)) {
@@ -388,7 +388,7 @@ s7_pointer fix_baddot(UT_string *dunefile_name)
         }
     }
 #if defined(DEBUG_TRACE)
-    if (debug)
+    if (mibl_debug)
         log_debug("s7_open_input_string for error correction");
 #endif
 
@@ -400,7 +400,7 @@ s7_pointer fix_baddot(UT_string *dunefile_name)
         errmsg = s7_get_output_string(s7, s7_current_error_port(s7));
         if ((errmsg) && (*errmsg)) {
 #if defined(DEBUG_TRACE)
-            if (debug) log_error("[%s\n]", errmsg);
+            if (mibl_debug) log_error("[%s\n]", errmsg);
 #endif
             s7_close_input_port(s7, sport);
             s7_shutdown(s7);

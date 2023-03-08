@@ -222,7 +222,7 @@ EXPORT int handle_findlib_meta(FTSENT *ftsentry) /* OBSOLETE */
     } else {
 #if defined(DEBUG_TRACE)
         log_warn("PARSED %s", utstring_body(buf));
-        if (debug_findlib)
+        if (mibl_debug_findlib)
             dump_package(0, pkg);
 #endif
 
@@ -321,7 +321,7 @@ void handle_findlib_pkg(// char *opam_switch_lib,
     (void)rc;
 
 #if defined(DEBUG_TRACE)
-    if (debug) log_debug("%-16s%s", "cwd:",  getcwd(NULL, 0));
+    if (mibl_debug) log_debug("%-16s%s", "cwd:",  getcwd(NULL, 0));
 #endif
 
     /* FTS* tree = NULL; */
@@ -343,7 +343,7 @@ void handle_findlib_pkg(// char *opam_switch_lib,
         /* fail */
         /* perror(utstring_body(meta_path)); */
 #if defined(DEBUG_TRACE)
-        if (debug)
+        if (mibl_debug)
             log_info("%s: %s", strerror(errno), utstring_body(meta_path));
 #endif
         chdir(old_cwd);
@@ -372,9 +372,9 @@ void handle_findlib_pkg(// char *opam_switch_lib,
         /* emitted_bootstrapper = false; */
     } else {
 #if defined(DEBUG_TRACE)
-        if (debug)
+        if (mibl_debug)
             log_warn("PARSED %s", utstring_body(meta_path));
-        if (debug_findlib)
+        if (mibl_debug_findlib)
             dump_package(0, pkg);
 #endif
     }
