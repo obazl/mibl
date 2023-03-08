@@ -2,12 +2,10 @@ load("@rules_cc//cc:defs.bzl", "cc_binary")
 
 ##########
 cc_binary(
-    name  = "deploy",
+    name  = "script",
+    linkstatic = True,
     srcs  = [
-        "deploy.c", "deploy.h",
-        "deploy_config.c", "deploy_config.h",
-        # "//src:mibl_config.h",
-        # "//src:fs.h"
+        "script.c", "script.h",
     ],
     defines = select({
         "//bzl/host:debug": ["DEBUG_TRACE"],
@@ -16,37 +14,41 @@ cc_binary(
         "//bzl/host:linux": ["_XOPEN_SOURCE=500"], # strdup
         "//conditions:default":   []
     }) + [
-        # "LD_LIBRARY_PATH=external/libs7/src"
+        "WITH_C_LOADER"
     ],
     copts = select({
-        # strdup is non-standard, not supported on linux in strict c11 mode
         "//bzl/host:macos": ["-std=c11"],
         "//bzl/host:linux": ["-std=gnu11"],
         "//conditions:default": ["-std=c11"],
     }) + [
-        # "-pedantic-errors",
         "-Wall",
+        "-Wpedantic",
         "-Wno-unused-function",
 
         "-I$(GENDIR)/src",
+
+        "-I$(GENDIR)/script",
+
+        "-I$(GENDIR)/external/mibl/script",
         "-I$(GENDIR)/external/mibl/src",
 
-        "-I$(GENDIR)/deploy",
-        "-I$(GENDIR)/external/mibl/deploy",
+        "-I$(GENDIR)/src/hdrs",
+        "-I$(GENDIR)/external/mibl/src/hdrs",
 
-        "-Iexternal/uthash/include",
-        "-Iexternal/libinih",
-        "-Iexternal/logc/src",
+        "-Ivendored/gopt",
+        "-Iexternal/mibl/vendored/gopt",
+
+        "-Ivendored/libinih",
+        "-Iexternal/mibl/vendored/libinih",
+
+        "-Ivendored/logc",
+        "-Iexternal/mibl/vendored/logc",
+
+
+        "-Ivendored/uthash",
+        "-Iexternal/mibl/vendored/uthash",
 
         "-Iexternal/libs7/src",
-        "-Iexternal/mibl/libs7/src",
-    ],
-    data = [
-        "//repl", # so we can find it in MANIFEST
-        "//scm:srcs",
-        "//scm/dune:srcs",
-        "//scm/meta:srcs",
-        "//scm/opam:srcs",
     ],
     linkopts = select({
         "//bzl/host:macos": [],
@@ -54,13 +56,23 @@ cc_binary(
         "//conditions:default": {}
     }) + [
         "-lm",
+        # "-lc_s7"
+    ],
+    data = [
+        "//scm:srcs",
+        "//scm/dune:srcs",
+        "//scm/meta:srcs",
+        "//scm/opam:srcs",
     ],
     deps = [
-        "//repl",
-        "//src:mibl", # since we depend on its config files
-        "//external/libinih:inih",
-        # "@logc//:logc",
+        "//src:mibl",
+        "//vendored/gopt",
+        "//vendored/libinih:inih",
+        "//vendored/logc",
+        "//vendored/uthash",
+
         # "@libs7//src:s7",
+        # "@libs7//src:c_s7",
         # "@libs7//vendored/linenoise",
     ],
     visibility = ["//visibility:public"]
@@ -70,19 +82,16 @@ cc_binary(
 genrule(
     name = "mkhdrs",
     srcs = [
-        "deploy.c",
-        "deploy_config.c"
+        "script.c",
     ],
     outs = [
-        "deploy.h",
-        "deploy_config.h"
+        "script.h",
     ],
     cmd = "\n".join([
-        "SRC1=$(location deploy.c)",
+        "SRC1=$(location script.c)",
         "SRCDIR1=`dirname $$SRC1`",
         "$(location @makeheaders//:makeheaders) \\",
-        "    $(location deploy.c) \\",
-        "    $(location deploy_config.c)",
+        "    $(location script.c);",
         "cp $${SRCDIR1}/*.h $(@D)",
     ]),
     tools = ["@makeheaders//:makeheaders"],

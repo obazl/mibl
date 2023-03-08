@@ -1,0 +1,122 @@
+;; https://dune.readthedocs.io/en/stable/concepts.html?highlight=progn#user-actions
+
+;; available actions:
+
+;; (run <prog> <args>) <prog> is resolved locally if it is available
+;; in the current workspace, otherwise it is resolved using the PATH
+
+;; (dynamic-run <prog> <args>) to execute a program that was linked against dune-action-plugin library. <prog> is resolved in the same way as in run
+
+;; (chdir <dir> <DSL>) to change the current directory
+
+;; (setenv <var> <value> <DSL>) to set an environment variable
+
+;; (with-<outputs>-to <file> <DSL>) to redirect the output to a file, where <outputs> is one of: stdout, stderr or outputs (for both stdout and stderr)
+
+;; (ignore-<outputs> <DSL>) to ignore the output, where <outputs> is one of: stdout, stderr or outputs
+
+;; (with-stdin-from <file> <DSL>) to redirect the input from a file
+
+;; (with-accepted-exit-codes <pred> <DSL>) specifies the list of expected exit codes for the programs executed in <DSL>. <pred> is a predicate on integer values, and is specified using the Predicate language. <DSL> can only contain nested occurrences of run, bash, system, chdir, setenv, ignore-<outputs>, with-stdin-from and with-<outputs>-to. This action is available since dune 2.0.
+
+;; (progn <DSL>...) to execute several commands in sequence
+
+;; (echo <string>) to output a string on stdout
+
+;; (write-file <file> <string>) writes <string> to <file>
+;;    Bazel: genrule, or custom rule using ctx.actions.write?
+;;    to the extent that writing src to a file is common,
+;;    an obazl rule might be in order,
+;;    e.g. ocaml_string_template or some such.
+;;    for now, custom tezos rules: tezos_template, tezos_file, etc.
+;;    or just a simple genrule
+;;    see tezos-protocol-compiler/dune_protocol.template
+
+;; e.g. (rule (alias buildtest) (deps test_clic.exe) (action (progn)))
+
+;; e.g.
+;; (rule
+;;  (targets environment.ml)
+;;  (action
+;;   (write-file %{targets}
+;;               "... string content ...
+;; ")))
+;; => tezos_file(name = "envfile", out = "environment.ml",
+;;               content = """...""")
+;; or
+;; tezos_template(name = "envfile" out = "environment.ml"
+;;                template = "filename.tpl", data = "...")
+
+;; (cat <file>) to print the contents of a file to stdout
+
+;; (copy <src> <dst>) to copy a file
+
+;; (copy# <src> <dst>) to copy a file and add a line directive at the beginning
+
+;; (system <cmd>) to execute a command using the system shell: sh on Unix and cmd on Windows
+
+;; (bash <cmd>) to execute a command using /bin/bash. This is obviously not very portable
+
+;; (diff <file1> <file2>) is similar to (run diff <file1> <file2>) but is better and allows promotion. See Diffing and promotion for more details
+
+;; (diff? <file1> <file2>) is similar to (diff <file1> <file2>) except that <file2> should be produced by a part of the same action rather than be a dependency, is optional and will be consumed by diff?.
+
+;; (cmp <file1> <file2>) is similar to (run cmp <file1> <file2>) but allows promotion. See Diffing and promotion for more details
+
+;; (no-infer <DSL>) to perform an action without inference of dependencies and targets. This is useful if you are generating dependencies in a way that Dune doesn’t know about, for instance by calling an external build system.
+
+;; (pipe-<outputs> <DSL> <DSL> <DSL>...) to execute several actions (at least two) in sequence, filtering the <outputs> of the first command through the other command, piping the standard output of each one into the input of the next. This action is available since dune 2.7.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; examples from tezos:
+
+;; (action (progn))  ;; in many places
+
+
+;; src/proto_000_Ps9mPmXa/lib_protocol/dune:
+;; (action
+;;  (run
+;;   %{libexec:tezos-protocol-compiler:replace}
+;;   %{libexec:tezos-protocol-compiler:dune_protocol.template}
+;;   "dune.inc.gen"
+;;   %{libexec:tezos-protocol-compiler:final_protocol_versions}))
+;; ...
+;; (action (diff dune.inc dune.inc.gen))
+
+;; src/proto_000_Ps9mPmXa/lib_protocol/dune.inc:
+;; (action
+;;   (write-file %{targets}
+;;               "module Name = struct let name = \"000-Ps9mPmXa\" end
+;; include Tezos_protocol_environment.MakeV0(Name)()
+;; module CamlinternalFormatBasics = struct include CamlinternalFormatBasics end
+;; "))
+;; ...
+;; (action
+;;  (with-stdout-to %{targets}
+;;    (chdir %{workspace_root}
+;;       (run %{bin:tezos-embedded-protocol-packer} "%{src_dir}" "000_Ps9mPmXa"))))
+
+
+;; src/proto_003_PsddFKi3/lib_protocol/dune.inc
+;; (action (with-stdout-to %{targets}
+;;            (chdir %{workspace_root}
+;;              (run %{bin:tezos-protocol-compiler.tezos-protocol-packer} %{src_dir})))))
+
+ ;; (action (run %{bin:tezos-protocol-compiler}  ./))
+
+;; src/bin_proxy_server/dune
+;;  (action (run %{lib:tezos-tooling:lint.sh} %{deps}))
+
+;; src/bind_codec:
+;; (rule
+;;  (action
+;;   (progn
+;;    (write-file void_for_linking-alpha.empty "")
+;;    (write-file void_for_linking-005-PsBabyM1.empty "")
+;;    (write-file void_for_linking-006-PsCARTHA.empty "")
+;;    (write-file void_for_linking-007-PsDELPH1.empty "")
+;;    (write-file void_for_linking-008-PtEdo2Zk.empty "")
+;;    (write-file void_for_linking-009-PsFLoren.empty "")
+;;    (write-file void_for_linking-010-PtGRANAD.empty "")
+;; )))
+

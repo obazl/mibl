@@ -40,10 +40,10 @@ struct mibl_config_s {
     bool emit_starlark;
     bool emit_mibl;
     bool emit_parsetree;
-    bool log_mibl;
-    bool log_parsetree;
-    bool log_exports;
-    bool log_starlark;
+    bool show_mibl;
+    bool show_parsetree;
+    bool show_exports;
+    bool show_starlark;
     UT_array *pkgs;
     UT_array *exclude_dirs;      /* overrides include_dirs */
     UT_array *include_dirs;
@@ -58,10 +58,10 @@ struct mibl_config_s mibl_config = {
     .emit_parsetree = false,
     .emit_mibl      = false,
     .emit_starlark  = true,
-    .log_exports      = false,
-    .log_mibl      = false,
-    .log_parsetree = false,
-    .log_starlark  = false,
+    .show_exports      = false,
+    .show_mibl      = false,
+    .show_parsetree = false,
+    .show_starlark  = false,
     .libct          = 0
 };
 
@@ -109,16 +109,16 @@ LOCAL int _miblrc_handler(void* config, const char* section, const char* name, c
     if (MATCH("mibl", "log")) {
         if (verbose && verbosity > 1) log_debug("miblrc [mibl] log: %s", value);
         if (strncmp(value, "exports", 7) == 0) {
-            pconfig->log_exports = true;
+            pconfig->show_exports = true;
         }
         else if (strncmp(value, "mibl", 4) == 0) {
-            pconfig->log_mibl = true;
+            pconfig->show_mibl = true;
         }
         else if (strncmp(value, "parsetree", 9) == 0) {
-            pconfig->log_parsetree = true;
+            pconfig->show_parsetree = true;
         }
         else if (strncmp(value, "starlark", 8) == 0) {
-            pconfig->log_starlark = true;
+            pconfig->show_starlark = true;
         }
         else {
             log_error("mibl ini file: invalid value %s for 'log' in section 'mibl'; allowed values: exports, mibl, parsetree", value);
@@ -255,19 +255,27 @@ LOCAL int _miblrc_handler(void* config, const char* section, const char* name, c
     return 1;
 }
 
-LOCAL void _log_mibl_config(void)
+LOCAL void _show_mibl_config(void)
 {
     /* log_debug("dump_mibl_config:"); */
     char **p;
     p = NULL;
     while ( (p=(char**)utarray_next(mibl_config.include_dirs,p))) {
-        log_debug("  include: %s",*p);
+        log_info("  include: %s",*p);
     }
     p = NULL;
     while ( (p=(char**)utarray_next(mibl_config.exclude_dirs,p))) {
-        log_debug("  exclude: %s",*p);
+        log_info("  exclude: %s",*p);
     }
     /* log_debug("dump_mibl_config finished"); */
+}
+
+EXPORT void show_mibl_config(void)
+{
+    log_info(GRN "mibl configuration summary:" CRESET);
+    _show_mibl_config();
+    log_info(GRN "End mibl configuration summary." CRESET);
+    fflush(NULL);
 }
 
 EXPORT void mibl_configure(void)
@@ -328,57 +336,66 @@ EXPORT void mibl_configure(void)
 
  summary:
     if (verbose && verbosity > 1) {
-        log_info(GRN "mibl configuration summary:" CRESET);
-        _log_mibl_config();
-        log_info(GRN "End mibl configuration summary." CRESET);
-        fflush(NULL);
+        show_mibl_config();
     }
 }
 
 UT_string *setter;
 
+/* FIXME: if var does not exist, create it.
+   That way users can use globals to pass args to -main.
+ */
 EXPORT void mibl_set_flag(char *flag, bool val) {
-    log_debug("mibl_set_flag");
+    /* log_debug("mibl_set_flag"); */
     utstring_renew(setter);
     utstring_printf(setter, "(set! %s %s)",
                     flag, val? "#t": "#f");
     s7_eval_c_string(s7, utstring_body(setter));
 }
 
-EXPORT struct mibl_config_s *mibl_init(void)
+EXPORT struct mibl_config_s *mibl_init(char *scm_dir)
 {
+    log_debug("mibl_init: %s", scm_dir);
     /* config in this order: first bazel, then mibl, then s7 */
     bazel_configure(); // getcwd(NULL, 0));
 
     mibl_configure();
 
-    log_debug("mibl_configure done");
+    /* log_debug("mibl_configure done"); */
     /* if (options[FLAG_ONLY_CONFIG].count) { */
     /*     log_info("configuration complete, exiting"); */
     /*     exit(EXIT_SUCCESS); */
     /* } */
 
-    s7 = s7_configure();
-    log_debug("s7_configure done");
+    s7 = s7_configure(scm_dir);
+    /* log_debug("s7_configure done"); */
 
     utstring_new(setter);
 
-    /* if (verbose) */
-    /*     log_info("*load-path*: %s", TO_STR(s7_load_path(s7))); */
+    if (verbose) {
+        log_info("pwd: %s", getcwd(NULL,0));
+        log_info("*load-path*: %s", TO_STR(s7_load_path(s7)));
+    }
     return &mibl_config;
 }
 
-EXPORT void mibl_run(char *ws, char *main)
+EXPORT void mibl_run(char *main_script, char *ws)
 {
+    log_debug("mibl_run: %s", main_script);
     /* s7_load(s7, "starlark.scm"); */
 
-    s7_load(s7, main);  // "convert_dune.scm");
+    // check main_script?
 
-    /* FIXME: main routine should be '-main' */
-    s7_pointer _main = s7_name_to_value(s7, "dune->obazl");
+    s7_pointer x = s7_load(s7, main_script);  // "convert_dune.scm");
+    if (x == s7_undefined(s7)) {
+        log_error(RED "Could not find load main_script; exiting\n");
+        exit(EXIT_FAILURE);
+    }
+
+    s7_pointer _main = s7_name_to_value(s7, "-main");
 
     if (_main == s7_undefined(s7)) {
-        log_error(RED "Could not find procedure 'dune->obazl'; exiting\n");
+        log_error(RED "Could not find procedure -main; exiting\n");
         exit(EXIT_FAILURE);
     }
 

@@ -1,0 +1,13 @@
+filegroup(
+    name = "srcs",
+    data = ["libmibl.scm",      # library routines
+            "mibl_main.scm",    # -main routine for mibl tools
+            "mibl_pp.scm",
+            "dune.scm",
+            "meta.scm",
+            "opam.scm"],
+    visibility = ["//visibility:public"]
+)
+
+# exports_files(["dune.scm", "meta.scm", "opam.scm"])
+

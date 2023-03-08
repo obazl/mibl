@@ -144,18 +144,18 @@ cc_library(
     # ],
     hdrs = ["//src/hdrs:libmibl.h"], ## "log.h"],
     data = [
-        "//mibl:srcs",
-        "//mibl/dune:srcs",
-        "//mibl/meta:srcs",
-        "//mibl/opam:srcs"
+        "//scm:srcs",
+        "//scm/dune:srcs",
+        "//scm/meta:srcs",
+        "//scm/opam:srcs"
     ],
     # data = [
-    #     "//mibl:dune.scm",
-    #     "//mibl/dune:srcs",
-    #     "//mibl:meta.scm",
-    #     "//mibl/meta:srcs",
-    #     "//mibl:opam.scm",
-    #     "//mibl/opam:srcs",
+    #     "//scm:dune.scm",
+    #     "//scm/dune:srcs",
+    #     "//scm:meta.scm",
+    #     "//scm/meta:srcs",
+    #     "//scm:opam.scm",
+    #     "//scm/opam:srcs",
     # ],
     defines = select({
         "//bzl/host:debug": ["DEBUG_TRACE", "DEBUG_MIBL"],
@@ -335,6 +335,7 @@ cc_library(
     copts = COPTS + [
         "-Isrc",
         "-I$(GENDIR)/src",
+
         "-Iexternal/mibl/src",
         "-I$(GENDIR)/external/mibl/src",
 

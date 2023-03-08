@@ -1,0 +1,3 @@
+((:ws-path "/private/var/tmp/_bazel_gar/6675c906ec3a331e206e11211d4c18ac/execroot/mibl/bazel-out/darwin-dbg/bin/mibl/test/library/multiple/multiple_test.runfiles/mibl") (:pkg-path "mibl/test/library/multiple")
+  (:realpath "/private/var/tmp/_bazel_gar/6675c906ec3a331e206e11211d4c18ac/execroot/mibl/bazel-out/darwin-dbg/bin/mibl/test/library/multiple/multiple_test.runfiles/mibl/mibl/test/library/multiple")
+  (:files (:static "multiple_test")) (:cc-srcs (:static "multiple_test.c")))

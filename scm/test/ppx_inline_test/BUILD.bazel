@@ -17,32 +17,15 @@ BOOTSTRAP_INCLUDES = [
     "-I$(GENDIR)/src",
 ]
 
-##########
-cc_binary(
-    name  = "driver",
-    srcs  = ["driver.c",
-             "//src:bazel_config.h",
-             "@uthash//:include",
-             ],
-    data = [
-        "//scm:dune.scm",
-        "//scm/dune:srcs"
-    ],
-    # defines = select({
-    #     "//bzl/debug/trace": [], # "DEBUG_TRACE"],
-    #     "//conditions:default":   []
-    # }),
-    copts = CMD_FLAGS + BOOTSTRAP_INCLUDES + [
-    ],
-    deps = ["//src:mibl"],
-)
-
-################################################################
+########
 cc_test(
-    name = "demo_test",
-    srcs = ["template_unity_test.c"],
+    name = "ppx_inline_test",
+    srcs = ["ppx_assert_test.c"],
     copts = CMD_FLAGS + BOOTSTRAP_INCLUDES + [
         "-I$(GENDIR)/src/hdrs",
+
+        "-Ivendored/gopt",
+        "-Iexternal/mibl/vendored/gopt",
 
         "-Ivendored/logc",
         "-Iexternal/mibl/vendored/logc",
@@ -54,7 +37,10 @@ cc_test(
         "-Iexternal/mibl/vendored/uthash",
 
         "-Iexternal/libs7/src"  # s7.h
-    ],
+    ] + select({
+        "//bzl/host:debug": [""],
+        "//conditions:default":   []
+    }),
     data = [
         "//scm/dune:srcs"
     ],
@@ -70,6 +56,7 @@ cc_test(
     }),
     deps = [
         "//src:mibl",
+        "//vendored/gopt",
         "//vendored/logc",
         "//vendored/unity",
         "//vendored/uthash",

@@ -1,3 +1,9 @@
+(if *debug-loads*
+    (format #t "loading libmibl.scm~%"))
+
+(load "dune.scm")
+(load "mibl_pp.scm")
+
 (define (emit-mibl-pkg pkg)
   (if *debugging*
       (format #t "~A: ~A~%" (yellow "emit-mibl-pkg") pkg)

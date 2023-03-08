@@ -435,6 +435,16 @@ s7_pointer _load_string_lt()
     return string_lt;
 }
 
+/* mibl load path
+
+   bazel env: distro srcs already in runfiles
+
+   standalone mibl: distro scm srcs in /usr/local/share/mibl
+
+   user mibl srcs: always in XDG_DATA_HOME/obazl/mibl
+
+ */
+
 /* setting *load-path* in bazel env: two strategies
    1. generic: iterate over runfiles, add each dir containing .scm files
    2. specific: we know where the scm dirs are, just hardcode them
@@ -442,26 +452,43 @@ s7_pointer _load_string_lt()
    this is not a general purpose routine for use with any runfiles, so
    we use strategy 2, listing runfiles dirs that should be available
    when run under bazel run or bazel test.
+
+   the problem with this is layering. mibl uses one known set of scm
+   dirs, which is fine to hardcode here, since this is mibl. but
+   tools_obazl/convert adds its own, and other apps will have their
+   own. which are always listed in the runfiles. so we must deal with
+   runfiles like it or not.
+
 */
 char *scm_runfiles_dirs[] = {
-    "mibl",
-    "mibl/dune",
-    "mibl/meta",
-    "mibl/opam",
-    "external/libs7/libs7",
+    /* this seems to work when pgm is run from mibl repo or as external */
+    /* minimum: mibl/libs7 */
+    "../libs7/scm",
+    "../mibl/scm",
+    "../mibl/scm/dune",
+    "../mibl/scm/meta",
+    "../mibl/scm/opam",
+
+    /* starlark */
+    /* "../obazl/obazlark", */
+    /* "../obazl/obazlark/starlark", */
+
     "" /* do not remove terminating null */
 };
 char **scm_dir;
 
-
 LOCAL void _config_s7_load_path_bazel_test_env(void)
 {
     s7_pointer tmp_load_path = s7_list(s7, 0);
-
+#ifdef BAZEL_CURRENT_REPOSITORY
+    log_debug("bazel_current_repo: " BAZEL_CURRENT_REPOSITORY);
+#endif
     scm_dir = scm_runfiles_dirs;
     char *tmpdir;
     while (strlen(*scm_dir) != 0) {
+        log_debug("scm_dir: %s", *scm_dir);
         tmpdir = realpath(*scm_dir, NULL);
+        log_debug("tmpscm: %s", tmpdir);
         tmp_load_path =
             s7_append(s7, tmp_load_path,
                       s7_list(s7, 1,
@@ -472,7 +499,9 @@ LOCAL void _config_s7_load_path_bazel_test_env(void)
     s7_define_variable(s7, "*load-path*", tmp_load_path);
 }
 
-LOCAL void _config_s7_load_path_bazel_run_env(char *manifest)
+/* we must read the manifest, because we do not know what clients may
+   add as scm runtime deps. */
+LOCAL __attribute__((unused)) void _config_s7_load_path_bazel_run_env(char *manifest)
 {
     FILE * fp;
     char * line = NULL;
@@ -636,7 +665,7 @@ LOCAL void _config_s7_load_path_rootws(void)
 
 LOCAL void _config_user_load_path(void)
 {
-    char *_user_script_dir = HOME_MIBL;
+    char *_user_script_dir = HOME_MIBL; //FIXME: XDG_DATA_HOME/obazl/mibl
     UT_string *user_script_dir;
     char *homedir = getenv("HOME");
 
@@ -835,7 +864,8 @@ EXPORT void set_load_path(void) // char *scriptfile)
        good-faith attempt is made to replicate the environment tests
        are usually run in.
   */
-    /* BAZEL_TEST will be in the env when run under bazel test */
+    /* BAZEL_TEST will be in the env when the target is a test rule,
+       whether run under bazel test or bazel run. */
 
     char *manifest = "../MANIFEST";
 
@@ -843,6 +873,9 @@ EXPORT void set_load_path(void) // char *scriptfile)
 #if defined(DEBUG_TRACE)
         if (verbose) log_info("Configuring s7 for bazel test env.");
 #endif
+        //FIXME: only way find dirs for the s7 *load-path* is to crawl
+        //the runfiles dir looking for scm files.
+        /* _config_s7_load_path_bazel_run_env(manifest); */
         _config_s7_load_path_bazel_test_env();
         s7_pointer lp = s7_load_path(s7);
         (void)lp;
@@ -862,7 +895,7 @@ EXPORT void set_load_path(void) // char *scriptfile)
             _config_user_load_path();
         } else {
             if (verbose) log_info("Configuring for bazel env.");
-            /* Running under bazel: do NOT put XDG dirs in load-path. This
+            /* Running under bazel: do NOT put XDG dirs in load-path? This
                ensures a pristine runtime env. The user can always add
                directories to load-path. The only exception is the
                project-local script directory in <projroot>/.mibl . */
@@ -872,14 +905,16 @@ EXPORT void set_load_path(void) // char *scriptfile)
             /*             log_debug("1 *LOAD-PATH*: %s", TO_STR(lp)); */
             /*         } */
             /* #endif */
-            _config_s7_load_path_bazel_run_env(manifest);
+
+            /* _config_s7_load_path_bazel_run_env(manifest); */
+            _config_s7_load_path_bazel_test_env();
             s7_pointer lp = s7_load_path(s7);
             (void)lp;
-#if defined(DEBUG_TRACE)
-            if (debug) {
+/* #if defined(DEBUG_TRACE) */
+/*             if (debug) { */
                 log_debug("2 *LOAD-PATH*: %s", TO_STR(lp));
-            }
-#endif
+/*             } */
+/* #endif */
         }
     }
     _config_s7_load_path_rootws();
@@ -1187,11 +1222,6 @@ void _define_s7_global_vars(void)
         log_debug("exclusions list: %s", TO_STR(_s7_exclusions));
 #endif
     s7_define_variable(s7, "*scan-exclusions*", _s7_exclusions);
-    log_debug("SCAN-EXCLUSIONS: %s", NM_TO_STR("*scan-exclusions*"));
-    /* p = utarray_find(mibl_config.exclude_dirs, */
-    /*                  &ptr, */
-    /*                  /\* &ftsentry->fts_path, *\/ */
-    /*                  strsort); */
 }
 
 EXPORT void show_s7_config(void)
@@ -1249,7 +1279,7 @@ EXPORT void show_s7_config(void)
 }
 
 /* FIXME: rename s7_configure_for_dune */
-EXPORT s7_scheme *s7_configure(void)
+EXPORT s7_scheme *s7_configure(char *main_script)
 {
 #if defined(DEBUG_TRACE)
     if (debug)
@@ -1273,20 +1303,33 @@ EXPORT s7_scheme *s7_configure(void)
 
     set_load_path(); //callback_script_file);
 
+    // we need to do this before we chdir to repo root
+    if (main_script) {
+        UT_string *tmp;
+        utstring_new(tmp);
+        utstring_printf(tmp, "../%s", main_script);
+        char *realmain = realpath(utstring_body(tmp), NULL);
+        log_debug("realmain %s", realmain);
+
+        s7_pointer result = s7_add_to_load_path(s7, realmain);
+        (void)result;
+        log_info("*load-path*: %s", TO_STR(s7_load_path(s7)));
+    }
     /* init_glob(s7); */
 
     /* s7_config_repl(s7); */
     /* s7_repl(s7); */
 
-    if (!s7_load(s7, "dune.scm")) {
-        log_error("Can't load dune.scm");
+    //TODO: what should be loaded by default and what left to user?
+    if (!s7_load(s7, "libmibl.scm")) {
+        log_error("Can't load libmibl.scm");
         exit(EXIT_FAILURE);
     }
 
-    if (!s7_load(s7, "mibl_pp.scm")) {
-        log_error("Can't load mibl_pp.scm");
-        exit(EXIT_FAILURE);
-    }
+    /* if (!s7_load(s7, "mibl_pp.scm")) { */
+    /*     log_error("Can't load mibl_pp.scm"); */
+    /*     exit(EXIT_FAILURE); */
+    /* } */
 
     _init_scheme_fns(s7);       /* call _after_ loading dune.scm */
 

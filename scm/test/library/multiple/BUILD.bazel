@@ -1,5 +1,9 @@
 load("@rules_cc//cc:defs.bzl", "cc_library")
 
+## FIXME: running under test, the program (multiple_test) will be in
+## the runfiles dir so it will be found by the treewalker. fix
+## load_project to detect and avoid this.
+
 CMD_FLAGS = [
     "-std=c11",
     "-pedantic-errors",
@@ -17,32 +21,17 @@ BOOTSTRAP_INCLUDES = [
     "-I$(GENDIR)/src",
 ]
 
-##########
-cc_binary(
-    name  = "driver",
-    srcs  = ["driver.c",
-             "//src:bazel_config.h",
-             "@uthash//:include",
-             ],
-    data = [
-        "//scm:dune.scm",
-        "//scm/dune:srcs"
-    ],
-    # defines = select({
-    #     "//bzl/debug/trace": [], # "DEBUG_TRACE"],
-    #     "//conditions:default":   []
-    # }),
-    copts = CMD_FLAGS + BOOTSTRAP_INCLUDES + [
-    ],
-    deps = ["//src:mibl"],
-)
-
-################################################################
+########
 cc_test(
-    name = "demo_test",
-    srcs = ["template_unity_test.c"],
+    name = "multiple_test",
+    srcs = ["multiple_test.c"],
+    data = glob(["**"]),
+    # data = glob(["case010/*", "case020/*"]),
     copts = CMD_FLAGS + BOOTSTRAP_INCLUDES + [
         "-I$(GENDIR)/src/hdrs",
+
+        "-Ivendored/gopt",
+        "-Iexternal/mibl/vendored/gopt",
 
         "-Ivendored/logc",
         "-Iexternal/mibl/vendored/logc",
@@ -54,10 +43,13 @@ cc_test(
         "-Iexternal/mibl/vendored/uthash",
 
         "-Iexternal/libs7/src"  # s7.h
-    ],
-    data = [
-        "//scm/dune:srcs"
-    ],
+    ] + select({
+        "//bzl/host:debug": [""],
+        "//conditions:default":   []
+    }),
+    # data = [
+    #     "//scm/dune:srcs"
+    # ],
     defines = select({
         "//bzl/host:debug": ["DEBUG_TRACE", "DEBUG_MIBL"],
         "//conditions:default":   []
@@ -70,8 +62,10 @@ cc_test(
     }),
     deps = [
         "//src:mibl",
+        "//vendored/gopt",
         "//vendored/logc",
         "//vendored/unity",
         "//vendored/uthash",
     ],
+    timeout = "short"
 )
