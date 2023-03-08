@@ -12,7 +12,7 @@
       )
   (load "s7/write.scm")
   (let* ((pkg-path (car (assoc-val :pkg-path pkg)))
-         (mibl-file (string-append pkg-path "/BUILD.mibl"))
+         (mibl-file (string-append pkg-path "/PKG.mibl"))
          (outp
           (catch #t
                  (lambda ()
@@ -23,23 +23,6 @@
     (if *mibl-debugging*
         (format #t "~A: ~A~%" (yellow "Emitting") mibl-file))
     (pretty-print pkg outp)
-    (close-output-port outp)))
-
-(define (emit-mibl-ws ws)
-  (if *mibl-debugging*
-      (format #t "~A: ~A~%" (yellow "emit-mibl-ws") ws))
-  (let* ((ws-path (car (assoc-val :path (cdr ws))))
-         (mibl-file (format #f "~A/WORKSPACE.mibl"  ws-path))
-         (outp
-          (catch #t
-                 (lambda ()
-                   (open-output-file mibl-file))
-                 (lambda args
-                   (error 'OPEN_ERROR_EMIT (format #f "OPEN ERROR: ~A~%" mibl-file)))
-                 )))
-    (if *mibl-debugging*
-        (format #t "~A: ~A~%" (yellow "Emitting") mibl-file))
-    (mibl-pretty-print ws outp)
     (close-output-port outp)))
 
 (define (emit-mibl-pkgs)
@@ -63,6 +46,23 @@
                 ))
              *mibl-project*))
 
+(define (emit-mibl-ws ws)
+  (if *mibl-debugging*
+      (format #t "~A: ~A~%" (yellow "emit-mibl-ws") ws))
+  (let* ((ws-path (car (assoc-val :path (cdr ws))))
+         (mibl-file (format #f "~A/WS.mibl"  ws-path))
+         (outp
+          (catch #t
+                 (lambda ()
+                   (open-output-file mibl-file))
+                 (lambda args
+                   (error 'OPEN_ERROR_EMIT (format #f "OPEN ERROR: ~A~%" mibl-file)))
+                 )))
+    (if *mibl-debugging*
+        (format #t "~A: ~A~%" (yellow "Emitting") mibl-file))
+    (mibl-pretty-print ws outp)
+    (close-output-port outp)))
+
 (define (emit-mibl-wss)
   (if *mibl-debugging*
       (format #t "~%~A~%" (yellow "emit-mibl-wss")))
@@ -71,3 +71,7 @@
                   (format #t "~A: ~A~%" (yellow "ws") ws))
               (emit-mibl-ws ws))
             *mibl-project*))
+
+(define (mibl-clean-mibl)
+  (format #t "cleaning mibl - NOT IMPLEMENTED yet.\n")
+  )

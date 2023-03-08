@@ -25,6 +25,8 @@
 
 #include "load_project.h"
 
+bool mibl_show_traversal = false;
+
 UT_array  *segs;
 UT_string *group_tag;
 
@@ -3469,8 +3471,8 @@ EXPORT s7_pointer g_load_project(s7_scheme *s7,  s7_pointer args)
 
     /* trace = true; */
 
-/* #if defined(DEBUG_TRACE) */
-/*     if (mibl_debug_mibl_crawl) { */
+#if defined(DEBUG_TRACE)
+    if (mibl_debug_mibl_crawl) {
         log_debug(RED "g_load_project" CRESET ", args: %s", TO_STR(args));
         log_debug("cwd: %s", getcwd(NULL, 0));
         log_debug("build_wd: %s (=BUILD_WORKING_DIRECTORY)", build_wd);
@@ -3478,8 +3480,8 @@ EXPORT s7_pointer g_load_project(s7_scheme *s7,  s7_pointer args)
         log_debug("base ws root: %s", rootws);
         log_debug("effective ws root: %s", ews_root);
         log_debug("cwd: %s", getcwd(NULL, 0));
-/*     } */
-/* #endif */
+    }
+#endif
 
     /* s7_pointer wss =  */
     ///s7_pointer root_ws =
@@ -3847,8 +3849,8 @@ bool _include_this(FTSENT *ftsentry)
 
 EXPORT s7_pointer load_project(const char *home_sfx, const char *traversal_root)
 {
-/* #if defined(DEBUG_TRACE) */
-/*     if (mibl_debug_mibl_crawl) { */
+#if defined(DEBUG_TRACE)
+    if (mibl_debug_mibl_crawl) {
         log_debug(BLU "load_project" CRESET);
         log_debug("%-16s%s", "cwd:", getcwd(NULL, 0));
         log_debug("%-16s%s", "launch_dir:", launch_dir);
@@ -3856,8 +3858,8 @@ EXPORT s7_pointer load_project(const char *home_sfx, const char *traversal_root)
         log_debug("%-16s%s", "effective ws:", ews_root);
         log_debug("%-16s%s", "home_sfx:", home_sfx);
         log_debug("%-16s%s", "traversal_root:", traversal_root);
-/*     } */
-/* #endif */
+    }
+#endif
     /*
       FIXME: traversal root(s) to be determined by miblrc.srcs.include
       default is cwd, but if miblrc designates 'include' dirs, then
@@ -3865,11 +3867,11 @@ EXPORT s7_pointer load_project(const char *home_sfx, const char *traversal_root)
      */
 
     if (traversal_root) {
-        log_debug("Atr cwd: %s", getcwd(NULL, 0));
+        /* log_debug("Atr cwd: %s", getcwd(NULL, 0)); */
         char *tr = realpath(traversal_root, NULL);
-        log_debug("reapath tr %s", tr);
+        /* log_debug("reapath tr %s", tr); */
         chdir(tr);  // (traversal_root);
-        log_debug("Btr cwd: %s", getcwd(NULL, 0));
+        /* log_debug("Btr cwd: %s", getcwd(NULL, 0)); */
         traversal_root = ".";
     }
 
@@ -3970,13 +3972,14 @@ EXPORT s7_pointer load_project(const char *home_sfx, const char *traversal_root)
         [0] = (char *const)traversal_root,
         NULL
     };
-/* #if defined(DEBUG_TRACE) */
-/*     if (mibl_debug_mibl_crawl) */
-    log_debug("cwd: %s", getcwd(NULL, 0));
+#if defined(DEBUG_TRACE)
+    if (mibl_debug_mibl_crawl) {
+        log_debug("cwd: %s", getcwd(NULL, 0));
         log_debug("_traversal_root: %s", _traversal_root[0]);
         log_debug("real _traversal_root: %s",
                          realpath(_traversal_root[0], NULL));
-/* #endif */
+    }
+#endif
 
     errno = 0;
     tree = fts_open(_traversal_root,
@@ -4005,13 +4008,13 @@ EXPORT s7_pointer load_project(const char *home_sfx, const char *traversal_root)
 #endif
     /* s7_int pkg_tbl_gc_loc = s7_gc_protect(s7, pkg_tbl); */
 
-    if (verbose) {
-        log_info(GRN "Traversal root:" CRESET " %s",
-                 _traversal_root[0]);
-                 // resolved_troot);
-        fflush(NULL);
-        /* log_info(GRN " with cwd:" CRESET " at %s", getcwd(NULL, 0)); */
-    }
+    /* if (verbose) { */
+    /*     log_info(GRN "Traversal root:" CRESET " %s", */
+    /*              _traversal_root[0]); */
+    /*              // resolved_troot); */
+    /*     fflush(NULL); */
+    /*     /\* log_info(GRN " with cwd:" CRESET " at %s", getcwd(NULL, 0)); *\/ */
+    /* } */
 
     /* TRAVERSAL STARTS HERE */
     if (NULL != tree) {
@@ -4154,20 +4157,17 @@ EXPORT s7_pointer load_project(const char *home_sfx, const char *traversal_root)
 
     fflush(NULL);
 
-    if (verbose && verbosity > 1) {
-        fprintf(stderr, "");
-        fprintf(stdout, "");
+    if (mibl_show_traversal) {
         fflush(NULL);
         log_info(GRN "Traversal summary:" CRESET);
-        log_info("\tBUILD_WORKSPACE_DIRECTORY: %s",
-                 getenv("BUILD_WORKSPACE_DIRECTORY"));
-        log_info("\ttraversal root: %s", _traversal_root[0]);
-        log_info("\tcwd:    %s", getcwd(NULL, 0));
-        log_info("\trootws: %s", rootws);
+        log_info("\troot ws:\t\t%s", getenv("BUILD_WORKSPACE_DIRECTORY"));
+        /* log_info("\troot ws:\t\t%s", rootws); */
+        log_info("\teffective ws (cwd):\t%s", getcwd(NULL, 0));
+        log_info("\ttraversal root:\t\t%s", _traversal_root[0]);
         /* log_info("ews: %s", ews_root); */
-        log_info("\tdir count: %d", dir_ct);
-        log_info("\tfile count: %d", file_ct);
-        log_info("\tdunefile count: %d", dunefile_ct);
+        log_info("\tdir count:\t\t%d", dir_ct);
+        log_info("\tfile count:\t\t%d", file_ct);
+        log_info("\tdunefile count:\t\t%d", dunefile_ct);
 
         /* FIXME: do we need gc_protect here? */
         s7_int gc_loc;
@@ -4175,8 +4175,8 @@ EXPORT s7_pointer load_project(const char *home_sfx, const char *traversal_root)
 
         /* log_info("pkg_tbl:"); */
         /* fprintf(stderr, "%s\n", TO_STR(pkg_tbl)); */
-        log_info("*mibl-project:");
-        fprintf(stdout, "%s\n", NM_TO_STR("*mibl-project*"));
+        /* log_info("*mibl-project:"); */
+        /* fprintf(stdout, "%s\n", NM_TO_STR("*mibl-project*")); */
         s7_flush_output_port(s7, s7_current_output_port(s7));
         s7_flush_output_port(s7, s7_current_error_port(s7));
         s7_gc_unprotect_at(s7, gc_loc);

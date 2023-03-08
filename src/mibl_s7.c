@@ -45,7 +45,8 @@ EXPORT void mibl_s7_set_flag(char *flag, bool val) {
 
     s7_pointer fld = s7_name_to_value(s7, flag);
     if (fld == s7_undefined(s7)) {
-        log_info("Flag %s undefined, defining", flag);
+        if (verbose && verbosity > 1)
+            log_info("Flag %s undefined, defining", flag);
         s7_define_variable(s7, flag, val? s7_t(s7) : s7_f(s7));
         return;
     }
@@ -88,14 +89,11 @@ EXPORT struct mibl_config_s *mibl_s7_init(char *scm_dir, char *ws_root)
 
 EXPORT void mibl_s7_run(char *main_script, char *ws)
 {
-/* #if defined(DEBUG_TRACE) */
-/*     if (mibl_trace) */
+#if defined(DEBUG_TRACE)
+    if (mibl_trace)
     log_debug("mibl_run: %s, %s", main_script, ws);
     log_debug("mibl_run cwd: %s", getcwd(NULL, 0));
-/* #endif */
-    /* s7_load(s7, "starlark.scm"); */
-
-    // check main_script?
+#endif
 
     if (main_script) {
         if (!s7_load(s7, main_script)) {

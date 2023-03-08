@@ -325,7 +325,7 @@ EXPORT void bazel_configure(char *ws_root) // char *_exec_root)
 
     /* if ( !getenv("BAZEL_TEST") ) */
     _set_rootws(ws_root);
-    log_debug("rootws: %s", rootws);
+    /* log_debug("rootws: %s", rootws); */
     /* mibl_config(); */
     /* utarray_new(src_files,&ut_str_icd); */
 

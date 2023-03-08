@@ -6,8 +6,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (-mibl-load-project root path)
-  (format #t "~A: ~A (~A)~%" (blue "-mibl-load-project") path (type-of path))
-  (format #t "pwd: ~A~%" (pwd))
+  (if *mibl-debugging*
+      (begin
+        (format #t "~A: ~A (~A)~%" (blue "-mibl-load-project") path (type-of path))
+        (format #t "pwd: ~A~%" (pwd))))
   (let* ((_wss  (if path (mibl-load-project #|(pwd)|# path)
                     (mibl-load-project)))
          ;; (_ (format #t "~A: ~A~%" (green "_wss") _wss))
@@ -15,7 +17,7 @@
     _wss))
 
 (define (-miblize ws)
-  (if #t ;; *mibl-debugging*
+  (if *mibl-debugging*
       (format #t "~A: ~A~%" (blue "-miblize") ws))
   (let* ((@ws (assoc-val ws *mibl-project*))
          (pkgs (car (assoc-val :pkgs @ws)))
@@ -36,8 +38,8 @@
         ;; (_ (for-each (lambda (k)
         ;;                (format #t "~A: ~A~%" (blue "pkg") k))
         ;;              (sort! (hash-table-keys pkgs) string<?)))
-    (if #t ;; *mibl-debugging*
-        (format #t "~A: ~A~%" (blue "mpkg ct") (length mpkg-alist)))
+    (if *mibl-debugging*
+        (format #t "~A: ~A~%" (blue "mibl pkg ct") (length mpkg-alist)))
     mpkg-alist))
 
 (define (-resolve-labels ws)
@@ -107,6 +109,9 @@
     (if *mibl-emit-wss*
         (emit-mibl-wss))
 
+    (if *mibl-emit-pkgs*
+        (emit-mibl-pkgs))
+
     (if *mibl-show-mibl*
         (begin
           (format #t "~A~%" (bgred "MIBL"))
@@ -144,9 +149,10 @@
   '())
 
 (define* (-main root-path ws-path)
-  (set! *mibl-debugging* #t)
-  (call-with-exit (lambda (return)
-                    (-dune->mibl return root-path ws-path))))
+  (if *mibl-clean-mibl*
+      (mibl-clean-mibl)
+      (call-with-exit (lambda (return)
+                        (-dune->mibl return root-path ws-path)))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

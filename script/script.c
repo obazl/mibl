@@ -15,6 +15,7 @@ extern bool mibl_debug_mibl_crawl;
 extern bool mibl_trace;
 #endif
 
+extern bool mibl_show_traversal;
 extern bool verbose;
 
 extern char *ews_root;
@@ -31,8 +32,11 @@ enum OPTS {
     FLAG_SHOW_CONFIG,
     FLAG_SHOW_MIBL,
     FLAG_SHOW_PARSETREE,
+    FLAG_SHOW_TRAVERSAL,
     FLAG_DEBUG,
     FLAG_DEBUG_LOAD_PROJECT,
+
+    FLAG_CLEAN_MIBL,
 
     FLAG_EMIT_WSS,
     FLAG_EMIT_PKGS,
@@ -80,8 +84,18 @@ void _update_s7_globals(struct option options[])
 
     if (options[FLAG_EMIT_WSS].count)
         mibl_s7_set_flag("*mibl-emit-wss*", true);
+    else
+        mibl_s7_set_flag("*mibl-emit-wss*", false);
+
     if (options[FLAG_EMIT_PKGS].count)
         mibl_s7_set_flag("*mibl-emit-pkgs*", true);
+    else
+        mibl_s7_set_flag("*mibl-emit-pkgs*", false);
+
+    if (options[FLAG_CLEAN_MIBL].count)
+        mibl_s7_set_flag("*mibl-clean-mibl*", true);
+    else
+        mibl_s7_set_flag("*mibl-clean-mibl*", false);
 }
 
 void _print_version(void) {
@@ -95,9 +109,14 @@ void _print_usage(void) {
            "\tPath to script containing -main routine. (REQUIRED)\n");
     printf("\n");
     printf("Flags:\n");
+    printf("\t    --emit-wss\t\tSet var *mibl-emit-wss*; default script writes ORKSPACE.mibl files.\n");
+    printf("\t    --emit-pkgs\t\tSet var *mibl-emit-pkgs; default script writes PKG.mibl files.\n");
+    printf("\t    --clean-mibl\tSet var *mibl-rm-mibl*; default script removes WORKSPACE.mibl and PKG.mibl files.\n");
+
     printf("\t    --show-config\tPrint configuration to stdout and exit.\n");
     printf("\t    --show-mibl\t\tPrint mibl to stdout.\n");
-    printf("\t    --show-parsetree\t\tPrint parsetree to stdout and exit.\n");
+    printf("\t    --show-parsetree\tPrint parsetree to stdout and exit.\n");
+    printf("\t    --show-traversal\tPrint statistics on traversal.\n");
     printf("\t-d, --debug\t\tEnable all debugging flags.\n");
     printf("\t-t, --trace\t\tEnable trace flags.\n");
     printf("\t-v, --verbose\t\tEnable verbosity. Repeatable.\n");
@@ -124,11 +143,15 @@ static struct option options[] = {
                           .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_SHOW_PARSETREE] = {.long_name="show-parsetree",
                           .flags=GOPT_ARGUMENT_FORBIDDEN},
+    [FLAG_SHOW_TRAVERSAL] = {.long_name="show-traversal",
+                             .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_DEBUG] = {.long_name="debug",.short_name='d',
                     .flags=GOPT_ARGUMENT_FORBIDDEN | GOPT_REPEATABLE},
     [FLAG_DEBUG_LOAD_PROJECT] = {.long_name="debug-load-project",
                                  .flags=GOPT_ARGUMENT_FORBIDDEN},
 
+    [FLAG_CLEAN_MIBL] = {.long_name="clean-mibl",
+                       .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_EMIT_WSS] = {.long_name="emit-wss",
                        .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_EMIT_PKGS] = {.long_name="emit-pkgs",
@@ -188,6 +211,10 @@ int main(int argc, char **argv, char **envp)
 #if defined(DEBUG_TRACE)
         mibl_trace = true;
 #endif
+    }
+
+    if (options[FLAG_SHOW_TRAVERSAL].count) {
+        mibl_show_traversal = true;
     }
 
     struct mibl_config_s *mibl_config = mibl_s7_init(NULL, /* script dir */
