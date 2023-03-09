@@ -24,7 +24,7 @@ cc_binary(
     }) + [
         "-Wall",
         "-Wpedantic",
-        # "-pedantic-errors",
+        "-pedantic-errors",
         "-Wno-unused-function",
 
         # "-I$(GENDIR)/src",

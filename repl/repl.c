@@ -197,11 +197,11 @@ int main(int argc, char **argv)
     }
 
    /* initialize in this order: bazel then mibl then s7 */
-    bazel_configure();
+    bazel_configure(NULL);
 
     mibl_configure();
 
-    s7_configure();
+    s7_configure(NULL, NULL);
 
     s7_load(s7, "dune.scm");
 
