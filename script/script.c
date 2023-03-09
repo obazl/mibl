@@ -171,6 +171,7 @@ static struct option options[] = {
 int main(int argc, char **argv, char **envp)
 {
     argc = gopt(argv, options);
+    (void)argc;
     gopt_errors(argv[0], options);
 
     /* **************************************************************** */

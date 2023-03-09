@@ -416,7 +416,7 @@ genrule(
     cmd = " ".join([
         "SRC1=$(location meta_parser.c);",
         "SRCDIR1=`dirname $$SRC1`;",
-        "$(location //src:makeheaders)",
+        "$(location //vendored/makeheaders)",
         # "$(SRCS);",
 
         "$(location emit_build_bazel.c)",
@@ -450,7 +450,7 @@ genrule(
 
         "cp $${SRCDIR1}/*.h $(@D)",
     ]),
-    tools = ["//src:makeheaders"],
+    tools = ["//vendored/makeheaders"],
     visibility = ["//visibility:public"]
 )
 
@@ -494,7 +494,7 @@ genrule(
 #     cmd = " ".join([
 #         "SRC1=$(location meta_parser.c);",
 #         "SRCDIR1=`dirname $$SRC1`;",
-#         "$(location //src:makeheaders) -H",
+#         "$(location //vendored/makeheaders) -H",
 #         # "$(SRCS) \\",
 #         # FINDLIB_MKHDRS_LOCNS,
 #         "$(location emit_build_bazel.c)",
@@ -543,7 +543,7 @@ genrule(
     cmd = " ".join([
         "SRC1=$(location debug_meta.c);",
         "SRCDIR1=`dirname $$SRC1`;",
-        "$(location //src:makeheaders)",
+        "$(location //vendored:makeheaders)",
         # "$(SRCS);",
 
         "$(location meta_parser.c)",
@@ -565,7 +565,7 @@ genrule(
 
         "cp $${SRCDIR1}/*.h $(@D)",
     ]),
-    tools = ["//src:makeheaders"],
+    tools = ["//vendored:makeheaders"],
     visibility = ["//visibility:public"]
 )
 

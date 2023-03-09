@@ -63,7 +63,7 @@ EXPORT struct mibl_config_s *mibl_s7_init(char *scm_dir, char *ws_root)
         log_debug("mibl_init: scm dir: %s, wsroot: %s", scm_dir, ws_root);
 #endif
     /* config in this order: first bazel, then mibl, then s7 */
-    bazel_configure(ws_root); // getcwd(NULL, 0));
+    bazel_configure(ws_root);
 
     mibl_configure();
 

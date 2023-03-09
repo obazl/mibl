@@ -12,7 +12,7 @@ config_setting(name = "macos",
 cc_binary(
     name  = "makeheaders",
     srcs  = ["makeheaders.c"],
-    copts = ["-O3", "-Wno-unused-function"] + select({
+    copts = ["-O3", "-Wall", "-Werror", "-Wno-unused-function"] + select({
         "linux": ["-Wno-stringop-truncation",
                   "-Wno-stringop-overflow"],
         "//conditions:default": []

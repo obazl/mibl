@@ -1,5 +1,7 @@
 CMD_FLAGS = [
     "-std=c11",
+    "-Wall",
+    "-Werror",
     "-pedantic-errors",
 ] + select({
     "//bzl/host:linux": [
@@ -11,6 +13,8 @@ CMD_FLAGS = [
 COPTS = [
     "-x", "c",
     "-std=c11",
+    "-Wall",
+    "-Werror",
     "-pedantic-errors",
 ] + select({
     "//bzl/host:linux": [

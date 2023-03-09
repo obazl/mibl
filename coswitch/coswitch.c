@@ -146,7 +146,7 @@ int main(int argc, char *argv[])
         /*     utarray_push_back(opam_exclude_pkgs, &optarg); */
         /*     break; */
 
-    bazel_configure();
+    bazel_configure(NULL);
 
     chdir(rootws);            /* always run from base ws root */
 

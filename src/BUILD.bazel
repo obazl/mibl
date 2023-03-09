@@ -173,8 +173,8 @@ cc_library(
     copts = COPTS + [
 
         "-Wall",
-        "-Wpedantic",
         "-Werror",
+        "-Wpedantic",
         # "-Wno-unused-function",
 
         "-Isrc",
