@@ -1,4 +1,4 @@
-load("//vendored/makeheaders:BUILD.bzl", "makeheaders")
+# load("//vendored/makeheaders:BUILD.bzl", "makeheaders")
 
 # makeheaders(
 #     name = "xhdrs",
@@ -53,8 +53,7 @@ DIRLOCS = [
 # since for for a few srcfiles we do not want to emit a hdr;
 # for those we use the suffixed colon notation e.g. 'foo.c:'.
 FILELOCS = [
-    "$(location //src:makeheaders)",
-
+    "$(location //vendored/makeheaders)",
     "$(location //src:ansi_colors.h)",
     "$(location //src:globals.c)",
     "$(location //src:config_bazel.c)",
@@ -276,7 +275,7 @@ genrule(
     cmd = " ".join(DIRLOCS) +
     " ".join(FILELOCS) + LINUX_FILELOCS + ";"
     + CP_CMDS,
-    tools = ["//src:makeheaders"],
+    tools = ["//vendored/makeheaders"],
     visibility = ["//visibility:public"]
 )
 
@@ -363,7 +362,7 @@ genrule(
         # "SRC4=$(location //src/findlib:meta_syntaxis.c);",
         # "SRCDIR4=`dirname $$SRC4`;",
 
-        "$(location //src:makeheaders)",
+        "$(location //vendored/makeheaders)",
         "-H",
         "$(location //src:ansi_colors.h)",
         "$(location //src:globals.c)",
@@ -434,7 +433,7 @@ genrule(
         # "cp $${SRCDIR3}/*.h $(@D);",
         # "cp $${SRCDIR4}/*.h $(@D);",
     ]),
-    tools = ["//src:makeheaders"],
+    tools = ["//vendored/makeheaders"],
     visibility = ["//visibility:public"]
 )
 

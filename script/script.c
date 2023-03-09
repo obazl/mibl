@@ -229,8 +229,6 @@ int main(int argc, char **argv, char **envp)
         show_mibl_config();
         show_s7_config();
 
-        printf("arg0: %s\n", argv[0]);
-
         /* dump env vars: */
         /* for (char **env = envp; *env != 0; env++) { */
         /*     char *thisEnv = *env; */
