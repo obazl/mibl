@@ -37,10 +37,12 @@ UT_string *config_mibl;        /* work string */
 struct mibl_config_s {
     char *schema_version;
     int libct;
+    bool debug_ppx;
+    bool debug_dune_rules;
     bool emit_starlark;
     bool emit_mibl;
     bool emit_parsetree;
-    bool show_mibl;
+    bool show_project;
     bool show_parsetree;
     bool show_exports;
     bool show_starlark;
@@ -54,22 +56,24 @@ struct mibl_config_s {
 #endif
 
 struct mibl_config_s mibl_config = {
-    .schema_version = MIBL_SCHEMA_VERSION,
-    .emit_parsetree = false,
-    .emit_mibl      = false,
-    .emit_starlark  = true,
-    .show_exports      = false,
-    .show_mibl      = false,
-    .show_parsetree = false,
-    .show_starlark  = false,
-    .libct          = 0
+    .schema_version   = MIBL_SCHEMA_VERSION,
+    .debug_ppx        = false,
+    .debug_dune_rules = false,
+    .emit_parsetree   = false,
+    .emit_mibl        = false,
+    .emit_starlark    = true,
+    .show_exports     = false,
+    .show_project     = false,
+    .show_parsetree   = false,
+    .show_starlark    = false,
+    .libct            = 0
 };
 
 LOCAL int _miblrc_handler(void* config, const char* section, const char* name, const char* value)
 {
 #if defined(DEBUG_TRACE)
     if (mibl_debug_miblrc)
-        log_debug("_miblrc_handler, section %s: %s=%s", section, name, value);
+        log_trace("_miblrc_handler, section %s: %s=%s", section, name, value);
 #endif
 
     struct mibl_config_s *pconfig = (struct mibl_config_s*)config;
@@ -81,6 +85,21 @@ LOCAL int _miblrc_handler(void* config, const char* section, const char* name, c
             log_debug("obazl version: %s", value);
         return 1;
     }
+
+    if (MATCH("mibl", "flags")) {
+        if (verbose && verbosity > 1) log_debug("miblrc [mibl] debug: %s", value);
+
+        char *token, *sep = " ,\t";
+        token = strtok((char*)value, sep);
+        while( token != NULL ) {
+            /* log_debug("miblrc [mibl] flags token: %s", token); */
+            mibl_s7_set_flag(token, true);
+            token = strtok(NULL, sep);
+        }
+        return 1;
+    }
+
+    //FIXME: directly use mibl_s7_set_flag instead of mibl_config struct
 
     if (MATCH("mibl", "emit")) {
         if (verbose && verbosity > 1) log_debug("miblrc [mibl] emit: %s", value);
@@ -111,8 +130,8 @@ LOCAL int _miblrc_handler(void* config, const char* section, const char* name, c
         if (strncmp(value, "exports", 7) == 0) {
             pconfig->show_exports = true;
         }
-        else if (strncmp(value, "mibl", 4) == 0) {
-            pconfig->show_mibl = true;
+        else if (strncmp(value, "project", 7) == 0) {
+            pconfig->show_project = true;
         }
         else if (strncmp(value, "parsetree", 9) == 0) {
             pconfig->show_parsetree = true;
@@ -255,9 +274,9 @@ LOCAL int _miblrc_handler(void* config, const char* section, const char* name, c
     return 1;
 }
 
-LOCAL void _show_mibl_config(void)
+EXPORT void show_mibl_config(void)
 {
-    /* log_debug("dump_mibl_config:"); */
+    log_info(GRN "mibl configuration summary:" CRESET);
     char **p;
     p = NULL;
     while ( (p=(char**)utarray_next(mibl_config.include_dirs,p))) {
@@ -267,22 +286,17 @@ LOCAL void _show_mibl_config(void)
     while ( (p=(char**)utarray_next(mibl_config.exclude_dirs,p))) {
         log_info("  exclude: %s",*p);
     }
-    /* log_debug("dump_mibl_config finished"); */
-}
-
-EXPORT void show_mibl_config(void)
-{
-    log_info(GRN "mibl configuration summary:" CRESET);
-    _show_mibl_config();
     log_info(GRN "End mibl configuration summary." CRESET);
     fflush(NULL);
 }
 
 EXPORT void mibl_configure(void)
 {
+    /* mibl_debug_mibl = true; */
+    /* mibl_debug_miblrc = true; */
 #if defined(DEBUG_TRACE)
     if (mibl_debug_mibl)
-        log_debug("mibl_configure");
+        log_trace("mibl_configure");
 #endif
     /* **************** */
     /* project-local .config/miblrc config file */
@@ -300,15 +314,22 @@ EXPORT void mibl_configure(void)
 
     rc = access(utstring_body(obazl_ini_path), R_OK);
     if (rc) {
-        if (verbose)
-            log_warn("NOT FOUND: miblrc config file %s",
-                     utstring_body(obazl_ini_path));
         //FIXME: also look in XDG_CONFIG_HOME
-    } else {
+        utstring_renew(obazl_ini_path);
+        utstring_printf(obazl_ini_path, "%s/.miblrc", rootws);
+        rc = access(utstring_body(obazl_ini_path), R_OK);
+        if (rc) {
+            if (verbose)
+                log_warn("NOT FOUND: miblrc config file %s",
+                         utstring_body(obazl_ini_path));
+            return;
+        }
+    }
+    /* } else { */
         ini_error = false;
-        /* if (verbose) */
-        /*     log_info("loading miblrc config file: %s", */
-        /*              utstring_body(obazl_ini_path)); */
+        if (verbose)
+            log_info("loading miblrc config file: %s",
+                     utstring_body(obazl_ini_path));
 
         /* PARSE INI FILE */
         rc = ini_parse(utstring_body(obazl_ini_path), _miblrc_handler, &mibl_config);
@@ -329,7 +350,7 @@ EXPORT void mibl_configure(void)
         if (verbose && verbosity > 1)
             log_info("Loaded miblrc config file: %s",
                      utstring_body(obazl_ini_path));
-    }
+    /* } */
 
     utarray_sort(mibl_config.include_dirs, strsort);
     utarray_sort(mibl_config.exclude_dirs, strsort);

@@ -86,6 +86,7 @@
 
 ;; special cases:
 ;; ppx_inline_test: must add ppx_args=["-inline-test-lib", "foo"]
+;; BUT: do not add to shared-ppx defn. may have two libs w/same ppx executable, but only one has inline_tests
 ;; ppx_expect implies ppx_inline_test?
 ;; dune doc: https://dune.readthedocs.io/en/stable/tests.html#inline-tests
 
@@ -95,7 +96,7 @@
          "(-pps->mibl stanza-name ppxes) derives :ppx* flds for the stanza to be emitted"))
     (lambda (stanza-name ppxes) ;; stanza-alist)
       (if (or *mibl-debug-ppx* *mibl-debugging*)
-          (format #t "~A ~A: ~A\n" (blue "-pps->mibl") stanza-name ppxes))
+          (format #t "~A ~A: ~A\n" (ublue "-pps->mibl") stanza-name ppxes))
 
       ;; NB: :scope defaults to :all, but will be a list of modules
       ;; for 'per_module' ppxes (not yet implemented).
@@ -129,7 +130,7 @@
                     (recur (cdr ppx)
                            (cons (car ppx) ppx-libs)
                            (concatenate
-                            `("-inline-test-lib" ,stanza-name)
+                            `("-XINLINE-test-lib" ,stanza-name)
                             ppx-args))
                     )
                   (if (equal? '-- (car ppx))
@@ -303,7 +304,7 @@
 ;; WARNING: must also handle (inline_tests)
 
 ;; returns (values flds ppx_stanza)
-(define preprocess-fld->mibl ;; OBSOLETE??
+(define preprocess-fld->mibl ;; OBSOLETE?? no
   (let ((+documentation+ "(preprocess-fld->mibl pp-assoc stanza-alist) converts (preprocess ...) subfields 'pps' and 'per_module' to :ppx* flds for use in generating OBazl targets. Does not convert 'action' subfield, since it does not correspond to any OBazl rule attribute ('(action...)' generates a genrule."))
     (lambda (pp-assoc stanza-alist)
       (if (or *mibl-debug-ppx* *mibl-debugging*)
@@ -359,10 +360,9 @@
             ppx)))))
 
 ;; pps without inline_tests
-;; FIXME: rename lib-pp
-(define (lib-ppx->mibl stanza-alist)
+(define (pps->mibl preproc stanza-alist)
   (if (or *mibl-debug-ppx* *mibl-debugging*)
-      (format #t "~A: ~A~%" (ublue "lib-ppx->mibl") stanza-alist))
+      (format #t "~A: ~A~%" (ublue "pps->mibl") stanza-alist))
   (if-let ((pp-assoc (assoc 'preprocess stanza-alist)))
           (begin
             (if (or *mibl-debug-ppx* *mibl-debugging*)
@@ -379,7 +379,7 @@
           #f))
 
 ;; non-ppx prepocessing
-(define (lib-preproc->mibl stanza-alist)
+(define (lib-preproc->mibl preproc stanza-alist)
   (if (or *mibl-debug-ppx* *mibl-debugging*)
       (format #t "~A: ~A~%" (ublue "lib-preproc->mibl") stanza-alist))
   (if-let ((pp-assoc (assoc 'preprocess stanza-alist)))
@@ -424,3 +424,20 @@
   ;;               `((:ppx (:manifest ,@ppx)))))
   ;;         #f))
 
+(define (preproc->mibl preproc stanza-alist)
+  (if (or *mibl-debug-ppx* *mibl-debugging*)
+      (format #t "~A: ~A~%" (ublue "preproc->mibl") preproc))
+  (if (alist? preproc)
+      (if (assoc-in '(preprocess pps) stanza-alist)
+          (pps->mibl preproc stanza-alist)
+          (lib-preproc->mibl preproc stanza-alist))
+
+      ;; (if (assoc-in '(preprocess staged-pps) stanza-alist)
+      ;;     (pps->mibl stanza-alist)
+      ;;     (lib-preproc->mibl stanza-alist))
+      ;; )
+      (if (member 'future_syntax preproc)
+          `(:future-syntax #t)
+          (if (member 'no_preprocessing preproc)
+              #f
+              (error 'FIXME "bad (preprocessing) fld?")))))

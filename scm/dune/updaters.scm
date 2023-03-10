@@ -2,7 +2,7 @@
     (format #t "loading dune/updaters.scm~%"))
 
 (define (update-filegroups-table! ws client-path pkg-path tgt pattern)
-  (if *mibl-debugging*
+  (if (or *mibl-debug-s7* *mibl-debug-updaters*)
       (begin
         (format #t "~A path: ~A~%" (umagenta "update-filegroups-table!") pkg-path)
         (format #t "~A: ~A~%" (green "client") client-path)
@@ -13,29 +13,29 @@
         ))
 
   (let* ((-ws (if (keyword? ws) (assoc-val ws *mibl-project*) ws))
-         ;; (_ (if *mibl-debugging* (format #t "~A: ~A~%" (uwhite "-ws") -ws)))
+         ;; (_ (if (or *mibl-debug-s7* *mibl-debug-updaters*) (format #t "~A: ~A~%" (uwhite "-ws") -ws)))
          (filegroups (car (assoc-val :filegroups -ws)))
-         (_ (if *mibl-debugging* (format #t "filegroups tbl: ~A\n" filegroups)))
+         (_ (if (or *mibl-debug-s7* *mibl-debug-updaters*) (format #t "filegroups tbl: ~A\n" filegroups)))
          (patt-str (format #f "~A" pattern))
          (glob? (string-index patt-str (lambda (ch) (equal? ch #\*))))
          (fg-name (format #f "glob_~A" (string-replace patt-str "STAR" glob? (+ 1 glob?))))
          )
-    (if *mibl-debugging*
+    (if (or *mibl-debug-s7* *mibl-debug-updaters*)
         (begin
           (format #t "~A: ~A~%" (bgcyan "fg-name") fg-name)
           (format #t "adding ~A~A to filegroups tbl\n" pkg-path tgt)))
 
     (let ((fgroups (hash-table-ref filegroups pkg-path)))
-      (if *mibl-debugging*
+      (if (or *mibl-debug-s7* *mibl-debug-updaters*)
           (format #t "~A: ~A~%" (red "fgroups") fgroups))
       (if fgroups
           (if-let ((same (assoc fg-name fgroups)))
                   (begin
-                    (if *mibl-debugging*
+                    (if (or *mibl-debug-s7* *mibl-debug-updaters*)
                         (format #t "~A: ~A~%" (bgred "same") same))
                     (alist-update-in! fgroups (list fg-name :clients)
                                       (lambda (old) (append old (list client-path))))
-                    (if *mibl-debugging*
+                    (if (or *mibl-debug-s7* *mibl-debug-updaters*)
                         (format #t "~A: ~A~%" (bgblue "updated") filegroups))
                     ;; (error 'STOP "update-fgs")
                     ;; (hash-table-set! filegroups pkg-path
@@ -66,12 +66,12 @@
                                                `((:glob . ,pattern)
                                                  (:clients ,client-path))
                                                `((:file . ,pattern)))))))
-      (if *mibl-debugging*
+      (if (or *mibl-debug-s7* *mibl-debug-updaters*)
           (format #t "updated filegroups tbl: ~A\n" filegroups))
       )))
 
 (define (-module-in-modules? m modules)
-  (if *mibl-debugging*
+  (if (or *mibl-debug-s7* *mibl-debug-updaters*)
       (format #t "~A: ~A~%" (ublue "-module-in-modules?") m))
   (find-if (lambda (mod)
              (string=? (format #f "~A" m)
@@ -79,28 +79,35 @@
            modules))
 
 (define (-normalize-pkg-files pkg)
-  (if *mibl-debugging*
+  (if (or *mibl-debug-s7* *mibl-debug-updaters*)
       (format #t "~A: ~A~%" (ublue "-normalize-pkg-files") (assoc-val :pkg-path pkg)))
   (let ((pkg-modules (assoc-val :modules pkg))
         (pkg-structs (assoc :structures pkg))
         (pkg-sigs (assoc :signatures pkg)))
+
+    (if (or *mibl-debug-s7* *mibl-debug-updaters*)
+        (format #t "~A: ~A~%" (blue "pkg-modules") pkg-modules))
+    (if (or *mibl-debug-s7* *mibl-debug-updaters*)
+        (format #t "~A: ~A~%" (blue "pkg-structs") pkg-structs))
+    (if (or *mibl-debug-s7* *mibl-debug-updaters*)
+        (format #t "~A: ~A~%" (blue "pkg-sigs") pkg-sigs))
+
     (if pkg-modules
         (begin
-          (if *mibl-debugging*
+          (if (or *mibl-debug-s7* *mibl-debug-updaters*)
               (format #t "~A:~%" (cyan "pkg-modules")))
           (for-each (lambda (m)
-                      (if *mibl-debugging*
+                      (if (or *mibl-debug-s7* *mibl-debug-updaters*)
                           (format #t "  ~A~%" m)))
                     pkg-modules))
-        (if *mibl-debugging*
-            (format #t "~A: ~A~%" (cyan "pkg-modules") pkg-modules)))
+        )
 
     (if pkg-structs
         (let* ((statics (if-let ((statics (assoc-in '(:structures :static) pkg)))
                                 statics '(:static)))
                (dynamics (if-let ((dynamics (assoc-in '(:structures :dynamic) pkg)))
                                  dynamics '(:dynamic))))
-          (if *mibl-debugging*
+          (if (or *mibl-debug-s7* *mibl-debug-updaters*)
               (begin
                 (format #t "~A: ~A~%" (cyan "pstructs, static") statics)
                 (format #t "~A: ~A~%" (cyan "pstructs, dynamic") dynamics)))
@@ -108,79 +115,102 @@
               (begin ;; twice, once for statics, once for dynamics
                 (let ((remainder
                        (filter (lambda (struct)
-                                 (if *mibl-debugging*
+                                 (if (or *mibl-debug-s7* *mibl-debug-updaters*)
                                      (format #t "~A: ~A~%" (uwhite "struct") struct))
                                  (if-let ((x (-module-in-modules? (car struct) pkg-modules)))
                                          (begin
-                                           (if *mibl-debugging*
+                                           (if (or *mibl-debug-s7* *mibl-debug-updaters*)
                                                (format #t "~A: ~A~%" (uwhite "in modules?") x))
                                            #f)
                                          #t))
                                (cdr statics))))
-                  (if *mibl-debugging*
+                  (if (or *mibl-debug-s7* *mibl-debug-updaters*)
                       (format #t "~A: ~A~%" (ured "structs static remainder") remainder))
                   (if (null? remainder)
                       (dissoc! '(:structures :static) pkg)
-                      (set-cdr! statics remainder))
-                  )
+                      (set-cdr! statics remainder)))
                 ;; (format #t "~A~%" (bgmagenta "dynstructs"))
                 (let ((remainder
                        (filter (lambda (struct)
-                                 (if *mibl-debugging*
+                                 (if (or *mibl-debug-s7* *mibl-debug-updaters*)
                                      (format #t "~A: ~A~%" (uwhite "struct") struct))
                                  (if-let ((x (-module-in-modules? (car struct) pkg-modules)))
                                          (begin
-                                           (if *mibl-debugging*
+                                           (if (or *mibl-debug-s7* *mibl-debug-updaters*)
                                                (format #t "~A: ~A~%"
                                                        (uwhite "in modules?") x))
                                            #f)
                                          #t))
                                (cdr dynamics))))
-                  (if *mibl-debugging*
+                  (if (or *mibl-debug-s7* *mibl-debug-updaters*)
                       (format #t "~A: ~A~%" (ured "structs dyn remainder") remainder))
-                (if (null? remainder)
-                    (begin
-                      ;; (dissoc! '(:structures :dynamic) pkg)
-                      )
-                    (alist-update-in! pkg `(:structures :dynamic)
-                                      (lambda (old) remainder)))
-                    ;; (set-cdr! dynamics remainder))
-                ))
-              )))
+                  (if (null? remainder)
+                      (begin
+                        ;; (dissoc! '(:structures :dynamic) pkg)
+                        )
+                      (alist-update-in! pkg `(:structures :dynamic)
+                                        (lambda (old) remainder))))
+                ))))
     ;; (format #t "~A: ~A~%" (bgmagenta "updated structs") (assoc :structures pkg))
     ;; (if (equal? "compiler/lib" (car (assoc-val :pkg-path pkg)))
     ;;     (error 'STOP "nmani"))
 
+    ;; if :signatures item is in :modules, remove it from :signatures
     (if pkg-sigs
-        (let* ((_ (if *mibl-debugging* (format #t "~A: ~A~%" (red "pkg-sigs") pkg-sigs)))
-               (psigs (cdr pkg-sigs))
-               (statics (if-let ((statics (assoc-val :static psigs)))
-                                statics '()))
-               (dynamics (if-let ((dynamics (assoc-val :dynamic psigs)))
-                                 dynamics '())))
-          (if *mibl-debugging*
+        (let* ((statics (if-let ((statics (assoc-in '(:signatures :static) pkg)))
+                                statics '(:static)))
+               (dynamics (if-let ((dynamics (assoc-in '(:signatures :dynamic) pkg)))
+                                 dynamics '(:dynamic))))
+
+        ;; (let* ((_ (if (or *mibl-debug-s7* *mibl-debug-updaters*) (format #t "~A: ~A~%" (red "pkg-sigs") pkg-sigs)))
+        ;;        (psigs (cdr pkg-sigs))
+
+        ;;        (statics (if-let ((statics (assoc-val :static psigs)))
+        ;;                         statics '()))
+        ;;        (dynamics (if-let ((dynamics (assoc-val :dynamic psigs)))
+        ;;                          dynamics '())))
+          (if (or *mibl-debug-s7* *mibl-debug-updaters*)
               (begin
                 (format #t "~A: ~A~%" (cyan "psigs, static") statics)
                 (format #t "~A: ~A~%" (cyan "psigs, dynamic") dynamics)))
           (if pkg-modules
-              (begin ;; twice, once for statics, once for dynamics
-                (let ((remainder
+              (begin ;; FIXME: twice, once for statics, once for dynamics
+                (let ((remainder  ;; :signatures :static
                        (filter (lambda (sig)
-                                 (if *mibl-debugging*
+                                 (if (or *mibl-debug-s7* *mibl-debug-updaters*)
                                      (format #t "~A: ~A~%" (uwhite "sig") sig))
                                  (if-let ((x (-module-in-modules? (car sig) pkg-modules)))
                                          (begin
-                                           (if *mibl-debugging*
+                                           (if (or *mibl-debug-s7* *mibl-debug-updaters*)
                                                (format #t "~A: ~A~%"
                                                        (uwhite "in modules?") x))
                                            #f)
                                          #t))
-                               (concatenate statics dynamics))))
-                  (if *mibl-debugging*
-                      (format #t "~A: ~A~%" (ured "sigs remainder") remainder))
+                               (cdr statics))))
+                  (if (or *mibl-debug-s7* *mibl-debug-updaters*)
+                      (format #t "~A: ~A~%" (ured "sig static remainder") remainder))
+                  (if (null? remainder)
+                      (dissoc! '(:signatures :static) pkg)
+                      (set-cdr! statics remainder)))
+
+                (let ((remainder  ;; :signatures :dynamic
+                       (filter (lambda (sig)
+                                 (if (or *mibl-debug-s7* *mibl-debug-updaters*)
+                                     (format #t "~A: ~A~%" (uwhite "sig") sig))
+                                 (if-let ((x (-module-in-modules? (car sig) pkg-modules)))
+                                         (begin
+                                           (if (or *mibl-debug-s7* *mibl-debug-updaters*)
+                                               (format #t "~A: ~A~%"
+                                                       (uwhite "in modules?") x))
+                                           #f)
+                                         #t))
+                               (cdr dynamics))))
+                  (if (or *mibl-debug-s7* *mibl-debug-updaters*)
+                      (format #t "~A: ~A~%" (ured "sigs dyn remainder") remainder))
                   (if (null? remainder)
                       (dissoc! '(:signatures) pkg)
-                      (set-cdr! pkg-sigs remainder)))))))
+                      (alist-update-in! pkg `(:signatures :dynamic)
+                                        (lambda (old) remainder))))))))
     pkg))
 
 ;; normalize-manifests: one for each aggregate, plus pkg files (:modules,
@@ -206,7 +236,7 @@
 ;; where bar is generated.
 
 (define (normalize-manifests! ws)
-  (if *mibl-debugging*
+  (if (or *mibl-debug-s7* *mibl-debug-updaters*)
       (format #t "~A: ~A~%" (bgblue "normalize-manifests") ws))
   (let* ((@ws (assoc-val ws *mibl-project*))
          (pkgs (car (assoc-val :pkgs @ws))))
@@ -228,34 +258,34 @@
                   ;; for each aggregate stanza, resolve the (modules) fld
                   (if stanzas
                       (for-each (lambda (stanza)
-                                  (if *mibl-debugging*
+                                  (if (or *mibl-debug-s7* *mibl-debug-updaters*)
                                       (format #t "~A: ~A~%" (blue "stanza") stanza))
                                   (case (car stanza)
                                     ((:ns-archive
                                       :archive
                                       :ns-library
                                       :library)
-                                     (if *mibl-debugging*
+                                     (if (or *mibl-debug-s7* *mibl-debug-updaters*)
                                          (format #t "~A: ~A~%" (ured "aggregate")
                                                  (assoc-val :privname (cdr stanza))))
                                      (let* ((stanza-alist (cdr stanza))
-                                            (_ (if *mibl-debugging* (format #t "~A: ~A~%" (ured "stanza-alist") stanza-alist)))
+                                            (_ (if (or *mibl-debug-s7* *mibl-debug-updaters*) (format #t "~A: ~A~%" (ured "stanza-alist") stanza-alist)))
                                             (old-manifest (assoc ':manifest stanza-alist))
-                                            (_ (if *mibl-debugging* (format #t "~A: ~A~%" (ured "old-manifest") old-manifest)))
+                                            (_ (if (or *mibl-debug-s7* *mibl-debug-updaters*) (format #t "~A: ~A~%" (ured "old-manifest") old-manifest)))
                                             (mmods (assoc-in '(:manifest :raw) stanza-alist))
-                                            (_ (if *mibl-debugging* (format #t "~A: ~A~%" (ured "mmods") mmods)))
+                                            (_ (if (or *mibl-debug-s7* *mibl-debug-updaters*) (format #t "~A: ~A~%" (ured "mmods") mmods)))
                                             (manifest
                                              (get-manifest pkg :lib #t (cons (cadr mmods) stanza-alist)) ;; (cadr mmods))
                                              ;;(x-get-manifest pkg #t stanza-alist (cadr mmods))
                                              ))
-                                       (if *mibl-debugging*
+                                       (if (or *mibl-debug-s7* *mibl-debug-updaters*)
                                            (begin
                                              (format #t "~A: ~A~%" (ured "structures") (assoc :structures stanza-alist))
                                              (format #t "~A: ~A~%" (uyellow "mmods") mmods)
                                              (format #t "~A: ~A~%" (uyellow "old manifest") old-manifest)
                                              (format #t "~A: ~A~%" (uyellow "manifest") manifest)))
                                        (set-cdr! old-manifest (cdr manifest))
-                                       (if *mibl-debugging*
+                                       (if (or *mibl-debug-s7* *mibl-debug-updaters*)
                                            (format #t "~A: ~A~%" (uyellow "updated old manifest") old-manifest))
                                        ))
 
@@ -274,7 +304,7 @@
                                 stanzas)
                           )))
               pkgs)
-    ;; (if *mibl-debugging*
+    ;; (if (or *mibl-debug-s7* *mibl-debug-updaters*)
     ;;     (begin
     ;;       (mibl-debug-print-pkgs :@)
     ;;       (error 'x "")))
@@ -289,9 +319,9 @@
 ;;    %{targets}
 ;;    (run ./test.exe))))
 
-;; task: remove tool from deps list
+;; tasks: remove tool from deps list; fix ::unresolved cmd args
 (define (normalize-rule-deps! ws)
-  (if *mibl-debugging*
+  (if (or *mibl-debug-s7* *mibl-debug-updaters*)
       (format #t "~A: ~A~%" (bgblue "normalize-rule-deps!") ws))
   (let* ((@ws (assoc-val ws *mibl-project*))
          (pkgs (car (assoc-val :pkgs @ws))))
@@ -299,52 +329,58 @@
                 (let* ((pkg-key (car kv))
                        (pkg (cdr kv))
                        (stanzas (assoc-val :mibl (cdr kv))))
-                  (if *mibl-debugging*
+                  (if (or *mibl-debug-s7* *mibl-debug-updaters*)
                       (format #t "~A: ~A~%" (bgcyan "pkg key") pkg-key))
 
                   (if stanzas
                       (for-each (lambda (stanza)
-                                  ;; (format #t "~A: ~A~%" (blue "stanza") stanza)
+                                  (if (or *mibl-debug-s7* *mibl-debug-updaters*)
+                                      (format #t "~A: ~A~%" (green "stanza") stanza))
                                   (case (car stanza)
                                     ((:rule)
-                                     (if *mibl-debugging*
+                                     (if (or *mibl-debug-s7* *mibl-debug-updaters*)
                                          (format #t "~A: ~A~%" (ured "rule stanza") stanza))
-                                     (let* ((stanza-alist (cdr stanza))
-                                            (all-deps (assoc-val ':deps stanza-alist))
-                                            (_ (if *mibl-debugging* (format #t "~A: ~A~%" (ured "all deps") all-deps)))
-                                            (tools (assoc-val '::tools all-deps))
-                                            (_ (if *mibl-debugging* (format #t "~A: ~A~%" (ured "tools") tools)))
-                                            (deps (cdr all-deps))
-                                            (_ (if *mibl-debugging* (format #t "~A: ~A~%" (ured "deps") deps))))
-                                       (if tools
-                                           (for-each (lambda (tool)
-                                                       (if *mibl-debugging*
-                                                           (format #t "~A: ~A~%" (red "tool key") (car tool)))
-                                                       ;;FIXME? we expect the entire list to match, e.g.
-                                                       ;; (:./test.exe (:pkg . "test/pretty") (:tgt . "test.exe"))
-                                                       ;; but what if only the key matches?
-                                                       (if (member tool deps)
-                                                           (let ((filtered-deps (dissoc (list (car tool)) deps)))
-                                                             (if *mibl-debugging*
-                                                                 (format #t "~A: ~A~%" (ured "filtered") filtered-deps))
-                                                             (set-cdr! all-deps filtered-deps))
-                                                           (if *mibl-debugging*
-                                                               (format #t "~A: ~A~%" (bgred "MISS") tool)))
-                                                       )
-                                                     tools))
-                                       (if *mibl-debugging*
-                                           (format #t "~A: ~A~%" (bgred "updated stanza") stanza))
-                                       (values)))
+                                     (if (assoc-in '(:deps ::tools) (cdr stanza))
+                                         (let* ((stanza-alist (cdr stanza))
+                                                (all-deps (assoc-val ':deps stanza-alist))
+                                                (_ (if (or *mibl-debug-s7* *mibl-debug-updaters*) (format #t "~A: ~A~%" (green "all deps") all-deps)))
+                                                (tools (assoc-val '::tools all-deps))
+                                                (_ (if (or *mibl-debug-s7* *mibl-debug-updaters*) (format #t "~A: ~A~%" (green "tools") tools)))
+                                                (deps (cdr all-deps))
+                                                (_ (if (or *mibl-debug-s7* *mibl-debug-updaters*) (format #t "~A: ~A~%" (green "deps") deps))))
+                                           (if tools
+                                               (for-each (lambda (tool)
+                                                           (if (or *mibl-debug-s7* *mibl-debug-updaters*)
+                                                               (format #t "~A: ~A~%" (red "tool key") (car tool)))
+                                                           ;;FIXME? we expect the entire list to match, e.g.
+                                                           ;; (:./test.exe (:pkg . "test/pretty") (:tgt . "test.exe"))
+                                                           ;; but what if only the key matches?
+                                                           (if (member tool deps)
+                                                               (let ((filtered-deps (dissoc (list (car tool)) deps)))
+                                                                 (if (or *mibl-debug-s7* *mibl-debug-updaters*)
+                                                                     (format #t "~A: ~A~%" (green "filtered") filtered-deps))
+                                                                 (set-cdr! all-deps filtered-deps))
+                                                               (if (or *mibl-debug-s7* *mibl-debug-updaters*)
+                                                                   (format #t "~A: ~A~%" (bgred "MISS") tool)))
+                                                           )
+                                                         tools))
+                                           (if (or *mibl-debug-s7* *mibl-debug-updaters*)
+                                               (format #t "~A: ~A~%" (bgred "updated stanza") stanza)
+                                               (values))))
+                                     ;;FIXME: can there be more than one :actions per :rule?
+                                     (if (assoc-in '(:actions :cmd :args) (cdr stanza))
+                                         (format #t "FIXME: normalize cmd args\n"))
+                                     )
                                     (else)))
                                 stanzas))))
               pkgs)
-    (if *mibl-debugging*
+    (if (or *mibl-debug-s7* *mibl-debug-updaters*)
         (format #t "~A: ~A~%" (bgblue "//normalize-manifests") ws))
     ))
 
   ;; (let* ((@ws (assoc-val ws *mibl-project*))
   ;;        (ws-path (car (assoc-val :path @ws)))
-  ;;        (_ (if *mibl-debugging* (format #t "~A: ~A~%" (blue "ws-path") ws-path))
+  ;;        (_ (if (or *mibl-debug-s7* *mibl-debug-updaters*) (format #t "~A: ~A~%" (blue "ws-path") ws-path))
   ;;        (pkgs (car (assoc-val :pkgs @ws)))
   ;;        (filegroups (car (assoc-val :filegroups @ws))))
   ;;   (format #t "~A: ~A~%" (yellow "fg-table") filegroups)
@@ -379,20 +415,20 @@
   ;;             filegroups)))
 
 (define (add-filegroups-to-pkgs ws)
-  (if *mibl-debugging*
+  (if (or *mibl-debug-s7* *mibl-debug-updaters*)
       (format #t "~A: ~A~%" (blue "-add-filegroups-to-pkgs") ws))
   (let* ((@ws (assoc-val ws *mibl-project*))
          (ws-path (car (assoc-val :path @ws)))
-         (_ (if *mibl-debugging* (format #t "~A: ~A~%" (blue "ws-path") ws-path)))
+         (_ (if (or *mibl-debug-s7* *mibl-debug-updaters*) (format #t "~A: ~A~%" (blue "ws-path") ws-path)))
          (pkgs (car (assoc-val :pkgs @ws)))
          (filegroups (car (assoc-val :filegroups @ws))))
-    (if *mibl-debugging*
+    (if (or *mibl-debug-s7* *mibl-debug-updaters*)
         (format #t "~A: ~A~%" (yellow "fg-table") filegroups))
     (for-each (lambda (kv)
                 (let* ((fg-path (car kv))
                        (fg-key (car kv))
                        (fg-pkg (hash-table-ref pkgs fg-key)))
-                  (if *mibl-debugging*
+                  (if (or *mibl-debug-s7* *mibl-debug-updaters*)
                       (begin
                         (format #t "\n~A: ~A~%" (yellow "fg-path") fg-path)
                         (format #t "~A: ~A~%" (yellow "fg-key") fg-key)
@@ -425,7 +461,7 @@
     ;;                          (hash-table-set! pkgs (car kv) mibl-pkg)
     ;;                          mibl-pkg))
     ;;                      pkgs)))
-    ;;     ;; (_ (if *mibl-debugging* (format #t "~A: ~A~%" (blue "mpkg-alist")
+    ;;     ;; (_ (if (or *mibl-debug-s7* *mibl-debug-updaters*) (format #t "~A: ~A~%" (blue "mpkg-alist")
     ;;     ;;            mpkg-alist)))
     ;;     ;; (_ (for-each (lambda (k)
     ;;     ;;                (format #t "~A: ~A~%" (blue "pkg") k))
@@ -435,24 +471,24 @@
 
 
 (define (update-tagged-label-list! filename tllist pkg)
-  (if *mibl-debugging*
+  (if (or *mibl-debug-s7* *mibl-debug-updaters*)
       (format #t "~A: ~A ~A~%" (ublue "update-tagged-label-list!")
           filename tllist))
   (let* ((fname (format #f "~A" filename))
          (key (string->keyword fname)))
-    (if *mibl-debugging*
+    (if (or *mibl-debug-s7* *mibl-debug-updaters*)
         (format #t "~A: ~A~%" (uwhite "tllist before") tllist))
     (set-cdr! tllist
               (cons (cons key
                           (list (cons :pkg (car (assoc-val :pkg-path pkg)))
                                 (cons :tgt fname)))
                     (cdr tllist)))
-    (if *mibl-debugging*
+    (if (or *mibl-debug-s7* *mibl-debug-updaters*)
         (format #t "~A: ~A~%" (uwhite "tllist after") tllist))
     key))
 
 (define (update-pkg-files-with-struct! pkg tgt)
-  (if *mibl-debugging*
+  (if (or *mibl-debug-s7* *mibl-debug-updaters*)
       (format #t "~A: ~A~%" (ublue "update-pkg-files-with-struct!") tgt))
   ;; (format #t "~A: ~A~%" (blue "pkg") pkg)
   (flush-output-port)
@@ -462,28 +498,28 @@
          ;; m-assoc == (A (:ml "a.ml"))
          (m-name (car m-assoc))
          (pr (cadr m-assoc))
-         (_ (if *mibl-debugging* (format #t "~A: ~A\n" (red "PR") pr)))
+         (_ (if (or *mibl-debug-s7* *mibl-debug-updaters*) (format #t "~A: ~A\n" (red "PR") pr)))
          ;; (sigs (assoc-val :signatures pkg))
-         ;; (_ (if *mibl-debugging* (format #t "~A: ~A~%" (cyan "sigs2") sigs)))
+         ;; (_ (if (or *mibl-debug-s7* *mibl-debug-updaters*) (format #t "~A: ~A~%" (cyan "sigs2") sigs)))
          (sigs (assoc :signatures pkg))
-         (_ (if *mibl-debugging* (format #t "~A: ~A~%" (cyan "sigs") sigs)))
+         (_ (if (or *mibl-debug-s7* *mibl-debug-updaters*) (format #t "~A: ~A~%" (cyan "sigs") sigs)))
          ;; removes matching sig from :signatures
          (matching-sig (if sigs
                            (if (cdr sigs)
                                (find-module-in-rsrc-list!? m-name tgt sigs)
                                #f)
                            #f))
-         (_ (if *mibl-debugging* (format #t "~A: ~A~%" (cyan "found sig?") matching-sig)))
+         (_ (if (or *mibl-debug-s7* *mibl-debug-updaters*) (format #t "~A: ~A~%" (cyan "found sig?") matching-sig)))
          )
 
     ;; FIXME: check to see if already in pkg-modules
     (if matching-sig
         (begin ;; we know this file is not in :modules since it was in sigs
-          (if *mibl-debugging*
+          (if (or *mibl-debug-s7* *mibl-debug-updaters*)
               (format #t "~A: ~A~%" (red "updating :modules") m-name))
           (alist-update-in! pkg `(:modules ,m-name)
                             (lambda (old)
-                              (if *mibl-debugging*
+                              (if (or *mibl-debug-s7* *mibl-debug-updaters*)
                                   (begin
                                     (format #t "struct Module OLD: ~A\n" old)
                                     (format #t "adding: ~A\n" matching-sig)
@@ -500,15 +536,15 @@
                                    )))))
 
         ;; else no sig, so update :structures
-        (let* ((_ (if *mibl-debugging* (format #t "~A: ~A~%" (yellow "updating :structures")
+        (let* ((_ (if (or *mibl-debug-s7* *mibl-debug-updaters*) (format #t "~A: ~A~%" (yellow "updating :structures")
                           m-name)))
                (dynamics (assoc-in '(:structures :dynamic) pkg))
                )
-          (if *mibl-debugging*
+          (if (or *mibl-debug-s7* *mibl-debug-updaters*)
               (format #t "~A: ~A~%" (white "(:structures :dynamic) : ") dynamics))
           (alist-update-in! pkg `(:structures :dynamic)
                                 (lambda (old)
-                                  (if *mibl-debugging*
+                                  (if (or *mibl-debug-s7* *mibl-debug-updaters*)
                                       (begin
                                         (format #t "structures OLD: ~A\n" old)
                                         (format #t "adding: ~A\n" pr)))
@@ -525,12 +561,12 @@
                                        ;;(filename->module-assoc tgt)
                                        ))))
           )))
-  (if *mibl-debugging*
+  (if (or *mibl-debug-s7* *mibl-debug-updaters*)
       (format #t "~A: ~A~%" (bgblue "pkg w/updated structs") pkg))
   pkg)
 
 (define (-update-pkg-files-with-sig! pkg tgt)
-  (if *mibl-debugging*
+  (if (or *mibl-debug-s7* *mibl-debug-updaters*)
       (format #t "~A: ~A~%" (yellow "-update-pkg-files-with-sig!") tgt))
   ;; if we already have corresponding struct, move to :modules
   ;; else update :signatures
@@ -538,20 +574,20 @@
          ;; m-assoc == (A (:ml "a.ml"))
          (m-name (car m-assoc))
          (pr (cadr m-assoc))
-         (_ (if *mibl-debugging* (format #t "~A: ~A\n" (red "PR") pr)))
+         (_ (if (or *mibl-debug-s7* *mibl-debug-updaters*) (format #t "~A: ~A\n" (red "PR") pr)))
          (structs (assoc :structures pkg))
-         (_ (if *mibl-debugging* (format #t "~A: ~A~%" (cyan "structs") structs)))
+         (_ (if (or *mibl-debug-s7* *mibl-debug-updaters*) (format #t "~A: ~A~%" (cyan "structs") structs)))
          ;; removes matching struct from :structnatures
          (matching-struct (find-module-in-rsrc-list!? m-name tgt structs))
-         (_ (if *mibl-debugging* (format #t "~A: ~A~%" (cyan "found struct?") matching-struct)))
+         (_ (if (or *mibl-debug-s7* *mibl-debug-updaters*) (format #t "~A: ~A~%" (cyan "found struct?") matching-struct)))
          )
     (if matching-struct
         (begin ;; we know this file is not in :modules since it was in structs
-          (if *mibl-debugging*
+          (if (or *mibl-debug-s7* *mibl-debug-updaters*)
               (format #t "~A: ~A~%" (red "updating :modules") m-name))
           (alist-update-in! pkg `(:modules ,m-name)
                             (lambda (old)
-                              (if *mibl-debugging*
+                              (if (or *mibl-debug-s7* *mibl-debug-updaters*)
                                   (begin
                                     (format #t "sig Module OLD: ~A\n" old)
                                     (format #t "adding: ~A\n" matching-struct)
@@ -570,11 +606,11 @@
         (let* ((s-assoc (assoc-in '(:signatures :dynamic) pkg))
                ;; (structures (if s-assoc (append (cadr s-assoc) '(Foo . bar)) '()))
                )
-          (if *mibl-debugging*
+          (if (or *mibl-debug-s7* *mibl-debug-updaters*)
               (format #t "~A: ~A~%" (yellow "UPDATING (:signatures :dynamic) : ") s-assoc))
           (alist-update-in! pkg `(:signatures :dynamic)
                             (lambda (old)
-                              (if *mibl-debugging*
+                              (if (or *mibl-debug-s7* *mibl-debug-updaters*)
                                   (begin
                                     (format #t "signatures OLD: ~A\n" old)
                                     (format #t "adding: ~A\n" pr)))
@@ -595,20 +631,20 @@
 ;; principal-fname: fileame w/o extension
 ;; updates :modules with generated files
 (define (update-pkg-modules-with-module! pkg principal-fname)
-  (if *mibl-debugging*
+  (if (or *mibl-debug-s7* *mibl-debug-updaters*)
       (format #t "~A: ~A~%" (ublue "update-pkg-modules-with-module") principal-fname))
   (let* ((pkg-modules (assoc :modules pkg))
-         (_ (if *mibl-debugging* (format #t "~A: ~A~%" (uyellow "pkg-modules") pkg-modules)))
+         (_ (if (or *mibl-debug-s7* *mibl-debug-updaters*) (format #t "~A: ~A~%" (uyellow "pkg-modules") pkg-modules)))
          (m-assoc (list (list (normalize-module-name principal-fname)
                               (cons :ml_ (string->symbol (format #f "~A.ml" principal-fname)))
                               (cons :mli_ (string->symbol (format #f "~A.mli" principal-fname)))))))
-    (if *mibl-debugging*
+    (if (or *mibl-debug-s7* *mibl-debug-updaters*)
         (format #t "~A: ~A~%" (red "updating :modules") m-assoc))
     (if pkg-modules
         (set-cdr! pkg-modules (append (cdr pkg-modules) m-assoc))
         (alist-update-in! pkg `(:modules)
                           (lambda (old)
-                            (if *mibl-debugging*
+                            (if (or *mibl-debug-s7* *mibl-debug-updaters*)
                                 (begin
                                   (format #t ":modules OLD: ~A\n" old)
                                   (format #t "adding: ~A\n" m-assoc)))
@@ -619,7 +655,7 @@
         ;; (set! pkg (append pkg (cons :modules m-assoc))))))
 
 (define (-partition-tgts tgts)
-  (if *mibl-debugging*
+  (if (or *mibl-debug-s7* *mibl-debug-updaters*)
       (format #t "~A: ~A~%" (ublue "-partition-tgts") tgts))
   (let recur ((tgts tgts)
               (module-tgts '())
@@ -678,7 +714,7 @@
 (define update-pkg-files!
   (let ((+documentation+ "INTERNAL. Add tgts to :modules (or :files etc) fld of pkg."))
     (lambda (pkg tgts)
-      (if *mibl-debugging*
+      (if (or *mibl-debug-s7* *mibl-debug-updaters*)
           (begin
             (format #t "~%~A: ~A~%" (bgblue "update-pkg-files!") tgts)
             (format #t "  package: ~A\n" (assoc-val :pkg-path pkg))))
@@ -802,7 +838,7 @@
 ;; javascript: emit 2, one with sfx .js, one without
 
 (define (update-exports-table! ws pfx modes nm pkg-path tgt)
-  (if *mibl-debugging*
+  (if (or *mibl-debug-s7* *mibl-debug-updaters*)
       (begin
         (format #t "~A: ~A , ~A\n" (ublue "update-exports-table!") pfx nm)
         (format #t "~A: (:pkg . ~A) (:tgt . ~A)~%" (uwhite "spec") pkg-path tgt)
@@ -831,8 +867,8 @@
                                   (format #f "~A" tgt)))))))
     ;; (format #t "exports tbl: ~A\n" exports)
 
-    (if *mibl-debugging*
-        (format #t "~A ~A => ~A~%" (bgred "adding to exports") key spec))
+    (if (or *mibl-debug-s7* *mibl-debug-updaters*)
+        (format #t "~A ~A => ~A~%" (red "adding to exports") key spec))
     (if exe
         (begin
           (hash-table-set! exports tgt spec)
@@ -913,16 +949,16 @@
     ))
 
 (define (update-exports-table-with-targets! ws targets pkg-path)
-  (if *mibl-debugging*
+  (if (or *mibl-debug-s7* *mibl-debug-updaters*)
       (format #t "~A: ~A~%" (magenta "update-exports-table-with-targets!") targets))
   (if targets
       (for-each (lambda (target)
-                  (if *mibl-debugging*
+                  (if (or *mibl-debug-s7* *mibl-debug-updaters*)
                       (format #t "~A: ~A~%" (red "target") target))
                   (let* ((pkg-tgt (cdr target))
                          (pkg (assoc-val :pkg pkg-tgt))
                          (tgt (assoc-val :tgt pkg-tgt)))
-                    (if *mibl-debugging*
+                    (if (or *mibl-debug-s7* *mibl-debug-updaters*)
                         (begin
                           (format #t "~A: ~A~%" (magenta "pkg") pkg)
                           (format #t "~A: ~A~%" (magenta "tgt") tgt)))
@@ -947,34 +983,34 @@
                 (cdr targets))))
 
 (define (update-stanza-deps pkg fname mdeps)
-  (if *mibl-debugging*
+  (if (or *mibl-debug-s7* *mibl-debug-updaters*)
       (begin
         (format #t "~A: ~A~%" (ublue "update-stanza-deps") (assoc-val :pkg-path pkg))
         (format #t "~A: ~A~%" (blue "pkg") pkg)
         (format #t "~A: ~A~%" (blue "fname") fname)
         (format #t "~A: ~A~%" (blue "mdeps") mdeps)))
   (let ((mname (filename->module-name fname)))
-    (if *mibl-debugging*
+    (if (or *mibl-debug-s7* *mibl-debug-updaters*)
         (format #t "~A: ~A~%" (blue "mname") mname))
     (for-each (lambda (stanza)
                 (case (car stanza)
                   ((:exports-files))
                   (else
-                   (if *mibl-debugging*
+                   (if (or *mibl-debug-s7* *mibl-debug-updaters*)
                        (format #t "~A: ~A~%" (ucyan "stanza") stanza))
                    (let ((compile-deps (assoc-in '(:compile :manifest :modules) (cdr stanza))))
-                     (if *mibl-debugging*
+                     (if (or *mibl-debug-s7* *mibl-debug-updaters*)
                          (format #t "~A: ~A~%" (cyan "compile-deps (before)") compile-deps))
                      (if compile-deps
                          (if (member mname (cdr compile-deps))
                              (begin
-                               (if *mibl-debugging*
+                               (if (or *mibl-debug-s7* *mibl-debug-updaters*)
                                    (format #t "~A ~A to :compile :manifest ~A~%" (bgcyan "adding") mdeps compile-deps))
                                (set-cdr! compile-deps
                                          (remove-duplicates ;; don't add if its already there
                                           (append (cdr compile-deps)
                                                   mdeps)))
-                               (if *mibl-debugging*
+                               (if (or *mibl-debug-s7* *mibl-debug-updaters*)
                                    (format #t "~A: ~A~%" (cyan "compile-deps (after)") compile-deps))))))
                          )))
                 (assoc-val :mibl pkg))))

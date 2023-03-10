@@ -24,6 +24,10 @@
   (mibl-pretty-print (assoc-val ws *mibl-project*))
   (newline))
 
+(define (mibl-debug-print-project)
+  (mibl-pretty-print *mibl-project*)
+  (newline))
+
 (define (Xmibl-debug-print-pkgs ws)
   ;; (if *mibl-debug-debug*
   ;;     (format #t "~A~%" (bgred "PKG DUMP")))

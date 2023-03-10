@@ -23,10 +23,9 @@ BOOTSTRAP_INCLUDES = [
 
 ########
 cc_test(
-    name = "multiple_test",
-    srcs = ["multiple_test.c"],
-    data = glob(["**"]),
-    # data = glob(["case010/*", "case020/*"]),
+    name = "test",
+    srcs = ["Bzl_test.c"],
+    data = glob(["**"]), # required
     copts = CMD_FLAGS + BOOTSTRAP_INCLUDES + [
         "-I$(GENDIR)/src/hdrs",
 

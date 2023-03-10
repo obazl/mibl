@@ -4,43 +4,11 @@
 ;; mibl/dune/modules.scm
 
 ;;(define (  get-manifest pkg kind wrapped? stanza-alist) ;;  deps
-(define (x-get-manifest pkg kind wrapped? stanza-alist spec) ;;  deps
-  (if *mibl-debugging*
-      (begin
-        (format #t "~A: ~A\n" (ublue "x-get-manifest") stanza-alist)
-        ;; (format #t "~A: ~A\n" (uwhite "pkg") pkg)
-        (format #t "~A: ~A\n" (blue "spec") spec)))
-  ;; (if deps
-  (let* ((submods+sigs-list
-          (modules-fld->submodules-fld kind
-           ;; (assoc 'modules stanza-alist)
-           spec
-           ;; files
-           (assoc :modules pkg)
-           ;; deps
-           (assoc :signatures pkg)
-           (assoc :structures pkg)))
-         (submods+sigs-list (if (equal? (cadr submods+sigs-list)
-                                     '(:signatures))
-                                (list (car submods+sigs-list))
-                                submods+sigs-list))
-         (submods+sigs-list (if (equal? (cdr submods+sigs-list)
-                                     '(:modules))
-                                (cdr submods+sigs-list)
-                                ;; (sort! (cdr submods+sigs-list) sym<?)
-                                submods+sigs-list)))
-    (if *mibl-debugging*
-        (format #t "~A: ~A\n" (uwhite "submods+sigs-list") submods+sigs-list))
-    (if (null? submods+sigs-list)
-        '()
-        (cons :manifest
-              (remove () submods+sigs-list)))))
-
 (define (get-manifest pkg kind wrapped? stanza-alist) ;;  deps
-  (if *mibl-debugging*
+  (if (or *mibl-debug-s7* *mibl-debug-modules*)
       (begin
         (format #t "~A: ~A\n" (ublue "get-manifest") stanza-alist)
-        (format #t "~A: ~A\n" "pkg" pkg)
+        (if *mibl-debug-show-pkgs* (format #t "~A: ~A\n" "pkg" pkg))
         (format #t "~A: ~A\n" "kind" kind)))
   ;; (if deps
   (let* ((submods+sigs-list
@@ -52,6 +20,8 @@
            ;; deps
            (assoc :signatures pkg)
            (assoc :structures pkg)))
+         (_ (if *mibl-debug-modules*
+                (_ (format #t "~A: ~A\n" (uwhite "1 submods+sigs-list") submods+sigs-list))))
          (submods+sigs-list (if (equal? (cadr submods+sigs-list)
                                      '(:signatures))
                                 (list (car submods+sigs-list))
@@ -61,7 +31,7 @@
                                 (cdr submods+sigs-list)
                                 ;; (cdr submods+sigs-list)
                                 submods+sigs-list)))
-    (if *mibl-debugging*
+    (if (or *mibl-debug-s7* *mibl-debug-modules*)
         (format #t "~A: ~A\n" (uwhite "submods+sigs-list") submods+sigs-list))
     (if (null? submods+sigs-list)
         '()
@@ -74,7 +44,7 @@
 
 ;; only used for generated files, so returns :ml_, :mli_
 (define (filename->module-assoc filename)
-  (if *mibl-debugging*
+  (if (or *mibl-debug-s7* *mibl-debug-modules*)
       (format #t "~A: ~A\n" (ublue "filename->module-assoc") filename))
   (let* ((ext (filename-extension filename))
          (pname (principal-name filename))
@@ -119,7 +89,7 @@
   (let ((+documentation+ "Returns module names from modules-assoc, which has the form ((:static (A (:ml a.ml) (:mli a.mli)...) (:dynamic ...))")
         (+signature+ '(get-module-names modules-alist)))
     (lambda (modules-alist)
-      (if *mibl-debugging*
+      (if (or *mibl-debug-s7* *mibl-debug-modules*)
           (format #t "~A: ~A\n" (blue "get-module-names") modules-alist))
       (if modules-alist
           (case (car modules-alist)
@@ -177,16 +147,16 @@
 ;; (define (expand-std-modules modules srcfiles)
 
 (define (resolve-gentargets gentargets sigs structs)
-  (if *mibl-debugging*
+  (if (or *mibl-debug-s7* *mibl-debug-modules*)
       (format #t "resolve-gentargets: ~A\n" gentargets))
   (let ((resolved (map (lambda (f)
-                         (if *mibl-debugging*
+                         (if (or *mibl-debug-s7* *mibl-debug-modules*)
                              (format #t "f: ~A\n" f))
                          (let* ((fname (if (symbol? f) (symbol->string f) f))
                                 (type (if (eq? 0 (fnmatch "*.mli" fname 0))
                                           :mli :ml))
                                 (mname (filename->module-name fname)))
-                           (if *mibl-debugging*
+                           (if (or *mibl-debug-s7* *mibl-debug-modules*)
                                (begin
                                  (format #t "mname: ~A\n" mname)
                                  (format #t "type: ~A\n" type)))
@@ -198,7 +168,7 @@
                                          (alist-update-in!
                                           sigs `(:static)
                                           (lambda (old)
-                                            (if *mibl-debugging*
+                                            (if (or *mibl-debug-s7* *mibl-debug-modules*)
                                                 (format #t "old static: ~A\n" old))
                                             (dissoc `(,mname) old)))
                                          `(:_ ,(car sigmatch)))
@@ -211,7 +181,7 @@
                                          (alist-update-in!
                                           structs `(:static)
                                           (lambda (old)
-                                            (if *mibl-debugging*
+                                            (if (or *mibl-debug-s7* *mibl-debug-modules*)
                                                 (format #t "old static: ~A\n" old))
                                             (dissoc `(,mname) old)))
                                          `(:_ ,(car structmatch)))
@@ -224,7 +194,7 @@
 ;; rather it prints as (symbol "\\"); use same to compare, do
 ;; not compare car to 'symbol, like so:
 ;; (if (not (null? modules))
-;;     (if (equal? (car modules) (symbol "\\"))
+;;     (if (equal? (car modules) (symbol "\\"))  -- or (eq? (car modules) '\)
 ;;         (format #t "EXCEPTING ~A\n" (cdr modules))))
 
 ;; handling '/': in principle it can go anywhere:
@@ -237,7 +207,7 @@
         (+signature+ '(expand-std-modules std-list pkg-modules module-deps sigs structs)))
     ;; modules-ht)))
     (lambda (std-list pkg-modules sigs structs) ;;  module-deps
-      (if *mibl-debugging*
+      (if (or *mibl-debug-s7* *mibl-debug-modules*)
           (begin
             (format #t "~A: ~A\n" (blue "EXPAND-std-modules") std-list)
             (format #t " pkg-modules: ~A\n" pkg-modules)
@@ -265,7 +235,7 @@
 
              ;; (conditionals (assoc :conditionals module-deps))
              )
-        (if *mibl-debugging*
+        (if (or *mibl-debug-s7* *mibl-debug-modules*)
             (begin
               (format #t "pkg-module-names: ~A\n" pkg-module-names)
               (format #t "sig-module-names: ~A\n" sig-module-names)
@@ -277,15 +247,17 @@
                        (exclusions (if (list? (car exclusions))
                                        (car exclusions) exclusions))
                        (exclusions (map normalize-module-name exclusions)))
-                  (if *mibl-debugging*
+                  (if (or *mibl-debug-s7* *mibl-debug-modules*)
                       (format #t "exclusions: ~A\n" exclusions))
                   (let ((winnowed (remove-if
                                    list
                                    (lambda (item)
                                      (let ((norm (normalize-module-name item)))
-                                       ;; (format #t "item ~A\n" norm)
-                                       ;; (format #t "mem? ~A: ~A\n" exclusions
-                                       ;;         (member norm exclusions))
+                                       (if *mibl-debug-modules*
+                                           (begin
+                                             (format #t "item ~A\n" norm)
+                                             (format #t "mem? ~A: ~A\n" exclusions
+                                                     (member norm exclusions))))
                                        (if (member norm exclusions) #t #f)))
                                    pkg-module-names)))
                     ;; returning
@@ -313,7 +285,7 @@
         (+signature+ '(kind modules-fld->submodules-fld modules-spec pkg-modules pkg-sigs pkg-structs))) ;;  modules-deps
         ;; modules-ht)))
     (lambda (kind modules-spec pkg-modules pkg-sigs pkg-structs)
-      (if *mibl-debugging*
+      (if (or *mibl-debug-s7* *mibl-debug-modules*)
           (begin
             (format #t "~A\n" (ublue "modules-fld->submodules-fld"))
             (format #t "modules-spec: ~A\n" modules-spec)
@@ -328,26 +300,34 @@
               (if modules-spec
                   (let* ((modules-spec (map normalize-module-name
                                             (cdr modules-spec)))
+                         (_ (if *mibl-debug-modules*
+                                (format #t "~A: ~A~%" (red "pkg-modules") pkg-modules)))
                          (pkg-module-names (if pkg-modules
                                                (get-module-names
                                                 pkg-modules)
                                                '()))
+
                          (struct-module-names (get-module-names pkg-structs))
-                         ;; (_ (if *mibl-debugging* (format #t "struct-module-names:: ~A\n" struct-module-names)))
+                         (_ (if (or *mibl-debug-s7* *mibl-debug-modules*) (format #t "struct-module-names:: ~A\n" struct-module-names)))
+
                          (pkg-module-names (if struct-module-names
                                                (append struct-module-names
                                                        pkg-module-names)
                                                pkg-module-names))
-                         ;; (_ (if *mibl-debugging* (format #t "pkg-module-names:: ~A\n" pkg-module-names)))
-                         (sig-module-names (get-module-names pkg-sigs))
-                         ;; (_ (if *mibl-debugging* (format #t "sig-module-names:: ~A\n" sig-module-names)))
-                         ;; (_ (if *mibl-debugging* (format #t "modules-spec:: ~A\n" modules-spec)))
+                         (_ (if (or *mibl-debug-s7* *mibl-debug-modules*) (format #t "pkg-module-names:: ~A\n" pkg-module-names)))
+                         (sig-module-names (if pkg-sigs
+                                               (get-module-names pkg-sigs)
+                                               '()))
+                         ;; (_ (if (or *mibl-debug-s7* *mibl-debug-modules*) (format #t "sig-module-names:: ~A\n" sig-module-names)))
+                         ;; (_ (if (or *mibl-debug-s7* *mibl-debug-modules*) (format #t "modules-spec:: ~A\n" modules-spec)))
                          (tmp (let recur ((modules-spec modules-spec)
                                           (submods '())
                                           (subsigs '()))
-                                ;; (format #t "RECUR modules-spec ~A\n" modules-spec)
-                                ;; (format #t "  submods: ~A\n" submods)
-                                ;; (format #t "  subsigs: ~A\n" subsigs)
+                                (if *mibl-debug-modules*
+                                    (begin
+                                      (format #t "RECUR modules-spec ~A\n" modules-spec)
+                                      (format #t "  submods: ~A\n" submods)
+                                      (format #t "  subsigs: ~A\n" subsigs)))
 
                                 (cond
                                  ((null? modules-spec)
@@ -363,6 +343,8 @@
                                              '() (cons :signatures subsigs))))))
                                  ;; (reverse submods)
 
+                                 ;; WARNING: in case of '\' the printer says (symbol "\\")
+                                 ;; but it means it is eq? to '\  .
                                  ((pair? (car modules-spec))
                                   (begin
                                     ;; (format #t "(pair? (car modules-spec))\n")
@@ -377,13 +359,19 @@
                                          pkg-modules
                                          ;; deps
                                          pkg-sigs pkg-structs)
-                                        (modules-fld->submodules-fld kind
-                                         (cons
-                                          'modules (car modules-spec))
-                                         pkg-modules
-                                         ;; deps
-                                         pkg-sigs
-                                         pkg-structs))))
+                                        (if (symbol? (car modules-spec))
+                                            (begin
+                                              (format #t "SYM: ~A~%" (eq? '\ (car modules-spec)))
+                                              (recur (cdr modules-spec)
+                                                     submods
+                                                     (cons :HAHA subsigs)))
+                                            (modules-fld->submodules-fld kind
+                                                                         (cons
+                                                                          'modules (car modules-spec))
+                                                                         pkg-modules
+                                                                         ;; deps
+                                                                         pkg-sigs
+                                                                         pkg-structs)))))
 
                                  ((equal? :standard (car modules-spec))
                                   ;; e.g. (modules :standard ...)
@@ -408,7 +396,8 @@
                                  ;; inclusions, e.g. (modules a b c)
                                  (else
                                   (begin
-                                    ;; (format #t "inclusions: ~A\n" modules-spec)
+                                    (if *mibl-debug-modules*
+                                        (format #t "inclusions: ~A\n" modules-spec))
                                     ;; (format #t "pkg-modules: ~A\n" pkg-module-names)
                                     ;; (format #t "sig-modules: ~A\n" sig-module-names)
                                     (if (member (car modules-spec) pkg-module-names)
@@ -430,7 +419,7 @@
                     tmp) ;; let*
                   ;; no modules-spec - default is all (lib) or none (exe)
                   (begin
-                    (if *mibl-debugging*
+                    (if (or *mibl-debug-s7* *mibl-debug-modules*)
                         (format #t "~A~%" (bgred "no modules-spec")))
                     (if (equal? kind :exe)
                         ;; exclude all
@@ -439,16 +428,16 @@
                                                  (get-module-names
                                                   pkg-modules)
                                                  '()))
-                           ;; (_ (if *mibl-debugging* (format #t "~A: ~A\n" (white "pkg-module-names") pkg-module-names)))
+                           ;; (_ (if (or *mibl-debug-s7* *mibl-debug-modules*) (format #t "~A: ~A\n" (white "pkg-module-names") pkg-module-names)))
                            (struct-module-names (get-module-names pkg-structs))
-                           ;; (_ (if *mibl-debugging* (format #t "struct-module-names:: ~A\n" struct-module-names)))
+                           ;; (_ (if (or *mibl-debug-s7* *mibl-debug-modules*) (format #t "struct-module-names:: ~A\n" struct-module-names)))
                            (all-module-names (if struct-module-names
                                                  (append struct-module-names
                                                          pkg-module-names)
                                                  pkg-module-names))
-                           ;; (_ (if *mibl-debugging* (format #t "all module-names:: ~A\n" all-module-names)))
+                           ;; (_ (if (or *mibl-debug-s7* *mibl-debug-modules*) (format #t "all module-names:: ~A\n" all-module-names)))
                            (sig-module-names (get-module-names pkg-sigs))
-                           ;; (_ (if *mibl-debugging* (format #t "sig-module-names:: ~A\n" sig-module-names)))
+                           ;; (_ (if (or *mibl-debug-s7* *mibl-debug-modules*) (format #t "sig-module-names:: ~A\n" sig-module-names)))
                            )
 
                       (list
@@ -457,7 +446,7 @@
                            '() (cons :signatures sig-module-names))))))
                   ) ;; if modules-spec
               (begin
-                (if *mibl-debugging*
+                (if (or *mibl-debug-s7* *mibl-debug-modules*)
                     (format #t "modules-spec but no pkg modules nor structs\n"))
                 '((:modules) (:signatures)))))
       ) ;; lamda

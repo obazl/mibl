@@ -201,11 +201,9 @@ EXPORT void show_bazel_config(void)
     log_info(GRN "Bazel configuration summary:" CRESET);
     if (getenv("BAZEL_TEST")) {
         if (getenv("BUILD_WORKSPACE_DIRECTORY")) {
-            log_info("Configured for 'bazel run', TEST_TARGET: %s",
-                     getenv("TEST_TARGET"));
+            log_info("Configured for 'bazel run' with TEST_TARGET");
         } else {
-            log_info("Configured for 'bazel test', TEST_TARGET %s",
-                     getenv("TEST_TARGET"));
+            log_info("Configured for 'bazel test' with TEST_TARGET");
         }
     }
     else if (getenv("BUILD_WORKSPACE_DIRECTORY")) {
@@ -217,7 +215,11 @@ EXPORT void show_bazel_config(void)
                 "Non-bazel environment. This tool must be run from a Bazel workspace root using 'bazel run'.\n");
         exit(EXIT_FAILURE);
     }
-    log_info("\tBAZEL_TEST?: %s", getenv("BAZEL_TEST"));
+    log_info("\tBAZEL_TEST: %s", getenv("BAZEL_TEST"));
+    log_info("\tTEST_TARGET: %s", getenv("TEST_TARGET")); //optional
+    log_info("\tTEST_SRCDIR: %s", getenv("TEST_SRCDIR")); //required
+    log_info("\tTEST_WORKSPACE: %s", getenv("TEST_WORKSPACE"));
+    log_info("\tBINDIR: %s", getenv("BINDIR"));
     log_info("\trootws: %s", rootws);
     log_info("\tHOME: %s", getenv("HOME"));
     log_info("\tPWD: %s", getenv("PWD"));

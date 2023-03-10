@@ -1,5 +1,7 @@
+#include <libgen.h>
 #include <stdlib.h>             /* putenv */
 #include <unistd.h>             /* getcwd */
+#include <sys/errno.h>
 
 #include "gopt.h"
 #include "log.h"
@@ -22,6 +24,8 @@ extern bool trace;
 extern bool verbose;
 
 s7_scheme *s7;
+
+s7_pointer ws_tbl;
 
 static const char *_mpp(s7_scheme *sc, s7_pointer obj) /* (pp obj) */
 {
@@ -47,20 +51,10 @@ void tearDown(void) {
 }
 
 UT_string *setter;
-/* char *parsetree_expected = */
-/* (hash-table "mibl/test/library/multiple/case010" ((:ws-path "/private/var/tmp/_bazel_gar/6675c906ec3a331e206e11211d4c18ac/sandbox/darwin-sandbox/494/execroot/mibl/bazel-out/darwin-fastbuild/bin/mibl/test/library/multiple/case010_test.runfiles/mibl") (:pkg-path "mibl/test/library/multiple/case010") (:realpath "/private/var/tmp/_bazel_gar/6675c906ec3a331e206e11211d4c18ac/sandbox/darwin-sandbox/494/execroot/mibl/bazel-out/darwin-fastbuild/bin/mibl/test/library/multiple/case010_test.runfiles/mibl/mibl/test/library/multiple/case010") (dune (library (name orderbook) (modules orderbook) (public_name ocxmr.orderbook) (libraries ocxmr.make_orderbook ocxmr.quote_include) (preprocess (pps ppx_jane ppx_sexp_conv))) (library (name make_orderbook) (modules make_orderbook orderbook_intf) (public_name ocxmr.make_orderbook) (libraries core ocxmr.price_comparator ocxmr.market_event) (preprocess (pps ppx_jane))) (library (name orderbook_test) (modules orderbook_test) (libraries ocxmr.orderbook) (inline_tests) (preprocess (pps ppx_jane)))) (:structures (:static (Make_orderbook . make_orderbook.ml) (Orderbook_intf . orderbook_intf.ml) (Orderbook_test . orderbook_test.ml))) (:modules (Orderbook (:ml . orderbook.ml) (:mli . orderbook.mli))))) */
 
 void test_a(void) {
     log_info("test_a");
-    char *rootdir;
-    char *pathdir;
 
-    /* rootdir = "mibl/test/library/multiple"; */
-    /* pathdir = "mibl/test/library/multiple"; */
-
-    /* s7_pointer pkg_tbl = load_project(getcwd(NULL,0), //rootdir, */
-    /*                                   pathdir); */
-    /* log_debug("%s", TO_STR(pkg_tbl)); // s7_object_to_c_string(s7, pkg_tbl)); */
 
     /* s7_pointer pp = s7_name_to_value(s7, "mibl-pretty-print"); */
     /* if (pp == s7_undefined(s7)) { */
@@ -98,8 +92,30 @@ void test_a(void) {
 }
 
 void test_b(void) {
-    /* log_info("test_b"); */
+    log_info("test_b");
+
+    /* printf("X: %s\n", TO_STR(ws_tbl)); */
+
+    char *sexp =
+        "(let* ((pkg-sexp (eval (read (open-input-string ws-mibl))))) "
+        /* "       (pkgs-ht (car (assoc-val :pkgs (cdr pkg-sexp)))) " */
+        /* "       (case010 (hash-table-ref pkgs-ht \"case010\"))) " */
+        "  (format #t \"~A~%\" pkg-sexp))"
+        ;
+    char *sexp2 =
+        "(let* ((pkgs-ht (eval ws-mibl))) "
+        "  (format #t \"~A~%\" pkgs-ht))"
+        ;
+
+    s7_eval_c_string_with_environment(s7, sexp,
+                                      s7_inlet(s7, s7_list(s7, 1, s7_cons(s7, s7_make_symbol(s7, "ws-mibl"), ws_tbl))));
+
+
+    s7_flush_output_port(s7, s7_current_output_port(s7));
+
     TEST_ASSERT_TRUE(true);
+
+
 }
 
 void _print_usage(void) {
@@ -188,8 +204,8 @@ extern bool emit_parsetree;
 
 int main(int argc, char **argv)
 {
-    fflush(NULL);
     argc = gopt (argv, options);
+    (void)argc;
     gopt_errors (argv[0], options);
 
     if (options[FLAG_HELP].count) {
@@ -277,24 +293,131 @@ int main(int argc, char **argv)
         emit_parsetree = true;
     }
 
-    bazel_configure();
+    /* **************************************************************** */
+    /* In test env:
+       BAZEL_TEST 1
+       TEST_TARGET - label of this target, relative to BUILD_WS_DIRECTORY
+       BUILD_WORKSPACE_DIRECTORY - set
+       BUILD_WORKING_DIRECTORY - set
+       RUNFILES_DIR - set
 
-    mibl_configure();
+       task: config s7 with runfiles, then chdir to
+               BUILD_WORKSPACE_DIRECTORY/TEST_TARGET pkg
 
-    s7 = s7_configure();
+       alternative: put the project tree in runfiles. the drawback is
+       that the paths would be relative to the launch dir, not the dir
+       containing the test target. but we want that dir to be like a ws.
 
-    s7_load(s7, "dune.scm");
+       alternative: argv[0] is the test executable in the test case
+       dir. take its dirname. or use TEST_SRCDIR which is dirname(argv[0])
 
-    initialize_mibl_data_model(s7);
+       But according the the Test Encyclopedia, we should not change
+       directory, but use the runfiles (TEST_SRCDIR, TEST_WORKSPACE,
+       etc.)
 
-    char *rootdir;
-    char *pathdir;
-    rootdir = "mibl/test/library/multiple";
-    pathdir = "mibl/test/library/multiple";
+       https://bazel.build/reference/test-encyclopedia#initial-conditions:
 
-    s7_pointer pkg_tbl = load_project(getcwd(NULL,0), //rootdir,
-                                      pathdir);
-                                      /* getcwd(NULL,0)); */
+       "The test runner must invoke each test with the path to the
+       test executable in argv[0]. This path must be relative and
+       beneath the test's current directory (which is in the runfiles
+       tree, see below). The test runner should not pass any other
+       arguments to a test unless the user explicitly requests it."
+
+       "The initial working directory shall be
+       $TEST_SRCDIR/$TEST_WORKSPACE."
+
+       "File descriptors 1 (stdout) and 2 (stderr) shall be open for
+       writing, but what they are attached to is unspecified. It could
+       be a terminal, a pipe, a regular file, or anything else to
+       which characters can be written."
+
+       "Tests must not assume that any constant path is available for
+       their exclusive use."
+
+       "Tests should create files only within the directories
+       specified by $TEST_TMPDIR and $TEST_UNDECLARED_OUTPUTS_DIR (if
+       set). These directories will be initially empty. Tests must not
+       attempt to remove, chmod, or otherwise alter these directories."
+
+       "Tests must access inputs through the runfiles mechanism, or
+       other parts of the execution environment which are specifically
+       intended to make input files available."
+
+       "Tests must not access other outputs of the build system at
+       paths inferred from the location of their own executable."
+
+       "Tests should avoid using paths containing .. components within
+       the runfiles tree."
+
+       "No directory, file, or symlink within the runfiles tree
+       (including paths which traverse symlinks) should be writable.
+       (It follows that the initial working directory should not be
+       writable.) Tests must not assume that any part of the runfiles
+       is writable, or owned by the current user (for example, chmod
+       and chgrp may fail)."
+
+       "The runfiles tree (including paths which traverse symlinks)
+       must not change during test execution. Parent directories and
+       filesystem mounts must not change in any way which affects the
+       result of resolving a path within the runfiles tree."
+
+     */
+    s7_int i, gc_loc;
+
+    /* we do not crawl the project, but we do use s7, so we need to
+       configure. */
+    struct mibl_config_s *mibl_config = mibl_s7_init(NULL, /* script dir */
+                                                     NULL); /* ws */
+
+    log_info("cwd: %s", getcwd(NULL, 0));
+    show_bazel_config();
+    /* show_mibl_config(); */
+    /* show_s7_config(); */
+    log_info("arg0: %s", argv[0]);
+
+    char *test_pgm = strdup(argv[0]); // free
+    errno = 0;
+    char *test_root = dirname(test_pgm);
+    if (test_root == NULL) {
+        perror(test_pgm);
+    }
+    UT_string *pkg_mibl_file;
+    utstring_new(pkg_mibl_file);
+    utstring_printf(pkg_mibl_file, "%s/PARSETREE.s7", test_root);
+
+    // pkg_mibl_file = $TEST_SRCDIR/mibl/scm/test/library/multple/WS.mibl
+    //  = $TEST_SRCDIR + pkgpart(TEST_TARGET) + /WS.mibl
+
+    /* char *pkg_mibl_file = "scm/test/library/multiple/WS.mibl"; */
+    char *s1;
+    s7_pointer port = s7_open_input_file(s7,
+                                         utstring_body(pkg_mibl_file), "r");
+    if (!s7_is_input_port(s7, port)) {
+        {log_error("%s is not an input port?\n", s1 = TO_STR(port)); free(s1);}
+        exit(EXIT_FAILURE);
+    } else {
+        gc_loc = s7_gc_protect(s7, port);
+        /* should be exactly one sexp in PKG.mibl */
+        ws_tbl = s7_read(s7, port);
+        /* otherwise: */
+        /* while(true) { */
+        /*     s7_pointer code; */
+        /*     code = s7_read(sc, port); */
+        /*     if (code == s7_eof_object(sc)) break; */
+        /*     /\* do something with this sexp *\/ */
+        /* } */
+        s7_close_input_port(s7, port);
+        s7_gc_unprotect_at(s7, gc_loc);
+    }
+    /* s1 = TO_STR(pkg); */
+    /* printf("PKG.mibl: %s", s1); */
+    /* free(s1); */
+    /* (call-with-input-file "PKG.mibl" */
+    /*  (lambda (p) */
+    /*   (let f ((x (read p))) */
+    /*    (if (eof-object? x) */
+    /*        '() */
+    /*             (cons x (f (read p))))))) */
 
     UNITY_BEGIN();
     RUN_TEST(test_a);

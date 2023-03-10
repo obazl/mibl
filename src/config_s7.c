@@ -1114,6 +1114,9 @@ void _define_s7_keywords_and_symbols(void)
 }
 
 /* policy: global vars are earmuffed */
+/* Client can only override these. May be set by .miblrc or --flags,
+   but if neither they must still be defined so scm code does not
+   break with undefined var. */
 void _define_s7_global_vars(void)
 {
 #if defined(DEBUG_TRACE)
@@ -1131,13 +1134,18 @@ void _define_s7_global_vars(void)
 
     s7_define_variable(s7, "*mibl-debugging*",
                        debug_scm? s7_t(s7) : s7_f(s7));
+    s7_define_variable(s7, "*mibl-debug-action-deps*", s7_f(s7));
+    s7_define_variable(s7, "*mibl-debug-action-directives*", s7_f(s7));
     s7_define_variable(s7, "*mibl-debug-alias*", s7_f(s7));
+    s7_define_variable(s7, "*mibl-debug-cleanup*", s7_f(s7));
     s7_define_variable(s7, "*mibl-debug-emit*", s7_f(s7));
     s7_define_variable(s7, "*mibl-debug-executables*", s7_f(s7));
+    s7_define_variable(s7, "*mibl-debug-expanders*", s7_f(s7));
     s7_define_variable(s7, "*mibl-debug-genrules*", s7_f(s7));
     s7_define_variable(s7, "*mibl-debug-loads*", s7_f(s7));
     s7_define_variable(s7, "*mibl-debug-mibl*", s7_f(s7));
     s7_define_variable(s7, "*mibl-debug-ppx*", s7_f(s7));
+    s7_define_variable(s7, "*mibl-debug-rule-stanzas*", s7_f(s7));
 
     s7_define_variable(s7, "*mibl-quiet*", s7_f(s7));
 
@@ -1145,7 +1153,7 @@ void _define_s7_global_vars(void)
 
     /* logging */
     s7_define_variable(s7, "*mibl-show-exports*", s7_f(s7));
-    s7_define_variable(s7, "*mibl-show-mibl*", s7_f(s7));
+    s7_define_variable(s7, "*mibl-show-project*", s7_f(s7));
     s7_define_variable(s7, "*mibl-show-parsetree*", s7_f(s7));
     s7_define_variable(s7, "*mibl-show-starlark*", s7_f(s7));
 
@@ -1196,33 +1204,33 @@ void _define_s7_global_vars(void)
     */
     s7_define_variable(s7, "*mibl-dune-execlib-includes-main*", s7_f(s7));
 
-    /* miblrc:  *mibl-dump-pkgs*, *mibl-scan-exclusions* */
-    /* populate pkgs list, so scheme code can use it */
-    char **p = NULL;
-    s7_pointer _s7_pkgs = s7_nil(s7);
-    while ( (p=(char**)utarray_next(mibl_config.pkgs, p))) {
-#if defined(DEBUG_TRACE)
-        if (mibl_debug) printf("Adding to pkgs list: %s\n", *p);
-#endif
-        _s7_pkgs = s7_cons(s7, s7_make_string(s7, *p), _s7_pkgs);
-    }
-    s7_define_variable(s7, "*mibl-dump-pkgs*", _s7_pkgs);
+/*     /\* miblrc:  *mibl-dump-pkgs*, *mibl-scan-exclusions* *\/ */
+/*     /\* populate pkgs list, so scheme code can use it *\/ */
+/*     char **p = NULL; */
+/*     s7_pointer _s7_pkgs = s7_nil(s7); */
+/*     while ( (p=(char**)utarray_next(mibl_config.pkgs, p))) { */
+/* #if defined(DEBUG_TRACE) */
+/*         if (mibl_debug) printf("Adding to pkgs list: %s\n", *p); */
+/* #endif */
+/*         _s7_pkgs = s7_cons(s7, s7_make_string(s7, *p), _s7_pkgs); */
+/*     } */
+/*     s7_define_variable(s7, "*mibl-dump-pkgs*", _s7_pkgs); */
 
-    /* populate exclusions list, so scheme code can use it */
-    p = NULL;
-    s7_pointer _s7_exclusions = s7_nil(s7);
-    while ( (p=(char**)utarray_next(mibl_config.exclude_dirs, p))) {
-#if defined(DEBUG_TRACE)
-        if (mibl_debug_miblrc)
-            log_debug("Adding to exlusions list: %s",*p);
-#endif
-        _s7_exclusions = s7_cons(s7, s7_make_string(s7, *p), _s7_exclusions);
-    }
-#if defined(DEBUG_TRACE)
-    if (mibl_debug)
-        log_debug("exclusions list: %s", TO_STR(_s7_exclusions));
-#endif
-    s7_define_variable(s7, "*mibl-scan-exclusions*", _s7_exclusions);
+/*     /\* populate exclusions list, so scheme code can use it *\/ */
+/*     p = NULL; */
+/*     s7_pointer _s7_exclusions = s7_nil(s7); */
+/*     while ( (p=(char**)utarray_next(mibl_config.exclude_dirs, p))) { */
+/* #if defined(DEBUG_TRACE) */
+/*         if (mibl_debug_miblrc) */
+/*             log_debug("Adding to exlusions list: %s",*p); */
+/* #endif */
+/*         _s7_exclusions = s7_cons(s7, s7_make_string(s7, *p), _s7_exclusions); */
+/*     } */
+/* #if defined(DEBUG_TRACE) */
+/*     if (mibl_debug) */
+/*         log_debug("exclusions list: %s", TO_STR(_s7_exclusions)); */
+/* #endif */
+    /* s7_define_variable(s7, "*mibl-scan-exclusions*", _s7_exclusions); */
 }
 
 EXPORT void show_s7_config(void)

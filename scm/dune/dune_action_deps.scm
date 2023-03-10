@@ -40,7 +40,7 @@
 ;; called recursively
 
 (define (add-literal-to-expanded-deps local? expanded-path expanded-deps)
-  (if *mibl-debugging*
+  (if (or *mibl-debug-action-deps* *mibl-debug-s7*)
       (begin
         (format #t "~A~%" (blue "add-literal-to-expanded-deps"))
         (format #t "~A: ~A~%" (white "expanded-path") expanded-path)
@@ -61,13 +61,13 @@
 
 ;; if file is not in this pkg files, add it to filegroups table
 (define (handle-filename-literal-arg ws dep paths)
-  (if *mibl-debugging*
+  (if (or *mibl-debug-action-deps* *mibl-debug-s7*)
       (begin
         (format #t "~A: ~A\n" (ublue "handle-filename-literal-arg") dep)
         (format #t "pkg-path: ~A\n" (assoc-val :pkg-path paths))))
-  (let* (;; (_ (if *mibl-debugging* (format #t "dep: ~A\n" dep)))
+  (let* (;; (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "dep: ~A\n" dep)))
          (pkg-path (car (assoc-val :pkg-path paths)))
-         (_ (if *mibl-debugging* (format #t "pkg-path: ~A~%" pkg-path)))
+         (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "pkg-path: ~A~%" pkg-path)))
          (ws-path (car (assoc-val :ws-path paths)))
          ;; dep always relative: prepend pkg dir, may give path with .. segs
          ;; etc. then normalize
@@ -78,16 +78,16 @@
          ;; we can prepend cwd and normalize
 
          (dep-path (format #f "~A/~A" pkg-path dep))
-         (_ (if *mibl-debugging* (format #t "dep-path: ~A~%" dep-path)))
+         (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "dep-path: ~A~%" dep-path)))
 
          (canonical-path (->canonical-path dep-path))
-         (_ (if *mibl-debugging* (format #t "canonical-path: ~A~%" canonical-path)))
+         (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "canonical-path: ~A~%" canonical-path)))
 
          (kind (if (file-exists? canonical-path)
                    :static :dynamic))
-         (_ (if *mibl-debugging* (format #t "~A: ~A~%" "kind" kind)))
+         (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "~A: ~A~%" "kind" kind)))
 
-         (_ (if *mibl-debugging* (format #t "(dirname canonical-path) ~A~%"
+         (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "(dirname canonical-path) ~A~%"
                     (dirname canonical-path))))
 
          ;; (dirname X) => "./", not "."
@@ -95,17 +95,17 @@
                           (equal? pkg-path "."))
                      #t
                      (equal? (dirname canonical-path) pkg-path)))
-         (_ (if *mibl-debugging* (format #t "local? ~A~%" local?)))
+         (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "local? ~A~%" local?)))
 
          (path (if local?
                    dep
                    canonical-path))
                    ;; (string-append pkg-path "/" canonical-path)))
-         (_ (if *mibl-debugging* (format #t "path: ~A~%" path)))
+         (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "path: ~A~%" path)))
 
          ;; (expanded-path (if local? path canonical-path))
          (expanded-path canonical-path)
-         (_ (if *mibl-debugging* (format #t "~A: ~A~%" (bgred "expanded-path") expanded-path)))
+         (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "~A: ~A~%" (bgred "expanded-path") expanded-path)))
 
          (parent (let ((parent (dirname expanded-path)))
                    (if (string=? "./" parent) "." parent)))
@@ -114,7 +114,7 @@
                      (basename expanded-path)
                      (basename expanded-path)))
                      ;;(string->keyword (format #f "fg_~A" (basename expanded-path)))))
-         (_ (if *mibl-debugging* (format #t "~A: ~A~%" (bgred "TGT") tgt)))
+         (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "~A: ~A~%" (bgred "TGT") tgt)))
 
          (tgt-tag (if (equal? pkg-path parent)
                       :tgt :tgt))
@@ -134,7 +134,7 @@
          ;;      (basename expanded-path)
          ;;      expanded-path))
          )
-    (if *mibl-debugging*
+    (if (or *mibl-debug-action-deps* *mibl-debug-s7*)
         (begin
           (format #t "FILENAME LITERAL : ~A (~A)\n" dep (type-of dep))
           (format #t "expanded-path: ~A\n" expanded-path)
@@ -167,16 +167,16 @@
 ;; WARNING: this does more than handle the dep, it 'recurs' over
 ;; deplist to produce expanded-deps. FIXME
 (define (handle-filename-literal-dep ws dep deplist paths expanded-deps)
-  (if *mibl-debugging*
+  (if (or *mibl-debug-action-deps* *mibl-debug-s7*)
       (begin
         (format #t "~A: ~A\n" (blue "handle-filename-literal-dep") dep)
         (format #t "deplist: ~A\n" deplist)
         (format #t "pkg path: ~A\n" (assoc-val :pkg-path paths))
         (format #t "expanded-deps: ~A\n" expanded-deps)))
 
-  (let* (;; (_ (if *mibl-debugging* (format #t "dep: ~A\n" dep)))
+  (let* (;; (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "dep: ~A\n" dep)))
          (pkg-path (car (assoc-val :pkg-path paths)))
-         (_ (if *mibl-debugging* (format #t "pkg-path: ~A~%" pkg-path)))
+         (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "pkg-path: ~A~%" pkg-path)))
          (ws-path (car (assoc-val :ws-path paths)))
          ;; dep always relative: prepend pkg dir, may give path with .. segs
          ;; etc. then normalize
@@ -187,37 +187,37 @@
          ;; we can prepend cwd and normalize
 
          (dep-path (format #f "~A/~A" pkg-path dep))
-         (_ (if *mibl-debugging* (format #t "dep-path: ~A~%" dep-path)))
+         (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "dep-path: ~A~%" dep-path)))
 
          (canonical-path (->canonical-path dep-path))
-         (_ (if *mibl-debugging* (format #t "canonical-path: ~A~%" canonical-path)))
+         (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "canonical-path: ~A~%" canonical-path)))
 
          (kind (if (file-exists? canonical-path)
                    :static :dynamic))
-         (_ (if *mibl-debugging* (format #t "~A: ~A~%" "kind" kind)))
+         (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "~A: ~A~%" "kind" kind)))
 
-         (_ (if *mibl-debugging* (format #t "(dirname canonical-path) ~A~%"
+         (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "(dirname canonical-path) ~A~%"
                     (dirname canonical-path))))
 
          (local? (equal? (dirname canonical-path)
                          (car (assoc-val :pkg-path paths))))
-         (_ (if *mibl-debugging* (format #t "local? ~A~%" local?)))
+         (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "local? ~A~%" local?)))
 
          (path (if local?
                    dep
                    canonical-path))
                    ;; (string-append pkg-path "/" canonical-path)))
-         (_ (if *mibl-debugging* (format #t "path: ~A~%" path)))
+         (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "path: ~A~%" path)))
 
          ;; (expanded-path (if local? path canonical-path))
          (expanded-path canonical-path)
-         (_ (if *mibl-debugging* (format #t "~A: ~A~%" (bgred "expanded-path") expanded-path)))
+         (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "~A: ~A~%" (bgred "expanded-path") expanded-path)))
 
          (tgt (if (equal? pkg-path (dirname expanded-path))
                      (basename expanded-path)
                      (basename expanded-path)))
                      ;;(string->keyword (format #f "fg_~A" (basename expanded-path)))))
-         (_ (if *mibl-debugging* (format #t "~A: ~A~%" (bgred "TGT") tgt)))
+         (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "~A: ~A~%" (bgred "TGT") tgt)))
 
          (tgt-tag (if (equal? pkg-path (dirname expanded-path))
                       :tgt :tgt)) ;; :fg))
@@ -237,7 +237,7 @@
          ;;      (basename expanded-path)
          ;;      expanded-path))
          )
-    (if *mibl-debugging*
+    (if (or *mibl-debug-action-deps* *mibl-debug-s7*)
         (begin
           (format #t "FILENAME LITERAL : ~A (~A)\n" dep (type-of dep))
           (format #t "expanded-path: ~A\n" expanded-path)
@@ -263,14 +263,14 @@
                     )))
 
 (define (deps->tag-for-file deps arg)
-  (if *mibl-debugging*
+  (if (or *mibl-debug-action-deps* *mibl-debug-s7*)
       (begin
         (format #t "~A: ~A~%" (ublue "deps->tag-for-file") arg)
         (format #t "~A: ~A~%" (uwhite "deps") deps)))
 
   (let* ((key (string->keyword (format #f "~A" arg)))
          (match (find-if (lambda (dep)
-                           (if *mibl-debugging*
+                           (if (or *mibl-debug-action-deps* *mibl-debug-s7*)
                                (format #t "~A: ~A~%" (uwhite "dep") dep))
                            (case (cdr dep)
                              ((::unresolved ::opam-pkg) #f)
@@ -278,44 +278,44 @@
                               (if (equal? (format #f "~A" (car dep)) (format #f "~A" key))
                                   #t
                                   (let ((tgt (assoc-val :tgt (cdr dep))))
-                                    (if *mibl-debugging*
+                                    (if (or *mibl-debug-action-deps* *mibl-debug-s7*)
                                         (begin
                                           (format #t "~A: ~A (~A)~%" (uwhite "tgt") tgt (type-of tgt))
                                           (format #t "~A: ~A (~A)~%" (uwhite "arg") arg (type-of arg))
                                           (format #t "~A: ~A~%" (uwhite "tgt == arg") (equal? (format #f "~A" (car dep)) (format #f "~A" arg)))))
                                     (equal? (format #f "~A" (car dep)) (format #f "~A" arg)))))))
                          (cdr deps))))
-    (if *mibl-debugging*
+    (if (or *mibl-debug-action-deps* *mibl-debug-s7*)
         (format #t "~A: ~A~%" (blue "match") match))
     (if match (car match) #f)))
 
 (define (targets->tag-for-file targets arg)
-  (if *mibl-debugging*
+  (if (or *mibl-debug-action-deps* *mibl-debug-s7*)
       (begin
         (format #t "~A: ~A~%" (blue "targets->tag-for-file") arg)
         (format #t "~A: ~A~%" (white "targets") targets)))
   (let* ((targets (cdr targets))
          (match (find-if (lambda (tgt)
-                           (if *mibl-debugging*
+                           (if (or *mibl-debug-action-deps* *mibl-debug-s7*)
                                (format #t "~A: ~A~%" (cyan "tgt") tgt))
                            (let ((tgt (assoc-val :tgt (cdr tgt))))
-                             (if *mibl-debugging*
+                             (if (or *mibl-debug-action-deps* *mibl-debug-s7*)
                                  (format #t "~A: ~A~%" (cyan "tgt") tgt))
                              (equal? tgt arg)))
                          targets)))
-    (if *mibl-debugging*
+    (if (or *mibl-debug-action-deps* *mibl-debug-s7*)
         (format #t "~A: ~A~%" (cyan "match") match))
     (if match (car match) #f)))
 
 ;; tagged literals: (:foo foo.ml), (:foo ../foo.ml), (:foo bar/foo.ml)
 (define (handle-tagged-literal-dep ws deplist paths expanded-deps)
-  (if *mibl-debugging*
+  (if (or *mibl-debug-action-deps* *mibl-debug-s7*)
       (begin
         (format #t "~A: ~A\n" (blue "handle-tagged-literal-dep") deplist)
         (format #t "expanded-deps: ~A\n" expanded-deps)
         (format #t "car deplist: ~A (~A)\n" (car deplist) (type-of (car deplist)))))
   (let* ((tag (car deplist))
-         (_ (if *mibl-debugging* (format #t "~A: ~A~%" (yellow "tag is kw?") (keyword? tag))))
+         (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "~A: ~A~%" (yellow "tag is kw?") (keyword? tag))))
          ;; (lbl (string->keyword (format #f "~A"
          ;;                               (car deplist))))
          (tagged (expand-terms* ws (cdr deplist)
@@ -324,7 +324,7 @@
          ;; expand-terms* inserts tag derived from literal; remove it
          (tagged (cdar tagged))
          )
-    (if *mibl-debugging*
+    (if (or *mibl-debug-action-deps* *mibl-debug-s7*)
         (beging
          (format #t "~A: ~A (kw? ~A)~%" (yellow "littag") tag (keyword? tag))
          (format #t "~A: ~A\n" (yellow "tagged lit") tagged)))
@@ -416,11 +416,11 @@
 ;;                    `(:: ,@depfiles)))))))
 
 (define (handle-glob-files-rec-dep deplist)
-  (if *mibl-debugging*
+  (if (or *mibl-debug-action-deps* *mibl-debug-s7*)
       (format #t "handle-glob-files-rec-dep: ~A\n" deplist)))
 
 (define (handle-glob-files-dep ws paths _pattern)
-  (if *mibl-debugging*
+  (if (or *mibl-debug-action-deps* *mibl-debug-s7*)
       (begin
         (format #t "~A: ~A\n" (blue "handle-glob-files-dep") _pattern)
         ;; _pattern form: (glob_files ../../runtime/*.js)
@@ -435,7 +435,7 @@
          ;; (pattern-str (string-append pkg-path "/" pattern))
          (g (glob.make))
          (_effective-ws-root (effective-ws-root)))
-    (if *mibl-debugging*
+    (if (or *mibl-debug-action-deps* *mibl-debug-s7*)
         (begin
           (format #t "pkg-path: ~A\n" pkg-path)
           (format #t "pattern: ~A\n" pattern)
@@ -466,7 +466,7 @@
                                       ;; (format #f "~A:~A" dname bname))
                                     )))
                             globbed)))
-        (if *mibl-debugging*
+        (if (or *mibl-debug-action-deps* *mibl-debug-s7*)
             (begin
               (format #t "globbed: ~A\n" globbed)
               (format #t "depfiles: ~A\n" depfiles)
@@ -480,7 +480,7 @@
                    `(:: ,@depfiles)))))))
 
 (define (handle-tagged-glob-dep ws tagged-pattern paths expanded-deps)
-  (if *mibl-debugging*
+  (if (or *mibl-debug-action-deps* *mibl-debug-s7*)
       (begin
         (format #t "~A: ~A\n" (ublue "handle-tagged-glob-dep") tagged-pattern)
         (format #t "expanded-deps: ~A\n" expanded-deps)
@@ -491,19 +491,19 @@
   ;; :foo => ::foo
   (let* ((lbl (string->keyword (format #f "~A" (keyword->symbol (car tagged-pattern)))))
          (pattern (cadr tagged-pattern))
-         (_ (if *mibl-debugging* (format #t "~A: ~A~%" (green "pattern") pattern)))
+         (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "~A: ~A~%" (green "pattern") pattern)))
          (pattern (format #f "~A" (cadr pattern)))
-         (_ (if *mibl-debugging* (format #t "~A: ~A~%" (green "pattern") pattern)))
+         (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "~A: ~A~%" (green "pattern") pattern)))
 
          ;; working dir is always ws root, so we prepend the pkg-path
          ;; (pattern-str (string-append pkg-path "/" pattern))
 
          (pkg-path (car (assoc-val :pkg-path paths)))
          (dep-path (format #f "~A/~A" pkg-path pattern))
-         (_ (if *mibl-debugging* (format #t "dep-path: ~A~%" dep-path)))
+         (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "dep-path: ~A~%" dep-path)))
 
          (canonical-path (->canonical-path dep-path))
-         (_ (if *mibl-debugging* (format #t "canonical-path: ~A~%" canonical-path)))
+         (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "canonical-path: ~A~%" canonical-path)))
 
          ;; normalize pathed globs like ../foo/*.ml
          (canonical-pattern (basename canonical-path))
@@ -511,7 +511,7 @@
 
          (glob? (string-index canonical-pattern (lambda (ch) (equal? ch #\*))))
          (fg-name (format #f "glob_~A" (string-replace canonical-pattern "STAR" glob? (+ 1 glob?))))
-         (_ (if *mibl-debugging* (format #t "~A: ~A~%" (ublue "fg-name") fg-name)))
+         (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "~A: ~A~%" (ublue "fg-name") fg-name)))
          ;; (_ (error 'X "STOP fg-name"))
 
          (tagged canonical-path)
@@ -529,7 +529,7 @@
          ;;                          paths ;;stanza-alist
          ;;                          '()))
          ) ;;expanded-deps)))
-    (if *mibl-debugging*
+    (if (or *mibl-debug-action-deps* *mibl-debug-s7*)
         (begin
           (format #t "tagged dep lbl: ~A\n" lbl)
           (format #t "tagged dep: ~A\n" tagged)))
@@ -557,14 +557,14 @@
                   ;; NB: :tgt for singleton, :tgts for globs
                   (:glOB . ,fg-name)
                   expanded-deps)))))
-      (if *mibl-debugging*
+      (if (or *mibl-debug-action-deps* *mibl-debug-s7*)
           (begin
             (format #t "~A: ~A~%" (red "expanded-deps") expanded-deps)
             (format #t "~A: ~A~%" (red "GLOB RESULT") result)))
       result)))
 
 (define (handle-untagged-glob-dep ws paths _pattern)
-  (if *mibl-debugging*
+  (if (or *mibl-debug-action-deps* *mibl-debug-s7*)
       (format #t "~A: ~A\n" (ublue "handle-untagged-glob-dep") _pattern))
   ;; kw :_ is reserved for non-tagged symlist
   ;; to avoid name clash, convert user keywords to double-colon, e.g.
@@ -572,17 +572,17 @@
   (let* ((pattern (cadr _pattern))
          (pkg-path (car (assoc-val :pkg-path paths)))
          (dep-path (format #f "~A/~A" pkg-path pattern))
-         (_ (if *mibl-debugging* (format #t "~A: ~A~%" (uwhite "dep-path") dep-path)))
+         (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "~A: ~A~%" (uwhite "dep-path") dep-path)))
 
-         (_ (if *mibl-debugging* (format #t "~A: ~A~%" (bgred "cwd") (pwd))))
+         (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "~A: ~A~%" (bgred "cwd") (pwd))))
          (canonical-path (->canonical-path dep-path))
-         (_ (if *mibl-debugging* (format #t "~A: ~A~%" (uwhite "canonical-path") canonical-path)))
+         (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "~A: ~A~%" (uwhite "canonical-path") canonical-path)))
          ;; (_ (error 'X "STOP untagged glob"))
 
          (canonical-pattern (basename canonical-path))
          (glob? (string-index canonical-pattern (lambda (ch) (equal? ch #\*))))
          (fg-name (format #f "glob_~A" (string-replace canonical-pattern "STAR" glob? (+ 1 glob?))))
-         (_ (if *mibl-debugging* (format #t "~A: ~A~%" (ublue "fg-name") fg-name)))
+         (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "~A: ~A~%" (ublue "fg-name") fg-name)))
 
          (lbl ::glob)  ;;FIXME: derive tagname
          )
@@ -596,14 +596,14 @@
            `((::glob
               (:pkg . ,(dirname canonical-path))
               (:glob . ,fg-name)))))
-      (if *mibl-debugging*
+      (if (or *mibl-debug-action-deps* *mibl-debug-s7*)
           (format #t "~A: ~A~%" (red "GLOB RESULT") result))
       result)))
 
 ;; tagged deps: (:foo foo.sh), (:css (glob_files *.css)), what else?
 ;; called from expanders.scm::expand-terms*
 (define (handle-tagged-dep ws deplist paths expanded-deps)
-  (if *mibl-debugging*
+  (if (or *mibl-debug-action-deps* *mibl-debug-s7*)
       (format #t "~A: ~A\n" (ublue "handle-tagged-dep") deplist))
   ;; obsolete: kw :_ is reserved for non-tagged symlist
   ;; to avoid name clash, convert user keywords to double-colon, e.g.
@@ -619,31 +619,31 @@
         (handle-tagged-literal-dep ws deplist paths expanded-deps))))
 
 (define (handle-file-dep ws paths file-fld)
-  (if *mibl-debugging*
+  (if (or *mibl-debug-action-deps* *mibl-debug-s7*)
       (format #t "~A: ~A\n" (ublue "handle-file-dep") file-fld))
   (let* ((pkg-path (car (assoc-val :pkg-path paths)))
          (file-path (cadr file-fld))
          (full-path (format #f "~A/~A" pkg-path file-path))
          (c-path (->canonical-path full-path)))
-    (if *mibl-debugging*
+    (if (or *mibl-debug-action-deps* *mibl-debug-s7*)
         (begin
           (format #t "file-path: ~A\n" file-path)
           (format #t "full-path: ~A\n" full-path)
           (format #t "c-path: ~A\n" c-path)))
     (let ((res `(((:pkg . ,(dirname c-path)) (:tgt . ,(basename c-path))))))
-      (if *mibl-debugging*
+      (if (or *mibl-debug-action-deps* *mibl-debug-s7*)
           (format #t "~A: ~A~%" (bgred "resolved") res))
       ;;(error 'STOP "STOP handle-file-dep")
       res)))
 
 (define (handle-alias-dep paths deplist)
-  (if *mibl-debugging*
+  (if (or *mibl-debug-action-deps* *mibl-debug-s7*)
       (format #t "handle-alias-dep: ~A\n" deplist))
   (set-car! deplist :alias)
   deplist)
 
 (define (handle-alias-rec-dep deplist)
-  (if *mibl-debugging*
+  (if (or *mibl-debug-action-deps* *mibl-debug-s7*)
       (format #t "handle-alias-rec-dep: ~A\n" deplist)))
 
 (define (handle-source-tree-dep ws paths file-fld)
@@ -654,12 +654,12 @@
                         "'.  A 'source_tree' dependency in a rule dep usually means the rule should be replaced by a cc_library rule or something from rules_foreign_cc. I can't automate that, sorry.")))
 
 (define (handle-universe-dep deplist)
-  (if *mibl-debugging*
+  (if (or *mibl-debug-action-deps* *mibl-debug-s7*)
       (format #t "handle-universe-dep: ~A\n" deplist))
   (error 'handle-universe-dep "FIXME: handle-universe-dep"))
 
 (define (handle-package-dep ws pkg deplist)
-  (if *mibl-debugging*
+  (if (or *mibl-debug-action-deps* *mibl-debug-s7*)
       (begin
         (format #t "~A: ~A~%" (ublue "handle-package-dep") deplist)
         (format #t "~A: ~A~%" (uwhite "pkg") pkg)))
@@ -669,15 +669,15 @@
     `(,key . ::opam-pkg)))
 
 (define (handle-env-var-dep deplist)
-  (if *mibl-debugging*
+  (if (or *mibl-debug-action-deps* *mibl-debug-s7*)
       (format #t "handle-env-var-dep: ~A\n" deplist)))
 
 (define (handle-sandbox-dep deplist)
-  (if *mibl-debugging*
+  (if (or *mibl-debug-action-deps* *mibl-debug-s7*)
       (format #t "handle-sandbox-dep: ~A\n" deplist)))
 
 (define (handle-include-dep deplist)
-  (if *mibl-debugging*
+  (if (or *mibl-debug-action-deps* *mibl-debug-s7*)
       (format #t "handle-include-dep: ~A\n" deplist)))
 
 ;; called by expanders::expand-terms*

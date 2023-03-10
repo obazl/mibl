@@ -1,11 +1,12 @@
-;; (display "normalize.scm") (newline)
+(if *mibl-debug-loads*
+    (format #t "loading dune/dune_api.scm~%"))
 
 ;; (define modules-ht (make-hash-table)) ;; FIXME
 
 ;; apodoses in 'select' clauses are not pkg-level build targets
 ;; remove them from :structures, :signatures
 (define (-mark-apodoses! pkg)
-  (if *mibl-debugging*
+  (if (or *mibl-debug-s7* *mibl-debug-cleanup*)
       (format #t "~A: ~A\n" (ublue "-mark-apodoses!") (assoc-val :pkg-path pkg)))
   ;; (if (equal? (car (assoc-val :pkg-path pkg)) "compiler/tests-ocaml/lib-bytes-utf")
   ;;     (begin
@@ -19,44 +20,46 @@
                                                (car (assoc-val :selectors x)))
                                               (defaults-alist
                                                 (car (assoc-val :default x))))
-                                          (if *mibl-debugging*
+                                          (if (or *mibl-debug-s7* *mibl-debug-cleanup*)
                                               (format #t "SELS ~A\n" sels-alist))
                                           (cons
                                            defaults-alist
                                            (map cdr sels-alist))))
                                       (cdr conditionals))))
                 (apodoses (map symbol->string apodoses)))
-            (if *mibl-debugging*
+            (if (or *mibl-debug-s7* *mibl-debug-cleanup*)
                 (format #t "MARKING ~A\n" apodoses))
 
             (let ((sigs-static (assoc-in '(:signatures :static) pkg))
                   (structs-static (assoc-in '(:structures :static) pkg)))
-              (if *mibl-debugging*
+              (if (or *mibl-debug-s7* *mibl-debug-cleanup*)
                   (format #t "structs-static: ~A\n" structs-static))
               (for-each (lambda (s)
-                          (if *mibl-debugging*
+                          (if (or *mibl-debug-s7* *mibl-debug-cleanup*)
                               (format #t "struct: ~A\n" s))
                           (if (member (last (last s)) apodoses)
                               (set-car! s :_)))
                         (cdr sigs-static))
               (for-each (lambda (s)
-                          (if *mibl-debugging*
+                          (if (or *mibl-debug-s7* *mibl-debug-cleanup*)
                               (format #t "struct: ~A\n" s))
                           (if (member (last (last s)) apodoses)
                               (set-car! s :_)))
                         (cdr structs-static))
               ))
-          (if *mibl-debugging*
+          (if (or *mibl-debug-s7* *mibl-debug-cleanup*)
               (format #t "~A~%" (uwhite "no conditionals")))
           ))
 
+;; hack
 (define (-trim-pkg! pkg)
-  (if *mibl-debugging*
+  (if (or *mibl-debug-s7* *mibl-debug-cleanup*)
       (format #t "~A: ~A~%" (blue "-trim-pkg!") pkg)) ;; (assoc-val :pkg-path pkg))
 
   ;; remove null lists from :mibl alist
   (let ((dune (assoc :mibl pkg)))
     (set-cdr! dune (remove '() (cdr dune))))
+
   ;; deps
   (if-let ((deps (assoc-in '(:mibl :rule :deps) pkg)))
           (begin
@@ -72,7 +75,7 @@
                 (assoc-update! :signatures
                                pkg
                                (lambda (old)
-                                 (if *mibl-debugging*
+                                 (if (or *mibl-debug-s7* *mibl-debug-cleanup*)
                                      (format #t "OLD: ~A\n" old))
                                  (set-cdr! old '())))))
   (if-let ((sigs (assoc-in '(:signatures :dynamic) pkg)))
@@ -80,7 +83,7 @@
               (assoc-update! :signatures
                              pkg
                              (lambda (old)
-                               (if *mibl-debugging*
+                               (if (or *mibl-debug-s7* *mibl-debug-cleanup*)
                                    (format #t "OLD: ~A\n" old))
                                (set-cdr! old '())))))
 
@@ -94,7 +97,7 @@
               (assoc-update! :structures
                              pkg
                              (lambda (old)
-                               (if *mibl-debugging*
+                               (if (or *mibl-debug-s7* *mibl-debug-cleanup*)
                                    (format #t "OLD: ~A\n" old))
                                (set-cdr! old '())))))
 
@@ -103,7 +106,7 @@
               (assoc-update! :structures
                              pkg
                              (lambda (old)
-                               (if *mibl-debugging*
+                               (if (or *mibl-debug-s7* *mibl-debug-cleanup*)
                                    (format #t "OLD: ~A\n" old))
                                (set-cdr! old '())))))
 
@@ -112,7 +115,7 @@
                 (dissoc! '(:structures) pkg))))
 
 (define (dune-env->mibl ws pkg stanza)
-  (if *mibl-debugging*
+  (if *mibl-debug-s7*
       (format #t "~A: ~A~%" (ublue "dune-env->mibl") stanza))
   ;; (env
   ;;  (<profile1> <settings1>)
@@ -123,7 +126,7 @@
          (res
           (map
            (lambda (profile)
-             (if *mibl-debugging*
+             (if *mibl-debug-s7*
                  (format #t "~A: ~A~%" (uwhite "env profile") profile))
              (cons (symbol->keyword (car profile))
                    (map (lambda (fld-assoc)
@@ -162,176 +165,178 @@
                 res))))
 
 (define (dune-tuareg->mibl ws pkg stanza)
-  (if *mibl-debugging*
+  (if *mibl-debug-s7*
       (format #t "~A: ~A~%" (ublue "dune-tuareg->mibl") stanza))
   (list (list :tuareg
                (list 'FIXME))))
 
-(define (dune-stanza->mibl ws pkg stanza nstanzas)
-  (if *mibl-debugging*
+;; pkg-alist is member of (cdr stanza-assoc)
+(define (dune-stanza->mibl ws pkg-alist stanza-assoc mibl-stanzas)
+  (if *mibl-debug-s7*
       (begin
-        (format #t "~A: ~A\n" (blue "dune-stanza->mibl") stanza)
-        (format #t "~A: ~A\n" (blue "nstanzas") nstanzas)))
-  ;; (format #t "pkg: ~A\n" pkg)
-  ;; (format #t "  nstanzas: ~A\n" nstanzas)
-  (let* ((stanza-alist (cdr stanza))
-         ;; (_ (if *mibl-debugging* (format #t "stanza-alist ~A\n" stanza-alist)))
-         ;; (_ (if-let ((nm (assoc 'name stanza-alist)))
-         ;;            (format #t "name: ~A\n" nm)
-         ;;            (format #t "unnamed\n")))
-         (xstanza
-          (case (car stanza)
-            ((rule)
-             (set-cdr! nstanzas
-                       (append
-                        (cdr nstanzas)
-                        (dune-rule->mibl ws pkg stanza))))
+        (format #t "~A\n" (ublue "dune-stanza->mibl"))
+        (format #t "~A: ~A\n" (blue "stanza-assoc") stanza-assoc)
+        (format #t "~A: ~A\n" (blue "pkg-alist") pkg-alist)
+        (format #t "~A: ~A\n" (blue "mibl-stanzas") mibl-stanzas)))
+  ;; (format #t "pkg-alist: ~A\n" pkg-alist)
+  ;; (format #t "  mibl-stanzas: ~A\n" mibl-stanzas)
+  ;; (error 'x "X")
+  (let* ((stanza-alist (cdr stanza-assoc)))
+    ;; (format #t "~A: ~A~%" (green "stanza-alist") stanza-alist)
+    (case (car stanza-assoc)
+      ((rule)
+       ;; (format #t "~A~%" (green "RULE"))
+       (set-cdr! mibl-stanzas
+                 (append
+                  (cdr mibl-stanzas)
+                  (dune-rule->mibl ws pkg-alist stanza-assoc))))
 
-            ((library)
-             (set-cdr! nstanzas
-                       (append
-                        (cdr nstanzas)
-                        (dune-library->mibl ws pkg stanza))))
+      ((library)
+       ;; (format #t "~A~%" (green "LIB"))
+       (set-cdr! mibl-stanzas
+                 (append
+                  (cdr mibl-stanzas)
+                  (dune-library->mibl ws pkg-alist stanza-assoc))))
 
-            ;; ((alias) (normalize-stanza-alias stanza))
-            ;; ((copy_files#) (normalize-stanza-copy_files pkg-path stanza))
-            ;; ((copy_files) (normalize-stanza-copy_files pkg-path stanza))
-            ;; ((copy#) (normalize-stanza-copy pkg-path stanza))
-            ;; ((copy) (normalize-stanza-copy pkg-path stanza))
-            ;; ((data_only_dirs) (normalize-stanza-data_only_dirs stanza))
-            ;; ((env) (normalize-stanza-env stanza))
-            ;; ((executable) (normalize-stanza-executable :executable
-            ;;                pkg-path ocaml-srcs stanza))
-            ((executable)
-             (let* ((mibl-stanza (dune-executable->mibl ws pkg :executable stanza))
-                    (x (append (cdr nstanzas) mibl-stanza)))
-               (if *mibl-debugging*
-                   (begin
-                     (format #t  "~A: ~A~%" (yellow "mibl-stanza") mibl-stanza)
-                     (format #t  "~A: ~A~%" (yellow "x") x)))
-               (set-cdr! nstanzas x)))
+      ;; ((alias) (normalize-stanza-alias stanza-assoc))
+      ;; ((copy_files#) (normalize-stanza-copy_files pkg-path stanza-assoc))
+      ;; ((copy_files) (normalize-stanza-copy_files pkg-path stanza-assoc))
+      ;; ((copy#) (normalize-stanza-copy pkg-path stanza-assoc))
+      ;; ((copy) (normalize-stanza-copy pkg-path stanza-assoc))
+      ;; ((data_only_dirs) (normalize-stanza-data_only_dirs stanza-assoc))
+      ;; ((env) (normalize-stanza-env stanza-assoc))
+      ;; ((executable) (normalize-stanza-executable :executable
+      ;;                pkg-path ocaml-srcs stanza-assoc))
+      ((executable)
+       (let* ((mibl-stanza (dune-executable->mibl ws pkg-alist :executable stanza-assoc))
+              (x (append (cdr mibl-stanzas) mibl-stanza)))
+         (if *mibl-debug-s7*
+             (begin
+               (format #t  "~A: ~A~%" (yellow "mibl-stanza") mibl-stanza)
+               (format #t  "~A: ~A~%" (yellow "x") x)))
+         (set-cdr! mibl-stanzas x)))
 
-            ((executables)
-             (set-cdr! nstanzas
-                       (append
-                        (cdr nstanzas)
-                        (dune-executables->mibl
-                         ws pkg :executable stanza))))
+      ((executables)
+       (set-cdr! mibl-stanzas
+                 (append
+                  (cdr mibl-stanzas)
+                  (dune-executables->mibl
+                   ws pkg-alist :executable stanza-assoc))))
 
-            ((tests)
-             (set-cdr! nstanzas
-                       (append
-                        (cdr nstanzas)
-                        (dune-executables->mibl ws pkg :test stanza))))
+      ((tests)
+       (set-cdr! mibl-stanzas
+                 (append
+                  (cdr mibl-stanzas)
+                  (dune-executables->mibl ws pkg-alist :test stanza-assoc))))
 
-            ((test)
-             (set-cdr! nstanzas
-                       (append
-                        (cdr nstanzas)
-                        (dune-executable->mibl ws pkg :test stanza))))
+      ((test)
+       (set-cdr! mibl-stanzas
+                 (append
+                  (cdr mibl-stanzas)
+                  (dune-executable->mibl ws pkg-alist :test stanza-assoc))))
 
-            ((alias)
-             (if (assoc 'action stanza-alist)
-                 (begin
-                   ;; action fld removed from alias stanza in dune 2.0
+      ((alias)
+       (if (assoc 'action stanza-alist)
+           (begin
+             ;; action fld removed from alias stanza in dune 2.0
 
-                   ;; earlier versions may use it, so we convert to
-                   ;; std rule stanza with alias fld
-                   (if *mibl-debugging*
-                       (format #t "~A: ~A~%" (red "stanza before") stanza))
-                   (let ((n (car (assoc-val 'name stanza-alist))))
-                     (set! stanza (cons :rule
+             ;; earlier versions may use it, so we convert to
+             ;; std rule stanza-assoc with alias fld
+             (if *mibl-debug-s7*
+                 (format #t "~A: ~A~%" (red "stanza-assoc before") stanza-assoc))
+             (let ((n (car (assoc-val 'name stanza-alist))))
+               (set! stanza-assoc (cons :rule
                                         `((alias ,n)
-                                          ,@(dissoc '(name) (cdr stanza))))))
-                   (if *mibl-debugging*
-                       (format #t "~A: ~A~%" (red "stanza after") stanza))
-                   (set-cdr! nstanzas
-                             (append
-                              (cdr nstanzas)
-                              (dune-rule->mibl ws pkg stanza)))
-                   )
-                 (set-cdr! nstanzas
-                           (append
-                            (cdr nstanzas)
-                            (dune-alias->mibl ws pkg stanza)))))
-
-            ((install)
-             (set-cdr! nstanzas
+                                          ,@(dissoc '(name) (cdr stanza-assoc))))))
+             (if *mibl-debug-s7*
+                 (format #t "~A: ~A~%" (red "stanza-assoc after") stanza-assoc))
+             (set-cdr! mibl-stanzas
                        (append
-                        (cdr nstanzas)
-                        (dune-install->mibl ws pkg stanza))))
+                        (cdr mibl-stanzas)
+                        (dune-rule->mibl ws pkg-alist stanza-assoc)))
+             )
+           (set-cdr! mibl-stanzas
+                     (append
+                      (cdr mibl-stanzas)
+                      (dune-alias->mibl ws pkg-alist stanza-assoc)))))
 
-            ((ocamllex)
-             (set-cdr! nstanzas
-                       (append
-                        (cdr nstanzas)
-                        (lexyacc->mibl :lex ws pkg stanza))))
+      ((install)
+       (set-cdr! mibl-stanzas
+                 (append
+                  (cdr mibl-stanzas)
+                  (dune-install->mibl ws pkg-alist stanza-assoc))))
 
-            ((ocamlyacc)
-             (set-cdr! nstanzas
-                       (append
-                        (cdr nstanzas)
-                        (lexyacc->mibl :yacc ws pkg stanza))))
+      ((ocamllex)
+       (set-cdr! mibl-stanzas
+                 (append
+                  (cdr mibl-stanzas)
+                  (lexyacc->mibl :lex ws pkg-alist stanza-assoc))))
 
-            ((menhir)
-             (set-cdr! nstanzas
-                       (append
-                        (cdr nstanzas)
-                        (menhir->mibl ws pkg stanza))))
+      ((ocamlyacc)
+       (set-cdr! mibl-stanzas
+                 (append
+                  (cdr mibl-stanzas)
+                  (lexyacc->mibl :yacc ws pkg-alist stanza-assoc))))
 
-            ((env)
-             (set-cdr! nstanzas
-                       (append
-                        (cdr nstanzas)
-                        (dune-env->mibl ws pkg stanza))))
+      ((menhir)
+       (set-cdr! mibl-stanzas
+                 (append
+                  (cdr mibl-stanzas)
+                  (menhir->mibl ws pkg-alist stanza-assoc))))
 
-            ;; ((:dune-project) stanza)
+      ((env)
+       (set-cdr! mibl-stanzas
+                 (append
+                  (cdr mibl-stanzas)
+                  (dune-env->mibl ws pkg-alist stanza-assoc))))
 
-            ((tuareg)
-             (set-cdr! nstanzas
-                       (append
-                        (cdr nstanzas)
-                        (dune-tuareg->mibl ws pkg stanza))))
+      ;; ((:dune-project) stanza-assoc)
 
-            ((data_only_dirs) (values)) ;;FIXME
+      ((tuareg)
+       (set-cdr! mibl-stanzas
+                 (append
+                  (cdr mibl-stanzas)
+                  (dune-tuareg->mibl ws pkg-alist stanza-assoc))))
 
-            ((documentation) (values)) ;;FIXME
+      ((data_only_dirs) (values)) ;;FIXME
 
-            ((:sh-test) ;; ???
-             (values))
+      ((documentation) (values)) ;;FIXME
 
-            (else
-               ;; (format #t "~A: ~A\n" (red "unhandled") stanza)
-               (error 'fixme (format #f "~A: ~A~%" (red "Unhandled stanza") stanza))))))
-    ;; (format #t "~A: ~A\n" (uwhite "normalized pkg") pkg)
+      ((:sh-test) ;; ???
+       (values))
+
+      (else
+       ;; (format #t "~A: ~A\n" (red "unhandled") stanza-assoc)
+       (error 'fixme (format #f "~A: ~A~%" (red "Unhandled stanza-assoc") stanza-assoc)))) ;;))
+    ;; (format #t "~A: ~A\n" (uwhite "normalized pkg-alist") pkg-alist)
     ;; (format #t "~A~%" (bgred "UPKG-MODULES"))
-    ;; (for-each (lambda (m) (format #t "\t~A~%" m)) (assoc-val :modules pkg))
+    ;; (for-each (lambda (m) (format #t "\t~A~%" m)) (assoc-val :modules pkg-alist))
 
-    (-mark-apodoses! pkg)
+    (-mark-apodoses! pkg-alist)
 
     ;; remove empty fields
-    (-trim-pkg! pkg)
+    (-trim-pkg! pkg-alist)
 
-    pkg))
+    pkg-alist))
 
-(define (dune-pkg->mibl ws pkg)
-  (if *mibl-debugging*
-      (format #t "~A: ~A\n" (blue "dune-pkg->mibl")
-              (assoc-val :pkg-path pkg)))
+(define (dune-pkg->mibl ws pkg-alist)
+  (if *mibl-debug-s7*
+      (format #t "~A: ~A\n" (bgblue "dune-pkg->mibl")
+              (assoc-val :pkg-path pkg-alist)))
   ;; (format #t "~A: ~A\n" (green "ws") ws)
-  (let* ((nstanzas (list :mibl )) ;; hack to make sure pkg is always an alist
-         (pkg+ (append pkg (list nstanzas)))
-         ;;(pkg+ pkg)
+  (let* ((mibl-stanzas (list :mibl)) ;; hack to make sure pkg-alist is always an alist
+         (pkg-alist+ (append pkg-alist (list mibl-stanzas)))
+         ;;(pkg-alist+ pkg-alist)
          )
-    ;; (format #t "pkg+: ~A\n" pkg+) ;; (assoc 'dune pkg+))
+    ;; (format #t "pkg-alist+: ~A\n" pkg-alist+) ;; (assoc 'dune pkg-alist+))
     ;; (set-car! dune-stanzas :dune-stanzas)
-    (if (assoc 'dune pkg+)
-        (let ((new-pkg
+    (if (assoc 'dune pkg-alist+)
+        (let ((new-pkg-alist
                (map
-                (lambda (stanza)
+                (lambda (stanza-assoc)
  ;; (format #t "STANZA COPY: ~A\n" stanza)
                   (let ((normed (dune-stanza->mibl ws
-                                 pkg+ stanza nstanzas)))
+                                 pkg-alist+ stanza-assoc mibl-stanzas)))
                     ;; pkg-path
                     ;; ;; dune-project-stanzas
                     ;; srcfiles ;; s/b '() ??
@@ -339,18 +344,20 @@
                     ;; (format #t "NORMALIZED: ~A\n" normed)
                     normed))
                 ;; (cdr dune-stanzas))))
-                (assoc-val 'dune pkg+))))
+                (assoc-val 'dune pkg-alist+))))
 
-          ;; (format #t "~A: ~A\n" (red "NEW PKG") pkg+)
+          ;; (format #t "~A: ~A\n" (red "NEW PKG-ALIST") pkg-alist+)
           (let* ((@ws (assoc-val ws *mibl-project*))
                  (exports (car (assoc-val :exports @ws))))
-            (if *mibl-debugging*
+            (if *mibl-debug-s7*
                 (format #t "~A: ~A~%" (red "exports table") exports)))
-
-          pkg+)
+          pkg-alist+)
         (begin
-          (if *mibl-debugging*
+          (if *mibl-debug-s7*
               (format #t "~A: ~A\n"
-                  (red "WARNING: pkg w/o dunefile")
-                  (assoc-val :pkg-path pkg)))
-          pkg))))
+                  (red "WARNING: pkg-alist w/o dunefile")
+                  (assoc-val :pkg-path pkg-alist)))
+          pkg-alist))))
+
+(if *mibl-debug-loads*
+    (format #t "loaded dune/dune_api.scm~%"))
