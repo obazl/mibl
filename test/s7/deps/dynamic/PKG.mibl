@@ -1,0 +1,8 @@
+((:ws-path "/Users/gar/obazl/demos_obazl/tools_obazl/convert/deps/dynamic") (:pkg-path ".")
+  (:realpath "/Users/gar/obazl/demos_obazl/tools_obazl/convert/deps/dynamic")
+  (:files (:static "PKG.mibl" "WS.mibl"))
+  (dune (rule (target dynsig2.mli) (action (write-file dynsig2.mli "val dynsig2_msg: string"))))
+  (dune-project (lang dune 3.0))
+  (:modules (Foo (:ml . foo.ml) (:mli . foo.mli)))
+  (:signatures (:static (Goodbye . goodbye.mli) (Staticsig . staticsig.mli)))
+  (:structures (:static (Hello . hello.ml) (Mytest . mytest.ml))) (:opam "mwe.opam"))

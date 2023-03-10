@@ -1,0 +1,118 @@
+load("@bazel_skylib//rules:write_file.bzl", "write_file")
+
+load("@rules_ocaml//build:rules.bzl",
+     "ocaml_module",
+     "ocaml_signature",
+     "ocaml_test",
+)
+
+package(default_visibility = ["//visibility:public"])
+
+MYTEST_DEPS = ["@ounit2//:ounit2"]
+
+MYTEST_OPTS = ["-linkall"]
+
+#############################
+####  Singleton Targets  ####
+
+ocaml_module(
+    name          = "Foo",
+    struct        = "foo.ml",
+    sig           = "foo.mli",
+    opts          = MYTEST_OPTS,
+    deps          = MYTEST_DEPS,
+)
+
+ocaml_module(
+    name          = "Goodbye",
+    struct        = "goodbye.ml",
+    sig           = "goodbye.mli",
+    opts          = MYTEST_OPTS,
+    deps          = MYTEST_DEPS,
+)
+
+ocaml_module(
+    name          = "Dynstruct",
+    struct        = "dynstruct.ml",
+    opts          = MYTEST_OPTS,
+    deps          = MYTEST_DEPS,
+)
+
+ocaml_module(
+    name          = "Hello",
+    struct        = "hello.ml",
+    opts          = MYTEST_OPTS,
+    deps          = MYTEST_DEPS,
+)
+
+ocaml_module(
+    name          = "Mytest",
+    struct        = "mytest.ml",
+    opts          = MYTEST_OPTS,
+    deps          = MYTEST_DEPS + [
+        ":Hello"
+    ],
+)
+
+ocaml_signature(
+    name          = "Staticsig.cmi",
+    src           = "staticsig.mli",
+)
+
+ocaml_signature(
+    name          = "Dynsig.cmi",
+    src           = "dynsig.mli",
+)
+
+ocaml_signature(
+    name          = "Dynsig2.cmi",
+    src           = "dynsig2.mli",
+)
+
+##############################
+####  Test Targets  ####
+#############
+ocaml_test(
+    name     = "mytest",
+    opts     = ["-linkall"],
+    main     = "Mytest",
+    manifest = [":Dynstruct", ":Foo", ":Goodbye", ":Hello"],
+    visibility = ["//visibility:public"],
+)
+
+########################
+####  Rule Targets  ####
+
+###########
+write_file(
+    out      = "goodbye.ml",
+    content  = ["""let () = print_endline \"bye\"
+
+let msg = \"bye-bye\"
+"""],
+    name     = "__goodbye.ml__"
+)
+
+###########
+write_file(
+    out      = "dynstruct.ml",
+    content  = ["""let () = print_endline \"dynstruct\"
+
+let dynstruct_msg = \"hi dyn\""""],
+    name     = "__dynstruct.ml__"
+)
+
+###########
+write_file(
+    out      = "dynsig.mli",
+    content  = ["""val dynsig_msg: string"""],
+    name     = "__dynsig.mli__"
+)
+
+###########
+write_file(
+    out      = "dynsig2.mli",
+    content  = ["""val dynsig2_msg: string"""],
+    name     = "__dynsig2.mli__"
+)
+
