@@ -110,17 +110,19 @@ s7_pointer _s7_error_handler(s7_scheme *s7, s7_pointer args)
         s7_write(s7, s7_make_string(s7, "BADDOT"),
                  s7_current_error_port(s7));
 
-        /* fprintf(stdout, RED "[begin error context]\n"); */
-        /* s7_eval_c_string(s7, ERRSEXP); */
-        /* char *sexp = "(do ((e (outlet (owlet)) (outlet e))) " */
-        /*     "((eq? e (rootlet))) " */
-        /*     "(format () \"~{~A ~}~%\" e)) "; */
-        /* s7_eval_c_string(s7, sexp); */
-        /* s7_write(s7, */
-        /*          s7_make_string(s7, s7_car(args)), */
-        /*          // s7_string(s7_car(args)), */
-        /*          s7_current_error_port(s7)); */
-        /* fprintf(stdout, "[end error context]" CRESET "\n"); */
+        fprintf(stdout, RED "[begin error context]\n");
+        s7_eval_c_string(s7, ERRSEXP);
+        char *sexp = "(do ((e (outlet (owlet)) (outlet e))) "
+            "((eq? e (rootlet))) "
+            "(format () \"~{~A ~}~%\" e)) ";
+        s7_eval_c_string(s7, sexp);
+        s7_write(s7,
+                 /* s7_make_string(s7, */
+                                s7_car(args),
+                                /* ), */
+                 // s7_string(s7_car(args)),
+                 s7_current_error_port(s7));
+        fprintf(stdout, "[end error context]" CRESET "\n");
         /* exit(EXIT_FAILURE); */
         return s7_t(s7);
     } else {

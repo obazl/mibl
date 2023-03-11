@@ -1,3 +1,6 @@
+(define (debug-print-stacktrace)
+  (format #t "STACKTRACE:\n~A\n" (stacktrace)))
+
 (define (mibl-debug-print-exports-table ws)
   (format #t "~A: ~A~%" (ublue "debug-print-exports-table") ws)
   (let* ((@ws (assoc-val ws *mibl-project*))

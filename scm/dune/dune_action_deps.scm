@@ -108,7 +108,9 @@
          (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "~A: ~A~%" (bgred "expanded-path") expanded-path)))
 
          (parent (let ((parent (dirname expanded-path)))
-                   (if (string=? "./" parent) "." parent)))
+                   (if (string=? "./" parent)
+                       ::wsroot  ;;"."
+                       parent)))
 
          (tgt (if (equal? pkg-path parent)
                      (basename expanded-path)
@@ -251,13 +253,16 @@
                     (if (null? expanded-deps)
                         (list (list
                                (string->keyword (format #f "~A" dep))
-                               (cons :pkg (dirname expanded-path))
+                               (cons :pkg (let ((d (dirname expanded-path)))
+                                            (if (string=? "./" d) ::wsroot d)))
                                (cons tgt-tag tgt #|(basename expanded-path)|# )))
                         (add-literal-to-expanded-deps
                          local?
                          (list
                           (string->keyword (format #f "~A" dep))
-                          (cons :pkg (dirname expanded-path))
+                          ;; (cons :pkg (dirname expanded-path))
+                          (cons :pkg (let ((d (dirname expanded-path)))
+                                       (if (string=? "./" d) ::wsroot d)))
                           (cons tgt-tag tgt #|(basename expanded-path)|# ))
                          expanded-deps))
                     )))

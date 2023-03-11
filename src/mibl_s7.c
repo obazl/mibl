@@ -42,7 +42,7 @@ UT_string *setter;
  */
 EXPORT void mibl_s7_set_flag(char *flag, bool val) {
 #if defined(DEBUG_TRACE)
-    if (trace)
+    if (mibl_trace)
         log_trace("mibl_s7_set_flag: %s: %d", flag, val);
 #endif
     s7_pointer fld = s7_name_to_value(s7, flag);
@@ -66,7 +66,7 @@ EXPORT void mibl_s7_set_flag(char *flag, bool val) {
 LOCAL void mibl_s7_configure(void)
 {
 #if defined(DEBUG_TRACE)
-    if (trace) {
+    if (mibl_trace) {
         log_trace("mibl_s7_configure");
     }
 #endif

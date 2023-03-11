@@ -50,7 +50,7 @@
                           (string-drop-right
                            path (- (length path) last-slash)))
                    ;; no slash in path
-                   (recur (cdr segs) "."))
+                   (recur (cdr segs) ::wsroot)) ;; "."))
                ;; (recur (cdr segs)
                ;;        (string-drop-right result
                ;;                           (- (length result) last-slash)))

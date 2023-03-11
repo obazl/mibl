@@ -1,32 +1,14 @@
-load("@rules_cc//cc:defs.bzl", "cc_library")
-
-## FIXME: running under test, the program (multiple_test) will be in
-## the runfiles dir so it will be found by the treewalker. fix
-## load_project to detect and avoid this.
-
-CMD_FLAGS = [
-    "-std=c11",
-    "-pedantic-errors",
-    "-Iexternal/uthash/include",
-]
-## macos: -UDEBUG
-
-BOOTSTRAP_INCLUDES = [
-    "-I.",
-    "-Isrc",
-    "-Iexternal/mibl/src",
-    "-Ivendored/libs7/src",
-
-    "-I$(GENDIR)",
-    "-I$(GENDIR)/src",
-]
-
-########
 cc_test(
     name = "test",
     srcs = ["Test.c"],
     data = glob(["**"]), # required
-    copts = CMD_FLAGS + BOOTSTRAP_INCLUDES + [
+    copts = [
+        "-std=c11",
+        "-pedantic-errors",
+        "-Wall",
+        "-Werrors",
+        "-Iexternal/uthash/include",
+
         "-I$(GENDIR)/src/hdrs",
 
         "-Ivendored/gopt",
@@ -45,10 +27,10 @@ cc_test(
     ] + select({
         "//bzl/host:debug": [""],
         "//conditions:default":   []
+    }) + select({
+        ## macos fastbuild: -UDEBUG
+        "//conditions:default":   []
     }),
-    # data = [
-    #     "//scm/dune:srcs"
-    # ],
     defines = select({
         "//bzl/host:debug": ["DEBUG_TRACE", "DEBUG_MIBL"],
         "//conditions:default":   []

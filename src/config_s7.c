@@ -1144,8 +1144,11 @@ void _define_s7_global_vars(void)
     s7_define_variable(s7, "*mibl-debug-genrules*", s7_f(s7));
     s7_define_variable(s7, "*mibl-debug-loads*", s7_f(s7));
     s7_define_variable(s7, "*mibl-debug-mibl*", s7_f(s7));
+    s7_define_variable(s7, "*mibl-debug-modules*", s7_f(s7));
     s7_define_variable(s7, "*mibl-debug-ppx*", s7_f(s7));
     s7_define_variable(s7, "*mibl-debug-rule-stanzas*", s7_f(s7));
+    s7_define_variable(s7, "*mibl-debug-s7*", s7_f(s7));
+    s7_define_variable(s7, "*mibl-debug-updaters*", s7_f(s7));
 
     s7_define_variable(s7, "*mibl-quiet*", s7_f(s7));
 

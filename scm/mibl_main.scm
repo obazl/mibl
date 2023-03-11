@@ -1,6 +1,6 @@
 
-(define* (-main root-path pkg-path)
-  (format #t "mibl_main: -main routine\n"))
+;; (define* (-main root-path pkg-path)
+;;   (format #t "mibl_main: -main routine\n"))
 
 (load "libmibl.scm")
 
@@ -66,50 +66,21 @@
   ;; (return)
 
   (miblize :@)
-
-  ;; (return)
-
   (add-filegroups-to-pkgs :@)
-
-  ;; (return)
-
   (normalize-manifests! :@)
-
-  ;; (return)
-
   (normalize-rule-deps! :@)
-
-  ;; (return)
-
-  ;; start dune-specific
   (miblarkize :@)
-
-  ;; (return)
-
   (resolve-pkg-file-deps :@)
-
-  ;; (return)
-
   (resolve-labels! :@)
-
-  ;; (return)
-
   (handle-shared-ppx :@)
-
-  (if *mibl-shared-deps*
-      (begin
-        (handle-shared-deps :@)
-        (handle-shared-opts :@)
-        ))
+  ;; (if *mibl-shared-deps*
+  ;;     (begin
+  ;;       (handle-shared-deps :@)
+  ;;       (handle-shared-opts :@)
+  ;;       ))
 
   ;; (ppx-inline-tests! :@)
 
-  (if *mibl-emit-wss*
-      (begin
-        (emit-mibl-wss)))
-
-  (if *mibl-emit-pkgs*
-      (emit-mibl-pkgs))
 
   (if *mibl-show-mibl*
       (begin
@@ -119,6 +90,16 @@
         ;; (mibl-pretty-print *mibl-project*)
         ;;(return)
         ))
+
+  (if *mibl-emit-wss*
+      (begin
+        (emit-mibl-wss)))
+
+  (if *mibl-emit-pkgs*
+      (emit-mibl-pkgs))
+
+  (if *mibl-emit-result*
+      (emit-mibl-result))
 
   ;; (return)
 

@@ -369,7 +369,9 @@
                                                (values))))
                                      ;;FIXME: can there be more than one :actions per :rule?
                                      (if (assoc-in '(:actions :cmd :args) (cdr stanza))
-                                         (format #t "FIXME: normalize cmd args\n"))
+                                         (begin
+                                           (format #t "FIXME: normalize cmd args\n")
+                                           (debug-print-stacktrace)))
                                      )
                                     (else)))
                                 stanzas))))
@@ -840,9 +842,13 @@
 (define (update-exports-table! ws pfx modes nm pkg-path tgt)
   (if (or *mibl-debug-s7* *mibl-debug-updaters*)
       (begin
-        (format #t "~A: ~A , ~A\n" (ublue "update-exports-table!") pfx nm)
-        (format #t "~A: (:pkg . ~A) (:tgt . ~A)~%" (uwhite "spec") pkg-path tgt)
-        (format #t "~A: ~A\n" (ublue "modes") modes)))
+        (format #t "~A\n" (bgblue "update-exports-table!"))
+        (format #t "~A: ~A\n" (blue "pfx") pfx)
+        (format #t "~A: ~A\n" (blue "modes") modes)
+        (format #t "~A: ~A\n" (blue "nm") nm)
+        (format #t "~A: ~A (type: ~A)\n" (blue "pkg-path") pkg-path (type-of pkg-path))
+        (format #t "~A: ~A\n" (blue "tgt") tgt)
+        (debug-print-stacktrace)))
   (let* ((exports (car (assoc-val :exports
                                   (assoc-val ws *mibl-project*))))
          (key (case pfx
@@ -860,7 +866,9 @@
                 ((:bin :exe :lib :libexec :test) (list (cons pfx #t)))
                 (else '())))
          (spec `(,@pfx-assoc
-                 ,(cons :pkg (string->symbol pkg-path))
+                 ,(cons :pkg (if (symbol? pkg-path)
+                                 pkg-path
+                                 (string->symbol pkg-path)))
                  ,(cons :tgt (string->symbol
                               (if exe
                                   (format #f "~A.exe" tgt)

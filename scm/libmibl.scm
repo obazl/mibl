@@ -107,10 +107,7 @@
   (if (or *mibl-debug-emit* *mibl-debug-s7*)
       (format #t "~A: ~A~%" (yellow "emit-s7-ws") ws))
   (let* ((ws-path (car (assoc-val :path (cdr ws))))
-         (mibl-file (format #f "~A/~A"  ws-path
-                            (if *mibl-emit-parsetree*
-                                "/PARSETREE.s7"
-                                "/WS.s7")))
+         (mibl-file (format #f "~A/WS.s7"  ws-path))
          (outp
           (catch #t
                  (lambda ()
@@ -118,8 +115,8 @@
                  (lambda args
                    (error 'OPEN_ERROR_EMIT (format #f "OPEN ERROR: ~A~%" mibl-file)))
                  )))
-    (if (or *mibl-debug-emit* *mibl-debug-s7*)
-        (format #t "~A: ~A~%" (yellow "Emitting") mibl-file))
+    (if (not *mibl-quiet*)
+        (format #t "~A: libmibl emitting: ~A~%" (green "INFO") mibl-file))
     (write (object->string ws :readable) outp)
     (close-output-port outp)))
 
@@ -177,14 +174,59 @@
           (write (object->string ws :readable) outp)
           (close-output-port outp)))))
 
+(define (emit-parsetree-project)
+  (if (or *mibl-debug-emit* *mibl-debug-s7*)
+      (format #t "~A: ~A~%" (yellow "emit-parsetree-project") *mibl-project*))
+  (let* ((@ws (assoc-val :@ *mibl-project*))
+         (ws-path (car (assoc-val :path (cdr @ws)))))
+    (if *mibl-emit-mibl*
+        (let* ((mibl-file (format #f
+                                  (if *mibl-emit-result*
+                                      "~A/EXPECTED.mibl"
+                                      "~A/PARSETREE.mibl")
+                                      ws-path))
+               (outp
+                (catch #t
+                       (lambda ()
+                         (open-output-file mibl-file))
+                       (lambda args
+                         (error 'OPEN_ERROR_EMIT (format #f "OPEN ERROR: ~A~%" mibl-file)))
+                       )))
+          (if (not *mibl-quiet*)
+              (format #t "~A: libmibl emitting: ~A~%" (green "INFO") mibl-file))
+          (mibl-pretty-print *mibl-project* outp)
+          (close-output-port outp)))
+    (if *mibl-emit-s7*
+        (let* ((mibl-file (format #f
+                                  (if *mibl-emit-result*
+                                      "~A/EXPECTED.s7"
+                                      "~A/PARSETREE.s7")
+                                      ws-path))
+                 (outp
+                  (catch #t
+                         (lambda ()
+                           (open-output-file mibl-file))
+                         (lambda args
+                           (error 'OPEN_ERROR_EMIT (format #f "OPEN ERROR: ~A~%" mibl-file)))
+                         )))
+          (if (not *mibl-quiet*)
+              (format #t "~A: libmibl emitting: ~A~%" (green "INFO") mibl-file))
+          (write (object->string *mibl-project* :readable) outp)
+          (close-output-port outp)))))
+
 (define (emit-parsetrees)
   (if (or *mibl-debug-emit* *mibl-debug-s7*)
       (format #t "~%~A~%" (yellow "emit-parsetree")))
   (if (not (or *mibl-emit-mibl* *mibl-emit-s7*))
       (format #t "~A: ~A~%" (red "WARNING") "To emit-parsetrees, one or both of *mibl-emit-mibl* and *mibl-emit-s7* must be set.")
-      (for-each (lambda (ws)
-                  (emit-parsetree-ws ws))
-                *mibl-project*)))
+      ;; (for-each (lambda (ws)
+      ;;             (emit-parsetree-ws ws))
+      ;;           *mibl-project*)
+      (emit-parsetree-project)
+      ))
+
+(define (emit-mibl-result)
+  (emit-parsetree-project))
 
 (define (mibl-clean-mibl)
   (format #t "cleaning mibl - NOT IMPLEMENTED yet.\n")

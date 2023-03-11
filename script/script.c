@@ -50,8 +50,10 @@ enum OPTS {
 
     FLAG_EMIT_PKGS,
     FLAG_EMIT_WSS,
-    FLAG_EMIT_MIBL,
     FLAG_EMIT_PARSETREE,
+    FLAG_EMIT_RESULT,
+    // formats:
+    FLAG_EMIT_MIBL,
     FLAG_EMIT_S7,
 
     FLAG_TRACE,
@@ -129,6 +131,11 @@ void _update_s7_globals(struct option options[])
         mibl_s7_set_flag("*mibl-emit-wss*", true);
     else
         mibl_s7_set_flag("*mibl-emit-wss*", false);
+
+    if (options[FLAG_EMIT_RESULT].count)
+        mibl_s7_set_flag("*mibl-emit-result*", true);
+    else
+        mibl_s7_set_flag("*mibl-emit-result*", false);
 
     if (options[FLAG_EMIT_PKGS].count)
         mibl_s7_set_flag("*mibl-emit-pkgs*", true);
@@ -260,6 +267,8 @@ static struct option options[] = {
                        .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_EMIT_PKGS] = {.long_name="emit-pkgs",
                        .flags=GOPT_ARGUMENT_FORBIDDEN},
+    [FLAG_EMIT_RESULT] = {.long_name="emit-result",
+                          .flags=GOPT_ARGUMENT_FORBIDDEN},
 
     [FLAG_TRACE] = {.long_name="trace",.short_name='t',
                     .flags=GOPT_ARGUMENT_FORBIDDEN},

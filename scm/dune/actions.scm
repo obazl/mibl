@@ -469,6 +469,7 @@
   (if *mibl-debug-action-directives*
       (begin
         (format #t "~A: ~A\n" (ublue "normalize-action-write-file") action)
+        (format #t "~A: ~A\n" (green "pkg") pkg)
         (format #t "~A: ~A\n" (green "action-alist") action-alist)
         (format #t "targets: ~A\n" targets)
         (format #t "deps: ~A\n" deps)))
@@ -496,10 +497,11 @@
 
     ;; update exports table with outfile
     (update-exports-table! ws
-                           :FIXME ;; tag
-                           :FIXME ;; modes
+                           :FIXME-TAG ;; tag
+                           :FIXME-MODES ;; modes
                            target ;; name
-                           (car (assoc-val :pkg-path pkg)) target)
+                           (car (assoc-val :pkg-path pkg))
+                           target)
 
     `(;;  (:output ,@targets)
       (:cmd

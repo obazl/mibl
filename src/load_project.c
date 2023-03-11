@@ -340,11 +340,13 @@ LOCAL bool _this_is_hidden(FTSENT *ftsentry)
 LOCAL s7_pointer make_pkg_key(char *path)
 {
     if (path[0] == '.' && path[1] == '\0') {
-        return s7_make_string(s7, path);
+        return s7_make_keyword(s7, ":wsroot");
+        /* return s7_make_string(s7, path); */
     } else {
         if (path[0] == '.'
             && path[1] == '/') {
-            return s7_make_string(s7, path+2);
+            return s7_make_keyword(s7, ":wsroot");
+            /* return s7_make_string(s7, path+2); */
         } else {
             return s7_make_string(s7, path);
         }
