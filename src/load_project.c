@@ -343,10 +343,9 @@ LOCAL s7_pointer make_pkg_key(char *path)
         return s7_make_keyword(s7, ":wsroot");
         /* return s7_make_string(s7, path); */
     } else {
-        if (path[0] == '.'
-            && path[1] == '/') {
-            return s7_make_keyword(s7, ":wsroot");
-            /* return s7_make_string(s7, path+2); */
+        if (path[0] == '.' && path[1] == '/') {
+            /* return s7_make_keyword(s7, ":wsroot"); */
+            return s7_make_string(s7, path+2);
         } else {
             return s7_make_string(s7, path);
         }
@@ -438,6 +437,8 @@ LOCAL void _handle_dir(s7_pointer pkg_tbl, FTS* tree, FTSENT *ftsentry)
     /* FIXME: check result */
     /* s7_pointer result = */
 
+    printf("\n\nOLD PKG TBL: %s\n\n", TO_STR(pkg_tbl));
+
     s7_hash_table_set(s7, pkg_tbl, pkg_key,
                       s7_list(s7, 3,
                               //FIXME: use a ws-alist instead of
@@ -449,7 +450,7 @@ LOCAL void _handle_dir(s7_pointer pkg_tbl, FTS* tree, FTSENT *ftsentry)
                               s7_list(s7, 2, realpath_kw,
                                       s7_make_string(s7, rpath))));
 
-    /* printf("\n\nNEW PKG TBL: %s\n\n", TO_STR(pkg_tbl)); */
+    printf("\n\nNEW PKG TBL: %s\n\n", TO_STR(pkg_tbl));
 }
 
 static char principal[256];

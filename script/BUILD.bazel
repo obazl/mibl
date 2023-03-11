@@ -15,7 +15,7 @@ cc_binary(
         "//bzl/host:linux": ["_XOPEN_SOURCE=500"], # strdup
         "//conditions:default":   []
     }) + [
-        "WITH_C_LOADER"
+        # "WITH_C_LOADER"
     ],
     copts = select({
         "//bzl/host:macos": ["-std=c11"],
@@ -27,14 +27,10 @@ cc_binary(
         "-Wpedantic",
         "-Wno-unused-function",
 
-        "-I$(GENDIR)/src",
-
         "-I$(GENDIR)/script",
-
         "-I$(GENDIR)/external/mibl/script",
-        "-I$(GENDIR)/external/mibl/src",
 
-        "-I$(GENDIR)/src/hdrs",
+        "-I$(GENDIR)/src/hdrs", # libmibl.h
         "-I$(GENDIR)/external/mibl/src/hdrs",
 
         "-Ivendored/gopt",
@@ -54,12 +50,9 @@ cc_binary(
     ],
     linkopts = select({
         "//bzl/host:macos": [],
-        "//bzl/host:linux": [ "-Wl,-E", "-ldl"],
+        "//bzl/host:linux": ["-ldl", "-lm"],
         "//conditions:default": {}
-    }) + [
-        "-lm",
-        # "-lc_s7"
-    ],
+    }),
     data = [
         "//scm:srcs",
         "//scm/dune:srcs",
@@ -72,10 +65,6 @@ cc_binary(
         "//vendored/libinih:inih",
         "//vendored/logc",
         "//vendored/uthash",
-
-        # "@libs7//src:s7",
-        # "@libs7//src:c_s7",
-        # "@libs7//vendored/linenoise",
     ],
     visibility = ["//visibility:public"]
 )

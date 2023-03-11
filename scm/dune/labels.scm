@@ -402,7 +402,12 @@
                                                            `(::tools
                                                              (,kw
                                                               ,(cons :pkg (if (string=? "./" path)
-                                                                              pkg-path path))
+                                                                              pkg-path
+                                                                              (if (string=? "::wsroot" path)
+                                                                                  pkg-path
+                                                                                  path)))
+                                                              ;; ,(cons :pkg (if (string=? "./" path)
+                                                              ;;                 pkg-path path))
                                                               ,(cons :tgt (basename t))))
                                                            )))))
                                             ((eq? ::unresolved (cdadr dep))

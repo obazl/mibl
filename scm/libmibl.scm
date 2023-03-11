@@ -174,17 +174,13 @@
           (write (object->string ws :readable) outp)
           (close-output-port outp)))))
 
-(define (emit-parsetree-project)
+(define (emit-parsetree-project stem)
   (if (or *mibl-debug-emit* *mibl-debug-s7*)
       (format #t "~A: ~A~%" (yellow "emit-parsetree-project") *mibl-project*))
   (let* ((@ws (assoc-val :@ *mibl-project*))
          (ws-path (car (assoc-val :path (cdr @ws)))))
     (if *mibl-emit-mibl*
-        (let* ((mibl-file (format #f
-                                  (if *mibl-emit-result*
-                                      "~A/EXPECTED.mibl"
-                                      "~A/PARSETREE.mibl")
-                                      ws-path))
+        (let* ((mibl-file (format #f "~A/~A.mibl" ws-path stem))
                (outp
                 (catch #t
                        (lambda ()
@@ -197,11 +193,7 @@
           (mibl-pretty-print *mibl-project* outp)
           (close-output-port outp)))
     (if *mibl-emit-s7*
-        (let* ((mibl-file (format #f
-                                  (if *mibl-emit-result*
-                                      "~A/EXPECTED.s7"
-                                      "~A/PARSETREE.s7")
-                                      ws-path))
+        (let* ((mibl-file (format #f "~A/~A.s7" ws-path stem))
                  (outp
                   (catch #t
                          (lambda ()
@@ -222,11 +214,11 @@
       ;; (for-each (lambda (ws)
       ;;             (emit-parsetree-ws ws))
       ;;           *mibl-project*)
-      (emit-parsetree-project)
+      (emit-parsetree-project "PARSETREE")
       ))
 
 (define (emit-mibl-result)
-  (emit-parsetree-project))
+  (emit-parsetree-project "EXPECTED"))
 
 (define (mibl-clean-mibl)
   (format #t "cleaning mibl - NOT IMPLEMENTED yet.\n")

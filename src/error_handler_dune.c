@@ -123,7 +123,11 @@ s7_pointer _s7_error_handler(s7_scheme *s7, s7_pointer args)
                  // s7_string(s7_car(args)),
                  s7_current_error_port(s7));
         fprintf(stdout, "[end error context]" CRESET "\n");
-        /* exit(EXIT_FAILURE); */
+
+        s7_pointer st = s7_eval_c_string(s7, "(stacktrace)");
+        (void)st;
+        fprintf(stdout, "STACKTRACE:\n%s\n", "TO_STR(st)");
+        fflush(NULL);
         return s7_t(s7);
     } else {
         //TODO: write to error port
@@ -143,8 +147,9 @@ s7_pointer _s7_error_handler(s7_scheme *s7, s7_pointer args)
                  s7_current_error_port(s7));
         fprintf(stdout, "[end error context]" CRESET "\n");
 
-        /* (stacktrace) has no effect(?) */
-        /* s7_eval_c_string(s7, "(stacktrace)"); */
+        /* s7_pointer st = s7_eval_c_string(s7, "(stacktrace)"); */
+        /* fprintf(stdout, "STACKTRACE:\n%s\n", TO_STR(st)); */
+        /* fflush(NULL); */
 
         /* printf("EXIT ON ERROR? %s\n" TO_STR(s7_name_to_value(s7, *exit-on-error*))); */
 

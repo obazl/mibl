@@ -137,6 +137,9 @@ void _set_rootws(char *ws_root)
         utstring_printf(_root_ws, "%s", utstring_body(runfiles_root));
         if (ws_root)
             utstring_printf(_root_ws, "/%s", ws_root);
+        else {
+            ;//??
+        }
 #if defined(DEBUG_TRACE)
         if (mibl_debug_bazel)
             log_debug("Running under bazel test; setting bws to runfiles root%s", utstring_body(runfiles_root));
@@ -175,10 +178,12 @@ void _set_rootws(char *ws_root)
                 log_debug("Found WS file at %s", rootws);
 #endif
         } else {
-            /* rootws = strdup(build_ws_dir); // _rootws); */
+            /* this is not a test target, but we're under bazel run */
+            /* so we will later chdir to the ws_root (passed by user by -w, --workspace) */
             utstring_printf(_root_ws, "%s", build_ws_dir);
             if (ws_root)
                 utstring_printf(_root_ws, "/%s", ws_root);
+            // else by default, cwd is ws root, not a sub-ws
         }
     }
 

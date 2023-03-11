@@ -161,6 +161,7 @@ void test_a(void) {
     log_info("Equal? %d", s7_boolean(s7,res));
     free(s);
 
+    log_debug("expected");
     s7_format(s7, s7_list(s7, 3,
                           s7_current_output_port(s7), //port,
                           s7_make_string(s7, "~A)"),
@@ -372,9 +373,9 @@ void _init_mibl_proj(char *test_root)
                     test_root);
 
     s7_pointer res = s7_eval_c_string(s7, utstring_body(pgm));
-    /* char *s = TO_STR(res); */
-    /* log_debug("initial: %s", s); */
-    /* free(s); */
+    char *s = TO_STR(res);
+    log_debug("initial: %s", s);
+    free(s);
 
     utstring_renew(pgm);
     utstring_printf(pgm,
@@ -553,10 +554,14 @@ int main(int argc, char **argv)
 
      */
 
-    /* we do not crawl the project, but we do use s7, so we need to
-       configure. */
     struct mibl_config_s *mibl_config = mibl_s7_init(NULL, /* script dir */
                                                      NULL); /* ws */
+
+    /* we do not call mibl_s7_run - that's for running a -main script.
+       here we run our script fragments in the test cases. iow we
+       drive the processing from this c program instead of from a
+       script with -main.
+     */
 
     /* log_info("cwd: %s", getcwd(NULL, 0)); */
     /* show_bazel_config(); */
@@ -571,6 +576,7 @@ int main(int argc, char **argv)
         perror(test_pgm);
     }
 
+    /* read in PARSETREE.s7 and EXPECTED.s7 */
     _init_mibl_proj(test_root);
 
     UNITY_BEGIN();

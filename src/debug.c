@@ -20,7 +20,7 @@ int  mibl_debug_level = 0;
 bool mibl_debug_xdg   = false;
 
 bool mibl_trace       = false;
-bool trace_xdg   = false;
+bool mibl_trace_xdg   = false;
 
 /* #if defined(DEBUG) */
 /* https://stackoverflow.com/questions/6934659/how-to-make-backtrace-backtrace-symbols-print-the-function-names */

@@ -19,6 +19,7 @@
                            )
                       (if (or *mibl-debug-ppx* *mibl-debugging*)
                           (begin
+                            (format #t "~A: ~A~%" (uyellow "ppx") ppx)
                             (format #t "~A: ~A~%" (uyellow "Ppx-fld") ppx-fld)
                             (format #t "~A: ~A~%" (uyellow "Ppxes-fld") ppxes-fld)))
                       (if ppx

@@ -2,8 +2,6 @@
 ;; (define* (-main root-path pkg-path)
 ;;   (format #t "mibl_main: -main routine\n"))
 
-(load "libmibl.scm")
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (-mibl-load-project root path)
   (if *mibl-debugging*
@@ -34,7 +32,7 @@
 (define* (-dune->mibl return root-path ws-path)
   ;; (set! *mibl-debugging* #t)
   (if *mibl-debugging*
-      (format #t "convert_dune.scm::dune->obazl: ~A, ~A~%" root-path ws-path))
+      (format #t "mibl_main.scm::dune->obazl: ~A, ~A~%" root-path ws-path))
   ;; (format #t "*mibl-project*: ~A~%" *mibl-project*)
   ;; (format #t "BYE~%"))
 
@@ -55,7 +53,7 @@
 
   (if *mibl-show-parsetree*
       (begin
-        (format #t "PARSETREE~%")
+        (format #t "mibl: PARSETREE~%")
         (mibl-debug-print-pkgs :@)
         (return)))
 
@@ -73,11 +71,11 @@
   (resolve-pkg-file-deps :@)
   (resolve-labels! :@)
   (handle-shared-ppx :@)
-  ;; (if *mibl-shared-deps*
-  ;;     (begin
-  ;;       (handle-shared-deps :@)
-  ;;       (handle-shared-opts :@)
-  ;;       ))
+  (if *mibl-shared-deps*
+      (begin
+        (handle-shared-deps :@)
+        (handle-shared-opts :@)
+        ))
 
   ;; (ppx-inline-tests! :@)
 
@@ -131,11 +129,12 @@
   '())
 
 (define* (-main root-path ws-path)
+  (load "libmibl.scm")
   (if *mibl-clean-mibl*
       (mibl-clean-mibl)
       (call-with-exit (lambda (return)
                         (-dune->mibl
-                         (lambda ()
+                         (lambda () ;; our return thunk
                            (if *mibl-show-mibl*
                                (mibl-debug-print-project))
                            (if (not *mibl-quiet*)

@@ -42,7 +42,7 @@ UT_string *xdg_state_home;
 EXPORT void config_xdg_dirs(void)
 {
 #if defined(DEBUG_TRACE)
-    if (trace_xdg) log_trace("config_xdg_dirs");
+    if (mibl_trace_xdg) log_trace("config_xdg_dirs");
 #endif
 
     char *s_xdg_data_home = getenv("XDG_DATA_HOME");

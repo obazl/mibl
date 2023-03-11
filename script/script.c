@@ -83,10 +83,9 @@ int _update_mibl_config(struct option options[],
 void _update_s7_globals(struct option options[])
 {
     /* mibl_s7_set_flag("*mibl-debugging*", true); */
-    mibl_s7_set_flag("*mibl-quiet*", ((options[FLAG_QUIET].count) > 0));
-
-    mibl_s7_set_flag("*mibl-debugging*", options[FLAG_DEBUG].count);
-    mibl_s7_set_flag("*mibl-debug-s7*", options[FLAG_DEBUG_S7].count);
+    /* mibl_s7_set_flag("*mibl-quiet*", ((options[FLAG_QUIET].count) > 0)); */
+    /* mibl_s7_set_flag("*mibl-debugging*", (options[FLAG_DEBUG].count > 0)); */
+    /* mibl_s7_set_flag("*mibl-debug-s7*", (options[FLAG_DEBUG_S7].count > 0)); */
 
     if (options[FLAG_DEBUG_PPX].count)
         mibl_s7_set_flag("*mibl-debug-ppx*", true);
@@ -97,15 +96,13 @@ void _update_s7_globals(struct option options[])
         }
     }
 
-    mibl_s7_set_flag("*mibl-debug-show-pkgs*", false);
-    mibl_s7_set_flag("*mibl-debug-modules*", false);
-    mibl_s7_set_flag("*mibl-debug-tests*", false);
-    mibl_s7_set_flag("*mibl-debug-updaters*", false);
+    /* mibl_s7_set_flag("*mibl-debug-show-pkgs*", false); */
+    /* mibl_s7_set_flag("*mibl-debug-modules*", false); */
+    /* mibl_s7_set_flag("*mibl-debug-tests*", false); */
+    /* mibl_s7_set_flag("*mibl-debug-updaters*", false); */
 
     if (options[FLAG_SHOW_MIBL].count)
         mibl_s7_set_flag("*mibl-show-mibl*", true);
-    else // if (mibl_config.show_mibl)
-        mibl_s7_set_flag("*mibl-show-mibl*", false);
 
     if (options[FLAG_SHOW_PARSETREE].count)
         mibl_s7_set_flag("*mibl-show-parsetree*", true);
@@ -114,46 +111,28 @@ void _update_s7_globals(struct option options[])
 
     if (options[FLAG_EMIT_MIBL].count)
         mibl_s7_set_flag("*mibl-emit-mibl*", true);
-    else
-        mibl_s7_set_flag("*mibl-emit-mibl*", false);
 
     if (options[FLAG_EMIT_PARSETREE].count)
         mibl_s7_set_flag("*mibl-emit-parsetree*", true);
-    else
-        mibl_s7_set_flag("*mibl-emit-parsetree*", false);
 
     if (options[FLAG_EMIT_S7].count)
         mibl_s7_set_flag("*mibl-emit-s7*", true);
-    else
-        mibl_s7_set_flag("*mibl-emit-s7*", false);
 
     if (options[FLAG_EMIT_WSS].count)
         mibl_s7_set_flag("*mibl-emit-wss*", true);
-    else
-        mibl_s7_set_flag("*mibl-emit-wss*", false);
 
     if (options[FLAG_EMIT_RESULT].count)
         mibl_s7_set_flag("*mibl-emit-result*", true);
-    else
-        mibl_s7_set_flag("*mibl-emit-result*", false);
 
     if (options[FLAG_EMIT_PKGS].count)
         mibl_s7_set_flag("*mibl-emit-pkgs*", true);
-    else
-        mibl_s7_set_flag("*mibl-emit-pkgs*", false);
 
     if (options[FLAG_CLEAN].count)
         mibl_s7_set_flag("*mibl-clean-all*", true);
-    else
-        mibl_s7_set_flag("*mibl-clean-all*", false);
     if (options[FLAG_CLEAN_MIBL].count)
         mibl_s7_set_flag("*mibl-clean-mibl*", true);
-    else
-        mibl_s7_set_flag("*mibl-clean-mibl*", false);
     if (options[FLAG_CLEAN_S7].count)
         mibl_s7_set_flag("*mibl-clean-s7*", true);
-    else
-        mibl_s7_set_flag("*mibl-clean-s7*", false);
 
     /* --flags sets vars defined above, may be used to define ad-hoc
        flags (where the scm src will not permanently refer to the
@@ -331,12 +310,13 @@ int main(int argc, char **argv, char **envp)
         mibl_show_traversal = true;
     }
 
-    struct mibl_config_s *mibl_config = mibl_s7_init(NULL, /* script dir */
-                                                     options[OPT_WS].argument);
+    struct mibl_config_s *mibl_config
+        = mibl_s7_init("//mibl/scm", /* redundant, already in runfiles */
+                       options[OPT_WS].argument);
 
     if (_update_mibl_config(options, mibl_config)) exit(EXIT_FAILURE);
 
-    _update_s7_globals(options);
+    /* _update_s7_globals(options); */
 
     if (options[FLAG_SHOW_CONFIG].count) {
         show_bazel_config();
@@ -350,8 +330,6 @@ int main(int argc, char **argv, char **envp)
         /* } */
         exit(EXIT_SUCCESS);
     }
-
-
 
     mibl_s7_run(options[OPT_MAIN].argument, options[OPT_WS].argument);
 

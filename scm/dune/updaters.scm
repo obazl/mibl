@@ -569,10 +569,15 @@
 
 (define (-update-pkg-files-with-sig! pkg tgt)
   (if (or *mibl-debug-s7* *mibl-debug-updaters*)
-      (format #t "~A: ~A~%" (yellow "-update-pkg-files-with-sig!") tgt))
+      (begin
+        (format #t "~A: ~A~%" (ublue "-update-pkg-files-with-sig!") tgt)
+        (format #t "~A: ~A~%" (ublue "Pkg") pkg)))
+
   ;; if we already have corresponding struct, move to :modules
   ;; else update :signatures
   (let* ((m-assoc (filename->module-assoc tgt))
+         (_ (if (or *mibl-debug-s7* *mibl-debug-updaters*)
+                (format #t "~A: ~A\n" (red "m-assoc") m-assoc)))
          ;; m-assoc == (A (:ml "a.ml"))
          (m-name (car m-assoc))
          (pr (cadr m-assoc))
@@ -615,6 +620,7 @@
                               (if (or *mibl-debug-s7* *mibl-debug-updaters*)
                                   (begin
                                     (format #t "signatures OLD: ~A\n" old)
+                                    (format #t "m-name: ~A\n" m-name)
                                     (format #t "adding: ~A\n" pr)))
                               (if (null? old)
                                   (list
@@ -623,7 +629,7 @@
                                   ;;(filename->module-assoc tgt)
                                   (append
                                    old
-                                   (list (cons m-name `,@(cdr pr))) ;;)))
+                                   (list (cons m-name (cdr pr))) ;;)))
                                    ;; (list (cons m-name (cdr pr)))
                                    ;; structures
                                    ;;(filename->module-assoc tgt)

@@ -3,12 +3,15 @@
 #include <stdbool.h>
 #include <unistd.h>
 
-#include "log.h"
-
 #include "ini.h"
+#include "log.h"
+/* #if EXPORT_INTERFACE */
+#include "utstring.h"
+#include "utarray.h"
+/* #endif */
+
 
 #include "s7.h"
-
 #include "mibl_s7.h"
 
 extern const UT_icd ut_str_icd;
@@ -16,24 +19,7 @@ extern const UT_icd ut_str_icd;
 extern bool bzl_mode;
 extern int  verbosity;
 
-/* #if INTERFACE */
-/* #define HOME_MIBL ".mibl" */
-/* #define MIBL_INI_FILE ".config/miblrc" */
-/* #endif */
-
-/* #define MIBL    "mibl" */
-/* #define MIBL_SCHEMA_VERSION "0.1.0" */
-/* #define MIBL_S7 MIBL "/s7" */
-/* #define OIBL   "mibl" */
-
 s7_scheme *s7;
-
-/* UT_string *config_mibl;        /\* work string *\/ */
-
-#if EXPORT_INTERFACE
-#include "utstring.h"
-#include "utarray.h"
-#endif
 
 UT_string *setter;
 
@@ -70,6 +56,7 @@ LOCAL void mibl_s7_configure(void)
         log_trace("mibl_s7_configure");
     }
 #endif
+
     /* miblrc:  *mibl-dump-pkgs*, *mibl-scan-exclusions* */
     /* populate pkgs list, so scheme code can use it */
     char **p = NULL;
@@ -115,13 +102,13 @@ EXPORT struct mibl_config_s *mibl_s7_init(char *scm_dir, char *ws_root)
     /*     exit(EXIT_SUCCESS); */
     /* } */
 
-    s7 = s7_configure(scm_dir, ws_root);
+    s7 = s7_configure(scm_dir, ws_root); //FIXME: ws_root not used by s7_configure?
 
     mibl_configure();
 
     mibl_s7_configure();
 
-    chdir(rootws);            /* always run from base ws root */
+    chdir(rootws); /* always run from base ws root, set by bazel_configure */
 
     utstring_new(setter);
 

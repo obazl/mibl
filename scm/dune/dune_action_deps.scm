@@ -91,8 +91,11 @@
                     (dirname canonical-path))))
 
          ;; (dirname X) => "./", not "."
-         (local? (if (and (equal? (dirname canonical-path) "./")
-                          (equal? pkg-path "."))
+         (local? (if (and (or (equal? (dirname canonical-path) "./")
+                              (equal? (dirname canonical-path) "::wsroot"))
+                          (or (equal? pkg-path ".")
+                              (equal? pkg-path ::wsroot)
+                              (equal? pkg-path "::wsroot")))
                      #t
                      (equal? (dirname canonical-path) pkg-path)))
          (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "local? ~A~%" local?)))
@@ -105,12 +108,16 @@
 
          ;; (expanded-path (if local? path canonical-path))
          (expanded-path canonical-path)
-         (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "~A: ~A~%" (bgred "expanded-path") expanded-path)))
+         (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "~A: ~A~%" (bgred "Expanded-path") expanded-path)))
 
          (parent (let ((parent (dirname expanded-path)))
-                   (if (string=? "./" parent)
+                   ;; (format #t "PARENT b: ~A~%" parent)
+                   (if (string=? "::wsroot" parent)
                        ::wsroot  ;;"."
-                       parent)))
+                       (if (string=? "./" parent)
+                           ::wsroot  ;;"."
+                           parent))))
+         (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "~A: ~A~%" (bgred "parent") parent)))
 
          (tgt (if (equal? pkg-path parent)
                      (basename expanded-path)
@@ -213,16 +220,28 @@
 
          ;; (expanded-path (if local? path canonical-path))
          (expanded-path canonical-path)
-         (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "~A: ~A~%" (bgred "expanded-path") expanded-path)))
+         (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "~A: ~A~%" (bgred "EXPANDED-path") expanded-path)))
 
-         (tgt (if (equal? pkg-path (dirname expanded-path))
-                     (basename expanded-path)
-                     (basename expanded-path)))
+         (parent (let ((parent (dirname expanded-path)))
+                   ;; (format #t "PARENT a: ~A (t ~A)~%" parent (type-of parent))
+                   (if (string=? "::wsroot" parent)
+                       ::wsroot  ;;"."
+                       (if (string=? "./" parent)
+                           ::wsroot  ;;"."
+                           parent))))
+         (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*)
+                (format #t "~A: ~A (t: ~A)~%" (white "Parent") parent (type-of parent))))
+
+         (tgt (basename expanded-path))
+         ;; (tgt (if (equal? pkg-path parent)
+         ;;             (basename expanded-path)
+         ;;             (basename expanded-path)))
                      ;;(string->keyword (format #f "fg_~A" (basename expanded-path)))))
          (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "~A: ~A~%" (bgred "TGT") tgt)))
 
-         (tgt-tag (if (equal? pkg-path (dirname expanded-path))
-                      :tgt :tgt)) ;; :fg))
+         (tgt-tag :tgt)
+         ;; (if (equal? pkg-path (dirname expanded-path))
+         ;;              :tgt :tgt)) ;; :fg))
 
          ;; (tgt (if (eq? tgt-tag :fg)
          ;;          (format #f "__~A__" tgt)
@@ -243,6 +262,7 @@
         (begin
           (format #t "FILENAME LITERAL : ~A (~A)\n" dep (type-of dep))
           (format #t "expanded-path: ~A\n" expanded-path)
+          (format #t "pkg: ~A\n" parent)
           (format #t "tgt: ~A\n" tgt)
           (format #t "kind : ~A\n" kind)
           (format #t "new-expanded-deps : ~A\n" expanded-deps)))
@@ -253,16 +273,17 @@
                     (if (null? expanded-deps)
                         (list (list
                                (string->keyword (format #f "~A" dep))
-                               (cons :pkg (let ((d (dirname expanded-path)))
-                                            (if (string=? "./" d) ::wsroot d)))
+                               (cons :pkg parent)
+                               ;; (cons :pkg (let ((d (dirname expanded-path)))
+                               ;;              (if (string=? "./" d) ::wsroot d)))
                                (cons tgt-tag tgt #|(basename expanded-path)|# )))
                         (add-literal-to-expanded-deps
                          local?
                          (list
                           (string->keyword (format #f "~A" dep))
-                          ;; (cons :pkg (dirname expanded-path))
-                          (cons :pkg (let ((d (dirname expanded-path)))
-                                       (if (string=? "./" d) ::wsroot d)))
+                          (cons :pkg parent)
+                          ;; (cons :pkg (let ((d (dirname expanded-path)))
+                          ;;              (if (string=? "./" d) ::wsroot d)))
                           (cons tgt-tag tgt #|(basename expanded-path)|# ))
                          expanded-deps))
                     )))
