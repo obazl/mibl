@@ -16,6 +16,14 @@ extern const UT_icd ut_str_icd;
 extern bool bzl_mode;
 extern int  verbosity;
 
+#if defined(DEBUG_TRACE)
+bool mibl_debug_mibl = false;
+bool mibl_debug_miblrc   = false;
+bool mibl_debug_traversal = false;
+bool mibl_debug_traversal_opam = false;
+bool mibl_trace_mibl   = false;
+#endif
+
 #if INTERFACE
 #define HOME_MIBL ".mibl"
 #define MIBL_INI_FILE ".config/miblrc"
@@ -89,11 +97,13 @@ LOCAL int _miblrc_handler(void* config, const char* section, const char* name, c
     if (MATCH("mibl", "flags")) {
         if (verbose && verbosity > 1) log_debug("miblrc [mibl] debug: %s", value);
 
+        //FIXME: we do not want to depend on s7 here, so we need to store any flags from miblrc into mibl_config
+
         char *token, *sep = " ,\t";
         token = strtok((char*)value, sep);
         while( token != NULL ) {
             /* log_debug("miblrc [mibl] flags token: %s", token); */
-            mibl_s7_set_flag(token, true);
+            /* mibl_s7_set_flag(token, true); */
             token = strtok(NULL, sep);
         }
         return 1;

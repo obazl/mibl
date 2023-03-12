@@ -233,18 +233,18 @@ void close_error_config(void) // s7_pointer err_port)
 char *dunefile_to_string(UT_string *dunefile_name)
 {
     /* FIXME: use malloc, this will rarely be called */
-    /* 16K should be enough for any dunefile */
-#define BUFSZ 16384
-    static char buffer[BUFSZ];
-    memset(buffer, '\0', BUFSZ);
+    /* 16K should be enough for any dunefile? */
+#define DUNE_BUFSZ 16384
+    static char buffer[DUNE_BUFSZ];
+    memset(buffer, '\0', DUNE_BUFSZ);
     /* FIXME: what about e.g. unicode in string literals? */
 
     FILE *inFp = fopen(utstring_body(dunefile_name), "r");
     fseek(inFp, 0, SEEK_END);
     uint64_t fileSize = ftell(inFp);
     /* log_debug("filesize: %d", fileSize); */
-    if (fileSize > BUFSZ) {
-        log_error("dune file size (%d) > BUFSZ (%d)\n", fileSize, BUFSZ);
+    if (fileSize > DUNE_BUFSZ) {
+        log_error("dune file size (%d) > DUNE_BUFSZ (%d)\n", fileSize, DUNE_BUFSZ);
         exit(EXIT_FAILURE);     /* FIXME: exit gracefully */
     }
     rewind(inFp);
@@ -258,10 +258,10 @@ char *dunefile_to_string(UT_string *dunefile_name)
        until there is nothing left to fread() */
     int read_ct = 0;
     do {
-        if (outFileSizeCounter > BUFSZ) {
+        if (outFileSizeCounter > DUNE_BUFSZ) {
             /* probably won't see a 16K dune file */
-            read_ct = fread(buffer, 1, (size_t) BUFSZ, inFp);
-            if (read_ct != BUFSZ) {
+            read_ct = fread(buffer, 1, (size_t) DUNE_BUFSZ, inFp);
+            if (read_ct != DUNE_BUFSZ) {
                 if (ferror(inFp) != 0) {
                     log_error("fread error 1 for %s\n",
                               utstring_body(dunefile_name));
@@ -269,7 +269,7 @@ char *dunefile_to_string(UT_string *dunefile_name)
                 }
             }
             /* log_debug("writing"); */
-            outFileSizeCounter -= BUFSZ;
+            outFileSizeCounter -= DUNE_BUFSZ;
         }
         else {
             read_ct = fread(buffer, 1, (size_t) outFileSizeCounter, inFp);
@@ -332,27 +332,27 @@ char *dunefile_to_string(UT_string *dunefile_name)
             /* log_debug("FOUND \".)\" at pos: %d", cursor - buffer); */
             size_t ct = strlcpy(fptr, (const char*)bptr, cursor - bptr);
             (void)ct;
-            if (ct >= BUFSZ) {
+            if (ct >= DUNE_BUFSZ) {
                 // output string has been truncated
             }
             fptr = fptr + (cursor - bptr) - 1;
             fptr[cursor - bptr] = '\0';
-            ct = strlcat(fptr, " ./", BUFSZ);
+            ct = strlcat(fptr, " ./", DUNE_BUFSZ);
             fptr += 3;
 
             bptr = bptr + (cursor - bptr) + 1;
 
             /* printf(GRN "bptr:\n" CRESET " %s\n", bptr); */
 
-            if (ct >= BUFSZ) {
+            if (ct >= DUNE_BUFSZ) {
                 // output string has been truncated
             }
             /* log_debug("first seg: %s", fixbuf); */
             /* log_debug("first seg len: %d", strlen((char*)fixbuf)); */
             /* log_debug("cursor - buffer = %d", cursor - buffer); */
             /* log_debug("second seg %s", buffer + 225); */
-            /* ct = strlcat((char*)fixbuf, buffer + (cursor - buffer) + 1, BUFSZ); */
-            /* if (ct >= BUFSZ) { */
+            /* ct = strlcat((char*)fixbuf, buffer + (cursor - buffer) + 1, DUNE_BUFSZ); */
+            /* if (ct >= DUNE_BUFSZb) { */
             /*     // output string has been truncated */
             /* } */
             /* log_debug("fixed: %s", (char*)fixbuf); */

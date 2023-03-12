@@ -4,6 +4,13 @@ load("@rules_cc//cc:defs.bzl", "cc_binary")
 cc_binary(
     name  = "script",
     args  = ["-m", "mibl_main.scm"],
+    data = [
+        "//deps",
+        "//scm:srcs",
+        "//scm/dune:srcs",
+        "//scm/meta:srcs",
+        "//scm/opam:srcs",
+    ],
     linkstatic = True,
     srcs  = [
         "script.c", "script.h",
@@ -53,12 +60,6 @@ cc_binary(
         "//bzl/host:linux": ["-ldl", "-lm"],
         "//conditions:default": {}
     }),
-    data = [
-        "//scm:srcs",
-        "//scm/dune:srcs",
-        "//scm/meta:srcs",
-        "//scm/opam:srcs",
-    ],
     deps = [
         "//src:mibl",
         "//vendored/gopt",

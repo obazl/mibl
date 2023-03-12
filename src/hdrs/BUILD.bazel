@@ -63,6 +63,9 @@ FILELOCS = [
     # "$(location //src:config_s7.c)",
     "$(location //src:config_s7.c)",
 
+    "$(location //src:deps.c)",
+    "$(location //src:cmd_runner.c)",
+
     "$(location //src:error_handler_opam.c)",
     "$(location //src:error_handler_dune.c)",
     "$(location //src:handlers.c)",
@@ -113,7 +116,7 @@ FILELOCS = [
     ## FIXME: select on //:compilation_mode: dbg?
     "$(location //src:debug.c)",
     "$(location //src:debug_bazel.c)",
-    "$(location //src:debug_mibl.c)",
+    # "$(location //src:debug_mibl.c)",
     "$(location //src:debug_s7.c)",
     "$(location //src/findlib:debug_findlib.c)",
     "$(location //src/findlib:debug_meta.c)",
@@ -151,6 +154,9 @@ genrule(
         "//src:config_opam.c",
         # "//src:config_s7.c",
         "//src:config_s7.c",
+
+        "//src:deps.c",
+        "//src:cmd_runner.c",
 
         "//src:error_handler_opam.c",
         "//src:error_handler_dune.c",
@@ -204,7 +210,7 @@ genrule(
         ## FIXME: select on //:compilation_mode: dbg?
         "//src:debug.c",
         "//src:debug_bazel.c",
-        "//src:debug_mibl.c",
+        # "//src:debug_mibl.c",
         "//src:debug_s7.c",
         "//src/findlib:debug_findlib.c",
         "//src/findlib:debug_meta.c",
@@ -223,12 +229,15 @@ genrule(
         "config_opam.h",
         # "config_s7.h",
         "config_s7.h",
+        "deps.h",
+        "cmd_runner.h",
+
         "dune_readers.h",
 
         ## FIXME: select on //:compilation_mode: dbg?
         "debug.h",
         "debug_bazel.h",
-        "debug_mibl.h",
+        # "debug_mibl.h",
         "debug_s7.h",
         "debug_findlib.h",
         "debug_meta.h",
@@ -292,9 +301,12 @@ genrule(
         # "//src:config_s7.c",
         "//src:config_s7.c",
 
+        "//src:deps.c",
+        "//src:cmd_runner.c",
+
         "//src:debug.c",
         "//src:debug_bazel.c",
-        "//src:debug_mibl.c",
+        # "//src:debug_mibl.c",
         "//src:debug_s7.c",
         "//src/findlib:debug_findlib.c",
         "//src/findlib:debug_meta.c",
@@ -373,10 +385,13 @@ genrule(
         # "$(location //src:config_s7.c)",
         "$(location //src:config_s7.c)",
 
+        "$(location //src:deps.c)",
+        "$(location //src:cmd_runner.c)",
+
         ## FIXME: select on //:compilation_mode: dbg?
         "$(location //src:debug.c)",
         "$(location //src:debug_bazel.c)",
-        "$(location //src:debug_mibl.c)",
+        # "$(location //src:debug_mibl.c)",
         "$(location //src:debug_s7.c)",
         "$(location //src/findlib:debug_findlib.c)",
         "$(location //src/findlib:debug_meta.c)",

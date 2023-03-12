@@ -19,7 +19,7 @@ filegroup(
     srcs = [
             "debug.c", "//src/hdrs:debug.h",
             "debug_bazel.c", "//src/hdrs:debug_bazel.h",
-            "debug_mibl.c", "//src/hdrs:debug_mibl.h",
+            # "debug_mibl.c", "//src/hdrs:debug_mibl.h",
             "debug_s7.c", "//src/hdrs:debug_s7.h",
     ],
     visibility = [
@@ -88,6 +88,8 @@ MIBL_SRCS = [
     "mibl_s7.c",
     "config_opam.c",
     "config_s7.c",
+    "deps.c",
+    "cmd_runner.c",
     "error_handler_dune.c",
     # "fs.c",
     # "log.c", "log.h",
@@ -105,6 +107,8 @@ cc_library(
         "//src/hdrs:mibl_s7.h",
         "//src/hdrs:config_opam.h",
         "//src/hdrs:config_s7.h",
+        "//src/hdrs:deps.h",
+        "//src/hdrs:cmd_runner.h",
         "//src/hdrs:error_handler_dune.h",
         # "fs.h",
         "//src/hdrs:utils.h",
@@ -127,7 +131,7 @@ cc_library(
         "//compilation_mode:dbg?": [
             "debug.c", "//src/hdrs:debug.h",
             "debug_bazel.c", "//src/hdrs:debug_bazel.h",
-            "debug_mibl.c", "//src/hdrs:debug_mibl.h",
+            # "debug_mibl.c", "//src/hdrs:debug_mibl.h",
             "debug_s7.c", "//src/hdrs:debug_s7.h"
         ],
         "//conditions:default": []

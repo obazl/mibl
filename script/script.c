@@ -11,7 +11,7 @@
 
 #if defined(DEBUG_TRACE)
 extern bool mibl_debug;
-extern bool mibl_debug_mibl_crawl;
+extern bool mibl_debug_traversal;
 extern bool mibl_trace;
 #endif
 
@@ -41,7 +41,7 @@ enum OPTS {
 #if defined(DEV_MODE)
     FLAG_DEBUG_PPX,
     FLAG_DEBUG_S7,
-    FLAG_DEBUG_LOAD_PROJECT,
+    FLAG_DEBUG_TRAVERSAL,
 #endif
 
     FLAG_CLEAN,
@@ -222,7 +222,7 @@ static struct option options[] = {
     [FLAG_DEBUG] = {.long_name="debug",.short_name='d',
                     .flags=GOPT_ARGUMENT_FORBIDDEN | GOPT_REPEATABLE},
 
-    [FLAG_DEBUG_LOAD_PROJECT] = {.long_name="debug-load-project",
+    [FLAG_DEBUG_TRAVERSAL] = {.long_name="debug-traversal",
                                  .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_DEBUG_PPX] = {.long_name="debug-ppx",
                        .flags=GOPT_ARGUMENT_FORBIDDEN},
@@ -290,11 +290,11 @@ int main(int argc, char **argv, char **envp)
 #endif
     }
 
-    if (options[FLAG_DEBUG_LOAD_PROJECT].count) {
+    if (options[FLAG_DEBUG_TRAVERSAL].count) {
 #if defined(DEBUG_TRACE)
-        mibl_debug_mibl_crawl = true;
+        mibl_debug_traversal = true;
 #else
-        log_error("--debug-load-project requires debug build, -c dbg");
+        log_error("--debug-traversal requires debug build, -c dbg");
         exit(EXIT_FAILURE);
 #endif
     }
@@ -316,7 +316,7 @@ int main(int argc, char **argv, char **envp)
 
     if (_update_mibl_config(options, mibl_config)) exit(EXIT_FAILURE);
 
-    /* _update_s7_globals(options); */
+    _update_s7_globals(options);
 
     if (options[FLAG_SHOW_CONFIG].count) {
         show_bazel_config();

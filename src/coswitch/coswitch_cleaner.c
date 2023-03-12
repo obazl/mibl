@@ -15,7 +15,6 @@
 #include <unistd.h>
 
 #include "log.h"
-/* #include "utarray.h" */
 #include "utstring.h"
 
 #include "coswitch_cleaner.h"
