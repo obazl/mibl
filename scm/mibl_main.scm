@@ -57,9 +57,9 @@
         (mibl-debug-print-pkgs :@)
         (return)))
 
-  (if *mibl-emit-parsetree*
-      (begin
-        (emit-parsetrees)))
+  ;; (if *mibl-emit-parsetree*
+  ;;     (begin
+  ;;       (emit-parsetrees)))
 
   ;; (return)
 

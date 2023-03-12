@@ -622,7 +622,7 @@
 ;; then update the pkg file entries and also stanza :deps flds
 
 ;; for each pkg file (module, sig, struct),
-;;   find the stanza that depends on it
+;;   find the stanza(s) that depend(s) on it
 ;;   if depending stanza is namespaced aggregate, continue (?)
 ;;   else ocamldep and update the pkg fld with :deps
 ;;   if stanza is executable?

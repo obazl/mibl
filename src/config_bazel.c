@@ -125,8 +125,7 @@ char *effective_ws_root(char *_dir)
 void _set_rootws(char *ws_root)
 {
 #if defined(DEBUG_TRACE)
-    if (mibl_trace) log_trace(RED "_set_rootws: " CRESET
-                              "%s", ws_root);
+    if (mibl_trace) log_trace("_set_rootws: %s", ws_root);
 #endif
 
     UT_string *_root_ws;

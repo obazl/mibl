@@ -28,6 +28,8 @@
 
 bool mibl_show_traversal = false;
 
+/* bool mibl_emit_parsetree = false; */
+
 UT_array  *segs;
 UT_string *group_tag;
 
@@ -3832,44 +3834,81 @@ bool _include_this(FTSENT *ftsentry)
 /*     fflush(stdout); */
 /* } */
 
-/* deprecated - do this in scheme code */
-/* LOCAL __attribute__((unused)) void _emit_ws_parsetree(s7_pointer pkg_tbl) */
-/* { */
-/* #if defined(DEBUG_TRACE) */
-/*     if (mibl_trace) log_trace("_emit_ws_parsetree"); */
-/* #endif */
-/*     /\* log_info("\tpkg_tbl: %s", TO_STR(pkg_tbl)); *\/ */
+LOCAL void _emit_parsetree(void)
+{
+#if defined(DEBUG_TRACE)
+    if (mibl_trace) log_trace("_emit_parsetree");
+#endif
 
-/*     char *ws_root = getenv("BUILD_WORKSPACE_DIRECTORY"); */
+    char *tostr;
 
-/*     s7_pointer env = s7_inlet(s7, */
-/*                               s7_list(s7, 2, */
-/*                                       s7_cons(s7, */
-/*                                               s7_make_symbol(s7, "pkg-tbl"), */
-/*                                               pkg_tbl), */
-/*                                       s7_cons(s7, */
-/*                                               s7_make_symbol(s7, "ws-root"), */
-/*                                               s7_make_string(s7, ws_root)) */
-/*                                       )); */
-/*     /\* log_debug("env: %s", TO_STR(env)); *\/ */
-/*     char * exec_sexp = */
-/*         "(for-each (lambda (k)" */
-/*         "            (let* ((pkg (hash-table-ref pkg-tbl k))" */
-/*         "                  (pkg-path (car (assoc-val :pkg-path pkg)))" */
-/*         "                  (outpath (string-append ws-root \"/\" pkg-path \"/PARSETREE.mibl\")))" */
-/*         "              (call-with-output-file outpath" */
-/*         "                 (lambda (p)" */
-/*         "                    (mibl-pretty-print pkg p)))))" */
-/*         /\* flush-output-port? *\/ */
-/*         "          (hash-table-keys pkg-tbl))" */
-/*         ; */
-/*         /\* "              (format #t \"OUTPATH: ~A~%\" outpath)))" *\/ */
+    char *sexp =
+        "(let* ((@ws (assoc-val :@ *mibl-project*)) "
+        "       (ws-path (assoc-val :path (cdr @ws))) "
+        "       (mibl-file (format #f \"~A/.mibl/PARSETREE.mibl\" ws-path)) "
+        "       (s7-file (format #f \"~A/.mibl/PARSETREE.s7\" ws-path))) "
+        "    (mkdir (format #f \"~A/.mibl\" ws-path) "
+        "           (logior S_IRWXU S_IRGRP S_IXGRP S_IROTH))"
+        "    (let ((outp "
+        "            (catch #t "
+        "               (lambda () "
+        "                 (open-output-file mibl-file)) "
+        "               (lambda args "
+        "                 (error 'OPEN_ERROR_EMIT "
+        "                   (format #f \"OPEN ERROR: ~A~%\" mibl-file)))))) "
+        "        (mibl-pretty-print *mibl-project* outp) "
+        "        (close-output-port outp)) "
+        "    (let ((outp "
+        "            (catch #t "
+        "               (lambda () "
+        "                 (open-output-file s7-file)) "
+        "               (lambda args "
+        "                 (error 'OPEN_ERROR_EMIT "
+        "                   (format #f \"OPEN ERROR: ~A~%\" s7-file)))))) "
+        "        (write (object->string *mibl-project* :readable) outp) "
+        "        (close-output-port outp))) "
+        ;
 
-/*     s7_pointer x = s7_eval_c_string_with_environment(s7, exec_sexp, env); */
+    s7_pointer ws_path = s7_eval_c_string(s7, sexp);
 
-/*     (void)x; */
-/*     fflush(stdout); */
-/* } */
+    tostr = TO_STR(ws_path);
+    log_debug("s: %s", tostr);
+    free(tostr);
+
+    return;
+
+    /* char *ws_root = getenv("BUILD_WORKSPACE_DIRECTORY"); */
+
+    /* s7_pointer env = s7_inlet(s7, */
+    /*                           s7_list(s7, 2, */
+    /*                                   s7_cons(s7, */
+    /*                                           s7_make_symbol(s7, "pkg-tbl"), */
+
+    /*                                           pkg_tbl), */
+    /*                                   s7_cons(s7, */
+    /*                                           s7_make_symbol(s7, "ws-root"), */
+    /*                                           s7_make_string(s7, ws_root)) */
+    /*                                   )); */
+
+    /* log_debug("env: %s", TO_STR(env)); */
+    /* char * exec_sexp = */
+    /*     "(for-each (lambda (k)" */
+    /*     "            (let* ((pkg (hash-table-ref pkg-tbl k))" */
+    /*     "                  (pkg-path (car (assoc-val :pkg-path pkg)))" */
+    /*     "                  (outpath (string-append ws-root \"/\" pkg-path \"/PARSETREE.mibl\")))" */
+    /*     "              (call-with-output-file outpath" */
+    /*     "                 (lambda (p)" */
+    /*     "                    (mibl-pretty-print pkg p)))))" */
+    /*     /\* flush-output-port? *\/ */
+    /*     "          (hash-table-keys pkg-tbl))" */
+    /*     ; */
+    /*     /\* "              (format #t \"OUTPATH: ~A~%\" outpath)))" *\/ */
+
+    /* s7_pointer x = s7_eval_c_string_with_environment(s7, exec_sexp, env); */
+
+    /* (void)x; */
+    /* fflush(stdout); */
+}
 
 EXPORT s7_pointer load_project(const char *home_sfx, const char *traversal_root)
 {
@@ -4013,6 +4052,13 @@ EXPORT s7_pointer load_project(const char *home_sfx, const char *traversal_root)
                          realpath(_traversal_root[0], NULL));
     }
 #endif
+
+    s7_pointer depgraph = analyze_deps(_traversal_root);
+    if (depgraph == s7_nil(s7))
+        exit(EXIT_FAILURE);
+    char *s = TO_STR(depgraph);
+    log_debug("dg: %s", s);
+    free(s);
 
     errno = 0;
     tree = fts_open(_traversal_root,
@@ -4269,7 +4315,15 @@ EXPORT s7_pointer load_project(const char *home_sfx, const char *traversal_root)
     /* printf("*mibl-project*: %s\n", */
     /*        TO_STR(s7_name_to_value(s7, "*mibl-project*"))); */
 
-    analyze_deps(traversal_root, _ocaml_src_dirs);
+    /* const char *depgraph = */
+    /* analyze_deps(traversal_root, _ocaml_src_dirs); */
+    /* if (depgraph) */
+    /*     log_debug("codept result: '%s'", depgraph); */
+
+    if (mibl_config.emit_parsetree) {
+        log_debug("EMITTING PARSETREE");
+        _emit_parsetree();
+    }
 
     return pkg_tbl;
 }

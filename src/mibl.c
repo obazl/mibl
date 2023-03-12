@@ -45,11 +45,14 @@ UT_string *config_mibl;        /* work string */
 struct mibl_config_s {
     char *schema_version;
     int libct;
+    //FIXME: remove debug flags, they're globals guarded by DEBUG_TRACE
     bool debug_ppx;
     bool debug_dune_rules;
+    //FIXME emits: all but parsetree are s7 global vars
     bool emit_starlark;
     bool emit_mibl;
     bool emit_parsetree;
+    //FIXME show: remove all, they're s7 globals
     bool show_project;
     bool show_parsetree;
     bool show_exports;
@@ -287,7 +290,16 @@ LOCAL int _miblrc_handler(void* config, const char* section, const char* name, c
 EXPORT void show_mibl_config(void)
 {
     log_info(GRN "mibl configuration summary:" CRESET);
+
+    log_info("\tschema_version: %s", mibl_config.schema_version);
+    log_info("\temit_parsetree: %s",
+             mibl_config.emit_parsetree? "true" : "false");
+
     char **p;
+    p = NULL;
+    while ( (p=(char**)utarray_next(mibl_config.pkgs,p))) {
+        log_info("  pkg: %s",*p);
+    }
     p = NULL;
     while ( (p=(char**)utarray_next(mibl_config.include_dirs,p))) {
         log_info("  include: %s",*p);
@@ -297,6 +309,10 @@ EXPORT void show_mibl_config(void)
         log_info("  exclude: %s",*p);
     }
     log_info(GRN "End mibl configuration summary." CRESET);
+    p = NULL;
+    while ( (p=(char**)utarray_next(mibl_config.watch_dirs,p))) {
+        log_info("  pkg: %s",*p);
+    }
     fflush(NULL);
 }
 

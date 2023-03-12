@@ -68,6 +68,9 @@ int _update_mibl_config(struct option options[],
 {
     /* log_debug("_update_mibl_config"); */
 
+    if (options[FLAG_EMIT_PARSETREE].count)
+        mibl_config->emit_parsetree = true;
+
     if (verbose && verbosity > 1) {
         log_debug("SHOW_EXPORTS: %d", mibl_config->show_exports);
         log_debug("SHOW_PARSETREE: %d", mibl_config->show_parsetree);
@@ -82,24 +85,11 @@ int _update_mibl_config(struct option options[],
 
 void _update_s7_globals(struct option options[])
 {
-    /* mibl_s7_set_flag("*mibl-debugging*", true); */
-    /* mibl_s7_set_flag("*mibl-quiet*", ((options[FLAG_QUIET].count) > 0)); */
-    /* mibl_s7_set_flag("*mibl-debugging*", (options[FLAG_DEBUG].count > 0)); */
-    /* mibl_s7_set_flag("*mibl-debug-s7*", (options[FLAG_DEBUG_S7].count > 0)); */
-
     if (options[FLAG_DEBUG_PPX].count)
         mibl_s7_set_flag("*mibl-debug-ppx*", true);
-    else {
-        s7_pointer fld = s7_name_to_value(s7, "*mibl-debug-ppx*");
-        if (fld == s7_undefined(s7)) {
-            mibl_s7_set_flag("*mibl-debug-ppx*", false);
-        }
-    }
 
-    /* mibl_s7_set_flag("*mibl-debug-show-pkgs*", false); */
-    /* mibl_s7_set_flag("*mibl-debug-modules*", false); */
-    /* mibl_s7_set_flag("*mibl-debug-tests*", false); */
-    /* mibl_s7_set_flag("*mibl-debug-updaters*", false); */
+    if (options[FLAG_DEBUG_S7].count)
+        mibl_s7_set_flag("*mibl-debug-s7*", true);
 
     if (options[FLAG_SHOW_MIBL].count)
         mibl_s7_set_flag("*mibl-show-mibl*", true);
@@ -112,8 +102,8 @@ void _update_s7_globals(struct option options[])
     if (options[FLAG_EMIT_MIBL].count)
         mibl_s7_set_flag("*mibl-emit-mibl*", true);
 
-    if (options[FLAG_EMIT_PARSETREE].count)
-        mibl_s7_set_flag("*mibl-emit-parsetree*", true);
+    /* if (options[FLAG_EMIT_PARSETREE].count) */
+    /*     mibl_s7_set_flag("*mibl-emit-parsetree*", true); */
 
     if (options[FLAG_EMIT_S7].count)
         mibl_s7_set_flag("*mibl-emit-s7*", true);
@@ -169,12 +159,14 @@ void _print_usage(void) {
     printf("\n");
     printf("Flags:\n");
     printf("  Emit flags control file writing.\n");
+    printf("\t--emit-parsetree\tWrite file PARSETREE.{mibl,s7}.\n");
     printf("\t--emit-wss\t\tSet var *mibl-emit-wss*; default script writes WS files.\n");
     printf("\t--emit-pkgs\t\tSet var *mibl-emit-pkgs; default script writes PKG files.\n");
 
-    printf("    Formats: mibl = human-readable; s7=scheme-readable\n");
-    printf("\t--emit-mibl\t\tSet var *mibl-emit-mibl*; default script writes WORKSPACE.mibl or PKG.mibl files.\n");
-    printf("\t--emit-s7\t\tSet var *mibl-emit-s7*; default script writes WORKSPACE.s7 or PKG.s7 files.\n");
+    printf("\n");
+    printf("  Emit formats: mibl = human-readable; s7=scheme-readable\n");
+    printf("\t--emit-mibl\t\tSet var *mibl-emit-mibl*; default script writes *.mibl files.\n");
+    printf("\t--emit-s7\t\tSet var *mibl-emit-s7*; default script writes *.s7 files.\n");
 
     /* printf("\t--clean\t\t\tSet var *mibl-clean*; default script removes *.mibl and *.s7 files.\n"); */
     /* printf("\t--clean-mibl\t\tSet var *mibl-clean-mibl*; default script removes *.mibl files.\n"); */
@@ -239,7 +231,7 @@ static struct option options[] = {
     [FLAG_EMIT_MIBL] = {.long_name="emit-mibl",
                       .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_EMIT_PARSETREE] = {.long_name="emit-parsetree",
-                      .flags=GOPT_ARGUMENT_FORBIDDEN},
+                             .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_EMIT_S7] = {.long_name="emit-s7",
                       .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_EMIT_WSS] = {.long_name="emit-wss",

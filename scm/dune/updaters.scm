@@ -420,7 +420,7 @@
   (if (or *mibl-debug-s7* *mibl-debug-updaters*)
       (format #t "~A: ~A~%" (blue "-add-filegroups-to-pkgs") ws))
   (let* ((@ws (assoc-val ws *mibl-project*))
-         (ws-path (car (assoc-val :path @ws)))
+         (ws-path (assoc-val :path @ws))
          (_ (if (or *mibl-debug-s7* *mibl-debug-updaters*) (format #t "~A: ~A~%" (blue "ws-path") ws-path)))
          (pkgs (car (assoc-val :pkgs @ws)))
          (filegroups (car (assoc-val :filegroups @ws))))

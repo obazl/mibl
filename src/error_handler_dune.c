@@ -69,8 +69,15 @@ s7_pointer _s7_read_thunk_catcher(s7_scheme *s7, s7_pointer args)
 
         return fixed;
     } else {
-        fprintf(stdout, RED "Error:" CRESET " %s\n",
+        fprintf(stdout, RED "Read Error:" CRESET " %s\n",
                 TO_STR(s7_cadr(args)));
+
+        s7_pointer st = s7_eval_c_string(s7, "(debug-print-stacktrace)");
+        (void)st;
+        /* fprintf(stdout, "STACKTRACE:\n%s\n", "TO_STR(st)"); */
+        s7_flush_output_port(s7, s7_current_output_port(s7));
+        fflush(NULL);
+
         fprintf(stdout, RED "[begin error context]\n");
         s7_eval_c_string(s7, ERRSEXP);
         char *sexp = "(do ((e (outlet (owlet)) (outlet e))) "
@@ -133,6 +140,12 @@ s7_pointer _s7_error_handler(s7_scheme *s7, s7_pointer args)
         //TODO: write to error port
         fprintf(stdout, RED "Error:" CRESET " %s\n",
                 s7_string(s7_car(args)));
+        s7_pointer st = s7_eval_c_string(s7, "(debug-print-stacktrace)");
+        (void)st;
+        /* fprintf(stdout, "STACKTRACE:\n%s\n", "TO_STR(st)"); */
+        s7_flush_output_port(s7, s7_current_output_port(s7));
+        fflush(NULL);
+
         fprintf(stdout, RED "[begin error context]\n");
         s7_eval_c_string(s7, ERRSEXP);
         char *sexp = "(do ((e (outlet (owlet)) (outlet e))) "

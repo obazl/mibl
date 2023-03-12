@@ -177,24 +177,18 @@ static char *mibl_s7_flags[] = {
     "*mibl-debug-loads*",
     "*mibl-debug-mibl*",
     "*mibl-debug-modules*",
-    "*mibl-debug-modules*",
-    "*mibl-debug-ppx*",
     "*mibl-debug-ppx*",
     "*mibl-debug-rule-stanzas*",
     "*mibl-debug-s7*",
-    "*mibl-debug-s7*",
-    "*mibl-debug-show-pkgs*"
+    "*mibl-debug-show-pkgs*",
     "*mibl-debug-tests*",
-    "*mibl-debug-updaters*",
     "*mibl-debug-updaters*",
     "*mibl-debugging*",
     "*mibl-dune-execlib-includes-main*",
     "*mibl-dunefile-count*",
     "*mibl-emit-bazel-pkg*",
     "*mibl-emit-mibl*",
-    "*mibl-emit-mibl*",
-    "*mibl-emit-parsetree*",
-    "*mibl-emit-parsetree*",
+    /* "*mibl-emit-parsetree*", */
     "*mibl-emit-pkgs*",
     "*mibl-emit-result*",
     "*mibl-emit-s7*",
@@ -209,12 +203,10 @@ static char *mibl_s7_flags[] = {
     "*mibl-ns-topdown*",
     "*mibl-ppxlib-ppx-driver*",
     "*mibl-quiet*",
-    "*mibl-quiet*",
     "*mibl-shared-deps*",
     "*mibl-shared-ppx-pkg*",
     "*mibl-show-exports*",
     "*mibl-show-mibl*",
-    "*mibl-show-parsetree*",
     "*mibl-show-parsetree*",
     "*mibl-show-project*",
     "*mibl-show-starlark*",
@@ -288,7 +280,7 @@ EXPORT void initialize_mibl_data_model(s7_scheme *s7)
     UT_string *init_sexp;
     utstring_new(init_sexp);
     utstring_printf(init_sexp, "(define *mibl-project* "
-                    "`((:@ (:name \"@\") (:path %s) "
+                    "`((:@ (:name . \"@\") (:path . %s) "
                     "(:exports ,(make-hash-table)) "
                     "(:opam ,(make-hash-table)) "
                     "(:shared-ppx ,(make-hash-table)) "

@@ -4,6 +4,7 @@
 (load "dune.scm")
 (load "mibl_pp.scm")
 (load "dune/pipeline.scm")
+(load "codept/codept_reader.scm")
 
 (define (emit-mibl-pkg pkg)
   (if (or *mibl-debug-emit* *mibl-debug-s7*)
@@ -26,10 +27,7 @@
   (if (or *mibl-debug-emit* *mibl-debug-s7*)
       (format #t "~A: ~A~%" (yellow "emit-s7-pkg") pkg))
   (let* ((pkg-path (car (assoc-val :pkg-path pkg)))
-         (mibl-file (string-append pkg-path
-                                   (if *mibl-emit-parsetree*
-                                       "/PARSETREE.s7"
-                                       "/PKG.s7")))
+         (mibl-file (string-append pkg-path "/PKG.s7"))
          (outp
           (catch #t
                  (lambda ()
@@ -47,7 +45,7 @@
       (format #t "~%~A~%" (yellow "emit-mibl")))
   (if (not (or *mibl-emit-mibl* *mibl-emit-s7*))
       (format #t "~A: ~A~%" (red "WARNING") "To emit-wss, one or both of *mibl-emit-mibl* and *mibl-emit-s7* must be set.")
-      (if (or *mibl-emit-mibl* *mibl-emit-s7* *mibl-emit-parsetree*)
+      (if (or *mibl-emit-mibl* *mibl-emit-s7*)
           (for-each (lambda (ws)
                       (if (or *mibl-debug-emit* *mibl-debug-s7*)
                           (format #t "~A: ~A~%" (yellow "ws") ws))
@@ -72,7 +70,7 @@
 (define (emit-mibl-ws ws)
   (if (or *mibl-debug-emit* *mibl-debug-s7*)
       (format #t "~A: ~A~%" (yellow "emit-mibl-ws") ws))
-  (let* ((ws-path (car (assoc-val :path (cdr ws))))
+  (let* ((ws-path (assoc-val :path (cdr ws)))
          (mibl-file (format #f "~A/WS.mibl"  ws-path))
          (outp
           (catch #t
@@ -106,7 +104,7 @@
 (define (emit-s7-ws ws)
   (if (or *mibl-debug-emit* *mibl-debug-s7*)
       (format #t "~A: ~A~%" (yellow "emit-s7-ws") ws))
-  (let* ((ws-path (car (assoc-val :path (cdr ws))))
+  (let* ((ws-path (assoc-val :path (cdr ws)))
          (mibl-file (format #f "~A/WS.s7"  ws-path))
          (outp
           (catch #t
@@ -146,7 +144,7 @@
 (define (emit-parsetree-ws ws)
   (if (or *mibl-debug-emit* *mibl-debug-s7*)
       (format #t "~A: ~A~%" (yellow "emit-parsetree-ws") ws))
-  (let* ((ws-path (car (assoc-val :path (cdr ws)))))
+  (let* ((ws-path (assoc-val :path (cdr ws))))
     (if *mibl-emit-mibl*
         (let* ((mibl-file (format #f "~A/PARSETREE.mibl" ws-path))
                (outp
@@ -178,7 +176,7 @@
   (if (or *mibl-debug-emit* *mibl-debug-s7*)
       (format #t "~A: ~A~%" (yellow "emit-parsetree-project") *mibl-project*))
   (let* ((@ws (assoc-val :@ *mibl-project*))
-         (ws-path (car (assoc-val :path (cdr @ws)))))
+         (ws-path (assoc-val :path (cdr @ws))))
     (if *mibl-emit-mibl*
         (let* ((mibl-file (format #f "~A/~A.mibl" ws-path stem))
                (outp
