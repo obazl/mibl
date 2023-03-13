@@ -1392,7 +1392,15 @@ LOCAL void _update_pkg_sigs(s7_pointer pkg_tbl,
         /*     log_debug("mli_assoc: %s", TO_STR(mli_assoc)); */
 
         /* s7_pointer sig_assoc = s7_list(s7, 2, mname_sym, mli_file); */
-        s7_pointer sig_assoc = s7_cons(s7, mname_sym, mli_file);
+
+        s7_pointer mdeps;
+        mdeps = get_deps(pkg_name, fname, deps_list);
+
+        s7_pointer sig_assoc = s7_cons(s7, mname_sym,
+                                       s7_cons(s7,
+                                               mli_file,
+                                               mdeps));
+
 #if defined(DEBUG_TRACE)
         if (mibl_debug_traversal) log_debug("sig_assoc: %s", TO_STR(sig_assoc));
 #endif
