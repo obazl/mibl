@@ -8,6 +8,8 @@
 #include "s7.h"
 #include "deps.h"
 
+bool mibl_show_raw_deps = false;
+
 LOCAL int _select_ocaml_srcs(const struct dirent *de) {
     /* log_debug("selecting on %s", de->d_name); */
     char *ext = strrchr(de->d_name, '.');
@@ -158,6 +160,19 @@ s7_pointer analyze_deps(char *const *rootdir) //, UT_array *ocaml_src_dirs)
                                       s7_cons(s7,
                                               s7_make_symbol(s7, "depgraph"),
                                               depgraph)));
+
+    if (mibl_show_raw_deps) {
+        log_info("DEPS:");
+        char *sexp = "(mibl-pretty-print depgraph) ";
+        s7_pointer r = s7_eval_c_string_with_environment(s7, sexp, env);
+        (void)r;
+        s7_newline(s7, s7_current_output_port(s7));
+        /* char *tostr = TO_STR(deps_list); */
+        /* log_debug("DEPS-LIST: %s", tostr); */
+        /* free(tostr); */
+        s7_flush_output_port(s7, s7_current_output_port(s7));
+    }
+
     char *sexp =
         "(let ((deps-list (assoc-val 'dependencies depgraph))) "
         "  (car deps-list)) "
@@ -165,10 +180,6 @@ s7_pointer analyze_deps(char *const *rootdir) //, UT_array *ocaml_src_dirs)
 
     s7_pointer deps_list = s7_eval_c_string_with_environment(s7, sexp, env);
     /* (void)deps_list; */
-    char *tostr = TO_STR(deps_list);
-    log_debug("DEPS-LIST: %s", tostr);
-    free(tostr);
-    s7_flush_output_port(s7, s7_current_output_port(s7));
 
     return deps_list;
 }
@@ -212,8 +223,10 @@ s7_pointer get_deps(char *_pkg, char *tgt, s7_pointer deps_list)
         "          (let* ((dlist (cadar deps)) "
         "                 (fixed (map (lambda (lst) "
         "                                  (if (> (length lst) 1) "
-        "                                      (symbol (string-join (map symbol->string lst) \".\")) "
-        "                                       lst)) "
+        "                                      (list->vector lst) lst)) "
+        /* "                                  (if (> (length lst) 1) " */
+        /* "                                      (symbol (string-join (map symbol->string lst) \".\")) " */
+        /* "                                       lst)) " */
         "                             dlist))) "
         "            (format #t \"deps: ~A~%\" (flatten fixed)) "
         "            (flatten fixed)) "

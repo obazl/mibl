@@ -28,6 +28,7 @@
 
 s7_pointer deps_list;
 
+bool mibl_show_deps = false;
 bool mibl_show_traversal = false;
 
 /* bool mibl_emit_parsetree = false; */
@@ -1570,8 +1571,10 @@ LOCAL void _update_pkg_structs(s7_pointer pkg_tbl,
         /* = s7_call(s7, assoc_in, */
         /*           s7_list(s7, 2, modules_kw, pkg_alist)); */
 #if defined(DEBUG_TRACE)
-        if (mibl_debug_traversal) log_debug("structs_alist keypath %s", TO_STR(keypath));
-        if (mibl_debug_traversal) log_debug("structs_alist %s", TO_STR(structs_alist));
+        if (mibl_debug_traversal) {
+            log_debug("structs_alist keypath %s", TO_STR(keypath));
+            log_debug("structs_alist %s", TO_STR(structs_alist));
+        }
 #endif
 
         /* s7_pointer ml_assoc = s7_list(s7, 2, */
@@ -1580,8 +1583,16 @@ LOCAL void _update_pkg_structs(s7_pointer pkg_tbl,
         /* if (mibl_debug_traversal) */
         /*     log_debug("ml_assoc: %s", TO_STR(ml_assoc)); */
 
+        s7_pointer mdeps;
+        mdeps = get_deps(pkg_name, fname, deps_list);
+
         s7_pointer struct_assoc =
-            s7_cons(s7, mname_sym, s7_make_symbol(s7, fname));
+            s7_cons(s7, mname_sym,
+                    s7_cons(s7,
+                            s7_make_symbol(s7, fname),
+                            mdeps));
+                    /* s7_make_symbol(s7, fname)); */
+
         /* s7_list(s7, 2, mname_sym, s7_make_symbol(s7, fname)); */
 #if defined(DEBUG_TRACE)
         if (mibl_debug_traversal) log_debug("struct_assoc: %s", TO_STR(struct_assoc));
@@ -2740,12 +2751,12 @@ LOCAL void _update_ml(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
     char *mname = _module_name(ftsentry, ext);
 
 #if defined(DEBUG_TRACE)
-    if (mibl_debug_traversal) {
-        log_info(BLU "_update_ml" CRESET);
-        log_info("\tpkg path: %s", pkg_path);
-        log_info("\tfts_name: %s", ftsentry->fts_name);
-        log_info("\tfts_path: %s", ftsentry->fts_path);
-        log_info("\tfts_accpath: %s", ftsentry->fts_accpath);
+    if (mibl_trace) {
+        log_trace(BLU "_update_ml" CRESET);
+        log_trace("\tpkg path: %s", pkg_path);
+        log_trace("\tfts_name: %s", ftsentry->fts_name);
+        log_trace("\tfts_path: %s", ftsentry->fts_path);
+        log_trace("\tfts_accpath: %s", ftsentry->fts_accpath);
     }
 #endif
     char *ml_name = strdup(ftsentry->fts_name);
@@ -2755,17 +2766,24 @@ LOCAL void _update_ml(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
     utstring_printf(mli_test, "%s/%si", realpath(pkg_path, NULL), ml_name);
 
 #if defined(DEBUG_TRACE)
-    if (mibl_trace) {
+    if (mibl_debug_traversal) {
         log_debug("Checking for companion .mli: %s",
                   utstring_body(mli_test));
     }
 #endif
     int rc = access(utstring_body(mli_test), F_OK);
     if (rc) {
-        /* companion mli file not found */
+#if defined(DEBUG_TRACE)
+        if (mibl_debug_traversal)
+            { log_debug("Not found: %s", utstring_body(mli_test)); }
+#endif
         _update_pkg_structs(pkg_tbl, pkg_path, mname,
                             ftsentry->fts_name, TAG_ML);
     } else {
+#if defined(DEBUG_TRACE)
+        if (mibl_debug_traversal)
+            { log_debug("Found: %s", utstring_body(mli_test)); }
+#endif
         _update_pkg_modules(pkg_tbl, pkg_path, mname,
                             ftsentry->fts_name, TAG_ML);
     }
@@ -4318,9 +4336,19 @@ EXPORT s7_pointer load_project(const char *home_sfx, const char *traversal_root)
         _emit_parsetree();
     }
 
-    /* char *s = TO_STR(deps_list); */
-    /* log_debug("dg: %s", s); */
-    /* free(s); */
+    if (mibl_show_deps) {
+        log_info("DEPS LIST:");
+        s7_pointer env
+            = s7_inlet(s7, s7_list(s7, 1,
+                                   s7_cons(s7,
+                                           s7_make_symbol(s7, "deps-list"),
+                                           deps_list)));
+        char *sexp = "(mibl-pretty-print deps-list) ";
+        s7_pointer r = s7_eval_c_string_with_environment(s7, sexp, env);
+        (void)r;
+        s7_newline(s7, s7_current_output_port(s7));
+        s7_flush_output_port(s7, s7_current_output_port(s7));
+    }
 
     return pkg_tbl;
 }

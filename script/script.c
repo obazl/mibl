@@ -15,6 +15,8 @@ extern bool mibl_debug_traversal;
 extern bool mibl_trace;
 #endif
 
+extern bool mibl_show_deps;
+extern bool mibl_show_raw_deps;
 extern bool mibl_show_traversal;
 extern bool verbose;
 
@@ -33,6 +35,8 @@ enum OPTS {
     OPT_FLAGS, /* ad-hoc flags; if not passed, (if *mibl-foo*...) fails */
 
     FLAG_HELP,
+    FLAG_SHOW_DEPS,
+    FLAG_SHOW_RAW_DEPS,
     FLAG_SHOW_CONFIG,
     FLAG_SHOW_PARSETREE,
     FLAG_SHOW_MIBL,
@@ -205,6 +209,10 @@ static struct option options[] = {
                    .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_SHOW_CONFIG] = {.long_name="show-config",
                           .flags=GOPT_ARGUMENT_FORBIDDEN},
+    [FLAG_SHOW_DEPS] = {.long_name="show-deps",
+                          .flags=GOPT_ARGUMENT_FORBIDDEN},
+    [FLAG_SHOW_RAW_DEPS] = {.long_name="show-raw-deps",
+                          .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_SHOW_MIBL] = {.long_name="show-mibl",
                           .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_SHOW_PARSETREE] = {.long_name="show-parsetree",
@@ -296,6 +304,14 @@ int main(int argc, char **argv, char **envp)
 #if defined(DEBUG_TRACE)
         mibl_trace = true;
 #endif
+    }
+
+    if (options[FLAG_SHOW_DEPS].count) {
+        mibl_show_deps = true;
+    }
+
+    if (options[FLAG_SHOW_RAW_DEPS].count) {
+        mibl_show_raw_deps = true;
     }
 
     if (options[FLAG_SHOW_TRAVERSAL].count) {
