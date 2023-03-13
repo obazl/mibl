@@ -43,6 +43,9 @@ UT_array *_ws_src_dirs(char *const *rootdir)
     int scan_ct;
     struct dirent **namelist;
 
+    log_debug("cwd: %s", getcwd(NULL,0));
+    log_debug("traversal root: %s", *rootdir);
+
     errno = 0;
     tree = fts_open(rootdir,
                     FTS_COMFOLLOW
@@ -58,17 +61,21 @@ UT_array *_ws_src_dirs(char *const *rootdir)
     if (NULL != tree) {
         while( (ftsentry = fts_read(tree)) != NULL) {
             switch (ftsentry->fts_info) {
-            case FTS_D : // dir visited in pre-order
-                scan_ct = scandir(ftsentry->fts_path, &namelist,
-                                  _select_ocaml_srcs,
-                                  alphasort);
-                /* log_debug("scan_ct: %d", scan_ct); */
-                if (scan_ct > 0) {
-                    char *s = strndup(ftsentry->fts_name,
-                                      strlen(ftsentry->fts_name));
-                    utarray_push_back(_ocaml_src_dirs, &s);
-                    free(s);
+            case FTS_D : // dir visited in post-order
+                if (traverse_dir(tree, ftsentry)) {
+                    log_debug("Scanning dir: %s", ftsentry->fts_path);
+                    scan_ct = scandir(ftsentry->fts_path, &namelist,
+                                      _select_ocaml_srcs,
+                                      alphasort);
+                    /* log_debug("scan_ct: %d", scan_ct); */
+                    if (scan_ct > 0) {
+                        char *s = strndup(ftsentry->fts_name,
+                                          strlen(ftsentry->fts_name));
+                        utarray_push_back(_ocaml_src_dirs, &s);
+                        free(s);
+                    }
                 }
+                else log_debug("NOT scanning dir: %s", ftsentry->fts_path);
                 break;
             default:
                 /* log_error(RED "Unhandled FTS type %d\n", */
@@ -81,6 +88,7 @@ UT_array *_ws_src_dirs(char *const *rootdir)
     return _ocaml_src_dirs;
 }
 
+/* analyze_deps - run codept and ingest resulting sexp */
 s7_pointer analyze_deps(char *const *rootdir) //, UT_array *ocaml_src_dirs)
 {
 #if defined(DEBUG_TRACE)
@@ -145,6 +153,81 @@ s7_pointer analyze_deps(char *const *rootdir) //, UT_array *ocaml_src_dirs)
 
     s7_pointer depgraph_port = s7_open_input_string(s7, result);
     s7_pointer depgraph = s7_read(s7, depgraph_port);
+    s7_pointer env = s7_inlet(s7,
+                              s7_list(s7, 1,
+                                      s7_cons(s7,
+                                              s7_make_symbol(s7, "depgraph"),
+                                              depgraph)));
+    char *sexp =
+        "(let ((deps-list (assoc-val 'dependencies depgraph))) "
+        "  (car deps-list)) "
+        ;
 
-    return depgraph;
+    s7_pointer deps_list = s7_eval_c_string_with_environment(s7, sexp, env);
+    /* (void)deps_list; */
+    char *tostr = TO_STR(deps_list);
+    log_debug("DEPS-LIST: %s", tostr);
+    free(tostr);
+    s7_flush_output_port(s7, s7_current_output_port(s7));
+
+    return deps_list;
+}
+
+s7_pointer get_deps(char *_pkg, char *tgt, s7_pointer deps_list)
+{
+    log_trace("get_deps: %s : %s", _pkg, tgt);
+
+    /* char *tostr = TO_STR(deps_list); */
+    /* log_debug("DEPS-LIST: %s", tostr); */
+    /* free(tostr); */
+    /* s7_flush_output_port(s7, s7_current_output_port(s7)); */
+
+    /* NB: _pkg has leading "./", e.g. "./src/foo" */
+    char *pkg;
+    if (_pkg[0] == '.' && _pkg[1] == '/')
+        pkg = _pkg + 2;
+    else
+        pkg = _pkg;
+    (void)pkg;
+
+    s7_pointer env = s7_inlet(s7,
+                              s7_list(s7, 3,
+                                      s7_cons(s7,
+                                              s7_make_symbol(s7, "deps-list"),
+                                              deps_list),
+                                      s7_cons(s7,
+                                              s7_make_symbol(s7, "pkg"),
+                                              s7_make_string(s7, pkg)),
+                                      s7_cons(s7,
+                                              s7_make_symbol(s7, "tgt"),
+                                              s7_make_string(s7, tgt))));
+
+    char *sexp =
+        "(let* ((path (format #f \"~A/~A\" pkg tgt)) "
+        "       (key `(file ,(symbol path)))) "
+        "  (format #t \"KEY: ~A~%\" key) "
+        "  (if-let ((needle (find-if (lambda (x) (equal? key (car x))) deps-list))) "
+        "      (if-let ((deps (cdr needle))) "
+        "        (if (truthy? deps) "
+        "          (let* ((dlist (cadar deps)) "
+        "                 (fixed (map (lambda (lst) "
+        "                                  (if (> (length lst) 1) "
+        "                                      (symbol (string-join (map symbol->string lst) \".\")) "
+        "                                       lst)) "
+        "                             dlist))) "
+        "            (format #t \"deps: ~A~%\" (flatten fixed)) "
+        "            (flatten fixed)) "
+        "            '()) "
+        "         '()) "
+        "       '()))"
+        ;
+
+    s7_pointer deps = s7_eval_c_string_with_environment(s7, sexp, env);
+    /* (void)deps; */
+    /* char *tostr = TO_STR(deps); */
+    /* log_debug("DEPS-LIST: %s", tostr); */
+    /* free(tostr); */
+    /* s7_flush_output_port(s7, s7_current_output_port(s7)); */
+
+    return deps;  // s7_list(s7, 1, s7_make_symbol(s7, "Foobar"));
 }

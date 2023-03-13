@@ -26,6 +26,8 @@
 
 #include "load_project.h"
 
+s7_pointer deps_list;
+
 bool mibl_show_traversal = false;
 
 /* bool mibl_emit_parsetree = false; */
@@ -62,21 +64,21 @@ LOCAL s7_pointer _s7_read_thunk(s7_scheme *s7, s7_pointer args) {
 LOCAL s7_pointer s7_read_thunk;
 
 /* used by scandir */
-struct dirent **namelist;
-int scan_ct;
-LOCAL int _select_ocaml_srcs(const struct dirent *de) {
-    /* log_debug("selecting on %s", de->d_name); */
-    char *ext = strrchr(de->d_name, '.');
-    if (ext == NULL) {
-        return 0;
-    } else if (strncmp(ext, ".mli", 4) == 0) {
-        return 1;
-    }
-    else if (strncmp(ext, ".ml", 3) == 0) {
-        return 1;
-    } else
-        return 0;
-}
+/* struct dirent **namelist; */
+/* int scan_ct; */
+/* LOCAL int _select_ocaml_srcs(const struct dirent *de) { */
+/*     /\* log_debug("selecting on %s", de->d_name); *\/ */
+/*     char *ext = strrchr(de->d_name, '.'); */
+/*     if (ext == NULL) { */
+/*         return 0; */
+/*     } else if (strncmp(ext, ".mli", 4) == 0) { */
+/*         return 1; */
+/*     } */
+/*     else if (strncmp(ext, ".ml", 3) == 0) { */
+/*         return 1; */
+/*     } else */
+/*         return 0; */
+/* } */
 
 LOCAL s7_pointer _read_thunk(s7_scheme *s7, s7_pointer args) {
     /* printf("_read_thunk\n"); */
@@ -1124,7 +1126,18 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
         /* log_debug(":srcs null?: %d", s7_is_null(s7, srcs_alist)); */
         /* log_debug(":srcs false?: %d", s7_f(s7) ==  srcs_alist); */
 
-        /* s7_pointer ml_assoc = s7_list(s7, 2, */
+        s7_pointer mdeps;
+        if (ftype == TAG_ML)
+            mdeps = get_deps(pkg_name, fname, deps_list);
+        else if (ftype == TAG_MLI)
+            mdeps = get_deps(pkg_name, fname, deps_list);
+        else
+            mdeps = s7_nil(s7);
+        char *tostr = TO_STR(mdeps);
+        log_debug("MDEPS: %s", tostr);
+        free(tostr);
+        s7_flush_output_port(s7, s7_current_output_port(s7));
+
         s7_pointer ml_assoc = s7_cons(s7,
                                       s7_make_keyword(s7,
                                                       (ftype == TAG_ML)
@@ -1141,17 +1154,25 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
                                                       ?"mly"
                                                       :"UNKNOWN"
                                                       ),
-                                      s7_make_symbol(s7, fname));
+                                      s7_cons(s7,
+                                              s7_make_symbol(s7, fname),
+                                              mdeps));
+
+        /* s7_pointer ml_deps_assoc = s7_cons(s7, deps_kw, */
+        /*                                    s7_make_symbol(s7, "Foo")); */
+
 #if defined(DEBUG_TRACE)
-        if (mibl_debug_traversal)
+        if (mibl_debug_traversal) {
             log_debug("ml_assoc: %s", TO_STR(ml_assoc));
+            /* log_debug("ml_deps_assoc: %s", TO_STR(ml_deps_assoc)); */
+        }
 #endif
 
         /* if (srcs_alist == s7_f(s7)) { */
         if (modules_alist == s7_f(s7)) {
 #if defined(DEBUG_TRACE)
             if (mibl_debug_traversal)
-                log_debug("INITIALIZING :modules field");
+                log_debug(GRNB "INITIALIZING " CRESET ":modules field");
 #endif
             /* (acons :srcs */
             /*  ((:modules ((:Foo ((:ml foo.ml) (:mli foo.mli)) */
@@ -1163,6 +1184,7 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
             s7_pointer module_assoc = s7_list(s7, 2,
                                               mname_sym,
                                               ml_assoc);
+                                              /* ml_deps_assoc); */
             /* msrcs_alist); */
 #if defined(DEBUG_TRACE)
             if (mibl_debug_traversal)
@@ -1281,8 +1303,9 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
             } else {
                 /* update */
 #if defined(DEBUG_TRACE)
-                if (mibl_debug_traversal) log_debug(RED "UPDATING" CRESET " module_alist: %s",
-                                     TO_STR(module_alist));
+                if (mibl_debug_traversal)
+                    log_debug(GRNB "UPDATING" CRESET " module_alist: %s",
+                              TO_STR(module_alist));
 #endif
 
                 s7_pointer modules_alist_cdr = s7_cdr(module_alist);
@@ -1295,7 +1318,7 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
                 /* s7_pointer msrcs = s7_cons(s7, ml_assoc, modules_alist_cdr); */
                 s7_pointer msrcs = s7_append(s7,
                                              modules_alist_cdr,
-                                             s7_list(s7, 1, ml_assoc));
+                                             s7_list(s7, 1, ml_assoc));//, ml_deps_assoc));
 
                 /* if (mibl_debug_traversal) { */
                 /*     log_debug("setting cdr to: %s", TO_STR(msrcs)); */
@@ -3714,21 +3737,56 @@ EXPORT s7_pointer g_load_project(s7_scheme *s7,  s7_pointer args)
     return s7_name_to_value(s7, "*mibl-project*");
 }
 
-bool _include_this(FTSENT *ftsentry)
+bool traverse_dir(FTS* tree, FTSENT *ftsentry)
 {
 #if defined(DEBUG_TRACE)
     if (mibl_trace)
-        log_trace(MAG "_include_this?" CRESET " %s (%s)",
+        log_trace(MAG "traverse_dir?" CRESET " %s (%s)",
                   ftsentry->fts_name, ftsentry->fts_path);
 #endif
 
-    /* if (mibl_debug_traversal) { */
-    /*     dump_mibl_config(); */
-    /* } */
-
-    if (ftsentry->fts_name[0] == '.') {
+    if (_this_is_hidden(ftsentry)) {
+#if defined(DEBUG_TRACE)
+        if (mibl_trace)
+            log_trace(RED "Excluding" CRESET " hidden dir: %s",
+                      ftsentry->fts_path);
+#endif
+        fts_set(tree, ftsentry, FTS_SKIP);
+        return false;
+    }
+    else if (strncmp(ftsentry->fts_name, "_build", 6) == 0) {
+#if defined(DEBUG_TRACE)
+        if (mibl_trace)
+            log_trace(RED "Excluding: " CRESET "%s",
+                      ftsentry->fts_path);
+#endif
+        fts_set(tree, ftsentry, FTS_SKIP);
+        return false;
+    }
+    else if (fnmatch("_opam",
+                     ftsentry->fts_name, 0) == 0) {
+#if defined(DEBUG_TRACE)
+        if (mibl_trace)
+            log_trace(RED "Excluding: " CRESET "%s",
+                      ftsentry->fts_path);
+#endif
+        fts_set(tree, ftsentry, FTS_SKIP);
+        return false;
+    }
+    else if (fnmatch("*.opam-bundle",
+                     ftsentry->fts_name, 0) == 0) {
+#if defined(DEBUG_TRACE)
+        if (mibl_trace)
+            log_trace(RED "Excluding: " CRESET "%s",
+                      ftsentry->fts_path);
+#endif
+        fts_set(tree, ftsentry, FTS_SKIP);
+        return false;
+    }
+    else if (ftsentry->fts_name[0] == '.') {
         if (ftsentry->fts_path[0] == '.') {
             if (strlen(ftsentry->fts_path) == 1) {
+                // root dir
                 return true;
             }
         }
@@ -3759,6 +3817,7 @@ bool _include_this(FTSENT *ftsentry)
         if (verbose) { // & (verbosity > 2)) {
             log_info(RED "Excluding:" CRESET " '%s'", ftsentry->fts_path);
         }
+        fts_set(tree, ftsentry, FTS_SKIP);
         return false;
     }
 
@@ -3840,8 +3899,6 @@ LOCAL void _emit_parsetree(void)
     if (mibl_trace) log_trace("_emit_parsetree");
 #endif
 
-    char *tostr;
-
     char *sexp =
         "(let* ((@ws (assoc-val :@ *mibl-project*)) "
         "       (ws-path (assoc-val :path (cdr @ws))) "
@@ -3870,44 +3927,17 @@ LOCAL void _emit_parsetree(void)
         ;
 
     s7_pointer ws_path = s7_eval_c_string(s7, sexp);
+    (void)ws_path;
 
-    tostr = TO_STR(ws_path);
-    log_debug("s: %s", tostr);
-    free(tostr);
+    s7_flush_output_port(s7, s7_current_output_port(s7));
+
+    /* char *tostr; */
+    /* tostr = TO_STR(ws_path); */
+    /* log_debug("s: %s", tostr); */
+    /* free(tostr); */
 
     return;
 
-    /* char *ws_root = getenv("BUILD_WORKSPACE_DIRECTORY"); */
-
-    /* s7_pointer env = s7_inlet(s7, */
-    /*                           s7_list(s7, 2, */
-    /*                                   s7_cons(s7, */
-    /*                                           s7_make_symbol(s7, "pkg-tbl"), */
-
-    /*                                           pkg_tbl), */
-    /*                                   s7_cons(s7, */
-    /*                                           s7_make_symbol(s7, "ws-root"), */
-    /*                                           s7_make_string(s7, ws_root)) */
-    /*                                   )); */
-
-    /* log_debug("env: %s", TO_STR(env)); */
-    /* char * exec_sexp = */
-    /*     "(for-each (lambda (k)" */
-    /*     "            (let* ((pkg (hash-table-ref pkg-tbl k))" */
-    /*     "                  (pkg-path (car (assoc-val :pkg-path pkg)))" */
-    /*     "                  (outpath (string-append ws-root \"/\" pkg-path \"/PARSETREE.mibl\")))" */
-    /*     "              (call-with-output-file outpath" */
-    /*     "                 (lambda (p)" */
-    /*     "                    (mibl-pretty-print pkg p)))))" */
-    /*     /\* flush-output-port? *\/ */
-    /*     "          (hash-table-keys pkg-tbl))" */
-    /*     ; */
-    /*     /\* "              (format #t \"OUTPATH: ~A~%\" outpath)))" *\/ */
-
-    /* s7_pointer x = s7_eval_c_string_with_environment(s7, exec_sexp, env); */
-
-    /* (void)x; */
-    /* fflush(stdout); */
 }
 
 EXPORT s7_pointer load_project(const char *home_sfx, const char *traversal_root)
@@ -3930,8 +3960,8 @@ EXPORT s7_pointer load_project(const char *home_sfx, const char *traversal_root)
      */
 
     /* populated by postorder dir handler below: */
-    UT_array  *_ocaml_src_dirs;
-    utarray_new(_ocaml_src_dirs, &ut_str_icd);
+    /* UT_array  *_ocaml_src_dirs; */
+    /* utarray_new(_ocaml_src_dirs, &ut_str_icd); */
 
     if (traversal_root) {
         /* log_debug("Atr cwd: %s", getcwd(NULL, 0)); */
@@ -4053,12 +4083,11 @@ EXPORT s7_pointer load_project(const char *home_sfx, const char *traversal_root)
     }
 #endif
 
-    s7_pointer depgraph = analyze_deps(_traversal_root);
-    if (depgraph == s7_nil(s7))
+    deps_list = analyze_deps(_traversal_root);
+    if (deps_list == s7_nil(s7)) {
+        log_error("analyze_deps failed");
         exit(EXIT_FAILURE);
-    char *s = TO_STR(depgraph);
-    log_debug("dg: %s", s);
-    free(s);
+    }
 
     errno = 0;
     tree = fts_open(_traversal_root,
@@ -4128,46 +4157,15 @@ EXPORT s7_pointer load_project(const char *home_sfx, const char *traversal_root)
                                   ftsentry->fts_path,
                                   ftsentry->fts_accpath);
 #endif
-                    if (_this_is_hidden(ftsentry)) {
+                    if (traverse_dir(tree, ftsentry)) {
 #if defined(DEBUG_TRACE)
                         if (mibl_trace)
-                            log_trace(RED "Excluding" CRESET " hidden dir: %s",
-                                      ftsentry->fts_path);
+                            log_info(RED "traversing" CRESET " %s",
+                                     ftsentry->fts_path);
 #endif
-                        fts_set(tree, ftsentry, FTS_SKIP);
-                        /* break; */
-                    }
-                    else if (fnmatch("*.opam-bundle",
-                                     ftsentry->fts_name, 0) == 0) {
-#if defined(DEBUG_TRACE)
-                        if (mibl_trace)
-                            log_trace("skipping %s", ftsentry->fts_path);
-#endif
-                        fts_set(tree, ftsentry, FTS_SKIP);
-                        /* break; */
-                    }
-                    else if (fnmatch("_opam",
-                                     ftsentry->fts_name, 0) == 0) {
-                        fts_set(tree, ftsentry, FTS_SKIP);
-                        /* break; */
-                    } else {
-                        if (_include_this(ftsentry)) {
-#if defined(DEBUG_TRACE)
-                            if (mibl_trace)
-                                log_info(RED "Including" CRESET " %s",
-                                                ftsentry->fts_path);
-#endif
-                            if (strncmp(ftsentry->fts_name, "_build", 6) == 0) {
-                                /* skip _build (dune) */
-                                fts_set(tree, ftsentry, FTS_SKIP);
-                                break;
-                            }
-                            dir_ct++;
-                            _handle_dir(pkg_tbl, tree, ftsentry);
-                            /* printf("pkg tbl: %s\n", TO_STR(pkg_tbl)); */
-                        } else {
-                            fts_set(tree, ftsentry, FTS_SKIP);
-                        }
+                        dir_ct++;
+                        _handle_dir(pkg_tbl, tree, ftsentry);
+                        /* printf("pkg tbl: %s\n", TO_STR(pkg_tbl)); */
                     }
                     break;
                 case FTS_DP:
@@ -4192,22 +4190,22 @@ EXPORT s7_pointer load_project(const char *home_sfx, const char *traversal_root)
                                   ftsentry->fts_path,
                                   ftsentry->fts_accpath);
 #endif
-                    scan_ct = scandir(ftsentry->fts_path, &namelist,
-                                      _select_ocaml_srcs,
-                                      alphasort);
-                    /* log_debug("scan_ct: %d", scan_ct); */
-                    if (scan_ct == 0) {
-                        /* log_debug("no ocaml srcs in: '%s'", ftsentry->fts_name); */
-                    }
-                    else if (scan_ct < 0) {
-                        perror("scandir");
-                        exit(EXIT_FAILURE);
-                    } else {
-                        /* log_debug("ocaml srcs in: '%s'", ftsentry->fts_name); */
-                        char *s = strndup(ftsentry->fts_name, strlen(ftsentry->fts_name));
-                        utarray_push_back(_ocaml_src_dirs, &s);
-                        free(s);
-                    }
+                    /* scan_ct = scandir(ftsentry->fts_path, &namelist, */
+                    /*                   _select_ocaml_srcs, */
+                    /*                   alphasort); */
+                    /* /\* log_debug("scan_ct: %d", scan_ct); *\/ */
+                    /* if (scan_ct == 0) { */
+                    /*     /\* log_debug("no ocaml srcs in: '%s'", ftsentry->fts_name); *\/ */
+                    /* } */
+                    /* else if (scan_ct < 0) { */
+                    /*     perror("scandir"); */
+                    /*     exit(EXIT_FAILURE); */
+                    /* } else { */
+                    /*     /\* log_debug("ocaml srcs in: '%s'", ftsentry->fts_name); *\/ */
+                    /*     /\* char *s = strndup(ftsentry->fts_name, strlen(ftsentry->fts_name)); *\/ */
+                    /*     /\* utarray_push_back(_ocaml_src_dirs, &s); *\/ */
+                    /*     /\* free(s); *\/ */
+                    /* } */
                     break;
                 case FTS_F : // regular file
                     _handle_file(pkg_tbl, ftsentry);
@@ -4315,15 +4313,14 @@ EXPORT s7_pointer load_project(const char *home_sfx, const char *traversal_root)
     /* printf("*mibl-project*: %s\n", */
     /*        TO_STR(s7_name_to_value(s7, "*mibl-project*"))); */
 
-    /* const char *depgraph = */
-    /* analyze_deps(traversal_root, _ocaml_src_dirs); */
-    /* if (depgraph) */
-    /*     log_debug("codept result: '%s'", depgraph); */
-
     if (mibl_config.emit_parsetree) {
         log_debug("EMITTING PARSETREE");
         _emit_parsetree();
     }
+
+    /* char *s = TO_STR(deps_list); */
+    /* log_debug("dg: %s", s); */
+    /* free(s); */
 
     return pkg_tbl;
 }

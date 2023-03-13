@@ -64,6 +64,7 @@ s7_pointer pkg_path_kw;
 s7_pointer realpath_kw;
 
 s7_pointer modules_kw;
+s7_pointer deps_kw;
 s7_pointer sigs_kw;
 s7_pointer structs_kw;
 s7_pointer mll_kw;
@@ -83,6 +84,7 @@ s7_pointer opam_kw;
 s7_pointer _s7_result;          /* for use with s7_call */
 s7_pointer assoc;
 s7_pointer assoc_in;
+s7_pointer assoc_val;
 s7_pointer sort_bang;
 s7_pointer string_lt;
 s7_pointer _s7_acons = NULL;
@@ -392,6 +394,7 @@ s7_pointer _init_scheme_fns(s7_scheme *s7)
     _load_acons(s7);
     _load_assoc();
     assoc_in = _load_assoc_in();
+    /* assoc_val = _load_assoc_val(); */
     _load_append();
     _load_list_set(s7);
     _load_sort();
@@ -442,6 +445,20 @@ s7_pointer _load_assoc_in()
         }
     }
     return assoc_in;
+}
+
+s7_pointer _load_assoc_val()
+{
+    if (assoc_val == NULL) {
+        assoc_val = s7_name_to_value(s7, "assoc-in");
+        if (assoc == s7_undefined(s7)) {
+            log_error("unbound symbol: assoc-in");
+            log_info("*load-path*: %s", TO_STR(s7_load_path(s7)));
+            s7_error(s7, s7_make_symbol(s7, "unbound-symbol"),
+                     s7_list(s7, 1, s7_make_string(s7, "assoc-in")));
+        }
+    }
+    return assoc_val;
 }
 
 s7_pointer _load_append()
@@ -1157,6 +1174,7 @@ void _define_s7_keywords_and_symbols(void)
     realpath_kw = s7_make_keyword(s7, "realpath");
 
     modules_kw = s7_make_keyword(s7, "modules");
+    deps_kw = s7_make_keyword(s7, "deps");
     sigs_kw = s7_make_keyword(s7, "signatures");
     structs_kw = s7_make_keyword(s7, "structures");
     mll_kw = s7_make_keyword(s7, "lex");
