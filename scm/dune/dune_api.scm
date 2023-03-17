@@ -1,4 +1,4 @@
-(if *mibl-debug-loads*
+(if *mibl-debug-s7-loads*
     (format #t "loading dune/dune_api.scm~%"))
 
 ;; (define modules-ht (make-hash-table)) ;; FIXME
@@ -359,5 +359,5 @@
                   (assoc-val :pkg-path pkg-alist)))
           pkg-alist))))
 
-(if *mibl-debug-loads*
+(if *mibl-debug-s7-loads*
     (format #t "loaded dune/dune_api.scm~%"))

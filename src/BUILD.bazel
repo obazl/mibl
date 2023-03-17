@@ -47,6 +47,7 @@ filegroup(
         "globals.c", "//src/hdrs:globals.h",
         "config_bazel.c", "//src/hdrs:config_bazel.h",
         "mibl.c", "//src/hdrs:mibl.h",
+        "cmd_runner.c", "//src/hdrs:cmd_runner.h",
         # "mibl_s7.c", "//src/hdrs:mibl_s7.h",
         "config_opam.c", "//src/hdrs:config_opam.h",
         # "config_s7.c", "//src/hdrs:config_s7.h",

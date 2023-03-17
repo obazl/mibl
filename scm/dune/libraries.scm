@@ -1,4 +1,4 @@
-(if *mibl-debug-loads*
+(if *mibl-debug-s7-loads*
     (format #t "loading dune/libraries.scm~%"))
 
 ;; (load "dune_stanza_fields.scm")
@@ -391,5 +391,5 @@
       (list (cons kind mibl-stanza))
       )))
 
-(if *mibl-debug-loads*
+(if *mibl-debug-s7-loads*
     (format #t "loaded dune/libraries.scm~%"))

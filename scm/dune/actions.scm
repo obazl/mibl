@@ -1,4 +1,4 @@
-(if *mibl-debug-loads*
+(if *mibl-debug-s7-loads*
     (format #t "loading dune/dune_actions.scm~%"))
 
 (provide 'actions.scm)

@@ -176,12 +176,12 @@ static char *mibl_s7_flags[] = {
     "*mibl-debug-executables*",
     "*mibl-debug-expanders*",
     "*mibl-debug-genrules*",
-    "*mibl-debug-loads*",
     "*mibl-debug-mibl*",
     "*mibl-debug-modules*",
     "*mibl-debug-ppx*",
     "*mibl-debug-rule-stanzas*",
     "*mibl-debug-s7*",
+    "*mibl-debug-s7-loads*",
     "*mibl-debug-show-pkgs*",
     "*mibl-debug-tests*",
     "*mibl-debug-updaters*",
@@ -206,7 +206,7 @@ static char *mibl_s7_flags[] = {
     "*mibl-ppxlib-ppx-driver*",
     "*mibl-quiet*",
     "*mibl-shared-deps*",
-    "*mibl-shared-ppx-pkg*",
+    /* "*mibl-shared-ppx-pkg*", */
     "*mibl-show-exports*",
     "*mibl-show-mibl*",
     "*mibl-show-parsetree*",
@@ -214,31 +214,32 @@ static char *mibl_s7_flags[] = {
     "*mibl-show-starlark*",
     "*mibl-unwrapped-libs-to-archives*",
     "*mibl-wrapped-libs-to-ns-archives*",
+    "*mibl-verbose*",
 
     NULL /* do not remove */
 };
 char **mibl_s7_flag;
 
-EXPORT s7_pointer g_effective_ws_root(s7_scheme *s7,  s7_pointer args)
-{
-    char *dir = NULL;
-    if ( s7_is_null(s7, args) ) {
-        dir = getcwd(NULL, 0);
-    } else {
-        s7_int args_ct = s7_list_length(s7, args);
-        if (args_ct == 1) {
-            s7_pointer arg = s7_car(args);
-            if (s7_is_string(arg)) {
-                dir = strdup((char*)s7_string(arg));
-            }
-        } else {
-            // throw exception
-        }
-    }
-    ews_root = effective_ws_root(dir);
-    free(dir); // effective_ws_root allocates its own
-    return s7_make_string(s7, ews_root);
-}
+/* EXPORT s7_pointer g_effective_ws_root(s7_scheme *s7,  s7_pointer args) */
+/* { */
+/*     char *dir = NULL; */
+/*     if ( s7_is_null(s7, args) ) { */
+/*         dir = getcwd(NULL, 0); */
+/*     } else { */
+/*         s7_int args_ct = s7_list_length(s7, args); */
+/*         if (args_ct == 1) { */
+/*             s7_pointer arg = s7_car(args); */
+/*             if (s7_is_string(arg)) { */
+/*                 dir = strdup((char*)s7_string(arg)); */
+/*             } */
+/*         } else { */
+/*             // throw exception */
+/*         } */
+/*     } */
+/*     ews_root = effective_ws_root(dir); */
+/*     free(dir); // effective_ws_root allocates its own */
+/*     return s7_make_string(s7, ews_root); */
+/* } */
 
 EXPORT void initialize_mibl_data_model(s7_scheme *s7)
 {
@@ -538,14 +539,17 @@ s7_pointer _load_string_lt()
    runfiles like it or not.
 
 */
+/*
+  libs7/scm is in runfiles of libmibl because it depends on libs7
+ */
 char *scm_runfiles_dirs[] = {
     /* this seems to work when pgm is run from mibl repo or as external */
     /* minimum: mibl/libs7 */
-    "../libs7/scm",
     "../mibl/scm",
     "../mibl/scm/dune",
     "../mibl/scm/meta",
     "../mibl/scm/opam",
+    "../libs7/scm",
 
     /* starlark */
     /* "../obazl/obazlark", */
@@ -560,7 +564,8 @@ LOCAL void _config_s7_load_path_bazel_test_env(void)
     s7_pointer tmp_load_path = s7_list(s7, 0);
 #if defined(DEBUG_TRACE)
 #ifdef BAZEL_CURRENT_REPOSITORY
-    log_debug("bazel_current_repo: " BAZEL_CURRENT_REPOSITORY);
+    if (mibl_debug)
+        log_debug("bazel_current_repo: " BAZEL_CURRENT_REPOSITORY);
 #endif
 #endif
     scm_dir = scm_runfiles_dirs;
@@ -569,6 +574,7 @@ LOCAL void _config_s7_load_path_bazel_test_env(void)
         /* log_debug("scm_dir: %s", *scm_dir); */
         tmpdir = realpath(*scm_dir, NULL);
         /* log_debug("tmpscm: %s", tmpdir); */
+        /* s7_add_to_load_path(s7, tmpdir); */
         tmp_load_path =
             s7_append(s7, tmp_load_path,
                       s7_list(s7, 1,
@@ -729,6 +735,7 @@ LOCAL void _config_s7_load_path_rootws(void)
     UT_string *proj_script_dir;
     utstring_new(proj_script_dir);
     utstring_printf(proj_script_dir, "%s/%s",
+                    /* FIXME: relative to base wsroot, not ews */
                     ews_root, PROJ_MIBL);
     rc = access(utstring_body(proj_script_dir), R_OK);
     if (rc) {
@@ -997,9 +1004,6 @@ EXPORT void set_load_path(void) // char *scriptfile)
 #endif
         }
     }
-    _config_s7_load_path_rootws();
-
-    s7_add_to_load_path(s7, ".");
 
     /* s7_pointer lp = s7_load_path(s7); */
     /* s7_pointer new_lp = s7_call(s7, del, */
@@ -1120,7 +1124,8 @@ void _mibl_s7_init(void)
         /* running under bazel run or test */
         dso_dir = utstring_body(runfiles_root);
 #if defined(DEBUG_TRACE)
-        log_debug("bzl mode: %s", dso_dir);
+        if (mibl_trace)
+            log_debug("bzl mode: %s", dso_dir);
 #endif
         utstring_printf(libc_s7, "%s/%s",
                         dso_dir,
@@ -1161,8 +1166,8 @@ void _mibl_s7_init(void)
     s7_define_variable(s7, "*tmp-dir*", s7_make_string(s7, tmpdir));
 }
 
-/* s7 kws and syms used by tree-crawlers to create parsetree mibl */
-void _define_s7_keywords_and_symbols(void)
+/* s7 kws used by tree-crawlers to create parsetree mibl */
+void _define_mibl_s7_keywords(void)
 {
 
     /* initialize s7 stuff */
@@ -1189,8 +1194,8 @@ void _define_s7_keywords_and_symbols(void)
 
     scripts_kw = s7_make_keyword(s7, "scripts");
     cc_kw = s7_make_keyword(s7, "cc");
-    cc_srcs_kw = s7_make_keyword(s7, "cc-srcs");
-    cc_hdrs_kw = s7_make_keyword(s7, "cc-hdrs");
+    cc_srcs_kw = s7_make_keyword(s7, "srcs");
+    cc_hdrs_kw = s7_make_keyword(s7, "hdrs");
 }
 
 /* policy: global vars are earmuffed */
@@ -1214,12 +1219,22 @@ void _define_mibl_s7_flags(void)
     /* log_info("done setting mibl_s7_flags"); */
 }
 
+void _define_mibl_s7_vars(void)
+{
+#if defined(DEBUG_TRACE)
+    if (mibl_debug_s7_config)
+        log_debug("_define_mibl_s7_vars");
+#endif
+
+    s7_define_variable(s7, "*mibl-shared-ppx-pkg*",
+                       s7_make_string(s7, "bzl"));
+
+}
+
 EXPORT void show_s7_config(void)
 {
     log_info(GRN "s7 configuration summary:" CRESET);
-    s7_pointer lp = s7_load_path(s7);
     log_info("*features*: %s", NM_TO_STR("*features*"));
-    log_info("*load-path*: %s", TO_STR(lp));
     log_info("*autoload*: %s", NM_TO_STR("*autoload*"));
     log_info("*libraries*: %s", NM_TO_STR("*libraries*"));
 
@@ -1237,7 +1252,20 @@ EXPORT void show_s7_config(void)
         ;
     s7_eval_c_string(s7, exec_sexp);
 
+    /* s7_pointer lp = s7_load_path(s7); */
+    log_info("*load-path*:"); // %s", TO_STR(lp));
+    /* log_info("runfiles_root: %s", utstring_body(runfiles_root)); */
+
+    exec_sexp =
+        "(for-each (lambda (path)"
+        "            (format #t \"~A~%\" path))"
+        "          *load-path*)"
+        ;
+
+    s7_eval_c_string(s7, exec_sexp);
+
     log_info(GRN "End s7 configuration summary." CRESET);
+    s7_flush_output_port(s7, s7_current_output_port(s7));
     fflush(NULL);
 }
 
@@ -1252,13 +1280,16 @@ EXPORT s7_scheme *s7_configure(char *main_script, char *ws_root)
 
     _mibl_s7_init();
 
-    _define_s7_keywords_and_symbols();
+    _define_mibl_s7_keywords();
 
     _define_mibl_s7_flags();
 
-    s7_define_safe_function(s7, "effective-ws-root",
-                            g_effective_ws_root,
-                            0, 1, 0, NULL);
+    _define_mibl_s7_vars();
+
+    /* FIXME: this should be a var, not a fn */
+    /* s7_define_safe_function(s7, "effective-ws-root", */
+    /*                         g_effective_ws_root, */
+    /*                         0, 1, 0, NULL); */
 
     s7_define_function(s7, "mibl-load-project", g_load_project,
                        0, 2, 0,
@@ -1283,6 +1314,9 @@ EXPORT s7_scheme *s7_configure(char *main_script, char *ws_root)
 
     /* s7_config_repl(s7); */
     /* s7_repl(s7); */
+
+    _config_s7_load_path_rootws(); /* always penultimate */
+    s7_add_to_load_path(s7, "."); /* always last */
 
     //TODO: what should be loaded by default and what left to user?
     if (!s7_load(s7, "libmibl.scm")) {

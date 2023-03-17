@@ -30,6 +30,10 @@
 
 #include "cmd_runner.h"
 
+#if defined(DEBUG_TRACE)
+extern bool mibl_debug_deps;
+#endif
+
 #if INTERFACE
 #define BUFSZ 4096 * 4
 #endif
@@ -46,7 +50,10 @@ EXPORT char * run_cmd(char *executable, char **argv)
         utstring_printf(tmp, "%s ", *ptr);
         ptr++;
     }
-    log_debug("run cmd: %s", utstring_body(tmp));
+#if defined(DEBUG_TRACE)
+    if (mibl_debug_deps)
+        log_debug("run cmd: %s", utstring_body(tmp));
+#endif
     utstring_free(tmp);
 #endif
 
@@ -133,16 +140,19 @@ EXPORT char * run_cmd(char *executable, char **argv)
         return NULL;
     }
 #if defined(DEBUG_TRACE)
-    log_trace("waitpid for pid %d returned %d", pid, waitrc);
+    if (mibl_debug_deps)
+        log_trace("waitpid for pid %d returned %d", pid, waitrc);
 #endif
     /* if (waitrc == 0) { */
     // child exit OK
     if ( WIFEXITED(status) ) {
         // terminated normally by a call to _exit(2) or exit(3).
 #if defined(DEBUG_TRACE)
-        log_trace("status: %d", status);
-        log_trace("WIFEXITED(status): %d", WIFEXITED(status));
-        log_trace("WEXITSTATUS(status): %d", WEXITSTATUS(status));
+        if (mibl_debug_deps) {
+            log_trace("status: %d", status);
+            log_trace("WIFEXITED(status): %d", WIFEXITED(status));
+            log_trace("WEXITSTATUS(status): %d", WEXITSTATUS(status));
+        }
 #endif
         /* now close the write end on parent side */
         close(cout_pipe[1]);
@@ -190,9 +200,12 @@ EXPORT char * run_cmd(char *executable, char **argv)
             return NULL; //exit(EXIT_FAILURE);
         }
 
-        log_debug("reading cout_pipe");
+        /* log_debug("reading cout_pipe"); */
         bytes_read = read(cout_pipe[0], &buffer[0], BUFSZ);
-        log_debug("outpipe bytes_read: %d", bytes_read);
+#if defined(DEBUG_TRACE)
+        if (mibl_debug_deps)
+            log_debug("outpipe bytes_read: %d", bytes_read);
+#endif
         if (bytes_read > 0){
             /* drop trailing newline */
             if (buffer[bytes_read - 1] == '\n')

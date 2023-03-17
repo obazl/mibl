@@ -1,4 +1,4 @@
-(if *mibl-debug-loads*
+(if *mibl-debug-s7-loads*
     (format #t "loading dune/expanders.scm\n"))
 
 (load "dune/api_utils.scm")
@@ -1264,5 +1264,5 @@
 
 (provide 'expanders.scm)
 
-(if *mibl-debug-loads*
+(if *mibl-debug-s7-loads*
     (format #t "loaded dune/expanders.scm\n"))

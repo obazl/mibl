@@ -1,84 +1,14 @@
-load("@rules_cc//cc:defs.bzl", "cc_binary")
+load(":BUILD.bzl", "script")
 
-##########
-cc_binary(
-    name  = "script",
-    args  = ["-m", "mibl_main.scm"],
-    data = [
-        "//deps",
-        "//scm:srcs",
-        "//scm/dune:srcs",
-        "//scm/meta:srcs",
-        "//scm/opam:srcs",
-    ],
-    linkstatic = True,
-    srcs  = [
-        "script.c", "script.h",
-    ],
-    defines = select({
-        "//bzl/host:debug": ["DEBUG_TRACE"],
-        "//conditions:default":   []
-    }) + select({
-        "//bzl/host:linux": ["_XOPEN_SOURCE=500"], # strdup
-        "//conditions:default":   []
-    }) + [
-        # "WITH_C_LOADER"
-    ],
-    copts = select({
-        "//bzl/host:macos": ["-std=c11"],
-        "//bzl/host:linux": ["-std=gnu11"],
-        "//conditions:default": ["-std=c11"],
-    }) + [
-        "-Wall",
-        "-Werror",
-        "-Wpedantic",
-        "-Wno-unused-function",
+script(name = "dbg")
 
-        "-I$(GENDIR)/script",
-        "-I$(GENDIR)/external/mibl/script",
-
-        "-I$(GENDIR)/src/hdrs", # libmibl.h
-        "-I$(GENDIR)/external/mibl/src/hdrs",
-
-        "-Ivendored/gopt",
-        "-Iexternal/mibl/vendored/gopt",
-
-        "-Ivendored/libinih",
-        "-Iexternal/mibl/vendored/libinih",
-
-        "-Ivendored/logc",
-        "-Iexternal/mibl/vendored/logc",
-
-
-        "-Ivendored/uthash",
-        "-Iexternal/mibl/vendored/uthash",
-
-        "-Iexternal/libs7/src",
-    ],
-    linkopts = select({
-        "//bzl/host:macos": [],
-        "//bzl/host:linux": ["-ldl", "-lm"],
-        "//conditions:default": {}
-    }),
-    deps = [
-        "//src:mibl",
-        "//vendored/gopt",
-        "//vendored/libinih:inih",
-        "//vendored/logc",
-        "//vendored/uthash",
-    ],
-    visibility = ["//visibility:public"]
-)
+script(name = "convert", main = "mibl_main.scm")
 
 ########
 genrule(
     name = "mkhdrs",
-    srcs = [
-        "script.c",
-    ],
-    outs = [
-        "script.h",
-    ],
+    srcs = ["script.c"],
+    outs = ["script.h"],
     cmd = "\n".join([
         "SRC1=$(location script.c)",
         "SRCDIR1=`dirname $$SRC1`",

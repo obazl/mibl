@@ -1,3 +1,7 @@
+(if *mibl-debug-s7-loads*
+    (format #t "loading mibl_main.scm~%"))
+
+(load "libmibl.scm")
 
 ;; (define* (-main root-path pkg-path)
 ;;   (format #t "mibl_main: -main routine\n"))
@@ -29,111 +33,12 @@
                 )
               pkgs)))
 
-(define* (-dune->mibl return root-path ws-path)
-  ;; (set! *mibl-debugging* #t)
-  (if *mibl-debugging*
-      (format #t "mibl_main.scm::dune->obazl: ~A, ~A~%" root-path ws-path))
-  ;; (format #t "*mibl-project*: ~A~%" *mibl-project*)
-  ;; (format #t "BYE~%"))
-
-  (if *mibl-debugging*
-      (format #t "~A: ~A~%" (bgred "*mibl-emit-bazel-pkg*")
-              *mibl-emit-bazel-pkg*))
-
-  (set! *mibl-build-dyads* #t)
-  (set! *mibl-shared-deps* '("compiler/tests-compiler")) ;;  "toplevel/bin"))
-
-  ;; (set! *mibl-wrapped-libs-to-ns-archives* #f)
-  ;; (set! *mibl-unwrapped-libs-to-archives* #f)
-
-  ;; NB: :@ is key of the root workspace in *mibl-project*
-  ;; (set! *mibl-debugging* #t)
-
-  (-mibl-load-project root-path ws-path)
-
-  (if *mibl-show-parsetree*
-      (begin
-        (format #t "mibl: PARSETREE~%")
-        (mibl-debug-print-pkgs :@)
-        (return)))
-
-  ;; (if *mibl-emit-parsetree*
-  ;;     (begin
-  ;;       (emit-parsetrees)))
-
-  ;; (return)
-
-  (miblize :@)
-  (add-filegroups-to-pkgs :@)
-  (normalize-manifests! :@)
-  (normalize-rule-deps! :@)
-  (miblarkize :@)
-  (resolve-pkg-file-deps :@)
-  (resolve-labels! :@)
-  (handle-shared-ppx :@)
-  (if *mibl-shared-deps*
-      (begin
-        (handle-shared-deps :@)
-        (handle-shared-opts :@)
-        ))
-
-  ;; (ppx-inline-tests! :@)
-
-
-  (if *mibl-show-mibl*
-      (begin
-        (format #t "~A~%" (bgred "MIBL"))
-        ;; (mibl-debug-print-pkgs :@)
-        (mibl-debug-print-project)
-        ;; (mibl-pretty-print *mibl-project*)
-        ;;(return)
-        ))
-
-  (if *mibl-emit-wss*
-      (begin
-        (emit-mibl-wss)))
-
-  (if *mibl-emit-pkgs*
-      (emit-mibl-pkgs))
-
-  (if *mibl-emit-result*
-      (emit-mibl-result))
-
-  ;; (return)
-
-  ;; end dune-specific?
-
-  ;; (if *mibl-emit-mibl*
-  ;;     (emit-mibl))
-  ;; (emit-mibl :@))
-
-  ;; ;; (ws->opam-bundles :@)
-
-  ;; (if *mibl-debugging*
-  ;;     (format #t "~A: ~A~%" (green "selectors"))
-  ;;         (remove-duplicates *select-protases*))
-
-  (if *mibl-show-exports*
-      (mibl-debug-print-exports-table :@))
-
-  ;; (-dump-ppx :@)
-
-  ;; (mibl-debug-print-filegroups :@)
-
-  ;; (-dump-opam :@)
-  ;; )
-  (if (not *mibl-quiet*)
-      (begin
-        (format #t "~A: mibl_main Workspace root: ~A~%" (green "INFO") ws-path)
-        (format #t "~A: mibl_main Processed ~A dunefiles.~%" (green "INFO") *mibl-dunefile-count*)))
-  '())
-
 (define* (-main root-path ws-path)
   (load "libmibl.scm")
   (if *mibl-clean-mibl*
       (mibl-clean-mibl)
       (call-with-exit (lambda (return)
-                        (-dune->mibl
+                        (parsetree->mibl
                          (lambda () ;; our return thunk
                            (if *mibl-show-mibl*
                                (mibl-debug-print-project))
@@ -142,3 +47,5 @@
                            (return))
                          root-path ws-path)))))
 
+(if *mibl-debug-s7-loads*
+    (format #t "loaded mibl_main.scm~%"))

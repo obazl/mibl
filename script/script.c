@@ -11,6 +11,7 @@
 
 #if defined(DEBUG_TRACE)
 extern bool mibl_debug;
+extern bool mibl_debug_deps;
 extern bool mibl_debug_traversal;
 extern bool mibl_trace;
 #endif
@@ -20,7 +21,7 @@ extern bool mibl_show_raw_deps;
 extern bool mibl_show_traversal;
 extern bool verbose;
 
-extern char *ews_root;
+/* extern char *ews_root; */
 extern int dir_ct;
 extern int file_ct;
 extern int dunefile_ct;
@@ -42,7 +43,10 @@ enum OPTS {
     FLAG_SHOW_MIBL,
     FLAG_SHOW_TRAVERSAL,
     FLAG_DEBUG,
+    FLAG_DEBUG_S7_LOADS,
 #if defined(DEV_MODE)
+    FLAG_DEBUG_DEPS,
+    FLAG_DEBUG_EMIT,
     FLAG_DEBUG_PPX,
     FLAG_DEBUG_S7,
     FLAG_DEBUG_TRAVERSAL,
@@ -75,25 +79,37 @@ int _update_mibl_config(struct option options[],
     if (options[FLAG_EMIT_PARSETREE].count)
         mibl_config->emit_parsetree = true;
 
-    if (verbose && verbosity > 1) {
-        log_debug("SHOW_EXPORTS: %d", mibl_config->show_exports);
-        log_debug("SHOW_PARSETREE: %d", mibl_config->show_parsetree);
-        /* log_debug("SHOW_MIBL: %d", mibl_config->show_mibl); */
-        log_debug("SHOW_STARLARK: %d", mibl_config->show_starlark);
-        log_debug("EMIT_PARSETREE: %d", mibl_config->emit_parsetree);
-        log_debug("EMIT_MIBL: %d", mibl_config->emit_mibl);
-        log_debug("EMIT_STARLARK: %d", mibl_config->emit_starlark);
-    }
+    /* if (verbose && verbosity > 1) { */
+    /*     log_debug("SHOW_EXPORTS: %d", mibl_config->show_exports); */
+    /*     log_debug("SHOW_PARSETREE: %d", mibl_config->show_parsetree); */
+    /*     /\* log_debug("SHOW_MIBL: %d", mibl_config->show_mibl); *\/ */
+    /*     log_debug("SHOW_STARLARK: %d", mibl_config->show_starlark); */
+    /*     log_debug("EMIT_PARSETREE: %d", mibl_config->emit_parsetree); */
+    /*     log_debug("EMIT_MIBL: %d", mibl_config->emit_mibl); */
+    /*     log_debug("EMIT_STARLARK: %d", mibl_config->emit_starlark); */
+    /* } */
     return 0;                   /* success */
 }
 
 void _update_s7_globals(struct option options[])
 {
+    if (options[FLAG_QUIET].count)
+        mibl_s7_set_flag("*mibl-quiet*", true);
+
+    if (options[FLAG_VERBOSE].count)
+        mibl_s7_set_flag("*mibl-verbose*", true);
+
     if (options[FLAG_DEBUG_PPX].count)
         mibl_s7_set_flag("*mibl-debug-ppx*", true);
 
+    if (options[FLAG_DEBUG_EMIT].count)
+        mibl_s7_set_flag("*mibl-debug-emit*", true);
+
     if (options[FLAG_DEBUG_S7].count)
         mibl_s7_set_flag("*mibl-debug-s7*", true);
+
+    if (options[FLAG_DEBUG_S7_LOADS].count)
+        mibl_s7_set_flag("*mibl-debug-s7-loads*", true);
 
     if (options[FLAG_SHOW_MIBL].count)
         mibl_s7_set_flag("*mibl-show-mibl*", true);
@@ -157,9 +173,12 @@ void _print_version(void) {
 
 void _print_usage(void) {
     printf("Usage:\t$ bazel run @obazl//convert [flags, options]\n");
+    printf("Crawls the tree rooted at -w:\n");
     printf("Options:\n");
-    printf("\t-m, --main <arg>"
-           "\tPath to script containing -main routine. (REQUIRED)\n");
+    printf("\t-w, --workspace <path>"
+           "\tRelative path to workspace root directory to be used as traversal root. (OPTIONAL)\n");
+    printf("\t-m, --main <entry-pt>"
+           "\tPath to script containing -main routine. (OPTIONAL)\n");
     printf("\n");
     printf("Flags:\n");
     printf("  Emit flags control file writing.\n");
@@ -184,17 +203,28 @@ void _print_usage(void) {
     printf("\t--show-traversal\tPrint statistics on traversal.\n");
 
     printf("\n");
-    printf("\t-d, --debug\t\tEnable all debugging flags.\n");
-    printf("\t-t, --trace\t\tEnable trace flags.\n");
+    /* printf("\t-d, --debug\t\tEnable all debugging flags.\n"); */
+    /* printf("\t-t, --trace\t\tEnable trace flags.\n"); */
     printf("\t-v, --verbose\t\tEnable verbosity. Repeatable.\n");
     printf("\t-q, --quiet\t\tSuppress stdout/stderr.\n");
     printf("\t--version\t\tShow version Id.\n");
     printf("\n");
     printf("INI file: $XDG_CONFIG_HOME/miblrc\n");
 
-
     printf("\n");
 }
+
+void _print_debug_usage(void) {
+    _print_usage();
+    printf("Debug flags:\n");
+    printf("\n");
+    printf("\t-d, --debug\t\tEnable all debugging flags.\n");
+    printf("\t-t, --trace\t\tEnable trace flags.\n");
+    printf("\t-v, --verbose\t\tEnable verbosity. Repeatable.\n");
+    printf("\t-q, --quiet\t\tSuppress stdout/stderr.\n");
+    printf("\t--version\t\tShow version Id.\n");
+    printf("\n");
+ }
 
 static struct option options[] = {
     /* 0 */
@@ -206,7 +236,7 @@ static struct option options[] = {
                    .flags=GOPT_ARGUMENT_REQUIRED},
 
     [FLAG_HELP] = {.long_name="help",.short_name='h',
-                   .flags=GOPT_ARGUMENT_FORBIDDEN},
+                   .flags=GOPT_ARGUMENT_FORBIDDEN | GOPT_REPEATABLE},
     [FLAG_SHOW_CONFIG] = {.long_name="show-config",
                           .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_SHOW_DEPS] = {.long_name="show-deps",
@@ -222,12 +252,18 @@ static struct option options[] = {
     [FLAG_DEBUG] = {.long_name="debug",.short_name='d',
                     .flags=GOPT_ARGUMENT_FORBIDDEN | GOPT_REPEATABLE},
 
-    [FLAG_DEBUG_TRAVERSAL] = {.long_name="debug-traversal",
-                                 .flags=GOPT_ARGUMENT_FORBIDDEN},
+    [FLAG_DEBUG_DEPS] = {.long_name="debug-deps",
+                         .flags=GOPT_ARGUMENT_FORBIDDEN},
+    [FLAG_DEBUG_EMIT] = {.long_name="debug-emit",
+                         .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_DEBUG_PPX] = {.long_name="debug-ppx",
                        .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_DEBUG_S7] = {.long_name="debug-s7",
                        .flags=GOPT_ARGUMENT_FORBIDDEN},
+    [FLAG_DEBUG_S7_LOADS] = {.long_name="debug-s7-loads",
+                       .flags=GOPT_ARGUMENT_FORBIDDEN},
+    [FLAG_DEBUG_TRAVERSAL] = {.long_name="debug-traversal",
+                                 .flags=GOPT_ARGUMENT_FORBIDDEN},
 
     [FLAG_CLEAN] = {.long_name="clean",
                     .flags=GOPT_ARGUMENT_FORBIDDEN},
@@ -269,7 +305,10 @@ int main(int argc, char **argv, char **envp)
     /* **************************************************************** */
 
     if (options[FLAG_HELP].count) {
-        _print_usage();
+        if (options[FLAG_HELP].count > 1)
+            _print_debug_usage();
+        else
+            _print_usage();
         exit(EXIT_SUCCESS);
     }
 
@@ -287,6 +326,15 @@ int main(int argc, char **argv, char **envp)
     if (options[FLAG_DEBUG].count) {
 #if defined(DEBUG_TRACE)
         mibl_debug = true;
+#endif
+    }
+
+    if (options[FLAG_DEBUG_DEPS].count) {
+#if defined(DEBUG_TRACE)
+        mibl_debug_deps = true;
+#else
+        log_error("--debug-deps requires debug build, -c dbg");
+        exit(EXIT_FAILURE);
 #endif
     }
 
@@ -318,8 +366,9 @@ int main(int argc, char **argv, char **envp)
         mibl_show_traversal = true;
     }
 
+    /* **************************************************************** */
     struct mibl_config_s *mibl_config
-        = mibl_s7_init("//mibl/scm", /* redundant, already in runfiles */
+        = mibl_s7_init(NULL, // options[OPT_MAIN].argument,
                        options[OPT_WS].argument);
 
     if (_update_mibl_config(options, mibl_config)) exit(EXIT_FAILURE);

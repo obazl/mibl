@@ -1,4 +1,4 @@
-(if *mibl-debug-loads*
+(if *mibl-debug-s7-loads*
     (format #t "loading dune/updaters.scm~%"))
 
 (define (update-filegroups-table! ws client-path pkg-path tgt pattern)
@@ -1029,5 +1029,5 @@
                          )))
                 (assoc-val :mibl pkg))))
 
-(if *mibl-debug-loads*
+(if *mibl-debug-s7-loads*
     (format #t "loaded dune/updaters.scm~%"))

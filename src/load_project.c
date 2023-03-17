@@ -28,6 +28,9 @@
 
 s7_pointer deps_list;
 
+#if defined(DEBUG_TRACE)
+extern bool mibl_debug_deps;
+#endif
 bool mibl_show_deps = false;
 bool mibl_show_traversal = false;
 
@@ -410,16 +413,22 @@ LOCAL void _handle_dir(s7_pointer pkg_tbl, FTS* tree, FTSENT *ftsentry)
         /* return; */
     }
 
-    if (strncmp(ews_root, ftsentry->fts_path,
-                 strlen(ftsentry->fts_path)) != 0) {
+    char *fts_realpath = realpath(ftsentry->fts_path, NULL);
+    if (strncmp(ews_root, fts_realpath, strlen(ews_root)) != 0) {
+    /* if (strncmp(ews_root, ftsentry->fts_path, */
+    /*              strlen(ftsentry->fts_path)) != 0) { */
         /* is this a ws root (other than base ws)? */
         if (_is_ws_root(ftsentry)) {
-            /* log_debug("SKIPPING ws root: %s", ftsentry->fts_path); */
-            /* do not process embedded subrepos yet */
-            /* fts_set(tree, ftsentry, FTS_SKIP); */
-            /* return; */
+            log_warn("SKIPPING ws root: %s", ftsentry->fts_path);
+            log_warn("ews root: %s", ews_root);
+            /* we do not process embedded subrepos yet */
+            fts_set(tree, ftsentry, FTS_SKIP);
+            //FIXME: when we encounter an embedded ws, we need to
+            //traverse it independently.
+            return;
         }
     }
+    free(fts_realpath);
 
     /* stdout */
     _indent(ftsentry->fts_level);
@@ -708,7 +717,7 @@ LOCAL void _update_cc_src_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 #endif
     } else {
         s7_pointer assoc_in = _load_assoc_in();
-        s7_pointer keypath = s7_list(s7, 2, cc_srcs_kw, static_kw);
+        s7_pointer keypath = s7_list(s7, 2, cc_kw, cc_srcs_kw); // , static_kw);
         s7_pointer cc_assoc = s7_call(s7, assoc_in,
                                          s7_list(s7, 2,
                                                  keypath,
@@ -720,7 +729,7 @@ LOCAL void _update_cc_src_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
         if (cc_assoc == s7_f(s7)) {
 #if defined(DEBUG_TRACE)
             if (mibl_debug_traversal)
-                log_debug("initializing (:cc (:static (:type . fname))) list");
+                log_debug("initializing (:cc (:srcs fname))) list");
 #endif
 
             /* s7_pointer cc_pair = */
@@ -729,13 +738,13 @@ LOCAL void _update_cc_src_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
             /*             s7_make_string(s7, ftsentry->fts_name)); */
 
             s7_pointer static_assoc = s7_list(s7, 2,
-                                              static_kw,
+                                              cc_srcs_kw, // static_kw,
                                               s7_make_string(s7, ftsentry->fts_name));
                                               /* cc_pair); */
 
             s7_pointer cc_list =
                 s7_list(s7, 1, s7_list(s7, 2,
-                                       cc_srcs_kw,
+                                       cc_kw, //cc_srcs_kw,
                                        static_assoc
                                        ));
 #if defined(DEBUG_TRACE)
@@ -840,52 +849,86 @@ LOCAL void _update_cc_hdr_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 #endif
     } else {
         s7_pointer assoc_in = _load_assoc_in();
-        s7_pointer keypath = s7_list(s7, 2, cc_hdrs_kw, static_kw);
+        s7_pointer keypath = s7_list(s7, 2, cc_kw, cc_hdrs_kw); //, static_kw);
         s7_pointer cc_assoc = s7_call(s7, assoc_in,
                                          s7_list(s7, 2,
                                                  keypath,
                                                  pkg_alist));
 #if defined(DEBUG_TRACE)
-        if (mibl_debug_traversal) log_debug("cc_assoc %s", TO_STR(cc_assoc));
+        if (mibl_debug_traversal) log_debug("cc_assoc (hdrs) %s", TO_STR(cc_assoc));
 #endif
 
         if (cc_assoc == s7_f(s7)) {
+            /* (:cc (:hdrs )) not found */
+
+            s7_pointer cc_hdrs_assoc = s7_list(s7, 2,
+                                               cc_hdrs_kw,
+                                               s7_make_string(s7, ftsentry->fts_name));
+                /* cc_pair); */
+
+/* #if defined(DEBUG_TRACE) */
+/*             if (mibl_debug_traversal) */
+/*                 log_debug("initializing (:cc (:hdrs fname)) list"); */
+/* #endif */
+            /* no (:cc (:hdrs )); get (:cc ) */
+            keypath = s7_list(s7, 1, cc_kw); //, cc_hdrs_kw); //, static_kw);
+            cc_assoc = s7_call(s7, assoc_in,
+                               s7_list(s7, 2,
+                                       keypath,
+                                       pkg_alist));
+            if (cc_assoc == s7_f(s7)) {
+                /* (:cc ) not found */
 #if defined(DEBUG_TRACE)
-            if (mibl_debug_traversal)
-                log_debug("initializing (:cc (:static (:type . fname))) list");
+                if (mibl_debug_traversal)
+                    log_debug("initializing (:cc )) list");
 #endif
 
-            /* s7_pointer cc_pair = */
-            /*     s7_list(s7, 1, */
-            /*             /\* s7_make_keyword(s7, cc_ext), *\/ */
-            /*             s7_make_string(s7, ftsentry->fts_name)); */
-
-            s7_pointer static_assoc = s7_list(s7, 2,
-                                              static_kw,
-                                              s7_make_string(s7, ftsentry->fts_name));
-                                              /* cc_pair); */
-
-            s7_pointer cc_list =
-                s7_list(s7, 1, s7_list(s7, 2,
-                                       cc_hdrs_kw,
-                                       static_assoc
-                                       ));
+                s7_pointer cc_list =
+                    s7_list(s7, 1, s7_list(s7, 2,
+                                           cc_kw, // cc_hdrs_kw,
+                                           cc_hdrs_assoc
+                                           ));
 #if defined(DEBUG_TRACE)
-            if (mibl_debug_traversal)
-                log_debug("cc_list: %s", TO_STR(cc_list));
+                if (mibl_debug_traversal) {
+                    log_debug("cc_list: %s", TO_STR(cc_list));
+                    log_debug("new cc assoc: %s", TO_STR(cc_hdrs_assoc));
+                }
 #endif
 
-            s7_pointer new_pkg = s7_append(s7,
-                                           pkg_alist,
-                                           cc_list);
+                s7_pointer new_pkg = s7_append(s7,
+                                               pkg_alist,
+                                               cc_list);
 #if defined(DEBUG_TRACE)
-            if (mibl_debug_traversal)
-                log_debug("new pkg: %s", TO_STR(new_pkg));
+                if (mibl_debug_traversal)
+                    log_debug("new pkg: %s", TO_STR(new_pkg));
 #endif
 
-            s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg);
+                s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg);
+
+            } else {
+                /* (:cc ) found w/o :hdrs; add (:hdrs ) */
+#if defined(DEBUG_TRACE)
+                if (mibl_debug_traversal) {
+                    log_debug("found: %s", TO_STR(cc_assoc));
+                    log_debug("adding: %s", TO_STR(cc_hdrs_assoc));
+                }
+#endif
+                s7_pointer cc_cdr = s7_cdr(cc_assoc);
+                (void)cc_cdr;
+            s7_pointer new_cc_cdr =
+                s7_append(s7,
+                          cc_cdr,
+                          s7_list(s7, 1, cc_hdrs_assoc)
+                          );
+            log_debug("new_cc_cdr: %s",
+                       TO_STR(new_cc_cdr));
+
+            s7_set_cdr(cc_assoc, new_cc_cdr);
+
+            }
 
         } else {
+            /* found (:cc (:hdrs ...)); augment it */
             /* assoc-in '(:cc :static) returns assoc (:static ...),
                but we need the alist */
             s7_pointer cc_alist = s7_cdr(cc_assoc);
@@ -1134,10 +1177,14 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
             mdeps = get_deps(pkg_name, fname, deps_list);
         else
             mdeps = s7_nil(s7);
-        char *tostr = TO_STR(mdeps);
-        log_debug("MDEPS: %s", tostr);
-        free(tostr);
-        s7_flush_output_port(s7, s7_current_output_port(s7));
+#if defined(DEBUG_TRACE)
+        if (mibl_debug_deps) {
+            char *tostr = TO_STR(mdeps);
+            log_debug("MDEPS for %s: %s", fname, tostr);
+            free(tostr);
+            s7_flush_output_port(s7, s7_current_output_port(s7));
+        }
+#endif
 
         s7_pointer ml_assoc = s7_cons(s7,
                                       s7_make_keyword(s7,
@@ -3584,7 +3631,8 @@ EXPORT s7_pointer g_load_project(s7_scheme *s7,  s7_pointer args)
         load_project(rootdir, pathdir);
         /* if (mibl_trace) { */
 #if defined(DEBUG_TRACE)
-        log_trace("LOADED DUNE NOARG");
+        if (mibl_trace)
+            log_trace("LOADED DUNE NOARG");
 #endif
         /* log_trace(RED "*mibl-project*:" CRESET " %s\n", */
         /*           TO_STR(s7_name_to_value(s7, "*mibl-project*"))); */
@@ -3939,6 +3987,7 @@ LOCAL void _emit_parsetree(void)
         "               (lambda args "
         "                 (error 'OPEN_ERROR_EMIT "
         "                   (format #f \"OPEN ERROR: ~A~%\" mibl-file)))))) "
+        "        (if (not *mibl-quiet*) (format #t \"~A: Emitting ~A~%\" (green \"INFO\") mibl-file)) "
         "        (mibl-pretty-print *mibl-project* outp) "
         "        (close-output-port outp)) "
         "    (let ((outp "
@@ -3948,6 +3997,7 @@ LOCAL void _emit_parsetree(void)
         "               (lambda args "
         "                 (error 'OPEN_ERROR_EMIT "
         "                   (format #f \"OPEN ERROR: ~A~%\" s7-file)))))) "
+        "        (if (not *mibl-quiet*) (format #t \"~A: Emitting ~A~%\" (green \"INFO\") s7-file)) "
         "        (write (object->string *mibl-project* :readable) outp) "
         "        (close-output-port outp))) "
         ;
@@ -3956,6 +4006,7 @@ LOCAL void _emit_parsetree(void)
     (void)ws_path;
 
     s7_flush_output_port(s7, s7_current_output_port(s7));
+    s7_flush_output_port(s7, s7_current_error_port(s7));
 
     /* char *tostr; */
     /* tostr = TO_STR(ws_path); */
@@ -3998,29 +4049,29 @@ EXPORT s7_pointer load_project(const char *home_sfx, const char *traversal_root)
         traversal_root = ".";
     }
 
-    UT_string *abs_troot;
-    utstring_new(abs_troot);
-#if defined(DEBUG_TRACE)
-    if (mibl_debug_traversal) log_debug("build_wd: %s", build_wd);
-#endif
-    utstring_printf(abs_troot, "%s/%s",
-                    //getcwd(NULL,0),
-                    //build_wd,
-                    ews_root,
-                    traversal_root);
+    /* UT_string *abs_troot; */
+    /* utstring_new(abs_troot); */
+/* #if defined(DEBUG_TRACE) */
+/*     if (mibl_debug_traversal) log_debug("build_wd: %s", build_wd); */
+/* #endif */
+    /* utstring_printf(abs_troot, "%s/%s", */
+    /*                 //getcwd(NULL,0), */
+    /*                 //build_wd, */
+    /*                 ews_root, */
+    /*                 traversal_root); */
 
 #if defined(DEBUG_TRACE)
     if (mibl_debug_traversal) {
-        log_debug("abs_troot: %s", utstring_body(abs_troot));
+        /* log_debug("abs_troot: %s", utstring_body(abs_troot)); */
         log_debug("ews_root: %s", ews_root);
         log_debug("traversal_root: %s", traversal_root);
     }
 #endif
-    char *abstr = strdup(utstring_body(abs_troot)); //FIXME: free after use
-    (void)abstr;
-#if defined(DEBUG_TRACE)
-    if (mibl_debug_traversal) log_debug("abstr: %s", abstr);
-#endif
+/*     char *abstr = strdup(utstring_body(abs_troot)); //FIXME: free after use */
+/*     (void)abstr; */
+/* #if defined(DEBUG_TRACE) */
+/*     if (mibl_debug_traversal) log_debug("abstr: %s", abstr); */
+/* #endif */
 
     /* char *_ews = effective_ws_root(abstr); */
 /* #if defined(DEBUG_TRACE) */
@@ -4034,33 +4085,33 @@ EXPORT s7_pointer load_project(const char *home_sfx, const char *traversal_root)
 
 #if defined(DEBUG_TRACE)
     if (mibl_debug_traversal) {
-        log_debug("haystack (troot): %s", utstring_body(abs_troot));
+        /* log_debug("haystack (troot): %s", utstring_body(abs_troot)); */
         log_debug("needle (ews): %s", ews_root);
     }
 #endif
 
-    char *resolved_troot = strnstr(utstring_body(abs_troot),
-                                   ews_root, strlen(ews_root));
-    if (resolved_troot) {
-        if (strlen(utstring_body(abs_troot)) == strlen(ews_root)) {
-            /* resolved_troot = realpath(".",NULL); */
-            /* log_debug("match: %s", resolved_troot); */
-        } else {
-            resolved_troot = utstring_body(abs_troot) + strlen(ews_root) + 1; // + for '/'
-            /* log_debug("resolved_troot: %s", resolved_troot); */
-        }
-    } else {
-        /* log_error("no resolved_troot"); */
-        resolved_troot = realpath(".", NULL);
-    }
+    /* char *resolved_troot = strnstr(utstring_body(abs_troot), */
+    /*                                ews_root, strlen(ews_root)); */
+    /* if (resolved_troot) { */
+    /*     if (strlen(utstring_body(abs_troot)) == strlen(ews_root)) { */
+    /*         /\* resolved_troot = realpath(".",NULL); *\/ */
+    /*         /\* log_debug("match: %s", resolved_troot); *\/ */
+    /*     } else { */
+    /*         resolved_troot = utstring_body(abs_troot) + strlen(ews_root) + 1; // + for '/' */
+    /*         /\* log_debug("resolved_troot: %s", resolved_troot); *\/ */
+    /*     } */
+    /* } else { */
+    /*     /\* log_error("no resolved_troot"); *\/ */
+    /*     resolved_troot = realpath(".", NULL); */
+    /* } */
 #if defined(DEBUG_TRACE)
     if (mibl_debug_traversal) {
-        log_debug("resolved resolved_troot: %s", resolved_troot);
+        /* log_debug("resolved resolved_troot: %s", resolved_troot); */
         log_debug("cwd: %s", getcwd(NULL, 0));
     }
 #endif
 
-    utstring_free(abs_troot);
+    /* utstring_free(abs_troot); */
 
     errno = 0;
 
@@ -4300,7 +4351,6 @@ EXPORT s7_pointer load_project(const char *home_sfx, const char *traversal_root)
         /* log_info("\troot ws:\t\t%s", rootws); */
         log_info("\teffective ws (cwd):\t%s", getcwd(NULL, 0));
         log_info("\ttraversal root:\t\t%s", _traversal_root[0]);
-        /* log_info("ews: %s", ews_root); */
         log_info("\tdir count:\t\t%d", dir_ct);
         log_info("\tfile count:\t\t%d", file_ct);
         log_info("\tdunefile count:\t\t%d", dunefile_ct);

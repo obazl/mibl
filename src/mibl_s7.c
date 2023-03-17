@@ -86,8 +86,13 @@ LOCAL void mibl_s7_configure(void)
     s7_define_variable(s7, "*mibl-scan-exclusions*", _s7_exclusions);
 }
 
+/* **************************************************************** */
+// to configure we need scm dirs for *load-path*, ws_root for traversal
+// to run we need main_script
+// q: script runs load-project; doesn't that handle ws root?
 EXPORT struct mibl_config_s *mibl_s7_init(char *scm_dir, char *ws_root)
 {
+    // scm_dir augments default *load-path*, which contains the mibl/scm dirs
 #if defined(DEBUG_TRACE)
     if (mibl_trace) {
         log_debug("mibl_s7_init: scm dir: %s, wsroot: %s", scm_dir, ws_root);
@@ -104,11 +109,14 @@ EXPORT struct mibl_config_s *mibl_s7_init(char *scm_dir, char *ws_root)
 
     s7 = s7_configure(scm_dir, ws_root); //FIXME: ws_root not used by s7_configure?
 
-    mibl_configure();
+    mibl_configure();           /* reads miblrc, sets struct mibl_config */
 
-    mibl_s7_configure();
+    mibl_s7_configure();        /* just some s7_define_variable */
 
-    chdir(rootws); /* always run from base ws root, set by bazel_configure */
+    /* always run from base ws root, set by bazel_configure */
+    /* for test targets base == runfiles dir */
+    /* for std targets, base == ws root (possibly set by -w (--workspace) */
+    chdir(rootws);
 
     utstring_new(setter);
 
@@ -119,6 +127,7 @@ EXPORT struct mibl_config_s *mibl_s7_init(char *scm_dir, char *ws_root)
     return &mibl_config;
 }
 
+/* run a script (which may or may not run load-project) */
 EXPORT void mibl_s7_run(char *main_script, char *ws)
 {
 #if defined(DEBUG_TRACE)
@@ -128,6 +137,38 @@ EXPORT void mibl_s7_run(char *main_script, char *ws)
     }
 #endif
 
+    if (verbose) {
+        log_debug("mibl_run: %s, %s", main_script, ws);
+        log_debug("mibl_run cwd: %s", getcwd(NULL, 0));
+    }
+
+    /* 1. run traversal, producing parsetree */
+    /* 2. IF user provided -main, run it */
+
+    UT_string *sexp;
+    utstring_new(sexp);
+    if (ws)
+        utstring_printf(sexp, "(mibl-load-project \"%s\")", ws);
+    else
+        utstring_printf(sexp, "(mibl-load-project)");
+
+    s7_pointer ptree = s7_eval_c_string(s7, utstring_body(sexp));
+    (void)ptree;
+
+    if (s7_name_to_value(s7, "*mibl-show-parsetree*") == s7_t(s7)) {
+        log_debug("SHOW PARSETREE");
+        utstring_renew(sexp);
+        utstring_printf(sexp, "(mibl-pretty-print *mibl-project*)");
+        s7_pointer x = s7_eval_c_string(s7, utstring_body(sexp));
+        (void)x;
+        s7_newline(s7,  s7_current_output_port(s7));
+        s7_flush_output_port(s7, s7_current_output_port(s7));
+        /* char *s = TO_STR(ptree); */
+        /* log_debug("%s", s); */
+        /* free(s); */
+    }
+    utstring_free(sexp);
+
     if (main_script) {
         if (!s7_load(s7, main_script)) {
             log_error(RED "Could not load main_script '%s'; exiting\n",
@@ -136,8 +177,9 @@ EXPORT void mibl_s7_run(char *main_script, char *ws)
             exit(EXIT_FAILURE);
         }
     } else {
-        log_error(RED "ERROR: " CRESET "main_script is NULL; exiting");
-        exit(EXIT_FAILURE);
+        log_info(GRN "INFO: " CRESET "main_script is NULL");
+        /* exit(EXIT_FAILURE); */
+        return;
     }
 
     s7_pointer _main = s7_name_to_value(s7, "-main");

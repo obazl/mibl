@@ -1,4 +1,4 @@
-(if *mibl-debug-loads*
+(if *mibl-debug-s7-loads*
     (format #t "loading: dune/flags.scm\n"))
 
 ;; WARNING: in principle we could see '(flags (:standard \ ...))'.
@@ -261,6 +261,6 @@
         ;; else no flags
         (values '() '() '() '())))
 
-(if *mibl-debug-loads*
+(if *mibl-debug-s7-loads*
     (format #t "loaded: dune/flags.scm\n"))
 

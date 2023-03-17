@@ -1,3 +1,4 @@
+
 #include <dirent.h>
 #include <errno.h>
 #include <fts.h>
@@ -7,6 +8,10 @@
 #include "utarray.h"
 #include "s7.h"
 #include "deps.h"
+
+#if defined(DEBUG_TRACE)
+bool mibl_debug_deps = false;
+#endif
 
 bool mibl_show_raw_deps = false;
 
@@ -45,9 +50,12 @@ UT_array *_ws_src_dirs(char *const *rootdir)
     int scan_ct;
     struct dirent **namelist;
 
-    log_debug("cwd: %s", getcwd(NULL,0));
-    log_debug("traversal root: %s", *rootdir);
-
+#if defined(DEBUG_TRACE)
+    if (mibl_debug_deps) {
+        log_debug("cwd: %s", getcwd(NULL,0));
+        log_debug("traversal root: %s", *rootdir);
+    }
+#endif
     errno = 0;
     tree = fts_open(rootdir,
                     FTS_COMFOLLOW
@@ -65,7 +73,10 @@ UT_array *_ws_src_dirs(char *const *rootdir)
             switch (ftsentry->fts_info) {
             case FTS_D : // dir visited in post-order
                 if (traverse_dir(tree, ftsentry)) {
-                    log_debug("Scanning dir: %s", ftsentry->fts_path);
+#if defined(DEBUG_TRACE)
+                    if (mibl_debug_deps)
+                        log_debug("Scanning dir: %s", ftsentry->fts_path);
+#endif
                     scan_ct = scandir(ftsentry->fts_path, &namelist,
                                       _select_ocaml_srcs,
                                       alphasort);
@@ -77,7 +88,12 @@ UT_array *_ws_src_dirs(char *const *rootdir)
                         free(s);
                     }
                 }
-                else log_debug("NOT scanning dir: %s", ftsentry->fts_path);
+#if defined(DEBUG_TRACE)
+                else {
+                    if (mibl_debug_deps)
+                        log_debug("NOT scanning dir: %s", ftsentry->fts_path);
+                }
+#endif
                 break;
             default:
                 /* log_error(RED "Unhandled FTS type %d\n", */
@@ -110,10 +126,17 @@ s7_pointer analyze_deps(char *const *rootdir) //, UT_array *ocaml_src_dirs)
 
     /* NB: the utarray and its elts must be freed */
     UT_array *_ocaml_src_dirs = _ws_src_dirs(rootdir);
+
     char **p = NULL;
-    while ( (p=(char**)utarray_next(_ocaml_src_dirs,p))) {
-        log_debug("src dir: %s", *p);
+
+#if defined(DEBUG_TRACE)
+    if (mibl_debug_deps) {
+        p = NULL;
+        while ( (p=(char**)utarray_next(_ocaml_src_dirs,p))) {
+            log_debug("src dir: %s", *p);
+        }
     }
+#endif
 
     int n = utarray_len(_ocaml_src_dirs);
 
@@ -173,6 +196,7 @@ s7_pointer analyze_deps(char *const *rootdir) //, UT_array *ocaml_src_dirs)
         s7_flush_output_port(s7, s7_current_output_port(s7));
     }
 
+    /* FIXME: this will fail if depgraph is empty, */
     char *sexp =
         "(let ((deps-list (assoc-val 'dependencies depgraph))) "
         "  (car deps-list)) "
@@ -181,12 +205,15 @@ s7_pointer analyze_deps(char *const *rootdir) //, UT_array *ocaml_src_dirs)
     s7_pointer deps_list = s7_eval_c_string_with_environment(s7, sexp, env);
     /* (void)deps_list; */
 
-    return deps_list;
+   return deps_list;
 }
 
 s7_pointer get_deps(char *_pkg, char *tgt, s7_pointer deps_list)
 {
-    log_trace("get_deps: %s : %s", _pkg, tgt);
+#if defined(DEBUG_TRACE)
+    if (mibl_debug_deps)
+        log_trace("get_deps: %s : %s", _pkg, tgt);
+#endif
 
     /* char *tostr = TO_STR(deps_list); */
     /* log_debug("DEPS-LIST: %s", tostr); */
@@ -216,7 +243,9 @@ s7_pointer get_deps(char *_pkg, char *tgt, s7_pointer deps_list)
     char *sexp =
         "(let* ((path (format #f \"~A/~A\" pkg tgt)) "
         "       (key `(file ,(symbol path)))) "
-        "  (format #t \"KEY: ~A~%\" key) "
+#if defined(DEBUG_TRACE)
+        /* mibl_debug_deps? "  (format #t \"KEY: ~A~%\" key) " : "" */
+#endif
         "  (if-let ((needle (find-if (lambda (x) (equal? key (car x))) deps-list))) "
         "      (if-let ((deps (cdr needle))) "
         "        (if (truthy? deps) "
@@ -228,7 +257,9 @@ s7_pointer get_deps(char *_pkg, char *tgt, s7_pointer deps_list)
         /* "                                      (symbol (string-join (map symbol->string lst) \".\")) " */
         /* "                                       lst)) " */
         "                             dlist))) "
-        "            (format #t \"deps: ~A~%\" (flatten fixed)) "
+#if defined(DEBUG_TRACE)
+        /* "            (format #t \"deps: ~A~%\" (flatten fixed)) " */
+#endif
         "            (flatten fixed)) "
         "            '()) "
         "         '()) "
@@ -237,10 +268,15 @@ s7_pointer get_deps(char *_pkg, char *tgt, s7_pointer deps_list)
 
     s7_pointer deps = s7_eval_c_string_with_environment(s7, sexp, env);
     /* (void)deps; */
-    /* char *tostr = TO_STR(deps); */
-    /* log_debug("DEPS-LIST: %s", tostr); */
-    /* free(tostr); */
-    /* s7_flush_output_port(s7, s7_current_output_port(s7)); */
+#if defined(DEBUG_TRACE)
+    if (mibl_debug_deps) {
+        char *tostr = TO_STR(deps);
+        log_debug("DEPS-LIST: %s", tostr);
+        free(tostr);
+        fflush(NULL);
+    }
+#endif
+    s7_flush_output_port(s7, s7_current_output_port(s7));
 
     return deps;  // s7_list(s7, 1, s7_make_symbol(s7, "Foobar"));
 }
