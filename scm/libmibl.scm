@@ -103,7 +103,8 @@
   (if (not *mibl-quiet*)
       (begin
         (format #t "~A: libmibl Workspace root: ~A~%" (green "INFO") ws-path)
-        (format #t "~A: libmibl Processed ~A dunefiles.~%" (green "INFO") *mibl-dunefile-count*)))
+        (if not *mibl-dev-mode*
+            (format #t "~A: libmibl Processed ~A dunefiles.~%" (green "INFO") *mibl-dunefile-count*))))
   '())
 
 (define (emit-mibl-pkg pkg)
@@ -119,7 +120,7 @@
                    (error 'OPEN_ERROR_EMIT (format #f "OPEN ERROR: ~A~%" mibl-file)))
                  )))
     (if (not *mibl-quiet*)
-        (format #t "~A: libmibl emitting: ~A~%" (green "INFO") mibl-file))
+        (format #t "~A: Emitting: ~A~%" (green "INFO") mibl-file))
     (mibl-pretty-print pkg outp)
     (close-output-port outp)))
 
@@ -197,7 +198,7 @@
                    (error 'OPEN_ERROR_EMIT (format #f "OPEN ERROR: ~A~%" mibl-file)))
                  )))
     (if (not *mibl-quiet*)
-        (format #t "~A: libmibl emitting: ~A~%" (green "INFO") mibl-file))
+        (format #t "~A: Emitting: ~A~%" (green "INFO") mibl-file))
     (write (object->string pkg :readable) outp)
     (close-output-port outp)))
 
@@ -288,7 +289,7 @@
                          (error 'OPEN_ERROR_EMIT (format #f "OPEN ERROR: ~A~%" mibl-file)))
                        )))
           (if (not *mibl-quiet*)
-              (format #t "~A: libmibl emitting: ~A~%" (green "INFO") mibl-file))
+              (format #t "~A: Emitting ~A~%" (green "INFO") mibl-file))
           (mibl-pretty-print *mibl-project* outp)
           (close-output-port outp)))
     (if *mibl-emit-s7*
@@ -301,7 +302,7 @@
                            (error 'OPEN_ERROR_EMIT (format #f "OPEN ERROR: ~A~%" mibl-file)))
                          )))
           (if (not *mibl-quiet*)
-              (format #t "~A: libmibl emitting: ~A~%" (green "INFO") mibl-file))
+              (format #t "~A: Emitting ~A~%" (green "INFO") mibl-file))
           (write (object->string *mibl-project* :readable) outp)
           (close-output-port outp)))))
 
@@ -317,7 +318,7 @@
       ))
 
 (define (emit-mibl-result)
-  (emit-parsetree-project "EXPECTED"))
+  (emit-parsetree-project "BUILD"))
 
 (define (mibl-clean-mibl)
   (format #t "cleaning mibl - NOT IMPLEMENTED yet.\n")

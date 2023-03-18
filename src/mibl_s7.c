@@ -142,31 +142,93 @@ EXPORT void mibl_s7_run(char *main_script, char *ws)
         log_debug("mibl_run cwd: %s", getcwd(NULL, 0));
     }
 
-    /* 1. run traversal, producing parsetree */
+    if (s7_name_to_value(s7, "*mibl-debug-report*") == s7_t(s7)) {
+        if (s7_name_to_value(s7, "*mibl-dev-mode*") == s7_t(s7)) {
+            log_error("debug:report is incompatible with --dev");
+            return;
+        }
+        mibl_config.emit_parsetree = true;
+        mibl_s7_set_flag("*mibl-emit-mibl*", true);
+        mibl_s7_set_flag("*mibl-emit-s7*", true);
+        mibl_s7_set_flag("*mibl-emit-result*", true);
+        log_debug("DEBUG REPORT");
+    }
+
+    if (s7_name_to_value(s7, "*mibl-show-config*") == s7_t(s7)) {
+        show_bazel_config();
+        show_mibl_config();
+        show_s7_config();
+        return;
+    }
+
+    /* 1. if dev-mode, load PARSETREE.s7, else run traversal, producing parsetree */
     /* 2. IF user provided -main, run it */
 
     UT_string *sexp;
     utstring_new(sexp);
-    if (ws)
-        utstring_printf(sexp, "(mibl-load-project \"%s\")", ws);
-    else
-        utstring_printf(sexp, "(mibl-load-project)");
-
-    s7_pointer ptree = s7_eval_c_string(s7, utstring_body(sexp));
-    (void)ptree;
-
-    if (s7_name_to_value(s7, "*mibl-show-parsetree*") == s7_t(s7)) {
-        log_debug("SHOW PARSETREE");
-        utstring_renew(sexp);
-        utstring_printf(sexp, "(mibl-pretty-print *mibl-project*)");
-        s7_pointer x = s7_eval_c_string(s7, utstring_body(sexp));
-        (void)x;
-        s7_newline(s7,  s7_current_output_port(s7));
-        s7_flush_output_port(s7, s7_current_output_port(s7));
-        /* char *s = TO_STR(ptree); */
-        /* log_debug("%s", s); */
-        /* free(s); */
+    if (ws) {
+        if (s7_name_to_value(s7, "*mibl-dev-mode*") == s7_t(s7)) {
+            /* char *root = getcwd(NULL, 0); */
+            utstring_printf(sexp, "%s",
+                    "(define *mibl-project* "
+                    "  (call-with-input-file \".mibl/PARSETREE.s7\" "
+                    "    (lambda (p) "
+                    "      (let* ((x (read p)) "
+                    "             (y (eval (read (open-input-string x))))) "
+                    "          y))))"
+                    );
+        } else {
+            utstring_printf(sexp, "(mibl-load-project \"%s\")", ws);
+        }
+    } else {
+        if (s7_name_to_value(s7, "*mibl-dev-mode*") == s7_t(s7)) {
+            char *root = getcwd(NULL, 0);
+            utstring_printf(sexp,
+                    "(define *mibl-project* "
+                    "  (call-with-input-file \"%s/.mibl/PARSETREE.s7\" "
+                    "    (lambda (p) "
+                    "      (let* ((x (read p)) "
+                    "             (y (eval (read (open-input-string x))))) "
+                    "          y))))",
+                    root);
+        } else {
+            utstring_printf(sexp, "(mibl-load-project)");
+        }
     }
+    /* if (true) { */
+    /*     log_debug("CWD: %s", getcwd(NULL, 0)); */
+    /*     log_debug("load sexp: %s", utstring_body(sexp)); */
+    /* } */
+
+    s7_pointer result;
+    int gc_loc = -1;
+    const char *errmsg = NULL;
+    /* trap error messages */
+    s7_pointer old_port = s7_set_current_error_port(s7, s7_open_output_string(s7));
+    if (old_port != s7_nil(s7))
+        gc_loc = s7_gc_protect(s7, old_port);
+
+    result = s7_eval_c_string(s7, utstring_body(sexp));
+
+    /* look for error messages */
+    errmsg = s7_get_output_string(s7, s7_current_error_port(s7));
+
+    /* if we got something, wrap it in "[]" */
+    s7_close_output_port(s7, s7_current_error_port(s7));
+    s7_set_current_error_port(s7, old_port);
+    if (gc_loc != -1)
+        s7_gc_unprotect_at(s7, gc_loc);
+
+    if ((errmsg) && (*errmsg)) {
+        fprintf(stdout, "[%s]\n", errmsg);
+        return;
+    }
+
+    /* char *s = TO_STR(ptree); */
+    /* log_debug("PTREE: '%s'", ptree); */
+    /* free(s); */
+    /* (void)ptree; */
+
     utstring_free(sexp);
 
     if (main_script) {
@@ -179,7 +241,7 @@ EXPORT void mibl_s7_run(char *main_script, char *ws)
     } else {
         log_info(GRN "INFO: " CRESET "main_script is NULL");
         /* exit(EXIT_FAILURE); */
-        return;
+        /* return; */
     }
 
     s7_pointer _main = s7_name_to_value(s7, "-main");
@@ -222,14 +284,14 @@ EXPORT void mibl_s7_run(char *main_script, char *ws)
 
     /* **************************************************************** */
     /* this does the actual conversion: */
-    s7_pointer result = s7_apply_function(s7, _main, _s7_args);
+    result = s7_apply_function(s7, _main, _s7_args);
     (void)result; /* FIXME: check result */
     /* **************************************************************** */
 
     /* log_info("RESULT: %s\n", TO_STR(result)); */
     s7_gc_unprotect_at(s7, (s7_int)_main);
 
-    char *errmsg = (char*)s7_get_output_string(s7, s7_current_error_port(s7));
+    errmsg = (char*)s7_get_output_string(s7, s7_current_error_port(s7));
     if ((errmsg) && (*errmsg)) {
         log_error("[%s\n]", errmsg);
         s7_quit(s7);

@@ -46,7 +46,7 @@ filegroup(
     srcs = [
         "globals.c", "//src/hdrs:globals.h",
         "config_bazel.c", "//src/hdrs:config_bazel.h",
-        "mibl.c", "//src/hdrs:mibl.h",
+        "config_mibl.c", "//src/hdrs:config_mibl.h",
         "cmd_runner.c", "//src/hdrs:cmd_runner.h",
         # "mibl_s7.c", "//src/hdrs:mibl_s7.h",
         "config_opam.c", "//src/hdrs:config_opam.h",
@@ -85,7 +85,7 @@ MIBL_SRCS = [
     "load_project.c",
     "globals.c",
     "config_bazel.c",
-    "mibl.c",
+    "config_mibl.c",
     "mibl_s7.c",
     "config_opam.c",
     "config_s7.c",
@@ -104,7 +104,7 @@ cc_library(
         "//src/hdrs:load_project.h",
         "//src/hdrs:globals.h",
         "//src/hdrs:config_bazel.h",
-        "//src/hdrs:mibl.h",
+        "//src/hdrs:config_mibl.h",
         "//src/hdrs:mibl_s7.h",
         "//src/hdrs:config_opam.h",
         "//src/hdrs:config_s7.h",
@@ -271,7 +271,7 @@ CMD_HDR = "\n".join([
 #         "$(location debug_s7.c):",
 #         "$(location globals.c):",
 #         "$(location config_bazel.c):",
-#         "$(location mibl.c):",
+#         "$(location config_mibl.c):",
 #         "$(location config_opam.c):",
 #         "$(location ansi_colors.h)",
 #         "$(location log.c):",
@@ -284,22 +284,6 @@ CMD_HDR = "\n".join([
 
 #         "cp $${SRCDIR1}/*.h $(@D)",
 #     ]),
-#     tools = [":makeheaders"],
-#     visibility = ["//visibility:public"]
-# )
-
-# ########
-# genrule(
-#     name = "mkhdrs-export",
-#     srcs = MIBL_SRCS + [
-#         "ansi_colors.h",
-#         "uthash.h", "utarray.h", "utstring.h"
-#     ],
-#     outs = ["mibl.h"],
-#     cmd = CMD_HDR
-#     + "$(location :makeheaders) -H "
-#     + "$(SRCS)"
-#     + " > $@",
 #     tools = [":makeheaders"],
 #     visibility = ["//visibility:public"]
 # )
@@ -318,7 +302,7 @@ cc_library(
         "handlers_opam.c"      , "//src/hdrs:handlers_opam.h",
         "globals.c"            , "//src/hdrs:globals.h",
         "config_bazel.c"       , "//src/hdrs:config_bazel.h",
-        "mibl.c"        , "//src/hdrs:mibl.h",
+        "config_mibl.c"        , "//src/hdrs:config_mibl.h",
         "config_opam.c"        , "//src/hdrs:config_opam.h",
         # "config_s7.c"          , "//src/hdrs:config_s7.h",
         "config_s7.c"     , "//src/hdrs:config_s7.h",

@@ -369,9 +369,11 @@
                                                (values))))
                                      ;;FIXME: can there be more than one :actions per :rule?
                                      (if (assoc-in '(:actions :cmd :args) (cdr stanza))
-                                         (begin
-                                           (format #t "FIXME: normalize cmd args\n")
-                                           (debug-print-stacktrace)))
+                                         (if *mibl-debug-s7*
+                                             (begin
+                                               ;;FIXME: write to .mibl/mibl.log
+                                               (format #t "FIXME: normalize cmd args\n")
+                                               (debug-print-stacktrace))))
                                      )
                                     (else)))
                                 stanzas))))

@@ -179,6 +179,7 @@ static char *mibl_s7_flags[] = {
     "*mibl-debug-mibl*",
     "*mibl-debug-modules*",
     "*mibl-debug-ppx*",
+    "*mibl-debug-report*",
     "*mibl-debug-rule-stanzas*",
     "*mibl-debug-s7*",
     "*mibl-debug-s7-loads*",
@@ -186,6 +187,7 @@ static char *mibl_s7_flags[] = {
     "*mibl-debug-tests*",
     "*mibl-debug-updaters*",
     "*mibl-debugging*",
+    "*mibl-dev-mode*",
     "*mibl-dune-execlib-includes-main*",
     "*mibl-dunefile-count*",
     "*mibl-emit-bazel-pkg*",
@@ -207,6 +209,7 @@ static char *mibl_s7_flags[] = {
     "*mibl-quiet*",
     "*mibl-shared-deps*",
     /* "*mibl-shared-ppx-pkg*", */
+    "*mibl-show-config*",
     "*mibl-show-exports*",
     "*mibl-show-mibl*",
     "*mibl-show-parsetree*",

@@ -4161,9 +4161,12 @@ EXPORT s7_pointer load_project(const char *home_sfx, const char *traversal_root)
 #endif
 
     deps_list = analyze_deps(_traversal_root);
-    if (deps_list == s7_nil(s7)) {
+    if ( !s7_is_list(s7, deps_list) ) {
         log_error("analyze_deps failed");
         exit(EXIT_FAILURE);
+    } else {
+        if (deps_list == s7_nil(s7))
+            return deps_list;             /* empty list */
     }
 
     errno = 0;
@@ -4388,6 +4391,20 @@ EXPORT s7_pointer load_project(const char *home_sfx, const char *traversal_root)
 
     /* printf("*mibl-project*: %s\n", */
     /*        TO_STR(s7_name_to_value(s7, "*mibl-project*"))); */
+
+    if (s7_name_to_value(s7, "*mibl-show-parsetree*") == s7_t(s7)) {
+        log_debug("SHOW PARSETREE");
+        UT_string *sexp;
+        utstring_new(sexp);
+        utstring_printf(sexp, "(mibl-pretty-print *mibl-project*)");
+        s7_pointer x = s7_eval_c_string(s7, utstring_body(sexp));
+        (void)x;
+        s7_newline(s7,  s7_current_output_port(s7));
+        s7_flush_output_port(s7, s7_current_output_port(s7));
+        /* char *s = TO_STR(ptree); */
+        /* log_debug("%s", s); */
+        /* free(s); */
+    }
 
     if (mibl_config.emit_parsetree) {
         log_debug("EMITTING PARSETREE");

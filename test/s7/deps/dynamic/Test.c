@@ -292,72 +292,72 @@ extern bool trace_mibl;
 
 extern bool emit_parsetree;
 
-void x_init_mibl_proj(char *test_root)
-{
-    // the hard way to do it:
+/* void x_init_mibl_proj(char *test_root) */
+/* { */
+/*     // the hard way to do it: */
 
-    s7_int i, gc_loc;
+/*     s7_int i, gc_loc; */
 
-    UT_string *pkg_mibl_file;
-    utstring_new(pkg_mibl_file);
-    utstring_printf(pkg_mibl_file, "%s/.mibl/PARSETREE.s7", test_root);
+/*     UT_string *pkg_mibl_file; */
+/*     utstring_new(pkg_mibl_file); */
+/*     utstring_printf(pkg_mibl_file, "%s/.mibl/PARSETREE.s7", test_root); */
 
-    // pkg_mibl_file = $TEST_SRCDIR/mibl/scm/test/library/multple/WS.mibl
-    //  = $TEST_SRCDIR + pkgpart(TEST_TARGET) + /WS.mibl
+/*     // pkg_mibl_file = $TEST_SRCDIR/mibl/scm/test/library/multple/WS.mibl */
+/*     //  = $TEST_SRCDIR + pkgpart(TEST_TARGET) + /WS.mibl */
 
-    /* char *pkg_mibl_file = "scm/test/library/multiple/WS.mibl"; */
-    char *s1;
-    s7_pointer port = s7_open_input_file(s7,
-                                         utstring_body(pkg_mibl_file), "r");
-    s7_pointer ws_s7;
-    if (!s7_is_input_port(s7, port)) {
-        {log_error("%s is not an input port?\n", s1 = TO_STR(port)); free(s1);}
-        exit(EXIT_FAILURE);
-    } else {
-        gc_loc = s7_gc_protect(s7, port);
-        /* should be exactly one sexp in PKG.mibl */
-        ws_s7 = s7_read(s7, port);
-        /* otherwise: */
-        /* while(true) { */
-        /*     s7_pointer code; */
-        /*     code = s7_read(sc, port); */
-        /*     if (code == s7_eof_object(sc)) break; */
-        /*     /\* do something with this sexp *\/ */
-        /* } */
-        s7_close_input_port(s7, port);
-        s7_gc_unprotect_at(s7, gc_loc);
-    }
+/*     /\* char *pkg_mibl_file = "scm/test/library/multiple/WS.mibl"; *\/ */
+/*     char *s1; */
+/*     s7_pointer port = s7_open_input_file(s7, */
+/*                                          utstring_body(pkg_mibl_file), "r"); */
+/*     s7_pointer ws_s7; */
+/*     if (!s7_is_input_port(s7, port)) { */
+/*         {log_error("%s is not an input port?\n", s1 = TO_STR(port)); free(s1);} */
+/*         exit(EXIT_FAILURE); */
+/*     } else { */
+/*         gc_loc = s7_gc_protect(s7, port); */
+/*         /\* should be exactly one sexp in PKG.mibl *\/ */
+/*         ws_s7 = s7_read(s7, port); */
+/*         /\* otherwise: *\/ */
+/*         /\* while(true) { *\/ */
+/*         /\*     s7_pointer code; *\/ */
+/*         /\*     code = s7_read(sc, port); *\/ */
+/*         /\*     if (code == s7_eof_object(sc)) break; *\/ */
+/*         /\*     /\\* do something with this sexp *\\/ *\/ */
+/*         /\* } *\/ */
+/*         s7_close_input_port(s7, port); */
+/*         s7_gc_unprotect_at(s7, gc_loc); */
+/*     } */
 
-    s7_pointer env = s7_inlet(s7, s7_list(s7, 1,
-                                          s7_cons(s7,
-                                                  s7_make_symbol(s7, "ws-s7"), ws_s7)));
+/*     s7_pointer env = s7_inlet(s7, s7_list(s7, 1, */
+/*                                           s7_cons(s7, */
+/*                                                   s7_make_symbol(s7, "ws-s7"), ws_s7))); */
 
-    char *sexp =
-        "(define *mibl-project* (eval (read (open-input-string ws-s7))))"
-        ;
-    /* char *sexp = */
-    /*     "(let* ((ws-tbl (eval (read (open-input-string ws-mibl))))) " */
-    /*     "  (mibl-pretty-print ws-tbl))" */
-    /* s7_eval_c_string(s7, sexp); */
+/*     char *sexp = */
+/*         "(define *mibl-project* (eval (read (open-input-string ws-s7))))" */
+/*         ; */
+/*     /\* char *sexp = *\/ */
+/*     /\*     "(let* ((ws-tbl (eval (read (open-input-string ws-mibl))))) " *\/ */
+/*     /\*     "  (mibl-pretty-print ws-tbl))" *\/ */
+/*     /\* s7_eval_c_string(s7, sexp); *\/ */
 
-    // this will not define *mibl-project* globally because of with_environment
-    s7_pointer res = s7_eval_c_string_with_environment(s7, sexp, env);
-    char *s = TO_STR(res);
-    log_debug("res: %s", s);
-    free(s);
-    s7_define_variable(s7, "*mibl-project*", res);
+/*     // this will not define *mibl-project* globally because of with_environment */
+/*     s7_pointer res = s7_eval_c_string_with_environment(s7, sexp, env); */
+/*     char *s = TO_STR(res); */
+/*     log_debug("res: %s", s); */
+/*     free(s); */
+/*     s7_define_variable(s7, "*mibl-project*", res); */
 
-    char *sexp2 = "(mibl-pretty-print *mibl-project*)";
-    s7_eval_c_string(s7, sexp2);
+/*     char *sexp2 = "(mibl-pretty-print *mibl-project*)"; */
+/*     s7_eval_c_string(s7, sexp2); */
 
-    s7_newline(s7, s7_current_output_port(s7));
-    s7_flush_output_port(s7, s7_current_output_port(s7));
+/*     s7_newline(s7, s7_current_output_port(s7)); */
+/*     s7_flush_output_port(s7, s7_current_output_port(s7)); */
 
-    s7_newline(s7, s7_current_output_port(s7));
-    s7_flush_output_port(s7, s7_current_output_port(s7));
+/*     s7_newline(s7, s7_current_output_port(s7)); */
+/*     s7_flush_output_port(s7, s7_current_output_port(s7)); */
 
-    /* s7_define_variable(s7, "*mibl-project*", mibl_project); */
-}
+/*     /\* s7_define_variable(s7, "*mibl-project*", mibl_project); *\/ */
+/* } */
 
 /* init_mibl_proj - read initial and expected data files */
 void _init_mibl_proj(char *test_root)

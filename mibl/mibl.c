@@ -7,7 +7,7 @@
 
 #include "libmibl.h"
 
-#include "script.h"
+#include "mibl.h"
 
 #if defined(DEBUG_TRACE)
 extern bool mibl_debug;
@@ -43,6 +43,7 @@ enum OPTS {
     FLAG_SHOW_MIBL,
     FLAG_SHOW_TRAVERSAL,
     FLAG_DEBUG,
+    FLAG_DEBUG_REPORT,
     FLAG_DEBUG_S7_LOADS,
 #if defined(DEV_MODE)
     FLAG_DEBUG_DEPS,
@@ -51,6 +52,8 @@ enum OPTS {
     FLAG_DEBUG_S7,
     FLAG_DEBUG_TRAVERSAL,
 #endif
+
+    FLAG_DEV_MODE,
 
     FLAG_CLEAN,
     FLAG_CLEAN_MIBL,
@@ -111,6 +114,15 @@ void _update_s7_globals(struct option options[])
     if (options[FLAG_DEBUG_S7_LOADS].count)
         mibl_s7_set_flag("*mibl-debug-s7-loads*", true);
 
+    if (options[FLAG_DEBUG_REPORT].count)
+        mibl_s7_set_flag("*mibl-debug-report*", true);
+
+    if (options[FLAG_DEV_MODE].count)
+        mibl_s7_set_flag("*mibl-dev-mode*", true);
+
+    if (options[FLAG_SHOW_CONFIG].count)
+        mibl_s7_set_flag("*mibl-show-config*", true);
+
     if (options[FLAG_SHOW_MIBL].count)
         mibl_s7_set_flag("*mibl-show-mibl*", true);
 
@@ -167,12 +179,32 @@ void _update_s7_globals(struct option options[])
     }
 }
 
+void _check_tools(void) {
+    /* is shell available? */
+    int rc = system(NULL);
+    if (rc == 0) {
+        fprintf(stderr, "No system shell available\n");
+        exit(EXIT_FAILURE);
+    }
+
+    /* FIXME: not portable.  instead, scan $PATH...? */
+    /* if (system("which ocamldep > /dev/null 2>&1")) { */
+    /*     fprintf(stderr, "Cmd 'ocamldep' not found, but it is required by the conversion tool. If it is installed, try running 'eval $(opam env)'.\n"); */
+    /*     exit(EXIT_FAILURE); */
+    /* } */
+
+    /* if (system("which foobar > /dev/null 2>&1")) { */
+    /*     fprintf(stderr, RED "ERROR: " CRESET "Command 'foobar' not found. Please run 'opam install ocamldep'.\n"); */
+    /*     exit(EXIT_FAILURE); */
+    /* } */
+}
+
 void _print_version(void) {
     printf("FIXME: version id\n");
 }
 
 void _print_usage(void) {
-    printf("Usage:\t$ bazel run @obazl//convert [flags, options]\n");
+    printf("Usage:\t$ bazel run @mibl//mibl [flags, options]\n");
     printf("Crawls the tree rooted at -w:\n");
     printf("Options:\n");
     printf("\t-w, --workspace <path>"
@@ -249,14 +281,16 @@ static struct option options[] = {
                           .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_SHOW_TRAVERSAL] = {.long_name="show-traversal",
                              .flags=GOPT_ARGUMENT_FORBIDDEN},
+
     [FLAG_DEBUG] = {.long_name="debug",.short_name='d',
                     .flags=GOPT_ARGUMENT_FORBIDDEN | GOPT_REPEATABLE},
-
     [FLAG_DEBUG_DEPS] = {.long_name="debug-deps",
                          .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_DEBUG_EMIT] = {.long_name="debug-emit",
                          .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_DEBUG_PPX] = {.long_name="debug-ppx",
+                       .flags=GOPT_ARGUMENT_FORBIDDEN},
+    [FLAG_DEBUG_REPORT] = {.long_name="debug-report",
                        .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_DEBUG_S7] = {.long_name="debug-s7",
                        .flags=GOPT_ARGUMENT_FORBIDDEN},
@@ -264,6 +298,9 @@ static struct option options[] = {
                        .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_DEBUG_TRAVERSAL] = {.long_name="debug-traversal",
                                  .flags=GOPT_ARGUMENT_FORBIDDEN},
+
+    [FLAG_DEV_MODE] = {.long_name="dev",
+                       .flags=GOPT_ARGUMENT_FORBIDDEN},
 
     [FLAG_CLEAN] = {.long_name="clean",
                     .flags=GOPT_ARGUMENT_FORBIDDEN},
@@ -367,6 +404,9 @@ int main(int argc, char **argv, char **envp)
     }
 
     /* **************************************************************** */
+
+    _check_tools();
+
     struct mibl_config_s *mibl_config
         = mibl_s7_init(NULL, // options[OPT_MAIN].argument,
                        options[OPT_WS].argument);
@@ -375,18 +415,18 @@ int main(int argc, char **argv, char **envp)
 
     _update_s7_globals(options);
 
-    if (options[FLAG_SHOW_CONFIG].count) {
-        show_bazel_config();
-        show_mibl_config();
-        show_s7_config();
+    /*  if (options[FLAG_SHOW_CONFIG].count) { */
+    /*     show_bazel_config(); */
+    /*     show_mibl_config(); */
+    /*     show_s7_config(); */
 
-        /* dump env vars: */
-        /* for (char **env = envp; *env != 0; env++) { */
-        /*     char *thisEnv = *env; */
-        /*     printf("%s\n", thisEnv); */
-        /* } */
-        exit(EXIT_SUCCESS);
-    }
+    /*     /\* dump env vars: *\/ */
+    /*     /\* for (char **env = envp; *env != 0; env++) { *\/ */
+    /*     /\*     char *thisEnv = *env; *\/ */
+    /*     /\*     printf("%s\n", thisEnv); *\/ */
+    /*     /\* } *\/ */
+    /*     exit(EXIT_SUCCESS); */
+    /* } */
 
     mibl_s7_run(options[OPT_MAIN].argument, options[OPT_WS].argument);
 

@@ -9,7 +9,7 @@
 
 /* #include "s7.h" */
 
-#include "mibl.h"
+#include "config_mibl.h"
 
 extern const UT_icd ut_str_icd;
 

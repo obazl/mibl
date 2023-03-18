@@ -1,0 +1,11 @@
+# load("//mibl:BUILD.bzl", "script")
+
+# script("report", args = ["--show-config"])
+
+sh_binary(
+    name = "report",
+    srcs = ["//mibl:run_mibl.sh"],
+    args = ["--main", "mibl_main.scm", "--debug-report"],
+    deps = ["@bazel_tools//tools/bash/runfiles"],
+    data = ["//mibl:mibl"]
+)

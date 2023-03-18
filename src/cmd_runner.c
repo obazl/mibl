@@ -51,17 +51,19 @@ EXPORT char * run_cmd(char *executable, char **argv)
         ptr++;
     }
 #if defined(DEBUG_TRACE)
-    if (mibl_debug_deps)
+    if (mibl_debug_deps) {
         log_debug("run cmd: %s", utstring_body(tmp));
+        char **p = argv;
+        while(*p != NULL) {
+            log_debug("arg: %s", *p);
+            p++;
+        }
+    }
 #endif
     utstring_free(tmp);
 #endif
 
     pid_t pid;
-    /* char *argv[] = { */
-    /*     "codept", */
-    /*     "-args", codept_args_file, */
-    /*     NULL}; */
     int rc;
 
     extern char **environ;
