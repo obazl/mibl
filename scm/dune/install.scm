@@ -25,7 +25,7 @@
   (if *mibl-debugging*
       (format #t "~A: ~A~%" (bgblue "dune-install->mibl") stanza))
   ;; write to exports table
-  (let* ((pkg-path (car (assoc-val :pkg-path pkg)))
+  (let* ((pkg-path (assoc-val :pkg-path pkg))
          (section (if-let ((section (assoc-val 'section (cdr stanza))))
                           (car section) #f))
          (_ (if *mibl-debugging* (format #t "~A: ~A~%" (white "section") section)))

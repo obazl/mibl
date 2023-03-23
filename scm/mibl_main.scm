@@ -38,14 +38,15 @@
   (if *mibl-clean-mibl*
       (mibl-clean-mibl)
       (call-with-exit (lambda (return)
-                        (parsetree->mibl
+                        (parsetree->mibl ;; in libmibl.scm
                          (lambda () ;; our return thunk
                            (if *mibl-show-mibl*
                                (mibl-debug-print-project))
                            (if (not *mibl-quiet*)
                                (format #t "~A: Returning...~%" (green "INFO")))
                            (return))
-                         root-path ws-path)))))
+                         ;; root-path ws-path
+                         )))))
 
 (if *mibl-debug-s7-loads*
     (format #t "loaded mibl_main.scm~%"))

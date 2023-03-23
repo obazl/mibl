@@ -375,7 +375,7 @@
     libdep))
 
 (define (pkg->pkg-name pkg)
-  (let* ((bn (basename (car (assoc-val :pkg-path pkg))))
+  (let* ((bn (basename (assoc-val :pkg-path pkg)))
          (pn (if (string=? "." bn)
                 (basename (car (assoc-val :ws-path pkg)))
                 bn)))

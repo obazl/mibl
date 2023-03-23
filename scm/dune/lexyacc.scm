@@ -1,8 +1,8 @@
 (define (yacc-deps pkg principal-name)
   (if *mibl-debugging*
       (format #t "~A: ~A~%" (ublue "yacc-deps") principal-name))
-  (let ((ws-path (car (assoc-val :ws-path pkg)))
-        (pkg-path (car (assoc-val :pkg-path pkg)))
+  (let ((ws-path (assoc-val :ws-path pkg))
+        (pkg-path (assoc-val :pkg-path pkg))
         (mly-src (format #f "~A.mly" principal-name)))
     (if *mibl-debugging*
         (begin

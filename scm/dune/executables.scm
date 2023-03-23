@@ -455,7 +455,7 @@
                                stanza-alist
                                (append stanza-alist
                                        (list '(modules :standard)))))
-         (pkg-path (car (assoc-val :pkg-path pkg)))
+         (pkg-path (assoc-val :pkg-path pkg))
          ;; 'name' fld is required
          (privname (cadr (assoc 'name stanza-alist)))
 
@@ -583,7 +583,7 @@
         (format #t "~A:  ~A\n" (uwhite "kind") kind)
         (format #t "~A:  ~A\n" (uwhite "pkg") stanza)))
   ;; (:executables (names test_clic) ...
-  (let* ((pkg-path (car (assoc-val :pkg-path pkg)))
+  (let* ((pkg-path (assoc-val :pkg-path pkg))
          (stanza-alist (cdr stanza))
          (privnames (if (case kind ((:executable :test) #t) (else #f))
                         (if-let ((privnames

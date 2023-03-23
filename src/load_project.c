@@ -366,8 +366,8 @@ LOCAL bool _this_is_hidden(FTSENT *ftsentry)
 LOCAL s7_pointer make_pkg_key(char *path)
 {
     if (path[0] == '.' && path[1] == '\0') {
-        return s7_make_keyword(s7, ":wsroot");
-        /* return s7_make_string(s7, path); */
+        /* return s7_make_keyword(s7, ":wsroot"); */
+        return s7_make_string(s7, "./");
     } else {
         if (path[0] == '.' && path[1] == '/') {
             /* return s7_make_keyword(s7, ":wsroot"); */
@@ -473,11 +473,11 @@ LOCAL void _handle_dir(s7_pointer pkg_tbl, FTS* tree, FTSENT *ftsentry)
                       s7_list(s7, 3,
                               //FIXME: use a ws-alist instead of
                               //annotating each pkg with :ws-path
-                              s7_list(s7, 2, ws_path_kw,
+                              s7_cons(s7, ws_path_kw,
                                       s7_make_string(s7, ews_root)),
-                              s7_list(s7, 2, pkg_path_kw,
+                              s7_cons(s7, pkg_path_kw,
                                       pkg_key),
-                              s7_list(s7, 2, realpath_kw,
+                              s7_cons(s7, realpath_kw,
                                       s7_make_string(s7, rpath))));
 }
 
@@ -3466,7 +3466,7 @@ LOCAL void _handle_cc_file(s7_pointer pkg_tbl,
     _update_cc_src_file(pkg_tbl, ftsentry, ext);
 }
 
-LOCAL __attribute__((unused)) void _handle_symlink(s7_pointer pkg_tbl, FTS *tree, FTSENT *ftsentry)
+LOCAL void _handle_symlink(s7_pointer pkg_tbl, FTS *tree, FTSENT *ftsentry)
 {
     if (strncmp(ftsentry->fts_name, "bazel-", 6) == 0) {
         /* skip Bazel dirs, e.g. bazel-bin */
@@ -3478,8 +3478,13 @@ LOCAL __attribute__((unused)) void _handle_symlink(s7_pointer pkg_tbl, FTS *tree
 
     if (strncmp(ftsentry->fts_name, "dune", 4) == 0) {
         log_warn("SYMLINKED dunefile: %s", ftsentry->fts_name);
-        return;
+        /* return; */
     }
+
+    /* for now, treat symlinked files as ordinary files */
+    _handle_file(pkg_tbl, ftsentry);
+    return;
+
 
 #define LINK_BUFSZ 4095
     char linkbuf[LINK_BUFSZ];
@@ -3967,56 +3972,6 @@ bool traverse_dir(FTS* tree, FTSENT *ftsentry)
 /*     fflush(stdout); */
 /* } */
 
-LOCAL void _emit_parsetree(void)
-{
-#if defined(DEBUG_TRACE)
-    if (mibl_trace) log_trace("_emit_parsetree");
-#endif
-
-    char *sexp =
-        "(let* ((@ws (assoc-val :@ *mibl-project*)) "
-        "       (ws-path (assoc-val :path (cdr @ws))) "
-        "       (mibl-file (format #f \"~A/.mibl/PARSETREE.mibl\" ws-path)) "
-        "       (s7-file (format #f \"~A/.mibl/PARSETREE.s7\" ws-path))) "
-        "    (mkdir (format #f \"~A/.mibl\" ws-path) "
-        "           (logior S_IRWXU S_IRGRP S_IXGRP S_IROTH))"
-        "    (let ((outp "
-        "            (catch #t "
-        "               (lambda () "
-        "                 (open-output-file mibl-file)) "
-        "               (lambda args "
-        "                 (error 'OPEN_ERROR_EMIT "
-        "                   (format #f \"OPEN ERROR: ~A~%\" mibl-file)))))) "
-        "        (if (not *mibl-quiet*) (format #t \"~A: Emitting ~A~%\" (green \"INFO\") mibl-file)) "
-        "        (mibl-pretty-print *mibl-project* outp) "
-        "        (close-output-port outp)) "
-        "    (let ((outp "
-        "            (catch #t "
-        "               (lambda () "
-        "                 (open-output-file s7-file)) "
-        "               (lambda args "
-        "                 (error 'OPEN_ERROR_EMIT "
-        "                   (format #f \"OPEN ERROR: ~A~%\" s7-file)))))) "
-        "        (if (not *mibl-quiet*) (format #t \"~A: Emitting ~A~%\" (green \"INFO\") s7-file)) "
-        "        (write (object->string *mibl-project* :readable) outp) "
-        "        (close-output-port outp))) "
-        ;
-
-    s7_pointer ws_path = s7_eval_c_string(s7, sexp);
-    (void)ws_path;
-
-    s7_flush_output_port(s7, s7_current_output_port(s7));
-    s7_flush_output_port(s7, s7_current_error_port(s7));
-
-    /* char *tostr; */
-    /* tostr = TO_STR(ws_path); */
-    /* log_debug("s: %s", tostr); */
-    /* free(tostr); */
-
-    return;
-
-}
-
 EXPORT s7_pointer load_project(const char *home_sfx, const char *traversal_root)
 {
 #if defined(DEBUG_TRACE)
@@ -4164,9 +4119,10 @@ EXPORT s7_pointer load_project(const char *home_sfx, const char *traversal_root)
     if ( !s7_is_list(s7, deps_list) ) {
         log_error("analyze_deps failed");
         exit(EXIT_FAILURE);
-    } else {
-        if (deps_list == s7_nil(s7))
-            return deps_list;             /* empty list */
+    /* } else { */
+    /*     /\* case: dune file but no ocaml srcs *\/ */
+    /*     if (deps_list == s7_nil(s7)) */
+    /*         return deps_list;             /\* empty list *\/ */
     }
 
     errno = 0;
@@ -4291,8 +4247,7 @@ EXPORT s7_pointer load_project(const char *home_sfx, const char *traversal_root)
                     _handle_file(pkg_tbl, ftsentry);
                     break;
                 case FTS_SL: // symlink
-                    _handle_file(pkg_tbl, ftsentry);
-                    /* _handle_symlink(pkg_tbl, tree, ftsentry); */
+                    _handle_symlink(pkg_tbl, tree, ftsentry);
                     break;
                 case FTS_SLNONE:
                     /* symlink to non-existent target */
@@ -4391,25 +4346,6 @@ EXPORT s7_pointer load_project(const char *home_sfx, const char *traversal_root)
 
     /* printf("*mibl-project*: %s\n", */
     /*        TO_STR(s7_name_to_value(s7, "*mibl-project*"))); */
-
-    if (s7_name_to_value(s7, "*mibl-show-parsetree*") == s7_t(s7)) {
-        log_debug("SHOW PARSETREE");
-        UT_string *sexp;
-        utstring_new(sexp);
-        utstring_printf(sexp, "(mibl-pretty-print *mibl-project*)");
-        s7_pointer x = s7_eval_c_string(s7, utstring_body(sexp));
-        (void)x;
-        s7_newline(s7,  s7_current_output_port(s7));
-        s7_flush_output_port(s7, s7_current_output_port(s7));
-        /* char *s = TO_STR(ptree); */
-        /* log_debug("%s", s); */
-        /* free(s); */
-    }
-
-    if (mibl_config.emit_parsetree) {
-        log_debug("EMITTING PARSETREE");
-        _emit_parsetree();
-    }
 
     if (mibl_show_deps) {
         log_info("DEPS LIST:");

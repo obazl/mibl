@@ -101,7 +101,7 @@
       ;; 'map' over the fields. Instead we extract the fields into local
       ;; vars.
 
-      (let* ((pkg-path (car (assoc-val :pkg-path pkg)))
+      (let* ((pkg-path (assoc-val :pkg-path pkg))
              (rule-alist (cdr stanza))
              (_ (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*) (format #t "rule-alist: ~A\n" rule-alist)))
              ;; (_ (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*) (format #t "target: ~A\n" (assoc 'target rule-alist))))

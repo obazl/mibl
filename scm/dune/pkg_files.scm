@@ -226,7 +226,7 @@
   (if *mibl-debugging*
       (format #t "~A: ~A~%" (bgblue "-ocamldep-pkg-static-file-deps") (assoc-val :pkg-path pkg)))
           ;; (assoc-val :pkg-path pkg))
-  (let* ((pkg-path (car (assoc-val :pkg-path pkg)))
+  (let* ((pkg-path (assoc-val :pkg-path pkg))
          (fpath (format #f "~A/*" pkg-path)) ;; (cdr struct)))
          (pkg-mods (if-let ((files (assoc-val :modules pkg)))
                              (map car files) '()))
@@ -534,8 +534,8 @@
   (if *mibl-debugging*
       (format #t "~A: ~A~%" (bgblue "-ocamldep-pkg-dynamic-file-deps") (assoc-val :pkg-path pkg)))
           ;; (assoc-val :pkg-path pkg))
-  (let* ((ws-path (car (assoc-val :ws-path pkg)))
-         (pkg-path (car (assoc-val :pkg-path pkg)))
+  (let* ((ws-path (assoc-val :ws-path pkg))
+         (pkg-path (assoc-val :pkg-path pkg))
          (pkg-modules (if-let ((modules (assoc-val :modules pkg)))
                               modules '()))
          (_ (if *mibl-debugging* (format #t "~A: ~A~%" (blue "pkg-modules") pkg-modules)))

@@ -66,9 +66,9 @@
         (format #t "~A: ~A\n" (ublue "handle-filename-literal-arg") dep)
         (format #t "pkg-path: ~A\n" (assoc-val :pkg-path paths))))
   (let* (;; (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "dep: ~A\n" dep)))
-         (pkg-path (car (assoc-val :pkg-path paths)))
+         (pkg-path (assoc-val :pkg-path paths))
          (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "pkg-path: ~A~%" pkg-path)))
-         (ws-path (car (assoc-val :ws-path paths)))
+         (ws-path (assoc-val :ws-path paths))
          ;; dep always relative: prepend pkg dir, may give path with .. segs
          ;; etc. then normalize
 
@@ -91,11 +91,15 @@
                     (dirname canonical-path))))
 
          ;; (dirname X) => "./", not "."
-         (local? (if (and (or (equal? (dirname canonical-path) "./")
-                              (equal? (dirname canonical-path) "::wsroot"))
-                          (or (equal? pkg-path ".")
-                              (equal? pkg-path ::wsroot)
-                              (equal? pkg-path "::wsroot")))
+         ;; (local? (if (and (or (equal? (dirname canonical-path) "./")
+         ;;                      (equal? (dirname canonical-path) "::wsroot"))
+         ;;                  (or (equal? pkg-path ".")
+         ;;                      (equal? pkg-path ::wsroot)
+         ;;                      (equal? pkg-path "::wsroot")))
+         ;;             #t
+         ;;             (equal? (dirname canonical-path) pkg-path)))
+         (local? (if (and (equal? (dirname canonical-path) "./")
+                          (equal? pkg-path "./"))
                      #t
                      (equal? (dirname canonical-path) pkg-path)))
          (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "local? ~A~%" local?)))
@@ -112,11 +116,14 @@
 
          (parent (let ((parent (dirname expanded-path)))
                    ;; (format #t "PARENT b: ~A~%" parent)
-                   (if (string=? "::wsroot" parent)
-                       ::wsroot  ;;"."
-                       (if (string=? "./" parent)
-                           ::wsroot  ;;"."
-                           parent))))
+                   ;; (if (string=? "::wsroot" parent)
+                   ;;     ::wsroot  ;;"."
+                   ;;     (if (string=? "./" parent)
+                   ;;         ::wsroot  ;;"."
+                   ;;         parent))
+                   (if (string=? "./" parent)
+                           "./" parent)
+                   ))
          (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "~A: ~A~%" (bgred "parent") parent)))
 
          (tgt (if (equal? pkg-path parent)
@@ -178,15 +185,15 @@
 (define (handle-filename-literal-dep ws dep deplist paths expanded-deps)
   (if (or *mibl-debug-action-deps* *mibl-debug-s7*)
       (begin
-        (format #t "~A: ~A\n" (blue "handle-filename-literal-dep") dep)
+        (format #t "~A: ~A\n" (ublue "handle-filename-literal-dep") dep)
         (format #t "deplist: ~A\n" deplist)
         (format #t "pkg path: ~A\n" (assoc-val :pkg-path paths))
         (format #t "expanded-deps: ~A\n" expanded-deps)))
 
   (let* (;; (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "dep: ~A\n" dep)))
-         (pkg-path (car (assoc-val :pkg-path paths)))
+         (pkg-path (assoc-val :pkg-path paths))
          (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "pkg-path: ~A~%" pkg-path)))
-         (ws-path (car (assoc-val :ws-path paths)))
+         (ws-path (assoc-val :ws-path paths))
          ;; dep always relative: prepend pkg dir, may give path with .. segs
          ;; etc. then normalize
 
@@ -195,7 +202,9 @@
          ;; dep should always be relative to cwd, never absolute, so
          ;; we can prepend cwd and normalize
 
-         (dep-path (format #f "~A/~A" pkg-path dep))
+         (dep-path (if (string=? "./" pkg-path)
+                       (format #f "~A" dep)
+                       (format #f "~A/~A" pkg-path dep)))
          (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "dep-path: ~A~%" dep-path)))
 
          (canonical-path (->canonical-path dep-path))
@@ -209,7 +218,7 @@
                     (dirname canonical-path))))
 
          (local? (equal? (dirname canonical-path)
-                         (car (assoc-val :pkg-path paths))))
+                         (assoc-val :pkg-path paths)))
          (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "local? ~A~%" local?)))
 
          (path (if local?
@@ -224,11 +233,14 @@
 
          (parent (let ((parent (dirname expanded-path)))
                    ;; (format #t "PARENT a: ~A (t ~A)~%" parent (type-of parent))
-                   (if (string=? "::wsroot" parent)
-                       ::wsroot  ;;"."
+                   ;; (if (string=? "::wsroot" parent)
+                   ;;     ::wsroot  ;;"."
+                   ;;     (if (string=? "./" parent)
+                   ;;         ::wsroot  ;;"."
+                   ;;         parent))
                        (if (string=? "./" parent)
-                           ::wsroot  ;;"."
-                           parent))))
+                           "./" parent)
+                   ))
          (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*)
                 (format #t "~A: ~A (t: ~A)~%" (white "Parent") parent (type-of parent))))
 
@@ -351,7 +363,7 @@
          (tagged (cdar tagged))
          )
     (if (or *mibl-debug-action-deps* *mibl-debug-s7*)
-        (beging
+        (begin
          (format #t "~A: ~A (kw? ~A)~%" (yellow "littag") tag (keyword? tag))
          (format #t "~A: ~A\n" (yellow "tagged lit") tagged)))
 
@@ -359,7 +371,7 @@
     (if (list? (cadr deplist))
         (if (eq? 'glob_files (car (cadr deplist)))
             (update-filegroups-table!
-             ws (car (assoc :pkg-path paths))
+             ws (assoc :pkg-path paths)
              (dirname canonical-path) tag pattern)))
 
     (if (symbol? tagged)
@@ -394,8 +406,8 @@
 ;;   (format #t "~A: ~A\n" (blue "handle-glob-files-dep") globber)
 ;;   (format #t "  paths: ~A\n" paths)
 ;;   ;; (car globber) == glob_files
-;;   (let* ((pkg-path (car (assoc-val :pkg-path paths)))
-;;          (ws-path (car (assoc-val :ws-path paths)))
+;;   (let* ((pkg-path (assoc-val :pkg-path paths))
+;;          (ws-path (assoc-val :ws-path paths))
 ;;          ;; (pattern (cadr globber))
 ;;          (pattern (format #f "~A" (cadr globber)))
 ;;          ;; working dir is always ws root, so we prepend the pkg-path
@@ -452,8 +464,8 @@
         ;; _pattern form: (glob_files ../../runtime/*.js)
         (format #t "  paths: ~A\n" paths)))
   ;; (car _pattern) == glob_files
-  (let* ((pkg-path (car (assoc-val :pkg-path paths)))
-         (ws-root (car (assoc-val :ws-path paths)))
+  (let* ((pkg-path (assoc-val :pkg-path paths))
+         (ws-root (assoc-val :ws-path paths))
          ;; (pattern (cadr _pattern))
          (pattern (normalize-glob-pattern _pattern))
          ;; (pattern (format #f "~A" (cadr _pattern)))
@@ -524,7 +536,7 @@
          ;; working dir is always ws root, so we prepend the pkg-path
          ;; (pattern-str (string-append pkg-path "/" pattern))
 
-         (pkg-path (car (assoc-val :pkg-path paths)))
+         (pkg-path (assoc-val :pkg-path paths))
          (dep-path (format #f "~A/~A" pkg-path pattern))
          (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "dep-path: ~A~%" dep-path)))
 
@@ -596,7 +608,7 @@
   ;; to avoid name clash, convert user keywords to double-colon, e.g.
   ;; :foo => ::foo
   (let* ((pattern (cadr _pattern))
-         (pkg-path (car (assoc-val :pkg-path paths)))
+         (pkg-path (assoc-val :pkg-path paths))
          (dep-path (format #f "~A/~A" pkg-path pattern))
          (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "~A: ~A~%" (uwhite "dep-path") dep-path)))
 
@@ -647,7 +659,7 @@
 (define (handle-file-dep ws paths file-fld)
   (if (or *mibl-debug-action-deps* *mibl-debug-s7*)
       (format #t "~A: ~A\n" (ublue "handle-file-dep") file-fld))
-  (let* ((pkg-path (car (assoc-val :pkg-path paths)))
+  (let* ((pkg-path (assoc-val :pkg-path paths))
          (file-path (cadr file-fld))
          (full-path (format #f "~A/~A" pkg-path file-path))
          (c-path (->canonical-path full-path)))
@@ -676,7 +688,7 @@
   ;; (format #t "handle-source-tree-dep: ~A\n" deplist)
   (error 'unsupported
          (string-append "Unimplemented: 'source_tree' fld in pkg '"
-                        (car (assoc-val :pkg-path paths))
+                        (assoc-val :pkg-path paths)
                         "'.  A 'source_tree' dependency in a rule dep usually means the rule should be replaced by a cc_library rule or something from rules_foreign_cc. I can't automate that, sorry.")))
 
 (define (handle-universe-dep deplist)

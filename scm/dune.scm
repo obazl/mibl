@@ -30,6 +30,8 @@
 (load "dune/dune_stanzas.scm")
 ;; (load "dune/lookup_tables.scm")
 
+(load "dune/file_exports.scm")
+
 (load "dune/cc.scm")
 (load "dune/executables.scm")
 ;; (load "dune/expanders.scm")

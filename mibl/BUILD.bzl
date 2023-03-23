@@ -1,5 +1,5 @@
 ##########
-def script(name = "mibl", main = None, args = None, **kwargs):
+def mibl(name = "mibl", main = None, args = None, **kwargs):
     if main:
         _args = ["-m", main]
     else:
@@ -8,20 +8,20 @@ def script(name = "mibl", main = None, args = None, **kwargs):
     if args:
         _args.extend(args)
 
-    native.genrule(
-        name = "mkhdrs",
-        srcs = ["//mibl:mibl.c"],
-        outs = ["mibl.h"],
-        cmd = "\n".join([
-            "SRC1=$(location //mibl:mibl.c)",
-            "SRCDIR1=`dirname $$SRC1`",
-            "$(location //vendored/makeheaders) \\",
-            "    $(location //mibl:mibl.c);",
-            "cp $${SRCDIR1}/*.h $(@D)",
-        ]),
-        tools = ["//vendored/makeheaders"],
-        visibility = ["//visibility:public"]
-    )
+    # native.genrule(
+    #     name = "mkhdrs",
+    #     srcs = ["//mibl:mibl.c"],
+    #     outs = ["mibl.h"],
+    #     cmd = "\n".join([
+    #         "SRC1=$(location //mibl:mibl.c)",
+    #         "SRCDIR1=`dirname $$SRC1`",
+    #         "$(location //vendored/makeheaders) \\",
+    #         "    $(location //mibl:mibl.c);",
+    #         "cp $${SRCDIR1}/*.h $(@D)",
+    #     ]),
+    #     tools = ["//vendored/makeheaders"],
+    #     visibility = ["//visibility:public"]
+    # )
 
     native.cc_binary(
         name  = name,
@@ -32,7 +32,7 @@ def script(name = "mibl", main = None, args = None, **kwargs):
             "//scm/meta:srcs",
             "//scm/opam:srcs",
         ],
-        srcs  = ["//mibl:mibl.c", ":mibl.h"],
+        srcs  = ["//mibl:mibl.c", "//mibl:mibl.h"],
         linkstatic = True,
         defines = select({
             "//bzl/host:debug": ["DEBUG_TRACE"],
@@ -53,8 +53,8 @@ def script(name = "mibl", main = None, args = None, **kwargs):
             "-Wpedantic",
             "-Wno-unused-function",
 
-            # "-I$(GENDIR)/debug",               # mibl.h
-
+            # any target that
+            "-I$(GENDIR)/debug",               # mibl.h
             "-I$(GENDIR)/mibl",               # mibl.h
             "-I$(GENDIR)/external/mibl/mibl",
 

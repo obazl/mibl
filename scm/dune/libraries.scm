@@ -257,7 +257,7 @@
   ;; else => :library
 
   ;; add lib names to exports table
-  (let* ((pkg-path (car (assoc-val :pkg-path pkg)))
+  (let* ((pkg-path (assoc-val :pkg-path pkg))
         (exports (car (assoc-val :exports (assoc-val ws *mibl-project*))))
         (privname (if-let ((privname (assoc-val 'name (cdr stanza))))
                           (car privname) #f))

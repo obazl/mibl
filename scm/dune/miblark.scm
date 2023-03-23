@@ -30,7 +30,7 @@
                  ;; (error 'X "STOP miblark tool")
 
                  )
-            ;; (-expand-literal-tool!? (car (assoc-val :pkg-path pkg)) tool deps)
+            ;; (-expand-literal-tool!? (assoc-val :pkg-path pkg) tool deps)
             (set-cdr! stanza
                       (acons :name
                              (format #f "~A_~A" alias -sh-test-id)

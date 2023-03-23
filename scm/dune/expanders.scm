@@ -57,7 +57,7 @@
 
           (else
            (let ((tmp (-expand-literal-tool!? ws
-                       (car (assoc-val :pkg-path pkg))
+                       (assoc-val :pkg-path pkg)
                        tool deps)))
              (if (or *mibl-debug-expanders* *mibl-debug-s7*)
                  (begin
@@ -133,7 +133,7 @@
                   ;; TODO: update :deps for stanza
                   (if (or *mibl-debug-expanders* *mibl-debug-s7*)
                       (format #t "~A: ~A~%" (bggreen "pctvar resolved") tgt))
-                  (let ((newdep (list (cons nm (list `(:pkg . ,(car (assoc-val :pkg-path pkg))) `(:tgt . ,tgt))))))
+                  (let ((newdep (list (cons nm (list `(:pkg . ,(assoc-val :pkg-path pkg)) `(:tgt . ,tgt))))))
                     (set-cdr! deps (append (cdr deps) newdep))
                     #t)
                   )
@@ -149,7 +149,7 @@
   ;; if not found, search pkg files? no need?
   ;; add it to pkg files as :dynamic?
   ;; add it to :deps
-  (let* ((pkg-path (car (assoc-val :pkg-path pkg)))
+  (let* ((pkg-path (assoc-val :pkg-path pkg))
          (search-key (symbol->keyword sym))
          (_ (if (or *mibl-debug-expanders* *mibl-debug-s7*) (format #t "~A: ~A~%" (yellow "searching deps") deps)))
          (d (-find-in-deps!? search-key deps pkg)))
@@ -896,7 +896,7 @@
           (begin
             (format #t "VAR: ~A\n" arg)
             (format #t "deps: ~A\n" deps)))
-      (let ((pkg-path (car (assoc-val :pkg-path pkg))))
+      (let ((pkg-path (assoc-val :pkg-path pkg)))
         (-expand-pct-arg!? ws arg :arg pkg deps)))
 
      (else
@@ -995,7 +995,7 @@
                                    ;; %{target}, %{targets} directly translate to :outputs
                                    (cons :outputs (expand-cmd-args* ws (cdr args) pkg targets deps))
                                    ;; else expand the pct-var
-                                   (let* ((pkg-path (car (assoc-val :pkg-path pkg)))
+                                   (let* ((pkg-path (assoc-val :pkg-path pkg))
                                           (arg (-expand-pct-arg!? ws arg :arg pkg deps)))
                                      (if (or *mibl-debug-expanders* *mibl-debug-s7*)
                                          (format #t "~A: ~A~%" (red "expanded pct-var") arg))
@@ -1036,7 +1036,7 @@
                       ;;        (cond
                       ;;         ((string-prefix? "%{" arg-str)
                       ;;          ;; %{foo} or %{foo}.suffix
-                      ;;          (let* ((pkg-path (car (assoc-val :pkg-path pkg)))
+                      ;;          (let* ((pkg-path (assoc-val :pkg-path pkg))
                       ;;                 (arg (-expand-pct-arg!? ws arg :arg pkg deps)))
                       ;;            (if (or *mibl-debug-expanders* *mibl-debug-s7*)
                       ;;                (format #t "~A: ~A~%" (uwhite "expanded arg") arg))
@@ -1092,8 +1092,8 @@
         (format #t "~A: ~A\n" (blue "arglist") arglist)
         (format #t "~A: ~A\n" (blue "pkg") pkg)
         (format #t "~A: ~A\n" (blue "expanded-deps") expanded-deps)))
-  ;; (let ((pkg-path (car (assoc-val :pkg-path pkg)))
-  ;;       (ws-root (car (assoc-val :ws-path pkg))))
+  ;; (let ((pkg-path (assoc-val :pkg-path pkg))
+  ;;       (ws-root (assoc-val :ws-path pkg)))
   (if (null? arglist)
       expanded-deps
       (if (pair? (car arglist))

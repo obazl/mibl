@@ -23,6 +23,60 @@ s7_scheme *s7;
 
 UT_string *setter;
 
+LOCAL void _emit_mibl_file(char *stem)
+{
+#if defined(DEBUG_TRACE)
+    if (mibl_trace) log_trace("_emit_mibl_file: %s", stem);
+#endif
+
+    UT_string *sexp;
+    utstring_new(sexp);
+    utstring_printf(sexp,
+        "(let* ((@ws (assoc-val :@ *mibl-project*)) "
+        "       (ws-path (assoc-val :path (cdr @ws))) "
+        "       (mibl-file (format #f \"~A/.mibl/%s.mibl\" ws-path)) "
+        "       (s7-file (format #f \"~A/.mibl/%s.s7\" ws-path))) "
+        "    (mkdir (format #f \"~A/.mibl\" ws-path) "
+        "           (logior S_IRWXU S_IRGRP S_IXGRP S_IROTH))"
+        "    (let ((outp "
+        "            (catch #t "
+        "               (lambda () "
+        "                 (open-output-file mibl-file)) "
+        "               (lambda args "
+        "                 (error 'OPEN_ERROR_EMIT "
+        "                   (format #f \"OPEN ERROR: ~A\n\" mibl-file)))))) "
+        "        (if (not *mibl-quiet*) (format #t \"~A: Emitting ~A\n\" (green \"INFO\") mibl-file)) "
+        "        (mibl-pretty-print *mibl-project* outp) "
+        "        (close-output-port outp)) "
+        "    (let ((outp "
+        "            (catch #t "
+        "               (lambda () "
+        "                 (open-output-file s7-file)) "
+        "               (lambda args "
+        "                 (error 'OPEN_ERROR_EMIT "
+        "                   (format #f \"OPEN ERROR: ~A\n\" s7-file)))))) "
+        "        (if (not *mibl-quiet*) (format #t \"~A: Emitting ~A\n\" (green \"INFO\") s7-file)) "
+        "        (write (object->string *mibl-project* :readable) outp) "
+        "        (close-output-port outp))) "
+                    , stem, stem);
+
+    /* log_debug("SEXP: %s", utstring_body(sexp)); */
+
+    s7_pointer ws_path = s7_eval_c_string(s7, utstring_body(sexp));
+    (void)ws_path;
+
+    s7_flush_output_port(s7, s7_current_output_port(s7));
+    s7_flush_output_port(s7, s7_current_error_port(s7));
+
+    /* char *tostr; */
+    /* tostr = TO_STR(ws_path); */
+    /* log_debug("s: %s", tostr); */
+    /* free(tostr); */
+
+    return;
+
+}
+
 /* FIXME: if var does not exist, create it.
    That way users can use globals to pass args to -main.
  */
@@ -142,16 +196,23 @@ EXPORT void mibl_s7_run(char *main_script, char *ws)
         log_debug("mibl_run cwd: %s", getcwd(NULL, 0));
     }
 
-    if (s7_name_to_value(s7, "*mibl-debug-report*") == s7_t(s7)) {
-        if (s7_name_to_value(s7, "*mibl-dev-mode*") == s7_t(s7)) {
+    if (s7_name_to_value(s7, "*mibl-dev-mode*") == s7_t(s7)) {
+        if (s7_name_to_value(s7, "*mibl-debug-report*") == s7_t(s7)) {
             log_error("debug:report is incompatible with --dev");
             return;
         }
+        if (s7_name_to_value(s7, "*mibl-emit-parsetree*") == s7_t(s7)) {
+            log_error("--emit-parsetree is incompatible with --dev");
+            return;
+        }
+    }
+
+    if (s7_name_to_value(s7, "*mibl-debug-report*") == s7_t(s7)) {
         mibl_config.emit_parsetree = true;
         mibl_s7_set_flag("*mibl-emit-mibl*", true);
         mibl_s7_set_flag("*mibl-emit-s7*", true);
         mibl_s7_set_flag("*mibl-emit-result*", true);
-        log_debug("DEBUG REPORT");
+        /* log_debug("DEBUG REPORT"); */
     }
 
     if (s7_name_to_value(s7, "*mibl-show-config*") == s7_t(s7)) {
@@ -161,14 +222,15 @@ EXPORT void mibl_s7_run(char *main_script, char *ws)
         return;
     }
 
-    /* 1. if dev-mode, load PARSETREE.s7, else run traversal, producing parsetree */
+    /* 1. if dev-mode, load PARSETREE.s7, else run mibl-load-project, producing parsetree */
     /* 2. IF user provided -main, run it */
 
     UT_string *sexp;
     utstring_new(sexp);
     if (ws) {
         if (s7_name_to_value(s7, "*mibl-dev-mode*") == s7_t(s7)) {
-            /* char *root = getcwd(NULL, 0); */
+            log_debug(GRN "INFO: " CRESET
+                      "dev mode, loading .mibl/PARSETREE.s7");
             utstring_printf(sexp, "%s",
                     "(define *mibl-project* "
                     "  (call-with-input-file \".mibl/PARSETREE.s7\" "
@@ -183,14 +245,17 @@ EXPORT void mibl_s7_run(char *main_script, char *ws)
     } else {
         if (s7_name_to_value(s7, "*mibl-dev-mode*") == s7_t(s7)) {
             char *root = getcwd(NULL, 0);
+            log_debug(GRN "INFO: " CRESET
+                      "dev mode, loading %s/.mibl/PARSETREE.s7",
+                      root);
             utstring_printf(sexp,
                     "(define *mibl-project* "
-                    "  (call-with-input-file \"%s/.mibl/PARSETREE.s7\" "
+                    "  (call-with-input-file \".mibl/PARSETREE.s7\" "
                     "    (lambda (p) "
                     "      (let* ((x (read p)) "
                     "             (y (eval (read (open-input-string x))))) "
-                    "          y))))",
-                    root);
+                    "          y))))"
+                    );
         } else {
             utstring_printf(sexp, "(mibl-load-project)");
         }
@@ -231,6 +296,33 @@ EXPORT void mibl_s7_run(char *main_script, char *ws)
 
     utstring_free(sexp);
 
+    /* now we have the parsetree in *mibl-project* */
+
+    if (s7_name_to_value(s7, "*mibl-show-parsetree*") == s7_t(s7)) {
+        log_debug("SHOW PARSETREE");
+        UT_string *sexp;
+        utstring_new(sexp);
+        utstring_printf(sexp, "(mibl-pretty-print *mibl-project*)");
+        s7_pointer x = s7_eval_c_string(s7, utstring_body(sexp));
+        (void)x;
+        s7_newline(s7,  s7_current_output_port(s7));
+        s7_flush_output_port(s7, s7_current_output_port(s7));
+        /* char *s = TO_STR(ptree); */
+        /* log_debug("%s", s); */
+        /* free(s); */
+    }
+
+    if (mibl_config.emit_parsetree) {
+        if (s7_name_to_value(s7, "*mibl-dev-mode*") == s7_f(s7)) {
+            /* log_debug("EMITTING PARSETREE"); */
+            _emit_mibl_file("PARSETREE");
+        } else {
+            log_error("--emit-parsetree incompatible with --dev");
+        }
+    }
+
+    /* **************************************************************** */
+    /* now run the s7 script on the parsetree */
     if (main_script) {
         if (!s7_load(s7, main_script)) {
             log_error(RED "Could not load main_script '%s'; exiting\n",
@@ -279,8 +371,11 @@ EXPORT void mibl_s7_run(char *main_script, char *ws)
 
     /* s7_int main_gc_loc = s7_gc_protect(s7, _main); */
 
-    if (verbose && verbosity > 2)
+    if (verbose && verbosity > 2) {
         log_info("calling s7: %s", TO_STR(_main));
+    }
+    if (verbose)
+        log_info("workspace root: %s", ws);
 
     /* **************************************************************** */
     /* this does the actual conversion: */
@@ -296,5 +391,12 @@ EXPORT void mibl_s7_run(char *main_script, char *ws)
         log_error("[%s\n]", errmsg);
         s7_quit(s7);
         exit(EXIT_FAILURE);
+    }
+
+    /* now *mibl-project* contains the transformed parsetree */
+
+    if (s7_name_to_value(s7, "*mibl-debug-report*") == s7_t(s7)) {
+            /* log_debug("EMITTING PROJECT"); */
+            _emit_mibl_file("PROJECT");
     }
 }

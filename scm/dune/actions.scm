@@ -500,7 +500,7 @@
                            :FIXME-TAG ;; tag
                            :FIXME-MODES ;; modes
                            target ;; name
-                           (car (assoc-val :pkg-path pkg))
+                           (assoc-val :pkg-path pkg)
                            target)
 
     `(;;  (:output ,@targets)

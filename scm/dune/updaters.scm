@@ -152,7 +152,7 @@
                                         (lambda (old) remainder))))
                 ))))
     ;; (format #t "~A: ~A~%" (bgmagenta "updated structs") (assoc :structures pkg))
-    ;; (if (equal? "compiler/lib" (car (assoc-val :pkg-path pkg)))
+    ;; (if (equal? "compiler/lib" (assoc-val :pkg-path pkg))
     ;;     (error 'STOP "nmani"))
 
     ;; if :signatures item is in :modules, remove it from :signatures
@@ -252,7 +252,7 @@
                   ;; (format #t "~A: ~A~%" (bgmagenta ":structures after") (assoc :structures pkg))
                   ;; (set! pkg (-normalize-pkg-files pkg))
                   ;; (format #t "~A: ~A~%" (bgred "normed pkg") pkg)
-                  ;; (if (equal? "compiler/lib" (car (assoc-val :pkg-path (cdr kv))))
+                  ;; (if (equal? "compiler/lib" (assoc-val :pkg-path (cdr kv)))
                   ;;     (error 'STOP "nmani"))
 
                   ;; for each aggregate stanza, resolve the (modules) fld
@@ -420,7 +420,7 @@
 
 (define (add-filegroups-to-pkgs ws)
   (if (or *mibl-debug-s7* *mibl-debug-updaters*)
-      (format #t "~A: ~A~%" (blue "-add-filegroups-to-pkgs") ws))
+      (format #t "~A: ~A~%" (ublue "add-filegroups-to-pkgs") ws))
   (let* ((@ws (assoc-val ws *mibl-project*))
          (ws-path (assoc-val :path @ws))
          (_ (if (or *mibl-debug-s7* *mibl-debug-updaters*) (format #t "~A: ~A~%" (blue "ws-path") ws-path)))
@@ -446,9 +446,9 @@
                                                 (cons :filegroups (cdr kv)))))
                       (hash-table-set! pkgs fg-key
                                        (list
-                                        `(:ws-path ,ws-path)
-                                        `(:pkg-path ,fg-path)
-                                        `(:realpath
+                                        `(:ws-path . ,ws-path)
+                                        `(:pkg-path . ,fg-path)
+                                        `(:realpath .
                                           ,(realpath (string-join (map (lambda (x) (format #f "~A" x))
                                                                        (list  ws-path fg-path)) "/")
                                                      '()))
@@ -484,7 +484,7 @@
         (format #t "~A: ~A~%" (uwhite "tllist before") tllist))
     (set-cdr! tllist
               (cons (cons key
-                          (list (cons :pkg (car (assoc-val :pkg-path pkg)))
+                          (list (cons :pkg (assoc-val :pkg-path pkg))
                                 (cons :tgt fname)))
                     (cdr tllist)))
     (if (or *mibl-debug-s7* *mibl-debug-updaters*)

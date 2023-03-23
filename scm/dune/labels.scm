@@ -18,7 +18,7 @@
 ;;   (format #t "~A: ~A~%" (blue "-resolve-module-deps") m)
 ;;   (format #t "~A: ~A~%" (white "stanza") stanza)
 ;;   (let* ((m-fname (-module->filename m pkg))
-;;          (pkg-path (car (assoc-val :pkg-path pkg)))
+;;          (pkg-path (assoc-val :pkg-path pkg))
 ;;          (cmd (format #f "ocamldep -modules ~A/~A" pkg-path m-fname))
 ;;          (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (green "cmd") cmd)))
 ;;          (ocamldeps
@@ -32,55 +32,57 @@
 (define (-fixup-std-dep-form ws pkg dep exports)
   (if *mibl-debug-s7*
       (format #t "~A: ~A~%" (ublue "-fixup-std-dep-form") dep))
-  (case (cdr dep)
-    ((::unresolved ::opam-pkg)
-     ;; (if (eq? ::import (last dep))
-     (let ((exp (hash-table-ref exports
-                                (car dep))))
-       (if *mibl-debug-s7*
-           (format #t "~A: ~A~%" (ured "XP") exp))
-       (if exp
-           (let* ((pkg (assoc-val :pkg exp))
-                  (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (ured "pkg") pkg)))
-                  (tgt (assoc-val :tgt exp))
-                  (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (ured "tgt") tgt))))
-             (cons (car dep) exp))
-           ;; else try std ocaml pkgs
-           (begin
-             (if *mibl-debug-s7*
-                 (begin
-                   (format #t "~A: ~A~%" (bgred "ocaml-std-pkgs") ocaml-std-pkgs)
-                   (format #t "~A: ~A~%" (bgred "dep key") (car dep))))
-             (if-let ((x (assoc-val (car dep) ocaml-std-pkgs)))
-                     ;; (format #f "@ocaml//lib/~A" (car dep))
-                     (cons (car dep)
-                           `((:ws . "@ocaml")
-                             (:pkg .
-                                   ,(format #f "lib/~A"
-                                            (keyword->symbol (car dep))))
-                             (:tgt . ,(keyword->symbol (car dep)))))
-                     dep)))))
-    ;; ((::fixme)
-    ;;  ;; side-effect: update filegroups table
-    ;;  ;; FIXME: instead, add :fg dep?
-    ;;  (format #t "~A: ~A~%" (yellow "export keys")
-    ;;          (hash-table-keys exports))
-    ;;  (format #t "~A: ~A~%" (yellow "exports")
-    ;;          exports)
-    ;;  (let* ((exp (hash-table-ref exports
-    ;;                              (car dep)))
-    ;;         (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (yellow "exp") exp)))
-    ;;         (-pkg (assoc-val :pkg exp))
-    ;;         (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (yellow "pkg") -pkg)))
-    ;;         (pkg-path (assoc-val :pkg-path pkg))
-    ;;         )
-    ;;    (update-filegroups-table! ;; ws pkg-path tgt pattern
-    ;;     ws pkg-path ;; (car (assoc-val :name ws))
-    ;;     -pkg ::all "*")
-    ;;    (cons (car dep)
-    ;;          (list (car exp)
-    ;;                (cons :tgt "__all__")))))
-    (else dep)))
+  (if (equal? (car dep) ::tools)
+      dep ;; validate :pkg fld???
+      (case (cdr dep)
+        ((::unresolved ::opam-pkg)
+         ;; (if (eq? ::import (last dep))
+         (let ((exp (hash-table-ref exports
+                                    (car dep))))
+           (if *mibl-debug-s7*
+               (format #t "~A: ~A~%" (ured "XP") exp))
+           (if exp
+               (let* ((pkg (assoc-val :pkg exp))
+                      (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (ured "pkg") pkg)))
+                      (tgt (assoc-val :tgt exp))
+                      (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (ured "tgt") tgt))))
+                 (cons (car dep) exp))
+               ;; else try std ocaml pkgs
+               (begin
+                 (if *mibl-debug-s7*
+                     (begin
+                       (format #t "~A: ~A~%" (bgred "ocaml-std-pkgs") ocaml-std-pkgs)
+                       (format #t "~A: ~A~%" (bgred "dep key") (car dep))))
+                 (if-let ((x (assoc-val (car dep) ocaml-std-pkgs)))
+                         ;; (format #f "@ocaml//lib/~A" (car dep))
+                         (cons (car dep)
+                               `((:ws . "@ocaml")
+                                 (:pkg .
+                                       ,(format #f "lib/~A"
+                                                (keyword->symbol (car dep))))
+                                 (:tgt . ,(keyword->symbol (car dep)))))
+                         dep)))))
+        ;; ((::fixme)
+        ;;  ;; side-effect: update filegroups table
+        ;;  ;; FIXME: instead, add :fg dep?
+        ;;  (format #t "~A: ~A~%" (yellow "export keys")
+        ;;          (hash-table-keys exports))
+        ;;  (format #t "~A: ~A~%" (yellow "exports")
+        ;;          exports)
+        ;;  (let* ((exp (hash-table-ref exports
+        ;;                              (car dep)))
+        ;;         (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (yellow "exp") exp)))
+        ;;         (-pkg (assoc-val :pkg exp))
+        ;;         (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (yellow "pkg") -pkg)))
+        ;;         (pkg-path (assoc-val :pkg-path pkg))
+        ;;         )
+        ;;    (update-filegroups-table! ;; ws pkg-path tgt pattern
+        ;;     ws pkg-path ;; (car (assoc-val :name ws))
+        ;;     -pkg ::all "*")
+        ;;    (cons (car dep)
+        ;;          (list (car exp)
+        ;;                (cons :tgt "__all__")))))
+        (else dep))))
 
 (define ocaml-std-pkgs
   '((bigarray . bigarray)
@@ -209,7 +211,7 @@
     ((:install) (values))
     (else (let* ((ws (assoc-val ws-id *mibl-project*))
                  (exports (car (assoc-val :exports ws)))
-                 (pkg-path (car (assoc-val :pkg-path pkg)))
+                 (pkg-path (assoc-val :pkg-path pkg))
                  (stanza-alist (cdr stanza)))
             ;; (mibl-debug-print-exports-table ws-id)
 
@@ -402,15 +404,17 @@
                                                            `(::tools
                                                              (,kw
                                                               ,(cons :pkg (if (string=? "./" path)
-                                                                              pkg-path
-                                                                              (if (string=? "::wsroot" path)
-                                                                                  pkg-path
-                                                                                  path)))
+                                                                              pkg-path path
+                                                                              ;; (if (string=? "::wsroot" path)
+                                                                              ;;     pkg-path
+                                                                              ;;     path)
+                                                                              ))
                                                               ;; ,(cons :pkg (if (string=? "./" path)
                                                               ;;                 pkg-path path))
                                                               ,(cons :tgt (basename t))))
                                                            )))))
                                             ((eq? ::unresolved (cdadr dep))
+                                             ;;FIXME
                                              )
                                            ;; else treat it just like a std dep
                                            (else (-fixup-std-dep-form ws-id pkg dep exports))))
@@ -596,7 +600,7 @@
 ;; * manifest deps derived from static file inventory
 (define resolve-labels!
   (let ((+documentation+ "Map dune target references to bazel labels using exports table.")
-        (+signature+ '(resolve-labels! workspace)))
+        (+signature+ '(resolve-labels! workspace-id)))
     (lambda (ws-id)
       (let ((ws (assoc-val ws-id *mibl-project*)))
         (if *mibl-debug-s7*
@@ -608,12 +612,12 @@
                (exports (car (assoc-val :exports ws))))
           ;; (format #t "resolving labels for pkgs: ~A\n" (hash-table-keys pkgs))
           ;; (format #t "exports: ~A\n" exports)
-          (for-each (lambda (kv)
+          (for-each (lambda (pkg-kv)
                       (if *mibl-debug-s7*
-                          (format #t "~A: ~A~%" (ublue "resolving pkg") (car kv)))
-                      ;; (format #t "pkg: ~A~%" (cdr kv))
-                      (let ((pkg (cdr kv)))
-                        (if-let ((stanzas (assoc-val :mibl (cdr kv))))
+                          (format #t "~A: ~A~%" (ublue "resolving pkg") (car pkg-kv)))
+                      ;; (format #t "pkg: ~A~%" (cdr pkg-kv))
+                      (let ((pkg (cdr pkg-kv)))
+                        (if-let ((stanzas (assoc-val :mibl (cdr pkg-kv))))
                                 (for-each (lambda (stanza)
                                             (-fixup-stanza! ws-id pkg stanza)
                                             (if *mibl-debug-s7*

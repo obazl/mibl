@@ -99,7 +99,7 @@
                                 (format #f "~{~A~^ ~}" flags) ""))
              (cmd-options (if-let ((opts (assoc-val :options spec)))
                                   (format #f "~{~A~^ ~}" opts) ""))
-             (pkg-path (car (assoc-val :pkg-path pkg)))
+             (pkg-path (assoc-val :pkg-path pkg))
              (cmd (format #f
                           (string-join
                            '("menhir"

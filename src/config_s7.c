@@ -175,6 +175,7 @@ static char *mibl_s7_flags[] = {
     "*mibl-debug-emit*",
     "*mibl-debug-executables*",
     "*mibl-debug-expanders*",
+    "*mibl-debug-file-exports*",
     "*mibl-debug-genrules*",
     "*mibl-debug-mibl*",
     "*mibl-debug-modules*",
@@ -194,7 +195,7 @@ static char *mibl_s7_flags[] = {
     "*mibl-emit-mibl*",
     /* "*mibl-emit-parsetree*", */
     "*mibl-emit-pkgs*",
-    "*mibl-emit-result*",
+    "*mibl-emit-project*",
     "*mibl-emit-s7*",
     "*mibl-emit-starlark*",
     "*mibl-emit-wss*",
@@ -315,7 +316,7 @@ EXPORT void initialize_mibl_data_model(s7_scheme *s7)
         log_info(GRN "*mibl-project*:" CRESET " %s",
                  NM_TO_STR("*mibl-project*"));
         fflush(stdout);
-        printf("XXXX %s\n", NM_TO_STR("*mibl-project*"));
+        /* printf("XXXX %s\n", NM_TO_STR("*mibl-project*")); */
         /* fflush(stdout); */
     }
     /* printf("2YYYYYYYYYYYYYYYY\n"); */
@@ -1254,9 +1255,11 @@ EXPORT void show_s7_config(void)
         "                             (sym<? (car a) (car b))))))) "
         ;
     s7_eval_c_string(s7, exec_sexp);
+    s7_flush_output_port(s7, s7_current_output_port(s7));
 
     /* s7_pointer lp = s7_load_path(s7); */
     log_info("*load-path*:"); // %s", TO_STR(lp));
+    fflush(NULL);
     /* log_info("runfiles_root: %s", utstring_body(runfiles_root)); */
 
     exec_sexp =
@@ -1267,8 +1270,8 @@ EXPORT void show_s7_config(void)
 
     s7_eval_c_string(s7, exec_sexp);
 
-    log_info(GRN "End s7 configuration summary." CRESET);
     s7_flush_output_port(s7, s7_current_output_port(s7));
+    log_info(GRN "End s7 configuration summary." CRESET);
     fflush(NULL);
 }
 
