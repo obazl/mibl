@@ -1,0 +1,4 @@
+(rule
+ (targets foo.txt)
+ (deps (:< gen/gen.sh) (:args args.dat) (:data ../data/foo.dat))
+ (action (run %{<} %{args} %{data} %{targets})))
