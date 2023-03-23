@@ -87,6 +87,74 @@
         result
         (list result))))
 
+(define (-handle-rule-targets ws rule-alist deps pkg)
+  (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*)
+      (format #t "~A: ~A~%" (ublue "-handle-rule-targets") rule-alist))
+  ;; 'target' and 'targets' fields list files generated
+  ;; by the action. Add them to the pkg :modules and :files
+  ;; alists.
+  ;; We always use the plural 'targets'
+  (let* ((targets (if-let ((tgt (assoc-val 'target rule-alist)))
+                          tgt
+                          (if-let ((tgts
+                                    (assoc-val 'targets rule-alist)))
+                                  tgts
+                                  '())))
+         (_ (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*)
+                (format #t "~A: ~A~%" (green "targets") targets)))
+
+         ;; 'target' may be omitted with with-stdout-to
+         (_ (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*)
+                (format #t "~A: ~A~%" (green "rule-alist") rule-alist)))
+
+         (stdout-tgt (if-let ((stdout (assoc-in '(action with-stdout-to) rule-alist)))
+                             (let ((stdout (cadr stdout)))
+                               (if (string-prefix? "%{" (format #f "~A" stdout))
+                                   #f
+                                   stdout))
+                             #f))
+         (_ (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*) (format #t "~A: ~A~%" (green "stdout-tgt") stdout-tgt)))
+
+         ;; if with-stdout-to is listed in targets, remove dups
+         (targets (remove-duplicates
+                   (if (truthy? stdout-tgt)
+                       (cons stdout-tgt targets)
+                       targets)))
+
+         (_ (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*)
+                (format #t "~A: ~A~%" (green "targets") targets)))
+
+         ;; add targets to pkg fields
+         (pkg (if (null? targets)
+                  pkg
+                  (begin
+                    ;; (set! pkg
+                    (update-pkg-files! pkg targets)
+                    ;; )
+                    pkg)))
+         ;; (_ (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*) (format #t "~A: ~A\n" (yellow "updated pkg") pkg)))
+
+         ;; normalize
+         (targets (cons :outputs (expand-targets ws pkg targets deps)))
+         (_ (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*)
+                (format #t "~A: ~A\n" (red "expanded rule targets") targets)))
+         )
+    targets))
+
+;; dune rule stanza:
+;; (rule
+;;  (action <action>)
+;;  <optional-fields>)
+;; optional fields:
+;;  target <filename> or targets <filenames> - can be omitted if inferrable from action
+;;  deps
+;;  mode
+;;  (fallback) - deprecated, same as (mode fallback)
+;;  locks
+;;  alias or aliases "Building this alias means building the targets of this rule."
+;;  package <pkg>
+;;  enabled_if
+
 (define dune-rule->mibl
   (let ((+documentation+ "INTERNAL. Updates pkg arg, returns normalized stanza. stanza: raw dune stanza (input); nstanza: miblized (output)"))
     (lambda (ws pkg stanza)
@@ -110,55 +178,11 @@
              ;; Step 1: rule deps don't depend on targets, so do first
              (deps (expand-rule-deps ws pkg rule-alist))
              (_ (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*)
-                    (format #t "~A: ~A\n" (red "expanded rule deps") deps)))
+                    (format #t "~A: ~A\n" (green "expanded rule deps") deps)))
 
-             ;; Step 2: 'target' and 'targets' fields list files generated
-             ;; by the action. Add them to the pkg :modules and :files
-             ;; assocs.
-             (targets (if-let ((tgt (assoc-val 'target rule-alist)))
-                              tgt
-                              (if-let ((tgts
-                                        (assoc-val 'targets rule-alist)))
-                                      tgts
-                                      '())))
+             (targets (-handle-rule-targets ws rule-alist deps pkg))
              (_ (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*)
-                    (format #t "~A: ~A~%" (green "targets") targets)))
-
-             ;; 'target' may be omitted with with-stdout-to
-             (_ (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*)
-                    (format #t "~A: ~A~%" (green "rule-alist") rule-alist)))
-
-             (stdout-tgt (if-let ((stdout (assoc-in '(action with-stdout-to) rule-alist)))
-                                 (let ((stdout (cadr stdout)))
-                                   (if (string-prefix? "%{" (format #f "~A" stdout))
-                                       #f
-                                       stdout))
-                                 #f))
-             (_ (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*) (format #t "~A: ~A~%" (green "stdout-tgt") stdout-tgt)))
-
-             ;; if with-stdout-to is listed in targets, remove dups
-             (targets (remove-duplicates
-                       (if (truthy? stdout-tgt)
-                           (cons stdout-tgt targets)
-                           targets)))
-
-             (_ (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*)
-                    (format #t "~A: ~A~%" (green "targets") targets)))
-
-             ;; add targets to pkg fields
-             (pkg (if (null? targets)
-                      pkg
-                      (begin
-                        ;; (set! pkg
-                        (update-pkg-files! pkg targets)
-                              ;; )
-                        pkg)))
-             ;; (_ (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*) (format #t "~A: ~A\n" (yellow "updated pkg") pkg)))
-
-             ;; normalize
-             (targets (cons :outputs (expand-targets ws pkg targets deps)))
-             (_ (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*)
-                    (format #t "~A: ~A\n" (red "expanded rule targets") targets)))
+                    (format #t "~A: ~A\n" (green "expanded targets") targets)))
              )
 
         (if deps

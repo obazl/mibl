@@ -904,7 +904,10 @@
           (format #t "~A: ~A~%" (white "String literal") arg))
       ;; arg is string. check deps and targets, then pkg files
       (if-let ((tag (deps->tag-for-file deps arg)))
-              tag
+              (begin
+                (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                    (format #t "~A: ~A~%" (green "File tag") tag))
+                tag)
               (if-let ((tag (targets->tag-for-file targets arg)))
                       tag
                       ;; else search pkg files for file not listed in :deps
@@ -1008,7 +1011,7 @@
                              ;;   case 2a: file is input
                              ;;   case 2b: file is output
                              ;;   if its the last arg, probably output - but maybe not
-                             ;;   check cmd - for some (e.g. copy) we can infer role
+                             ;;   check cmd - for some (e.g. copy, cmp) we can infer role
                              ;;   eg: (copy lib:foo:bar.mli bar.mli)
                              ;;   rule: if we cannot resolve qua file, and it looks like a filename
                              ;;   (e.g. due to extension), treat it as output file.
@@ -1017,15 +1020,16 @@
                                     (format #t "~A: ~A~%" (green "arg is symbol") arg))
                                 ;; try to expand it as string (i.e. filename).
                                 ;; if that fails, mark it unresolved.
-                                (let ((x (expand-cmd-args* ws (list arg-str)
+                                (let ((x (expand-cmd-args* ws
+                                                           (list arg-str)
                                                            pkg targets deps)))
-                                  (format #t "~A: ~A~%" (bgred "XXXXXXXXXXXXXXXX") x)
-                                  (if (eq? ::unresolved (caar x))
+                                  ;; (format #t "~A: ~A~%" (bgred "XXXXXXXXXXXXXXXX") x)
+                                  (if (and (list? (car x)) (eq? ::unresolved (caar x)))
                                       (cons `(::unresolved ,arg)
                                             (expand-cmd-args* ws (cdr args)
                                                         pkg targets deps))
-                                      (expand-cmd-args* ws (cons x (cdr args))
-                                                        pkg targets deps)))
+                                       (cons (car x) (expand-cmd-args* ws (cdr args)
+                                                        pkg targets deps))))
                                 ))))
                       ;; old impl:
                       ;; (if (or (eq? arg '%{target}) (eq? arg '%{targets}))

@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Bazel aliases cannot pass args. We use this script to allow
+# different targets to run mibl without recompiling it for each.
+
 # set -x
 
 # echo "ARG 0 $0"
