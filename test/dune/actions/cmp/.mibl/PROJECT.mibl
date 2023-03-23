@@ -1,0 +1,14 @@
+((:@ (:name . "@")
+     (:path . /Users/gar/obazl/mibl/test/dune/actions/cmp) (:exports (hash-table))
+     (:opam
+         (hash-table)) (:shared-ppx (hash-table)) (:filegroups (hash-table))
+     (:pkgs
+         (hash-table
+           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/actions/cmp") (:pkg-path . "./")
+                   (:realpath . "/Users/gar/obazl/mibl/test/dune/actions/cmp")
+                   (:structures (:static (A a.ml) (B b.ml)))
+                   (dune (rule (deps a.ml b.ml) (action (cmp x.ml b.ml))))
+                   (:mibl (:rule (:deps (:a.ml (:pkg . "./") (:tgt . "a.ml"))
+                                        (:b.ml (:pkg . "./") (:tgt . "b.ml")))
+                                 (:actions
+                                  (:cmd (:tool ::cmp) (:args (::unresolved x.ml) :b.ml))))))))))
