@@ -17,6 +17,61 @@ BOOTSTRAP_INCLUDES = [
     "-I$(GENDIR)/src",
 ]
 
+################
+exports_files(["Mibl_test.sh"])
+cc_binary(
+    name = "mibl_test",
+    srcs = ["Mibl_test.c"],
+    copts = [
+        "-std=c11",
+        "-pedantic-errors",
+        "-Wall",
+        "-Werror",
+        "-Iexternal/uthash/include",
+
+        "-I$(GENDIR)/src/hdrs",
+
+        "-Ivendored/gopt",
+        "-Iexternal/mibl/vendored/gopt",
+
+        "-Ivendored/logc",
+        "-Iexternal/mibl/vendored/logc",
+
+        "-Ivendored/unity",
+        "-Iexternal/mibl/vendored/unity",
+
+        "-Ivendored/uthash",
+        "-Iexternal/mibl/vendored/uthash",
+
+        "-Iexternal/libs7/src"  # s7.h
+    ] + select({
+        "//bzl/host:debug": [""],
+        "//conditions:default":   []
+    }) + select({
+        ## macos fastbuild: -UDEBUG
+        "//conditions:default":   []
+    }),
+    defines = select({
+        "//bzl/host:debug": ["DEBUG_TRACE", "DEBUG_MIBL"],
+        "//conditions:default":   []
+    }) + select({
+        "//bzl/host:linux": [
+            "_XOPEN_SOURCE=500", # strdup
+            "_DEFAULT_SOURCE"    # dirent DT_* macros
+        ],
+        "//conditions:default":   []
+    }),
+    deps = [
+        "//src:mibl",
+        "//vendored/gopt",
+        "//vendored/logc",
+        "//vendored/unity",
+        "//vendored/uthash",
+    ],
+    # timeout = "short",
+    visibility = ["//test:__subpackages__"]
+)
+
 ##########
 cc_binary(
     name  = "driver",
@@ -38,40 +93,40 @@ cc_binary(
 )
 
 ################################################################
-cc_test(
-    name = "demo_test",
-    srcs = ["template_unity_test.c"],
-    copts = CMD_FLAGS + BOOTSTRAP_INCLUDES + [
-        "-I$(GENDIR)/src/hdrs",
+# cc_test(
+#     name = "demo_test",
+#     srcs = ["template_unity_test.c"],
+#     copts = CMD_FLAGS + BOOTSTRAP_INCLUDES + [
+#         "-I$(GENDIR)/src/hdrs",
 
-        "-Ivendored/logc",
-        "-Iexternal/mibl/vendored/logc",
+#         "-Ivendored/logc",
+#         "-Iexternal/mibl/vendored/logc",
 
-        "-Ivendored/unity",
-        "-Iexternal/mibl/vendored/unity",
+#         "-Ivendored/unity",
+#         "-Iexternal/mibl/vendored/unity",
 
-        "-Ivendored/uthash",
-        "-Iexternal/mibl/vendored/uthash",
+#         "-Ivendored/uthash",
+#         "-Iexternal/mibl/vendored/uthash",
 
-        "-Iexternal/libs7/src"  # s7.h
-    ],
-    data = [
-        "//scm/dune:srcs"
-    ],
-    defines = select({
-        "//bzl/host:debug": ["DEBUG_TRACE", "DEBUG_MIBL"],
-        "//conditions:default":   []
-    }) + select({
-        "//bzl/host:linux": [
-            "_XOPEN_SOURCE=500", # strdup
-            "_DEFAULT_SOURCE"    # dirent DT_* macros
-        ],
-        "//conditions:default":   []
-    }),
-    deps = [
-        "//src:mibl",
-        "//vendored/logc",
-        "//vendored/unity",
-        "//vendored/uthash",
-    ],
-)
+#         "-Iexternal/libs7/src"  # s7.h
+#     ],
+#     data = [
+#         "//scm/dune:srcs"
+#     ],
+#     defines = select({
+#         "//bzl/host:debug": ["DEBUG_TRACE", "DEBUG_MIBL"],
+#         "//conditions:default":   []
+#     }) + select({
+#         "//bzl/host:linux": [
+#             "_XOPEN_SOURCE=500", # strdup
+#             "_DEFAULT_SOURCE"    # dirent DT_* macros
+#         ],
+#         "//conditions:default":   []
+#     }),
+#     deps = [
+#         "//src:mibl",
+#         "//vendored/logc",
+#         "//vendored/unity",
+#         "//vendored/uthash",
+#     ],
+# )

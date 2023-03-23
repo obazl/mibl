@@ -1,19 +1,19 @@
 package(default_visibility = ["//visibility:public"])
 
-########################
-####  Rule Targets  ####
+############################# Rules ##################################
 
-################  rule  ################
+########
 genrule(
-    name  = "__foo.txt__",
     outs  = [
         "foo.txt"
     ],
+    name  = "__foo.txt__",
     cmd   = " ".join([
-        "$(location gen.sh)",
+        "$(execpath //#f:bar)",
         "$(location foo.txt)",
     ]),
-    tools = [
-        "gen.sh"
+    exec_tools = [
+        "//#f:bar"
     ]
 )
+
