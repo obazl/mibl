@@ -325,6 +325,7 @@
               ;;         (format #f "unhandled labels :diff" )))
 
               ((:rule :diff :node :ocamlc
+                      :bindiff-test :diff-test
                       :write-file)
                (if *mibl-debug-s7*
                    (format #t "~A: ~A, ~A~%" (ublue "fixup") (car stanza) stanza-alist))

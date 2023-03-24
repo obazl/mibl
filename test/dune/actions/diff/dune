@@ -1,0 +1,2 @@
+(rule
+ (action (diff a.txt b.txt)))

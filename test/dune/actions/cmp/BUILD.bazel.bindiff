@@ -1,0 +1,11 @@
+load("@obazl//build:rules_ocaml.bzl", "bindiff_test")
+
+########
+bindiff_test(
+    name  = "cmp_test",
+    file1  =":bar.bin",
+    file2 = ":foo.bin",
+    # args = ["-xb"],
+    timeout = "short"
+)
+

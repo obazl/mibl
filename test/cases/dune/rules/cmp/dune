@@ -1,3 +1,0 @@
-(rule
-  (deps a.ml b.ml)
-  (action (cmp a.ml b.ml)))

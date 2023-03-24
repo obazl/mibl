@@ -1,0 +1,20 @@
+((:@ (:name . "@")
+     (:path . /Users/gar/obazl/mibl/test/dune/actions/copy) (:exports (hash-table))
+     (:opam
+         (hash-table)) (:shared-ppx (hash-table)) (:filegroups (hash-table))
+     (:pkgs
+         (hash-table
+           '"config" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/actions/copy") (:pkg-path . "config")
+                       (:realpath . "/Users/gar/obazl/mibl/test/dune/actions/copy/config")
+                       (:files (:static "config.mlh")) (:exported-files "config.mlh"))
+           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/actions/copy") (:pkg-path . "./")
+                   (:realpath . "/Users/gar/obazl/mibl/test/dune/actions/copy")
+                   (dune (rule (targets config.mlh) (mode promote) (deps config/config.mlh)
+                               (action (copy config/config.mlh config.mlh))))
+                   (:mibl (:rule (:mode promote)
+                                 (:deps (:config/config.mlh (:pkg . "config")
+                                          (:tgt . "config.mlh")))
+                                 (:outputs (:config.mlh (:pkg . "./") (:tgt . "config.mlh")))
+                                 (:actions (:cmd (:tool ::copy)
+                                                 (:args :config/config.mlh :config.mlh)))))
+                   (:files (:dynamic "config.mlh")))))))

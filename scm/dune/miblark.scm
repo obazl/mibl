@@ -191,6 +191,10 @@
                                (if *mibl-debugging*
                                    (format #t "~A: ~A~%" (red "miblarking") stanza))
                                (set-car! stanza :write-file))
+
+                              ((::cmp) (set-car! stanza :bindiff-test))
+                              ((::diff) (set-car! stanza :diff-test))
+
                               ((:cppo) (set-car! stanza :cppo))
 
                               ((::ocamlc)

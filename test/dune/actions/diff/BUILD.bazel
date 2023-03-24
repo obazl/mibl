@@ -1,0 +1,12 @@
+
+load("@bazel_skylib//rules:diff_test.bzl", "diff_test")
+
+
+###########
+diff_test(
+    name     = "_diff_test",
+    file1    = "a.txt",
+    file2    = "b.txt",
+    timeout  = "short"
+)
+

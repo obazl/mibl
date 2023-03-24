@@ -1,0 +1,11 @@
+
+load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
+
+############################# Rules ##################################
+
+######
+copy_file(
+    name = "__config.mlh",
+    src  = "//config:config.mlh",
+    out  = "config.mlh"
+)

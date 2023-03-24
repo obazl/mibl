@@ -6,9 +6,9 @@
          (hash-table
            '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/actions/cmp") (:pkg-path . "./")
                    (:realpath . "/Users/gar/obazl/mibl/test/dune/actions/cmp")
-                   (:structures (:static (A a.ml) (B b.ml)))
-                   (dune (rule (deps a.ml b.ml) (action (cmp x.ml b.ml))))
-                   (:mibl (:rule (:deps (:a.ml (:pkg . "./") (:tgt . "a.ml"))
-                                        (:b.ml (:pkg . "./") (:tgt . "b.ml")))
-                                 (:actions
-                                  (:cmd (:tool ::cmp) (:args (::unresolved x.ml) :b.ml))))))))))
+                   (:files (:static "bar.bin" "foo.bin"))
+                   (dune (rule (action (cmp foo.bin bar.bin))))
+                   (:mibl (:bindiff-test (:deps (:bar.bin (:pkg . "./") (:tgt . "bar.bin"))
+                                                (:foo.bin (:pkg . "./") (:tgt . "foo.bin")))
+                                         (:actions
+                                          (:cmd (:tool ::cmp) (:args :foo.bin :bar.bin))))))))))
