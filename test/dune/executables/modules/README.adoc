@@ -1,0 +1,27 @@
+= modules under exec stanzas
+
+Executable grammar:
+
+(executable
+ (name <name>)
+ <optional-fields>)
+
+"<name> is a module name that contains the executable’s main entry point. There can be additional modules in the current directory; you only need to specify the entry point."
+
+
+Executables: same but plural.
+
+"(names <names>) where <names> is a list of entry point names. Compare with executable, where you only need to specify the modules containing the entry point of each executable.
+
+(public_names <names>) describes under what name to install each executable. "
+
+
+Inferences:
+
+* dir must contain the module(s) srcs named in the name (names) field.
+* it may contain additional module srcs. The docs do not specify how
+  they are interpreted, but dune seems to treat them as deps of the
+  entry point, or at any rate as what OBazl calls the "prologue" of
+  the executable - modules to be linked before the ep.
+
+So in the absence of a (modules) list, mibl encodes the ep as (:main . <name>), and the remaining modules as (:prologue <list>)

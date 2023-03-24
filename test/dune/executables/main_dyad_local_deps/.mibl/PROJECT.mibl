@@ -1,0 +1,35 @@
+((:@ (:name . "@")
+     (:path . /Users/gar/obazl/mibl/test/dune/executables/main_dyad_local_deps)
+     (:exports
+         (hash-table
+           'main.exe ((:bin . #t) (:pkg . ./) (:tgt . main.exe))
+           ':main ((:bin . #t) (:pkg . ./) (:tgt . main.exe))
+           ':bin:main ((:bin . #t) (:pkg . ./) (:tgt . main.exe))
+           'main ((:bin . #t) (:pkg . ./) (:tgt . main.exe))
+           'main.bc ((:bin . #t) (:pkg . ./) (:tgt . main.exe))
+           ':main.bc ((:bin . #t) (:pkg . ./) (:tgt . main.exe))
+           ':bin:main.bc ((:bin . #t) (:pkg . ./) (:tgt . main.exe))
+           ':main.exe ((:bin . #t) (:pkg . ./) (:tgt . main.exe))
+           ':bin:main.exe ((:bin . #t) (:pkg . ./) (:tgt . main.exe))))
+     (:opam
+         (hash-table
+           '(symbol "#f") ((:path . :path) (:bin (main ("./" . "main.exe"))))))
+     (:shared-ppx
+         (hash-table)) (:filegroups (hash-table))
+     (:pkgs
+         (hash-table
+           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/executables/main_dyad_local_deps") (:pkg-path . "./")
+                   (:realpath . "/Users/gar/obazl/mibl/test/dune/executables/main_dyad_local_deps")
+                   (:structures (:static (A a.ml)))
+                   (dune (executables (names main) (public_names main)
+                                      (flags (:standard -open A -open B -linkall))
+                                      (link_flags -link_flag_a) (libraries A B) (ocamlc_flags -foo)
+                                      (ocamlopt_flags -bar)))
+                   (:modules (Main (:ml main.ml A) (:mli main.mli)))
+                   (:mibl (:executable (:pubname . main) (:privname . main) (:main . Main)
+                                       (:opts (:standard) (:opens A B) (:flags -linkall))
+                                       (:ocamlc-opts (:flags -foo)) (:ocamlopt-opts (:flags -bar))
+                                       (:prologue . 1) (:link-opts (:flags -link_flag_a))
+                                       (:deps (:resolved @A//lib/A @B//lib/B)))
+                          (:prologue
+                           (1 (:modules A) (:opts (:standard) (:opens A B) (:flags -linkall))))))))))

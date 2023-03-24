@@ -1,0 +1,35 @@
+(executable
+ (name main1)
+ (public_name main1)
+ (modules A)
+ (flags (:standard -open Foo
+                   -linkall))
+ (link_flags -link_flag_a)
+ (libraries Foo)
+ (ocamlc_flags -compile_flag_vm)
+ (ocamlopt_flags -compile_flag_opt)
+ )
+
+(executable
+ (name main2)
+ (public_name main2)
+ (modules B)
+ (flags (:standard -open Bar
+                   -linkall))
+ (link_flags -link_flag_a)
+ (libraries Bar)
+ (ocamlc_flags -compile_flag_vm)
+ (ocamlopt_flags -compile_flag_opt)
+ )
+
+(executable
+ (name main3)
+ (public_name main3)
+ (modules B)
+ (flags (:standard -open Bar
+                   -linkall))
+ (link_flags -link_flag_a)
+ (libraries Bar)
+ (ocamlc_flags -compile_flag_vm)
+ (ocamlopt_flags -compile_flag_opt)
+ )

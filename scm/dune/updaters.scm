@@ -330,7 +330,7 @@
                        (pkg (cdr kv))
                        (stanzas (assoc-val :mibl (cdr kv))))
                   (if (or *mibl-debug-s7* *mibl-debug-updaters*)
-                      (format #t "~A: ~A~%" (bgcyan "pkg key") pkg-key))
+                      (format #t "~A: ~A~%" (bgcyan "pkg") pkg))
 
                   (if stanzas
                       (for-each (lambda (stanza)
@@ -856,7 +856,8 @@
         (format #t "~A: ~A\n" (blue "nm") nm)
         (format #t "~A: ~A (type: ~A)\n" (blue "pkg-path") pkg-path (type-of pkg-path))
         (format #t "~A: ~A\n" (blue "tgt") tgt)
-        (debug-print-stacktrace)))
+        ;; (debug-print-stacktrace)
+        ))
   (let* ((exports (car (assoc-val :exports
                                   (assoc-val ws *mibl-project*))))
          (key (case pfx

@@ -1,0 +1,8 @@
+(executable
+ (name main)
+ (public_name main)
+ (flags (:standard -open A
+                   -open B
+                   -linkall))
+ (libraries A B)
+ (modules Main))

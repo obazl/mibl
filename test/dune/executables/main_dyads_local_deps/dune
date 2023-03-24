@@ -1,0 +1,11 @@
+(executables
+ (names main1 main2)
+ (public_names main1 main2)
+ (flags (:standard -open Foo
+                   -open Bar
+                   -linkall))
+ (link_flags -link_flag_a)
+ (libraries Foo Bar)
+ (ocamlc_flags -compile_flag_vm)
+ (ocamlopt_flags -compile_flag_opt)
+ )

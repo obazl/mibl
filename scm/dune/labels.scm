@@ -590,7 +590,7 @@
               ;;    (format #t "library deps: ~A~%" deps)))
 
               ((:lex :yacc :menhir :env
-                          :exec-libs :testsuite :tuareg :alias)
+                          :prologue :testsuite :tuareg :alias)
                (values))
 
               (else
@@ -615,7 +615,7 @@
           ;; (format #t "exports: ~A\n" exports)
           (for-each (lambda (pkg-kv)
                       (if *mibl-debug-s7*
-                          (format #t "~A: ~A~%" (ublue "resolving pkg") (car pkg-kv)))
+                          (format #t "~A: ~A~%" (ublue "resolving pkg") pkg-kv))
                       ;; (format #t "pkg: ~A~%" (cdr pkg-kv))
                       (let ((pkg (cdr pkg-kv)))
                         (if-let ((stanzas (assoc-val :mibl (cdr pkg-kv))))

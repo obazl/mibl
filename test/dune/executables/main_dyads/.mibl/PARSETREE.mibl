@@ -1,0 +1,17 @@
+((:@ (:name . "@")
+     (:path . /Users/gar/obazl/mibl/test/dune/executables/main_dyads)
+     (:exports
+         (hash-table)) (:opam (hash-table)) (:shared-ppx (hash-table))
+     (:filegroups
+         (hash-table))
+     (:pkgs
+         (hash-table
+           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/executables/main_dyads") (:pkg-path . "./")
+                   (:realpath . "/Users/gar/obazl/mibl/test/dune/executables/main_dyads")
+                   (dune (executables (names main1 main2) (public_names main1 main2)
+                                      (flags (:standard -open Foo -open Bar -linkall))
+                                      (link_flags -link_flag_a) (libraries Foo Bar)
+                                      (ocamlc_flags -compile_flag_vm)
+                                      (ocamlopt_flags -compile_flag_opt)))
+                   (:modules (Main1 (:ml main1.ml) (:mli main1.mli))
+                             (Main2 (:ml main2.ml) (:mli main2.mli))))))))

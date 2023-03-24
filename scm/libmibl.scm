@@ -9,7 +9,7 @@
 (define* (parsetree->mibl return) ;; root-path ws-path)
   ;; (set! *mibl-debugging* #t)
   (if *mibl-debug-s7*
-      (format #t "libmibl.scm::parsetree->mibl"))
+      (format #t "libmibl.scm::parsetree->mibl\n"))
       ;; : ~A, ~A~%" root-path ws-path))
   ;; (format #t "*mibl-project*: ~A~%" *mibl-project*)
   ;; (format #t "BYE~%"))
@@ -32,13 +32,19 @@
   ;; (-mibl-load-project root-path ws-path)
 
   (miblize :@)
+
   (add-filegroups-to-pkgs :@)
 
   (normalize-manifests! :@)
 
   (normalize-rule-deps! :@)
 
-  (miblarkize :@)
+  ;;(miblarkize :@)
+  (dune-stanzas->mibl :@)
+
+  ;; (mibl-debug-print-project)
+  ;; (return)
+
   ;; (resolve-pkg-file-deps :@)  ;; OBSOLETE
 
   (resolve-labels! :@)

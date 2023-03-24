@@ -21,17 +21,17 @@
 (define (-resolve-labels ws)
   (resolve-labels! (assoc-val ws *mibl-project*)))
 
-(define (-miblarkize ws)
-  (let* ((@ws (assoc-val ws *mibl-project*))
-         (pkgs (car (assoc-val :pkgs @ws))))
+;; (define (-miblarkize ws)
+;;   (let* ((@ws (assoc-val ws *mibl-project*))
+;;          (pkgs (car (assoc-val :pkgs @ws))))
 
-    (for-each (lambda (kv)
-                (format #t "~A: ~A~%" (blue "miblarkizing") kv)
-                ;; dir may have dune-project but no dune file:
-                (if (not (null? (cdr kv)))
-                    (mibl-pkg->miblark (cdr kv)))
-                )
-              pkgs)))
+;;     (for-each (lambda (kv)
+;;                 (format #t "~A: ~A~%" (blue "miblarkizing") kv)
+;;                 ;; dir may have dune-project but no dune file:
+;;                 (if (not (null? (cdr kv)))
+;;                     (mibl-pkg->miblark (cdr kv)))
+;;                 )
+;;               pkgs)))
 
 (define* (-main root-path ws-path)
   (load "libmibl.scm")

@@ -12,7 +12,7 @@
 
 ;; split opts into boolean flags and (opt arg) pairs
 (define (split-opts opts)
-  (if *mibl-debugging*
+  (if (or *mibl-debug-flags* *mibl-debug-s7*)
       (format #t "~A: ~A\n" (ublue "split-opts") opts))
   ;; assumption: :standard has been removed
   ;; cases: arg is list or not: (flags (a b ...)) v. (flags a b ...)
@@ -25,7 +25,7 @@
               (options '())
               (flags '())
               (orphans '()))
-    (if *mibl-debugging*
+    (if (or *mibl-debug-flags* *mibl-debug-s7*)
         (begin
           (format #t "~A: ~A\n" (green "opts") opts)
           (format #t "~A: ~A\n" (green "ostack") ostack)))
@@ -44,7 +44,7 @@
           (if (number? opt)
               (if (null? ostack)
                   (begin
-                    (if *mibl-debugging*
+                    (if (or *mibl-debug-flags* *mibl-debug-s7*)
                         (format #t "WARNING: numeric opt ~A without predecing optname\n" opt))
                     (recur (cdr opts)
                            ostack options flags (cons opt orphans)))
@@ -57,7 +57,7 @@
                              (cons opt ostack) options flags orphans)
                       ;; prev must be a flag, new goes on ostack
                       (begin
-                        (if *mibl-debugging*
+                        (if (or *mibl-debug-flags* *mibl-debug-s7*)
                             (format #t "~A: current: ~A, prev: ~A~%"
                                 (bgred "hyphen prev") opt (car ostack)))
                         ;; special case: dashed warning nbrs following -w, e.g. -w -27
@@ -65,7 +65,7 @@
                                 (string-prefix? "-" (format #f (car ostack))))
                             ;; current is arg to prev -<opt>
                             (begin
-                              (if *mibl-debugging*
+                              (if (or *mibl-debug-flags* *mibl-debug-s7*)
                                   (begin
                                     (format #t "~A~%" (red "XXXXXXXXXXXXXXXX"))
                                     (format #t "~A: ~A~%" (red "ostack") ostack)
@@ -81,7 +81,7 @@
                                        orphans)))
                             ;; else prev is flag, push current to ostack
                             (begin
-                              (if *mibl-debugging*
+                              (if (or *mibl-debug-flags* *mibl-debug-s7*)
                                   (format #t "~A~%" (green "ZZZZZZZZZZZZZZZZ")))
                               (recur (cdr opts)
                                      (list opt) ;; ostack
@@ -98,7 +98,7 @@
                             (recur '() ostack options flags
                                    (append orphans (cdr opts))))
                           (begin
-                            (if *mibl-debugging*
+                            (if (or *mibl-debug-flags* *mibl-debug-s7*)
                                 (format #t
                                     "WARNING: value ~A without preceding -opt\n"
                                     opt))
@@ -167,8 +167,10 @@
     (values link-std flags)))
 
 (define (normalize-stanza-fld-flags flags kind)
-  (if *mibl-debugging*
-      (format #t "~A: ~A\n" (ublue "normalize-stanza-fld-flags") flags))
+  (if (or *mibl-debug-flags* *mibl-debug-s7*)
+      (begin
+        (format #t "~A: ~A\n" (ublue "normalize-stanza-fld-flags") flags)
+        (format #t "~A: ~A\n" (blue "kind") kind)))
   (if flags
       ;; (let* ((flags (if (list? (cadr flags))
       ;;                   (cadr flags)
@@ -187,11 +189,13 @@
         ;; (format #t "CLEAN: ~A\n" clean-flags)
         (let-values (((opens opts std) (split-opens clean-flags)))
           (let-values (((options bools orphans) (split-opts (reverse opts))))
-            ;; (format #t "OPENS: ~A\n" (reverse opens))
-            ;; (format #t "OPTS: ~A\n" (reverse opts))
-            ;; (format #t "STD: ~A\n" std)
-            ;; (format #t "OPTIONS: ~A\n" options)
-            ;; (format #t "FLAGS: ~A\n" bools)
+            (if (or *mibl-debug-flags* *mibl-debug-s7*)
+                (begin
+                  (format #t "OPENS: ~A\n" (reverse opens))
+                  (format #t "OPTS: ~A\n" (reverse opts))
+                  (format #t "STD: ~A\n" std)
+                  (format #t "OPTIONS: ~A\n" options)
+                  (format #t "FLAGS: ~A\n" bools)))
             (cons
              (case kind
                ((:common) :opts)
@@ -225,7 +229,9 @@
 
 ;; returns (values <standard> <opens> <options> <flags>)
 (define (flags->mibl flags)
-  ;; (format #t "~A: ~A\n" (ublue "flags->mibl") flags)
+  (if (or *mibl-debug-flags* *mibl-debug-s7*)
+      (begin
+        (format #t "~A: ~A\n" (ublue "flags->mibl") flags)))
   (if flags
       ;; (let* ((flags (if (list? (cadr flags))
       ;;                   (cadr flags)

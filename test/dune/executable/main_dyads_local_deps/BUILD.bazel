@@ -1,0 +1,65 @@
+
+load("@rules_ocaml//build:rules.bzl",
+     "ocaml_binary",
+     "ocaml_library",
+     "ocaml_ns_library",
+     "ocaml_exec_module",
+     "ocaml_module",
+     "ocaml_signature",
+)
+
+DEPS_MAIN1 = [
+    "@Foo//lib/Foo",
+    "@Bar//lib/Bar"
+]
+DEPS_MAIN2 = [
+    "@Foo//lib/Foo",
+    "@Bar//lib/Bar"
+]
+##############################
+####  Executable Targets  ####
+ocaml_binary(
+    name     = "main1.exe",
+    main     = ":Main1",
+    visibility = ["//visibility:public"],
+)
+
+ocaml_exec_module(
+    name          = "Main1",
+    struct        = "main1.ml",
+    sig           = ":Main1_cmi",
+    opts          = OPTS_MAIN1,
+    deps          = DEPS_MAIN1,
+)
+
+ocaml_signature(
+    name          = "Main1_cmi",
+    src           = "main1.mli",
+    opts          = OPTS_MAIN1,
+    deps          = DEPS_MAIN1,
+)
+
+
+ocaml_binary(
+    name     = "main2.exe",
+    main     = ":Main2",
+    visibility = ["//visibility:public"],
+)
+
+ocaml_exec_module(
+    name          = "Main2",
+    struct        = "main2.ml",
+    sig           = ":Main2_cmi",
+    opts          = OPTS_MAIN2,
+    deps          = DEPS_MAIN2,
+)
+
+ocaml_signature(
+    name          = "Main2_cmi",
+    src           = "main2.mli",
+    opts          = OPTS_MAIN2,
+    deps          = DEPS_MAIN2,
+)
+
+
+######################## Modules & Signatures ########################

@@ -1,0 +1,31 @@
+((:@ (:name . "@")
+     (:path . /Users/gar/obazl/mibl/test/dune/executable/manifest/default)
+     (:exports
+         (hash-table
+           'main ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
+           ':main ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
+           'main.exe ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
+           ':bin:main ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
+           'main.bc ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
+           ':main.bc ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
+           ':bin:main.bc ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
+           ':main.exe ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
+           ':bin:main.exe ((:exe . #t) (:pkg . ./) (:tgt . main.exe))))
+     (:opam
+         (hash-table)) (:shared-ppx (hash-table)) (:filegroups (hash-table))
+     (:pkgs
+         (hash-table
+           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/executable/manifest/default") (:pkg-path . "./")
+                   (:realpath . "/Users/gar/obazl/mibl/test/dune/executable/manifest/default")
+                   (:modules (A (:ml a.ml) (:mli a.mli)) (B (:ml b.ml) (:mli b.mli))
+                             (E (:ml e.ml) (:mli e.mli)))
+                   (:structures (:static (C c.ml) (D d.ml) (Main main.ml)))
+                   (dune (executable (name main) (public_name main)
+                                     (flags (:standard -open X -open Y -linkall))
+                                     (link_flags -link_flag_a) (libraries X Y) (ocamlc_flags -foo)
+                                     (ocamlopt_flags -bar)))
+                   (:mibl (:executable (:privname . main) (:pubname . main) (:main . Main)
+                                       (:opts (:standard) (:opens X Y) (:flags -linkall))
+                                       (:ocamlc-opts (:flags -foo)) (:ocamlopt-opts (:flags -bar))
+                                       (:exec-libs A B C D E) (:link-opts (:flags -link_flag_a))
+                                       (:deps (:resolved @X//lib/X @Y//lib/Y)))))))))

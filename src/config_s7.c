@@ -175,6 +175,7 @@ static char *mibl_s7_flags[] = {
     "*mibl-debug-emit*",
     "*mibl-debug-executables*",
     "*mibl-debug-expanders*",
+    "*mibl-debug-flags*",
     "*mibl-debug-file-exports*",
     "*mibl-debug-genrules*",
     "*mibl-debug-mibl*",
@@ -1221,6 +1222,8 @@ void _define_mibl_s7_flags(void)
         mibl_s7_flag++;
     }
     /* log_info("done setting mibl_s7_flags"); */
+
+    s7_eval_c_string(s7, "(set! *mibl-build-dyads* #t)");
 }
 
 void _define_mibl_s7_vars(void)
