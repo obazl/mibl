@@ -1,7 +1,7 @@
 ;; caveat: pps ppx_inline_test implies (inline_tests), but not the
 ;; other way around.
 (define (lib-stanza->ppx stanza-alist)
-  (if (or *mibl-debug-ppx* *mibl-debugging*)
+  (if (or *mibl-debug-ppx* *mibl-debug-s7*)
       (format #t "~A: ~A\n" (ublue "lib-stanza->ppx") stanza-alist))
   (if-let ((preproc (assoc 'preprocess stanza-alist)))
           (if-let ((ppx (assoc 'pps (cdr preproc))))
@@ -95,7 +95,7 @@
   (let ((+documentation+
          "(-pps->mibl stanza-name ppxes) derives :ppx* flds for the stanza to be emitted"))
     (lambda (stanza-name ppxes) ;; stanza-alist)
-      (if (or *mibl-debug-ppx* *mibl-debugging*)
+      (if (or *mibl-debug-ppx* *mibl-debug-s7*)
           (format #t "~A ~A: ~A\n" (ublue "-pps->mibl") stanza-name ppxes))
 
       ;; NB: :scope defaults to :all, but will be a list of modules
@@ -106,7 +106,7 @@
         (let recur ((ppx ppxes)
                     (ppx-libs '())
                     (ppx-args '()))
-          (if (or *mibl-debug-ppx* *mibl-debugging*)
+          (if (or *mibl-debug-ppx* *mibl-debug-s7*)
               (format #t "car: ~A\n" ppx))
           (if (null? ppx)
               (if (null? ppx-args)
@@ -168,7 +168,7 @@
                                  ppx-args))))))))))
 
 (define (analyze-pps-action ppx-action stanza-name)
-  (if (or *mibl-debug-ppx* *mibl-debugging*)
+  (if (or *mibl-debug-ppx* *mibl-debug-s7*)
       (format #t "~A: ~A~%" (ublue "analyze-pps-action") stanza-name))
   (-pps->mibl stanza-name (cdr ppx-action)))
 
@@ -204,7 +204,7 @@
   ;;  ((pps ppx3 -foo3 ppx4 -- -bar4 43) mod3 mod4))
   (let ((+documentation+ "(normalize-ppx-attrs-per_module ppx stanza-name) derives :ppx* flds for the stanza to be emitted"))
     (lambda (ppx-list stanza-name)
-      (if (or *mibl-debug-ppx* *mibl-debugging*)
+      (if (or *mibl-debug-ppx* *mibl-debug-s7*)
           (format #t "~A: ~A~%" (ublue "normalize-ppx-attrs-per_module") ppx-list))
       ;; stanza-alist)
       '()
@@ -214,7 +214,7 @@
              (let recur ((ppx ppx-list)
                          (ppx-ct (length ppx-list))
                          (ppx-specs '()))
-               (if (or *mibl-debug-ppx* *mibl-debugging*)
+               (if (or *mibl-debug-ppx* *mibl-debug-s7*)
                    (format #t "per-mod PPX: ~A\n" (if (null? ppx) '() (car ppx))))
                (if (null? ppx)
                    ppx-specs
@@ -232,7 +232,7 @@
                        (let* ((ppx-item (car ppx))
                               (ppx-action (car ppx-item))
                               (ppx-modules (map normalize-module-name (cdr ppx-item))))
-                         (if (or *mibl-debug-ppx* *mibl-debugging*)
+                         (if (or *mibl-debug-ppx* *mibl-debug-s7*)
                              (format #t "per-mod PPX-ACTION: ~A\n" ppx-action))
                          (recur (cdr ppx) (- ppx-ct 1)
                                 (cons
@@ -307,13 +307,13 @@
 (define preprocess-fld->mibl ;; OBSOLETE?? no
   (let ((+documentation+ "(preprocess-fld->mibl pp-assoc stanza-alist) converts (preprocess ...) subfields 'pps' and 'per_module' to :ppx* flds for use in generating OBazl targets. Does not convert 'action' subfield, since it does not correspond to any OBazl rule attribute ('(action...)' generates a genrule."))
     (lambda (pp-assoc stanza-alist)
-      (if (or *mibl-debug-ppx* *mibl-debugging*)
+      (if (or *mibl-debug-ppx* *mibl-debug-s7*)
           (begin
             (format #t "~A: ~A\n" (ublue "preprocess-fld->mibl") pp-assoc)
             (format #t "~A: ~A\n" "stanza-alist" stanza-alist)))
       (let ((ppx-data (assoc-val 'preprocessor_deps stanza-alist))
             (ppx (map (lambda (pp)
-                        (if (or *mibl-debug-ppx* *mibl-debugging*)
+                        (if (or *mibl-debug-ppx* *mibl-debug-s7*)
                             (format #t "PP: ~A\n" pp))
                         (case (car pp)
                           ((action)
@@ -338,7 +338,7 @@
                           ((per_module)
                            (let* ((nm (cadr (assoc 'name stanza-alist)))
                                   (res (normalize-ppx-attrs-per_module (cdr pp) nm)))
-                             (if (or *mibl-debug-ppx* *mibl-debugging*)
+                             (if (or *mibl-debug-ppx* *mibl-debug-s7*)
                                  (format #t "~A: ~A~%" (cyan "per-mod") res))
                              res))
 
@@ -361,15 +361,15 @@
 
 ;; pps without inline_tests
 (define (pps->mibl preproc stanza-alist)
-  (if (or *mibl-debug-ppx* *mibl-debugging*)
+  (if (or *mibl-debug-ppx* *mibl-debug-s7*)
       (format #t "~A: ~A~%" (ublue "pps->mibl") stanza-alist))
   (if-let ((pp-assoc (assoc 'preprocess stanza-alist)))
           (begin
-            (if (or *mibl-debug-ppx* *mibl-debugging*)
+            (if (or *mibl-debug-ppx* *mibl-debug-s7*)
                 (format #t "~A: ~A~%" (blue "pp-assoc") pp-assoc))
             (if-let ((ppx (preprocess-fld->mibl pp-assoc stanza-alist)))
                     (begin
-                      (if (or *mibl-debug-ppx* *mibl-debugging*)
+                      (if (or *mibl-debug-ppx* *mibl-debug-s7*)
                           (format #t "~A: ~A~%" (bgyellow "mibl ppx") ppx))
                       `(:ppx ,@(cdr ppx)))
                     ;; else no ppx in (preprocess)
@@ -380,15 +380,15 @@
 
 ;; non-ppx prepocessing
 (define (lib-preproc->mibl preproc stanza-alist)
-  (if (or *mibl-debug-ppx* *mibl-debugging*)
+  (if (or *mibl-debug-ppx* *mibl-debug-s7*)
       (format #t "~A: ~A~%" (ublue "lib-preproc->mibl") stanza-alist))
   (if-let ((pp-assoc (assoc 'preprocess stanza-alist)))
           (begin
-            (if (or *mibl-debug-ppx* *mibl-debugging*)
+            (if (or *mibl-debug-ppx* *mibl-debug-s7*)
                 (format #t "~A: ~A~%" (blue "pp-assoc") pp-assoc))
             (if-let ((ppx (preprocess-fld->mibl pp-assoc stanza-alist)))
                     (begin
-                      (if (or *mibl-debug-ppx* *mibl-debugging*)
+                      (if (or *mibl-debug-ppx* *mibl-debug-s7*)
                           (format #t "~A: ~A~%" (bgyellow "pp ppx") ppx))
                       ;;`(:ppx ,@(cdr ppx))
                       ppx)
@@ -425,7 +425,7 @@
   ;;         #f))
 
 (define (preproc->mibl preproc stanza-alist)
-  (if (or *mibl-debug-ppx* *mibl-debugging*)
+  (if (or *mibl-debug-ppx* *mibl-debug-s7*)
       (format #t "~A: ~A~%" (ublue "preproc->mibl") preproc))
   (if (alist? preproc)
       (if (assoc-in '(preprocess pps) stanza-alist)

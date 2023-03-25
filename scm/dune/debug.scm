@@ -42,14 +42,14 @@
          )
     (format #t "WS name: ~A~%" (assoc-val :name @ws))
     (format #t "WS path: ~A~%" (assoc-val :path @ws))
-    (if *mibl-debugging*
+    (if *mibl-debug-s7*
         (begin
           (format #t "~A: ~A ~A~%" (bggreen "workspace") (assoc :name @ws) (assoc :path @ws))
           (format #t "~A: ~A~%" (green "*mibl-dump-pkgs*") *mibl-dump-pkgs*)
           (format #t "~A: ~A~%" (green "pkg-paths") pkg-paths)))
     (for-each (lambda (k)
                 (let ((pkg (hash-table-ref pkgs k)))
-                  ;; (if *mibl-debugging*
+                  ;; (if *mibl-debug-s7*
                   ;;     (begin
                   ;;       (format #t "~A: ~A~%" (green "k") k)
                   ;;       (format #t "~A: ~A~%" (green "pkg") pkg)))

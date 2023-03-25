@@ -1,5 +1,5 @@
 (define (-analyze-files filelist)
-  (if *mibl-debugging*
+  (if *mibl-debug-s7*
       (format #t "~A: ~A~%" (ublue "-analyze-files") filelist))
   (let recur ((files filelist)
               (singletons '())
@@ -22,20 +22,20 @@
 ;;     (:singletons a b c) (:aliases (x .y)))
 
 (define (dune-install->mibl ws pkg stanza)
-  (if *mibl-debugging*
+  (if *mibl-debug-s7*
       (format #t "~A: ~A~%" (bgblue "dune-install->mibl") stanza))
   ;; write to exports table
   (let* ((pkg-path (assoc-val :pkg-path pkg))
          (section (if-let ((section (assoc-val 'section (cdr stanza))))
                           (car section) #f))
-         (_ (if *mibl-debugging* (format #t "~A: ~A~%" (white "section") section)))
+         (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (white "section") section)))
          (pkg (if-let ((pkg (assoc-val 'package (cdr stanza))))
                       (car pkg) #f))
-         (_ (if *mibl-debugging* (format #t "~A: ~A~%" (white "pkg") pkg)))
+         (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (white "pkg") pkg)))
          (files (assoc-val 'files (cdr stanza)))
          )
     (let-values (((singletons aliases) (-analyze-files (assoc-val 'files (cdr stanza)))))
-      (if *mibl-debugging*
+      (if *mibl-debug-s7*
           (begin
             (format #t "~A: ~A~%" (white "singletons") singletons)
             (format #t "~A: ~A~%" (white "aliases") aliases)))
@@ -132,6 +132,6 @@
     ;;      (key (string-join (map symbol->string
     ;;                             (list section pkg ftarget))
     ;;                        ":"))
-    ;;      (_ (if *mibl-debugging* (format #t "~A: ~A~%" (white "key") key)))
+    ;;      (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (white "key") key)))
     ;;      )
     ;; (list (cons ':install (cdr stanza)))))

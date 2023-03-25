@@ -11,7 +11,7 @@
 ;; (alias <alias-name>), (mode <mode>), (enabled_if <blang expression>)
 ;; (copy_files <glob>) is equivalent to (copy_files (files <glob>))
 (define (normalize-stanza-copy_files pkg-path stanza)
-  (if *mibl-debugging*
+  (if *mibl-debug-s7*
       (begin
         (format #t "NORMALIZE-STANZA-COPY_FILES, path: ~A\n" pkg-path)
         (format #t "  stanza: ~A\n" stanza)))
@@ -52,7 +52,7 @@
                    (format #f "unexpected stanza type: ~A\n" stanza))))))
 
 (define (normalize-stanza-copy pkg-path stanza)
-  (if *mibl-debugging*
+  (if *mibl-debug-s7*
       (format #t "NORMALIZE-STANZA-COPY: ~A" stanza))
   ;; (display (format #f "dir: ~A" pfx)) (newline)
   ;; (copy_files

@@ -2,7 +2,7 @@
 ;; run dune-pkg->mibl for all pkgs in ws
 ;; updates :pkgs entry of ws
 (define (miblize ws)
-  (if *mibl-debugging*
+  (if *mibl-debug-s7*
       (format #t "~A: ~A~%" (blue "-miblize") ws))
   (let* ((@ws (assoc-val ws *mibl-project*))
          (pkgs (car (assoc-val :pkgs @ws)))
@@ -26,7 +26,7 @@
         ;; (_ (for-each (lambda (k)
         ;;                (format #t "~A: ~A~%" (blue "pkg") k))
         ;;              (sort! (hash-table-keys pkgs) string<?)))
-    (if *mibl-debugging*
+    (if *mibl-debug-s7*
         (format #t "~A: ~A~%" (blue "mibl pkg ct") (length mpkg-alist)))
     mpkg-alist))
 

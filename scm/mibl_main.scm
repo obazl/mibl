@@ -8,7 +8,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (-mibl-load-project root path)
-  (if *mibl-debugging*
+  (if *mibl-debug-s7*
       (begin
         (format #t "~A: ~A (~A)~%" (blue "-mibl-load-project") path (type-of path))
         (format #t "pwd: ~A~%" (pwd))))

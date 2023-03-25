@@ -17,11 +17,11 @@
   (let ((+documentation+ "convert 'libraries' field of dune library stanza to mibl format. libdeps is a pair (fldname val)")
         (+signature+ '(dune-libraries-fld->mibl libdeps pkg)))
     (lambda (libdeps pkg)
-      (if *mibl-debugging*
+      (if *mibl-debug-s7*
           (format #t "~A: ~A\n" (ublue "dune-libraries-fld->mibl") libdeps))
       (let-values (((directs seldeps conditionals) ;; modules)
                     (analyze-libdeps libdeps)))
-        (if *mibl-debugging*
+        (if *mibl-debug-s7*
             (begin
               (format #t "~A: ~A\n" (blue ">LIBDEPS DIRECTS") directs)
               (format #t "~A: ~A\n" (blue ">LIBDEPS SELDEPS") seldeps)
@@ -32,19 +32,19 @@
         ;; FIXME: we can do this later
         (if conditionals
             (let (;;(ctargets (conditional-targets conditionals))
-                  (_ (if *mibl-debugging* (format #t "~A~%" (uwhite "updating conditionals"))))
+                  (_ (if *mibl-debug-s7* (format #t "~A~%" (uwhite "updating conditionals"))))
                   (ctargets (fold (lambda (conditional accum)
-                                    (if *mibl-debugging*
+                                    (if *mibl-debug-s7*
                                         (format #t "conditional ~A\n" conditional))
                                     (let ((newpkg (update-pkg-conditionals! pkg conditional)))
-                                      (if *mibl-debugging*
+                                      (if *mibl-debug-s7*
                                           (format #t "~A: ~A~%" (bgred "newpkg") newpkg))
                                       (set! pkg newpkg)
-                                      (if *mibl-debugging*
+                                      (if *mibl-debug-s7*
                                           (format #t "~A: ~A~%" (bgred "conditional") conditional))
                                       (cons (assoc-val :target conditional) accum)))
                                   '() conditionals)))
-              (if *mibl-debugging*
+              (if *mibl-debug-s7*
                   (begin
                     (format #t "~A: ~A\n" (uwhite "ctargets") ctargets)
                     (format #t "~A: ~A\n" (uwhite "updated pkg") pkg)))

@@ -30,7 +30,7 @@
     ))
 
 (define (emit-prologue outp pkg serial)
-  (if (or *mibl-debug-prologues* *mibl-debugging*)
+  (if (or *mibl-debug-prologues* *mibl-debug-s7*)
       (format #t "~A: ~A~%" (ublue "emit-prologue") serial))
   (let* ((prologues (assoc-in '(:mibl :prologues) pkg))
          (this-prologue (assoc-val serial (cdr prologues)))

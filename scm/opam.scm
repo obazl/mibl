@@ -1,5 +1,5 @@
 ;; mibl:  opam.scm
-(if *mibl-debugging*
+(if *mibl-debug-s7*
     (format #t "loading opam.scm~%"))
 
 

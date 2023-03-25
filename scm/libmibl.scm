@@ -7,14 +7,14 @@
 ;; (load "codept/codept_reader.scm")
 
 (define* (parsetree->mibl return) ;; root-path ws-path)
-  ;; (set! *mibl-debugging* #t)
+  ;; (set! *mibl-debug-s7* #t)
   (if *mibl-debug-s7*
       (format #t "libmibl.scm::parsetree->mibl\n"))
       ;; : ~A, ~A~%" root-path ws-path))
   ;; (format #t "*mibl-project*: ~A~%" *mibl-project*)
   ;; (format #t "BYE~%"))
 
-  (if *mibl-debugging*
+  (if *mibl-debug-s7*
       (format #t "~A: ~A~%" (bgred "*mibl-emit-bazel-pkg*")
               *mibl-emit-bazel-pkg*))
 
@@ -25,7 +25,7 @@
   ;; (set! *mibl-unwrapped-libs-to-archives* #f)
 
   ;; NB: :@ is key of the root workspace in *mibl-project*
-  ;; (set! *mibl-debugging* #t)
+  ;; (set! *mibl-debug-s7* #t)
 
   ;; parsetree always already produced by c code,
   ;; either by crawling the tree or by reading .mibl/PARSETREE.s7
@@ -88,7 +88,7 @@
 
   ;; ;; (ws->opam-bundles :@)
 
-  ;; (if *mibl-debugging*
+  ;; (if *mibl-debug-s7*
   ;;     (format #t "~A: ~A~%" (green "selectors"))
   ;;         (remove-duplicates *select-protases*))
 
