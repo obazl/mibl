@@ -52,11 +52,10 @@
   (resolve-file-exports! :@)
 
   (handle-shared-ppx :@)
-  (if *mibl-shared-deps*
-      (begin
-        (handle-shared-deps :@)
-        (handle-shared-opts :@)
-        ))
+
+  (if *mibl-shared-deps* (handle-shared-deps :@))
+
+  (if *mibl-shared-opts* (handle-shared-opts :@))
 
   ;; (ppx-inline-tests! :@)
 

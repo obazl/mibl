@@ -51,6 +51,25 @@
 ;; We also need to disentangle the 'flags' field; for example '-open
 ;; Foo' is for module compilation, not linkage of executables.
 
+(define (prologue-contains-module? prologue-key modname pkg)
+  (if (or *mibl-debug-executables* *mibl-debug-s7*)
+      (begin
+        (format #t "~A: ~A ~A\n"
+                (ublue "prologue-contains-module?") prologue-key modname)
+        (format #t "~A: ~A\n" (yellow "pkg") pkg)))
+  (if-let ((prologues (assoc-in '(:mibl :prologues) pkg)))
+          (let* ((prologues (cdr prologues))
+                 (the-prologue (assoc-val prologue-key prologues))
+                 (modules (assoc-val :modules the-prologue))
+                 )
+            ;; (format #t "~A: ~A\n" (yellow "prologues") prologues)
+            ;; (format #t "~A: ~A\n" (yellow "the-prologue") the-prologue)
+            ;; (format #t "~A: ~A\n" (yellow "modules") modules)
+            (if (member modname modules)
+                #t #f))
+          ;; should not happen:
+          (error 'Missing-prologues "Pkg is missing a :prologues list")))
+
 (define (-exec-flags->mibl stanza-alist)
   (if (or *mibl-debug-executables* *mibl-debug-s7*)
       (format #t "~A: ~A\n"

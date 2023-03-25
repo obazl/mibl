@@ -180,11 +180,13 @@ static char *mibl_s7_flags[] = {
     "*mibl-debug-genrules*",
     "*mibl-debug-mibl*",
     "*mibl-debug-modules*",
+    "*mibl-debug-prologues*",
     "*mibl-debug-ppx*",
     "*mibl-debug-report*",
     "*mibl-debug-rule-stanzas*",
     "*mibl-debug-s7*",
     "*mibl-debug-s7-loads*",
+    "*mibl-debug-shared*",
     "*mibl-debug-show-pkgs*",
     "*mibl-debug-tests*",
     "*mibl-debug-updaters*",
@@ -210,6 +212,7 @@ static char *mibl_s7_flags[] = {
     "*mibl-ppxlib-ppx-driver*",
     "*mibl-quiet*",
     "*mibl-shared-deps*",
+    "*mibl-shared-opts*",
     /* "*mibl-shared-ppx-pkg*", */
     "*mibl-show-config*",
     "*mibl-show-exports*",
@@ -1224,6 +1227,8 @@ void _define_mibl_s7_flags(void)
     /* log_info("done setting mibl_s7_flags"); */
 
     s7_eval_c_string(s7, "(set! *mibl-build-dyads* #t)");
+    s7_eval_c_string(s7, "(set! *mibl-shared-deps* #t)");
+    s7_eval_c_string(s7, "(set! *mibl-shared-opts* #t)");
 }
 
 void _define_mibl_s7_vars(void)

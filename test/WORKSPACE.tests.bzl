@@ -34,3 +34,10 @@ def test_repos():
         build_file = "@//test/dune/actions/diff:BUILD.bazel",
         workspace_file_content = skylib_ws
     )
+
+    native.new_local_repository(
+        name = "test.dune.executable.main_dyad_prologue",
+        path = "test/dune/executable/main_dyad_prologue",
+        build_file = "@//test/dune/executable/main_dyad_prologue:BUILD.bazel",
+        workspace_file_content = skylib_ws
+    )

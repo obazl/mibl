@@ -590,7 +590,7 @@
               ;;    (format #t "library deps: ~A~%" deps)))
 
               ((:lex :yacc :menhir :env
-                          :prologue :testsuite :tuareg :alias)
+                          :prologues :testsuite :tuareg :alias)
                (values))
 
               (else
