@@ -1,3 +1,160 @@
+(define (-module-in-modules? m modules)
+  (if (or *mibl-debug-s7* *mibl-debug-updaters*)
+      (format #t "~A: ~A~%" (ublue "-module-in-modules?") m))
+  (let ((mstr (format #f "~A" m)))
+    (find-if (lambda (mod)
+               (string=? mstr
+                         (format #f "~A" (car mod))))
+             modules)))
+
+;; initial parsetree may contain unmatched :sig or :struct files
+;; during processing a matching dynamic file may be discovered,
+;; giving e.g. foo.ml in :structures (static) and foo.mli in :signatures (:dynamic)
+;; this routine moves them to :modules (Foo (:ml foo.ml) (:mli_ foo.mli))
+(define (normalize-pkg-files! pkg)
+  (if (or *mibl-debug-s7* *mibl-debug-updaters*)
+      (format #t "~A: ~A~%" (ublue "normalize-pkg-files!") (assoc-val :pkg-path pkg)))
+  (let ((pkg-modules (assoc-val :modules pkg))
+        (pkg-structs (assoc :structures pkg))
+        (pkg-sigs (assoc :signatures pkg)))
+
+    (if (or *mibl-debug-s7* *mibl-debug-updaters*)
+        (format #t "~A: ~A~%" (blue "pkg-modules") pkg-modules))
+    (if (or *mibl-debug-s7* *mibl-debug-updaters*)
+        (format #t "~A: ~A~%" (blue "pkg-structs") pkg-structs))
+    (if (or *mibl-debug-s7* *mibl-debug-updaters*)
+        (format #t "~A: ~A~%" (blue "pkg-sigs") pkg-sigs))
+
+    (if pkg-modules
+        (begin
+          (if (or *mibl-debug-s7* *mibl-debug-updaters*)
+              (format #t "~A:~%" (cyan "pkg-modules")))
+          (for-each (lambda (m)
+                      (if (or *mibl-debug-s7* *mibl-debug-updaters*)
+                          (format #t "  ~A~%" m)))
+                    pkg-modules))
+        )
+
+    (if pkg-structs
+        (let* ((statics (if-let ((statics (assoc-in '(:structures :static) pkg)))
+                                statics '(:static)))
+               (dynamics (if-let ((dynamics (assoc-in '(:structures :dynamic) pkg)))
+                                 dynamics '(:dynamic))))
+          (if (or *mibl-debug-s7* *mibl-debug-updaters*)
+              (begin
+                (format #t "~A: ~A~%" (cyan "pstructs, static") statics)
+                (format #t "~A: ~A~%" (cyan "pstructs, dynamic") dynamics)))
+          (if pkg-modules
+              (begin ;; twice, once for statics, once for dynamics
+                (if (truthy? statics)
+                    (let ((remainder
+                           (filter (lambda (struct)
+                                     (if (or *mibl-debug-s7* *mibl-debug-updaters*)
+                                         (format #t "~A: ~A~%" (uwhite "struct") struct))
+                                     (if-let ((x (-module-in-modules? (car struct) pkg-modules)))
+                                             (begin
+                                               (if (or *mibl-debug-s7* *mibl-debug-updaters*)
+                                                   (format #t "~A: ~A~%" (uwhite "in modules?") x))
+                                               #f)
+                                             #t))
+                                   (cdr statics))))
+                      (if (or *mibl-debug-s7* *mibl-debug-updaters*)
+                          (format #t "~A: ~A~%" (ured "structs static remainder") remainder))
+                      (if (null? remainder)
+                          (dissoc! '(:structures :static) pkg)
+                          (set-cdr! statics remainder))))
+
+                (if (truthy? dynamics)
+                    (let ((remainder
+                           (filter (lambda (struct)
+                                     (if (or *mibl-debug-s7* *mibl-debug-updaters*)
+                                         (format #t "~A: ~A~%" (uwhite "struct") struct))
+                                     (if-let ((x (-module-in-modules? (car struct) pkg-modules)))
+                                             (begin
+                                               (if (or *mibl-debug-s7* *mibl-debug-updaters*)
+                                                   (format #t "~A: ~A~%"
+                                                           (uwhite "in modules?") x))
+                                               #f)
+                                             #t))
+                                   (cdr dynamics))))
+                      (if (or *mibl-debug-s7* *mibl-debug-updaters*)
+                          (format #t "~A: ~A~%" (ured "structs dyn remainder") remainder))
+                      (if (null? remainder)
+                          (begin
+                            ;; (dissoc! '(:structures :dynamic) pkg)
+                            )
+                          (alist-update-in! pkg `(:structures :dynamic)
+                                            (lambda (old) remainder)))))
+                ))))
+    ;; (format #t "~A: ~A~%" (bgmagenta "updated structs") (assoc :structures pkg))
+    ;; (if (equal? "compiler/lib" (assoc-val :pkg-path pkg))
+    ;;     (error 'STOP "nmani"))
+
+    ;; if :signatures item is in :modules, remove it from :signatures
+    (if pkg-sigs
+        (let* ((statics (if-let ((statics (assoc-in '(:signatures :static) pkg)))
+                                statics '()))
+               (dynamics (if-let ((dynamics (assoc-in '(:signatures :dynamic) pkg)))
+                                 dynamics '())))
+
+          ;; (let* ((_ (if (or *mibl-debug-s7* *mibl-debug-updaters*) (format #t "~A: ~A~%" (red "pkg-sigs") pkg-sigs)))
+          ;;        (psigs (cdr pkg-sigs))
+
+          ;;        (statics (if-let ((statics (assoc-val :static psigs)))
+          ;;                         statics '()))
+          ;;        (dynamics (if-let ((dynamics (assoc-val :dynamic psigs)))
+          ;;                          dynamics '())))
+          (if (or *mibl-debug-s7* *mibl-debug-updaters*)
+              (begin
+                (format #t "~A: ~A~%" (cyan "psigs, static") statics)
+                (format #t "~A: ~A~%" (cyan "psigs, dynamic") dynamics)))
+
+          (if pkg-modules
+              (begin
+                (if (truthy? statics)
+                    (let ((remainder  ;; :signatures :static
+                           (filter (lambda (sig)
+                                     (if (or *mibl-debug-s7* *mibl-debug-updaters*)
+                                         (format #t "~A: ~A~%" (uwhite "sig") sig))
+                                     (if-let ((x (-module-in-modules? (car sig) pkg-modules)))
+                                             (begin
+                                               (if (or *mibl-debug-s7* *mibl-debug-updaters*)
+                                                   (format #t "~A: ~A~%"
+                                                           (uwhite "in modules?") x))
+                                               #f)
+                                             #t))
+                                   (cdr statics))))
+                      (if (or *mibl-debug-s7* *mibl-debug-updaters*)
+                          (begin
+                            (format #t "~A: ~A~%" (ured "sig statics") statics)
+                            (format #t "~A: ~A~%" (ured "sig static remainder") remainder)))
+                      (if (null? remainder)
+                          (dissoc! '(:signatures :static) pkg)
+                          (set-cdr! statics remainder))))
+
+                (if (truthy? dynamics)
+                    (let ((remainder  ;; :signatures :dynamic
+                           (filter (lambda (sig)
+                                     (if (or *mibl-debug-s7* *mibl-debug-updaters*)
+                                         (format #t "~A: ~A~%" (uwhite "sig") sig))
+                                     (if-let ((x (-module-in-modules? (car sig) pkg-modules)))
+                                             (begin
+                                               (if (or *mibl-debug-s7* *mibl-debug-updaters*)
+                                                   (format #t "~A: ~A~%"
+                                                           (uwhite "in modules?") x))
+                                               #f)
+                                             #t))
+                                   (cdr dynamics))))
+                      (if (or *mibl-debug-s7* *mibl-debug-updaters*)
+                          (format #t "~A: ~A~%" (ured "sigs dyn remainder") remainder))
+                      (if (null? remainder)
+                          (dissoc! '(:signatures) pkg)
+                          (alist-update-in! pkg `(:signatures :dynamic)
+                                            (lambda (old) remainder)))))))
+          )
+        )
+    pkg))
+
 (define (detect-ppx-inline f)
   (let ((is-ppx-inline #f)
         (is-ppx-expect #f))
@@ -14,38 +171,64 @@
 	  (loop (read-line file #t)))))
     is-ppx-inline))
 
-;; arg:  normalized module name
-(define (find-module-in-pkg module pkg)
-  (if *mibl-debug-s7*
-      (format #t "~A: ~A~%" (ublue "find-module-in-pkg") module))
-  (let* ((pkg-modules (if-let ((files (assoc-val :modules pkg)))
-                                files '()))
-         (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (yellow "pkg-modules") pkg-modules)))
-         ;; (m-name (filename->module-name arg))
-         ;; (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (yellow "m-name") m-name)))
-         (entry
-          (find-if (lambda (mod)
-                     ;; (format #t "~A: ~A~%" (white "mod") mod)
-                     (equal? (format #f "~A" module)
-                             (format #f "~A" (car mod))))
-                   pkg-modules)))
+(define module->local-deps
+  (let ((+documentation+ "Lookup module (normalized name) in pkg (:modules, :structures) and return depslist.")
+        (+signature+ '(get-local-deps module pkg)))
+    (lambda (module pkg)
+      (if *mibl-debug-s7*
+          (format #t "~A: ~A~%" (ublue "module->local-deps") module))
+
+      (let* ((module-tlbl (find-module-in-pkg module pkg))
+             (_ (format #t "~A: ~A~%" (ublue "module tagged lbl") module-tlbl))
+             (ml-deps (if-let ((deps (assoc-val :ml (cdr module-tlbl))))
+                              (cdr deps)
+                              (if-let ((deps (assoc-val :ml_ (cdr module-tlbl))))
+                                      (cdr deps)
+                                      '())))
+             ;; (_ (format #t "~A: ~A~%" (ublue "ml-deps") ml-deps))
+             (mli-deps (if-let ((deps (assoc-val :mli (cdr module-tlbl))))
+                              (cdr deps)
+                              (if-let ((deps (assoc-val :mli_ (cdr module-tlbl))))
+                                      (cdr deps)
+                                      '())))
+             ;; (_ (format #t "~A: ~A~%" (ublue "mli-deps") mli-deps))
+             )
+        (values ml-deps mli-deps)))))
+
+(define find-module-in-pkg
+  (let ((+documentation+ "Search pkg :modules and :structures for <module> (normalized module name)")
+        (+signature+ '(find-module-in-pkg module pkg)))
+    (lambda (module pkg)
+      (if *mibl-debug-s7*
+          (format #t "~A: ~A~%" (ublue "find-module-in-pkg") module))
+      (let* ((pkg-modules (if-let ((files (assoc-val :modules pkg)))
+                                  files '()))
+             (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (yellow "pkg-modules") pkg-modules)))
+             ;; (m-name (filename->module-name arg))
+             ;; (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (yellow "m-name") m-name)))
+             (entry
+              (find-if (lambda (mod)
+                         ;; (format #t "~A: ~A~%" (white "mod") mod)
+                         (equal? (format #f "~A" module)
+                                 (format #f "~A" (car mod))))
+                       pkg-modules)))
         ;; (format #t "~A: ~A~%" (white "found entry") file)
-    (if entry
-        entry
-        ;; else srch pkg-structs
-        (let* ((structs-static (if-let ((ss (assoc-in '(:structures :static) pkg))) (cdr ss) '()))
-               (structs-dynamic (if-let ((ss (assoc-in '(:structures :dynamic) pkg))) (cdr ss) '()))
-               (pkg-structs (append structs-static structs-dynamic))
-               (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (yellow "pkg-structs") pkg-structs)))
-               ;; (m-name (filename->module-name arg))
-               ;; (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (yellow "m-name") m-name)))
-               (entry
-                (find-if (lambda (struct)
-                           ;; (format #t "~A: ~A~%" (white "mod") mod)
-                           (equal? (format #f "~A" module)
-                                   (format #f "~A" (car struct))))
-                         pkg-structs)))
-          entry))))
+        (if entry
+            entry
+            ;; else srch pkg-structs
+            (let* ((structs-static (if-let ((ss (assoc-in '(:structures :static) pkg))) (cdr ss) '()))
+                   (structs-dynamic (if-let ((ss (assoc-in '(:structures :dynamic) pkg))) (cdr ss) '()))
+                   (pkg-structs (append structs-static structs-dynamic))
+                   (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (yellow "pkg-structs") pkg-structs)))
+                   ;; (m-name (filename->module-name arg))
+                   ;; (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (yellow "m-name") m-name)))
+                   (entry
+                    (find-if (lambda (struct)
+                               ;; (format #t "~A: ~A~%" (white "mod") mod)
+                               (equal? (format #f "~A" module)
+                                       (format #f "~A" (car struct))))
+                             pkg-structs)))
+              entry))))))
 
 (define (-find-m-file-in-pkg-modules arg pkg)
   (if *mibl-debug-s7*
@@ -205,152 +388,153 @@
         (set! pkg (update-pkg-files! pkg (list arg)))
         #t #|(string->keyword (format #f "~A" arg))|# )))
 
-(define (-codept-pkg-file-deps pkg-path)
-  (if *mibl-debug-s7*
-      (format #t "~A: ~A~%" (blue "-codept-pkg-file-deps") pkg-path))
-  (let* ((fpath (format #f "~A/*" pkg-path)) ;; (cdr struct)))
-         (cmd (format #f "codept -k -expand-deps -sexp -I ~A ~A/*"
-                      pkg-path pkg-path))
-         (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (green "cmd") cmd))))
-    (let ((deps (string-trim '(#\newline) (system cmd #t))))
-      (if *mibl-debug-s7*
-          (format #t "~A: ~A~%" (yellow "codept") deps)))
-  ;;(set-cdr! struct (cdr struct))
-    ))
+;; (define (-codept-pkg-file-deps pkg-path)
+;;   (if *mibl-debug-s7*
+;;       (format #t "~A: ~A~%" (blue "-codept-pkg-file-deps") pkg-path))
+;;   (let* ((fpath (format #f "~A/*" pkg-path)) ;; (cdr struct)))
+;;          (cmd (format #f "codept -k -expand-deps -sexp -I ~A ~A/*"
+;;                       pkg-path pkg-path))
+;;          (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (green "cmd") cmd))))
+;;     (let ((deps (string-trim '(#\newline) (system cmd #t))))
+;;       (if *mibl-debug-s7*
+;;           (format #t "~A: ~A~%" (yellow "codept") deps)))
+;;   ;;(set-cdr! struct (cdr struct))
+;;     ))
 
+;; OBSOLETE: deps are handled by load-project c impl
 ;; run ocamldep against all static src files in pkg
 ;; iterate over output, updating :pkg-modules, :pkg-structures
 ;; this handles only static srcs, dynamics (ocamllex, ocamlyacc)
 ;; must be handled separately
-(define (-ocamldep-pkg-static-file-deps! pkg)
-  (if *mibl-debug-s7*
-      (format #t "~A: ~A~%" (bgblue "-ocamldep-pkg-static-file-deps") (assoc-val :pkg-path pkg)))
-          ;; (assoc-val :pkg-path pkg))
-  (let* ((pkg-path (assoc-val :pkg-path pkg))
-         (fpath (format #f "~A/*" pkg-path)) ;; (cdr struct)))
-         (pkg-mods (if-let ((files (assoc-val :modules pkg)))
-                             (map car files) '()))
-         (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (yellow "pkg-mods") pkg-mods)))
-         (pkg-structs (if-let ((structs (assoc-val :structures pkg)))
-                              (let* (;; (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (uyellow "pkg-structs") structs)))
-                                     (statics (if-let ((statics (assoc-val :static structs)))
-                                                      statics '()))
-                                     ;; (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (cyan "struct statics") statics)))
-                                     (dynamics (if-let ((dynamics (assoc-val :dynamic structs)))
-                                                       dynamics '()))
-                                     ;; (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (cyan "struct dynamics") dynamics)))
-                                     ) ;; gets both :static & :dynamic
-                                (map car (concatenate statics dynamics)))
-                           '()))
-         (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (yellow "pkg-structs") pkg-structs)))
+;; (define (-ocamldep-pkg-static-file-deps! pkg)
+;;   (if *mibl-debug-s7*
+;;       (format #t "~A: ~A~%" (bgblue "-ocamldep-pkg-static-file-deps") (assoc-val :pkg-path pkg)))
+;;           ;; (assoc-val :pkg-path pkg))
+;;   (let* ((pkg-path (assoc-val :pkg-path pkg))
+;;          (fpath (format #f "~A/*" pkg-path)) ;; (cdr struct)))
+;;          (pkg-mods (if-let ((files (assoc-val :modules pkg)))
+;;                              (map car files) '()))
+;;          (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (yellow "pkg-mods") pkg-mods)))
+;;          (pkg-structs (if-let ((structs (assoc-val :structures pkg)))
+;;                               (let* (;; (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (uyellow "pkg-structs") structs)))
+;;                                      (statics (if-let ((statics (assoc-val :static structs)))
+;;                                                       statics '()))
+;;                                      ;; (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (cyan "struct statics") statics)))
+;;                                      (dynamics (if-let ((dynamics (assoc-val :dynamic structs)))
+;;                                                        dynamics '()))
+;;                                      ;; (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (cyan "struct dynamics") dynamics)))
+;;                                      ) ;; gets both :static & :dynamic
+;;                                 (map car (concatenate statics dynamics)))
+;;                            '()))
+;;          (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (yellow "pkg-structs") pkg-structs)))
 
-         (pkg-sigs (if-let ((sigs (assoc-val :signatures pkg)))
-                              (let* (;; (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (uyellow "pkg-sigs") sigs)))
-                                     (statics (if-let ((statics (assoc-val :static sigs)))
-                                                      statics '()))
-                                     ;; (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (cyan "sig statics") statics)))
-                                     (dynamics (if-let ((dynamics (assoc-val :dynamic sigs)))
-                                                       dynamics '()))
-                                     ;; (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (cyan "sig dynamics") dynamics)))
-                                     ) ;; gets both :static & :dynamic
-                                (map car (concatenate statics dynamics)))
-                           '()))
-         (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (yellow "pkg-sigs") pkg-sigs)))
-         ;; (pkg-sigs (if-let ((files (assoc-val :signatures pkg)))
-         ;;                   (map car files)
-         ;;                   '()))
-         ;; (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (yellow "pkg-sigs") pkg-sigs)))
+;;          (pkg-sigs (if-let ((sigs (assoc-val :signatures pkg)))
+;;                               (let* (;; (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (uyellow "pkg-sigs") sigs)))
+;;                                      (statics (if-let ((statics (assoc-val :static sigs)))
+;;                                                       statics '()))
+;;                                      ;; (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (cyan "sig statics") statics)))
+;;                                      (dynamics (if-let ((dynamics (assoc-val :dynamic sigs)))
+;;                                                        dynamics '()))
+;;                                      ;; (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (cyan "sig dynamics") dynamics)))
+;;                                      ) ;; gets both :static & :dynamic
+;;                                 (map car (concatenate statics dynamics)))
+;;                            '()))
+;;          (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (yellow "pkg-sigs") pkg-sigs)))
+;;          ;; (pkg-sigs (if-let ((files (assoc-val :signatures pkg)))
+;;          ;;                   (map car files)
+;;          ;;                   '()))
+;;          ;; (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (yellow "pkg-sigs") pkg-sigs)))
 
-         (modules (concatenate pkg-mods pkg-structs pkg-sigs))
-         (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (yellow "all pkg modules") modules)))
-         )
-    (let* ((cmd (format #f "ocamldep -one-line -modules -I ~A ~A/*"
-                        pkg-path pkg-path))
-           (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (green "cmd") cmd)))
-           (deps (string-trim '(#\newline) (system cmd #t))) ;; EXECUTE CMD
-           (deps (string-split deps #\newline)))
-      (for-each (lambda (dep)
-                  (if *mibl-debug-s7*
-                      (format #t "~%~A: ~A~%" (uyellow "iter over ocamldeps") dep))
-                  (let ((segs (string-split dep #\:)))
-                    (if *mibl-debug-s7*
-                        (format #t "~A: ~A~%" (yellow "segs") segs))
-                    (if (null? (cdr segs))
-                        (begin)
-                        (let* ((fpath (car segs))
-                               (fname (basename fpath))
-                               (mname (filename->module-name fname))
-                               (kind (filename->kind fname))
-                               (mdeps (string-trim '(#\space) (cadr segs)))
-                               (mdeps (string-split mdeps #\space))
-                               (mdeps (map string->symbol mdeps))
+;;          (modules (concatenate pkg-mods pkg-structs pkg-sigs))
+;;          (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (yellow "all pkg modules") modules)))
+;;          )
+;;     (let* ((cmd (format #f "ocamldep -one-line -modules -I ~A ~A/*"
+;;                         pkg-path pkg-path))
+;;            (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (green "cmd") cmd)))
+;;            (deps (string-trim '(#\newline) (system cmd #t))) ;; EXECUTE CMD
+;;            (deps (string-split deps #\newline)))
+;;       (for-each (lambda (dep)
+;;                   (if *mibl-debug-s7*
+;;                       (format #t "~%~A: ~A~%" (uyellow "iter over ocamldeps") dep))
+;;                   (let ((segs (string-split dep #\:)))
+;;                     (if *mibl-debug-s7*
+;;                         (format #t "~A: ~A~%" (yellow "segs") segs))
+;;                     (if (null? (cdr segs))
+;;                         (begin)
+;;                         (let* ((fpath (car segs))
+;;                                (fname (basename fpath))
+;;                                (mname (filename->module-name fname))
+;;                                (kind (filename->kind fname))
+;;                                (mdeps (string-trim '(#\space) (cadr segs)))
+;;                                (mdeps (string-split mdeps #\space))
+;;                                (mdeps (map string->symbol mdeps))
 
-                               (_ (if *mibl-debug-s7* (format #t "~A for ~A: ~A~%" (ugreen "unfiltered mdeps") mname mdeps)))
-                               ;; do not include file module in deps list
-                               (mdeps (remove mname mdeps))
-                               (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (ugreen "unfiltered mdeps excluding self") mdeps)))
-                               ;; eliminate mdeps not in this pkg
-                               ;; (mdeps (filter (lambda (d) (is-module-in-pkg d pkg)) mdeps))
-                               (mdeps (filter (lambda (dep) (member dep modules)) mdeps))
-                               (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (ugreen "filtered mdeps, excluding pkg-externals") mdeps)))
-                               )
-                          (if *mibl-debug-s7*
-                              (begin
-                                (format #t "~A: ~A~%" (red "mdeps") mdeps)
-                                (format #t "~A: ~A~%" (red "pkg (before)") pkg)
-                                (format #t "~A: ~A~%" (red "fname") fname)
-                                (format #t "~A: ~A~%" (red "mname") mname)))
-                          ;; (if (string=? "arg.ml" fname) (error 'STOP "STOP ocamldep"))
-                          (if (truthy? mdeps) ;; (not (null? mdeps))
-                              (begin
-                                (if *mibl-debug-s7*
-                                    (format #t "~A ~A to ~A~%" (bgyellow "updating stanza :deps") mdeps fname))
-                                ;; (format #t "~A: ~A~%" (uyellow "in pkg") pkg)
-                                (if (assoc-val :mibl pkg)
-                                    (update-stanza-deps pkg fname mdeps))
-                                (if *mibl-debug-s7*
-                                    (format #t "~A: ~A~%" (red "pkg (after)") pkg))
-                                ))
+;;                                (_ (if *mibl-debug-s7* (format #t "~A for ~A: ~A~%" (ugreen "unfiltered mdeps") mname mdeps)))
+;;                                ;; do not include file module in deps list
+;;                                (mdeps (remove mname mdeps))
+;;                                (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (ugreen "unfiltered mdeps excluding self") mdeps)))
+;;                                ;; eliminate mdeps not in this pkg
+;;                                ;; (mdeps (filter (lambda (d) (is-module-in-pkg d pkg)) mdeps))
+;;                                (mdeps (filter (lambda (dep) (member dep modules)) mdeps))
+;;                                (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (ugreen "filtered mdeps, excluding pkg-externals") mdeps)))
+;;                                )
+;;                           (if *mibl-debug-s7*
+;;                               (begin
+;;                                 (format #t "~A: ~A~%" (red "mdeps") mdeps)
+;;                                 (format #t "~A: ~A~%" (red "pkg (before)") pkg)
+;;                                 (format #t "~A: ~A~%" (red "fname") fname)
+;;                                 (format #t "~A: ~A~%" (red "mname") mname)))
+;;                           ;; (if (string=? "arg.ml" fname) (error 'STOP "STOP ocamldep"))
+;;                           (if (truthy? mdeps) ;; (not (null? mdeps))
+;;                               (begin
+;;                                 (if *mibl-debug-s7*
+;;                                     (format #t "~A ~A to ~A~%" (bgyellow "updating stanza :deps") mdeps fname))
+;;                                 ;; (format #t "~A: ~A~%" (uyellow "in pkg") pkg)
+;;                                 (if (assoc-val :mibl pkg)
+;;                                     (update-stanza-deps pkg fname mdeps))
+;;                                 (if *mibl-debug-s7*
+;;                                     (format #t "~A: ~A~%" (red "pkg (after)") pkg))
+;;                                 ))
 
-                          ;; mdeps is list of ocamldeps of fname with corresponding files in this pkg
-                          ;; we retrieve the pkg-dep for fname and add the mdeps to it
-                          ;; (format #t "~A: ~A~%" (bgyellow "updating pkg file flds") pkg)
-                          ;; (format #t "~A: ~A~%" (yellow "ocamldep fname") fname)
-                          ;; (format #t "~A: ~A~%" (yellow "ocamldep kind") kind)
-                          ;; (format #t "~A: ~A~%" (yellow "ocamldep mdeps") mdeps)
-                          (if (truthy? mdeps) ;; (not (null? mdeps))
-                              (if-let ((m-assoc (find-m-file-in-pkg fname pkg)))
-                                      (begin
-                                        (if *mibl-debug-s7*
-                                            (format #t "~A: ~A~%" (red "m-assoc in pkg") m-assoc))
-                                        (if (proper-list? m-assoc)
-                                            ;; its a module entry, form (A (:ml a.ml) (:mli a.mli))
-                                            (begin ;; if mdeps not empty
-                                              (set-cdr! m-assoc
-                                                        (append (cdr m-assoc)
-                                                                (list (cons
-                                                                       (if (eq? kind :struct)
-                                                                           :ml-deps :mli-deps)
-                                                                       mdeps))))
-                                              ;; (format #t "~A: ~A~%" (bgred "m-assoc after") m-assoc)
-                                              )
-                                            ;; else its a struct entry, (A a.ml)
-                                            (begin
-                                              (if *mibl-debug-s7*
-                                                  (begin
-                                                    (format #t "~A: ~A~%" (bgred "STRUCT ENTRY") m-assoc)
-                                                    (format #t "~A: ~A~%" (bgred "adding mdeps") mdeps)))
-                                              (if (not (null? mdeps))
-                                                  (set-cdr! m-assoc
-                                                            (cons (cdr m-assoc)
-                                                                  mdeps))))))
-                                      ;;else
-                                      (format #t "~A: ~A~%" (blue "not found") m-assoc))
-                              ;; else mdeps is null
-                              (if *mibl-debug-s7*
-                                  (format #t "~A~%" (uyellow "continue")))
-                              )))))
-                deps))))
+;;                           ;; mdeps is list of ocamldeps of fname with corresponding files in this pkg
+;;                           ;; we retrieve the pkg-dep for fname and add the mdeps to it
+;;                           ;; (format #t "~A: ~A~%" (bgyellow "updating pkg file flds") pkg)
+;;                           ;; (format #t "~A: ~A~%" (yellow "ocamldep fname") fname)
+;;                           ;; (format #t "~A: ~A~%" (yellow "ocamldep kind") kind)
+;;                           ;; (format #t "~A: ~A~%" (yellow "ocamldep mdeps") mdeps)
+;;                           (if (truthy? mdeps) ;; (not (null? mdeps))
+;;                               (if-let ((m-assoc (find-m-file-in-pkg fname pkg)))
+;;                                       (begin
+;;                                         (if *mibl-debug-s7*
+;;                                             (format #t "~A: ~A~%" (red "m-assoc in pkg") m-assoc))
+;;                                         (if (proper-list? m-assoc)
+;;                                             ;; its a module entry, form (A (:ml a.ml) (:mli a.mli))
+;;                                             (begin ;; if mdeps not empty
+;;                                               (set-cdr! m-assoc
+;;                                                         (append (cdr m-assoc)
+;;                                                                 (list (cons
+;;                                                                        (if (eq? kind :struct)
+;;                                                                            :ml-deps :mli-deps)
+;;                                                                        mdeps))))
+;;                                               ;; (format #t "~A: ~A~%" (bgred "m-assoc after") m-assoc)
+;;                                               )
+;;                                             ;; else its a struct entry, (A a.ml)
+;;                                             (begin
+;;                                               (if *mibl-debug-s7*
+;;                                                   (begin
+;;                                                     (format #t "~A: ~A~%" (bgred "STRUCT ENTRY") m-assoc)
+;;                                                     (format #t "~A: ~A~%" (bgred "adding mdeps") mdeps)))
+;;                                               (if (not (null? mdeps))
+;;                                                   (set-cdr! m-assoc
+;;                                                             (cons (cdr m-assoc)
+;;                                                                   mdeps))))))
+;;                                       ;;else
+;;                                       (format #t "~A: ~A~%" (blue "not found") m-assoc))
+;;                               ;; else mdeps is null
+;;                               (if *mibl-debug-s7*
+;;                                   (format #t "~A~%" (uyellow "continue")))
+;;                               )))))
+;;                 deps))))
 
 (define (-ocamlyacc-deps! pkg pkg-path pkg-mly-modules)
   (if *mibl-debug-s7*

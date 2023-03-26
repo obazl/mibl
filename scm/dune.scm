@@ -11,6 +11,7 @@
 ;; (load "utils.scm")
 
 (load "dune/conditionals.scm")
+(load "dune/aggregates.scm")
 (load "dune/constants.scm")
 (load "dune/debug.scm")
 (load "dune/deps.scm")

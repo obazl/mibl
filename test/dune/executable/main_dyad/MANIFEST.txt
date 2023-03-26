@@ -1,0 +1,6 @@
+
+mwe: no main deps, no prologue modules
+
+maindeps:  main module w/dependencies, w/o prologue
+
+prologue:  main w/o deps, with prologue

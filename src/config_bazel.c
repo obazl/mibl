@@ -56,9 +56,7 @@ UT_string *runtime_data_dir;
 
 UT_string *runfiles_root;
 
-bool ini_error; // = false;
 UT_string *obazl_ini_path; // .config
-
 
 #define OBAZL_VERSION "0.1.0"
 
@@ -255,7 +253,7 @@ EXPORT void bazel_configure(char *ws_root) // char *_exec_root)
 {
 #if defined(DEBUG_TRACE)
     if (mibl_trace || mibl_debug_bazel) {
-        log_trace("bazel_configure");
+        log_trace(UBLU "bazel_configure" CRESET);
     }
 #endif
 

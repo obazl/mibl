@@ -190,7 +190,7 @@ static char *mibl_s7_flags[] = {
     "*mibl-debug-show-pkgs*",
     "*mibl-debug-tests*",
     "*mibl-debug-updaters*",
-    "*mibl-debugging*",
+    "*mibl-debug-s7*",
     "*mibl-dev-mode*",
     "*mibl-dune-execlib-includes-main*",
     "*mibl-dunefile-count*",
@@ -1288,8 +1288,8 @@ EXPORT void show_s7_config(void)
 EXPORT s7_scheme *s7_configure(char *main_script, char *ws_root)
 {
 #if defined(DEBUG_TRACE)
-    if (mibl_debug)
-        log_debug("s7_configure");
+    if (mibl_trace)
+        log_debug(UBLU "s7_configure" CRESET);
 #endif
 
     _mibl_s7_init();

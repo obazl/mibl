@@ -89,16 +89,24 @@
                                            (let* ((opts (assoc :opts (cdr prologue)))
                                                   (_ (format #t "~A: ~A~%" (green "opts") opts))
                                                   (_ (format #t "~A: ~A~%" (green ":shared-opts") shared-opts))
-                                                  (shared-opt (rassoc (cdr opts) (cadr shared-opts)))
+                                                  (shared-opt (if shared-opts
+                                                                  (rassoc (cdr opts) (cadr shared-opts))
+                                                                  #f))
 
                                                   (link-opts (assoc :link-opts (cdr prologue)))
-                                                  (shared-link-opt (rassoc (cdr link-opts) (cadr shared-link-opts)))
+                                                  (shared-link-opt (if shared-link-opts
+                                                                       (rassoc (cdr link-opts) (cadr shared-link-opts))
+                                                                       #f))
 
                                                   (ocamlc-opts (assoc :ocamlc-opts (cdr prologue)))
-                                                  (shared-ocamlc-opt (rassoc (cdr ocamlc-opts) (cadr shared-ocamlc-opts)))
+                                                  (shared-ocamlc-opt (if shared-ocamlc-opts
+                                                                         (rassoc (cdr ocamlc-opts) (cadr shared-ocamlc-opts))
+                                                                         #f))
 
                                                   (ocamlopt-opts (assoc :ocamlopt-opts (cdr prologue)))
-                                                  (shared-ocamlopt-opt (rassoc (cdr ocamlopt-opts) (cadr shared-ocamlopt-opts)))
+                                                  (shared-ocamlopt-opt (if shared-ocamlopt-opts
+                                                                           (rassoc (cdr ocamlopt-opts) (cadr shared-ocamlopt-opts))
+                                                                           #f))
                                                  )
                                              (if shared-opt (set-cdr! opts (car shared-opt)))
                                              (if shared-link-opt (set-cdr! link-opts (car shared-link-opt)))

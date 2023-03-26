@@ -37,13 +37,13 @@
 
   (normalize-manifests! :@)
 
+  ;; (mibl-debug-print-project)
+  ;; (return)
+
   (normalize-rule-deps! :@)
 
   ;;(miblarkize :@)
   (dune-stanzas->mibl :@)
-
-  ;; (mibl-debug-print-project)
-  ;; (return)
 
   ;; (resolve-pkg-file-deps :@)  ;; OBSOLETE
 
@@ -56,6 +56,8 @@
   (if *mibl-shared-deps* (handle-shared-deps :@))
 
   (if *mibl-shared-opts* (handle-shared-opts :@))
+
+  (normalize-prologues!)
 
   ;; (ppx-inline-tests! :@)
 

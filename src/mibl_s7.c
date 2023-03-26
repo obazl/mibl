@@ -107,7 +107,7 @@ LOCAL void mibl_s7_configure(void)
 {
 #if defined(DEBUG_TRACE)
     if (mibl_trace) {
-        log_trace("mibl_s7_configure");
+        log_trace(UBLU "mibl_s7_configure" CRESET);
     }
 #endif
 

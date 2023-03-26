@@ -1,0 +1,12 @@
+((:@ (:name . "@")
+     (:path . /Users/gar/obazl/mibl/test/dune/executable/main_dyad/mwe3)
+     (:exports
+         (hash-table)) (:opam (hash-table)) (:shared-ppx (hash-table))
+     (:filegroups
+         (hash-table))
+     (:pkgs
+         (hash-table
+           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/executable/main_dyad/mwe3") (:pkg-path . "./")
+                   (:realpath . "/Users/gar/obazl/mibl/test/dune/executable/main_dyad/mwe3")
+                   (dune (executable (public_name main) (name main)))
+                   (:modules (Main (:ml main.ml) (:mli main.mli))))))))

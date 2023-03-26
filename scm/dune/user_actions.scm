@@ -235,63 +235,8 @@
                                               (member dep unit-test-pkgs))
                                             (cdr compile-deps))))
                         (if test? (set-car! stanza :test) #f)))
-                  (if (truthy? prologue)
-                      (if-let ((pkg-prologues (assoc :prologues (cdr dune-pkg))))
-                              (begin
-                                (if *mibl-debug-s7*
-                                    (format #t "~A: ~A~%" (ublue "found pkg-prologues") pkg-prologues))
-                                (if (number? (cdr prologue))
-                                    (begin) ;; won't happen?
-                                    (if-let ((x (member (cdr prologue) (cdr pkg-prologues)
-                                                        (lambda (a b)
-                                                          (if *mibl-debug-s7*
-                                                              (format #t "~A: a: ~A, b: ~A~%" (red "comparing") a b))
-                                                          (equal? a (assoc-val :modules (cdr b)))))))
-                                        (begin
-                                          (if *mibl-debug-s7*
-                                              (format #t "~A: ~A~%" (ublue "match") x))
-                                          (set-cdr! prologue (caar x))
-                                          )
-                                        ;; else update pkg-prologues
-                                        (let* ((ct (+ 1 (length (cdr pkg-prologues))))
-                                               (opts (if-let ((opts (assoc-val :opts stanza-alist)))
-                                                             `((:opts ,@opts)) '()))
-                                               (link-opts (if-let ((opts (assoc-val :link-opts stanza-alist)))
-                                                             `((:link-opts ,@opts)) '()))
-                                               (ocamlc-opts (if-let ((opts (assoc-val :ocamlc-opts stanza-alist)))
-                                                             `((:ocamlc-opts ,@opts)) '()))
-                                               (ocamlopt-opts (if-let ((opts (assoc-val :ocamlopt-opts stanza-alist)))
-                                                             `((:ocamlopt-opts ,@opts)) '()))
-                                               (modules (sort! (cdr prologue) sym<?))
-                                               (new (list (cons ct
-                                                                `((:modules ,@modules)
-                                                                  ,@opts ,@link-opts ,@ocamlc-opts ,@ocamlopt-opts)))))
-                                          (if *mibl-debug-s7*
-                                              (begin
-                                                (format #t "~A: ~A~%" (ublue "mismatch; adding") prologue)
-                                                (format #t "~A: ~A~%" (ublue "ct") ct)
-                                                (format #t "~A: ~A~%" (ublue "new") new)))
-                                          (set-cdr! pkg-prologues (append (cdr pkg-prologues) new ))
-                                          (set-cdr! prologue ct)
-                                          ))))
-                              ;;FIXME: prologues must have all the props of the exe from which they are derived:
-                              ;; deps, opts, link-opts, etc.
-                              (let* ((opts (if-let ((opts (assoc-val :opts stanza-alist)))
-                                                   `((:opts ,@opts)) '()))
-                                     (link-opts (if-let ((lopts (assoc-val :link-opts stanza-alist)))
-                                                   `((:link-opts ,@lopts)) '()))
-                                     (ocamlc-opts (if-let ((opts (assoc-val :ocamlc-opts stanza-alist)))
-                                                          `((:ocamlc-opts ,@opts)) '()))
-                                     (ocamlopt-opts (if-let ((opts (assoc-val :ocamlopt-opts stanza-alist)))
-                                                            `((:ocamlopt-opts ,@opts)) '()))
-                                     (modules (sort! (cdr prologue) sym<?))
-                                     (new `((:prologues (1 (:modules ,@modules)
-                                                           ,@opts ,@link-opts ,@ocamlc-opts ,@ocamlopt-opts)))))
-                                (if *mibl-debug-s7*
-                                    (format #t "~A: ~A~%" (ublue "adding :prologues to stanzas") prologue))
-                                (set-cdr! dune-pkg (append (cdr dune-pkg) new))
-                                (set-cdr! prologue 1))
-                                ))
+                  ;; (if (truthy? prologue)
+                  ;;     (update-pkg-prologues! prologue dune-pkg stanza-alist))
                   ))
                (else
                 ))

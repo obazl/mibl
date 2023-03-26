@@ -1,0 +1,25 @@
+((:@ (:name . "@")
+     (:path . /Users/gar/obazl/mibl/test/dune/executable/main_dyad/maindeps2)
+     (:exports
+         (hash-table
+           ':main.bc ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
+           ':bin:main.bc ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
+           ':main.exe ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
+           ':bin:main.exe ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
+           ':main ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
+           'main ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
+           'main.exe ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
+           ':bin:main ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
+           'main.bc ((:exe . #t) (:pkg . ./) (:tgt . main.exe))))
+     (:opam
+         (hash-table)) (:shared-ppx (hash-table)) (:filegroups (hash-table))
+     (:pkgs
+         (hash-table
+           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/executable/main_dyad/maindeps2") (:pkg-path . "./")
+                   (:realpath . "/Users/gar/obazl/mibl/test/dune/executable/main_dyad/maindeps2")
+                   (:structures (:static (A a.ml))) (:signatures (:static (B b.mli)))
+                   (dune (executable (name main) (public_name main)))
+                   (:modules (Main (:ml main.ml A) (:mli main.mli B)))
+                   (:mibl (:executable (:privname . main) (:pubname . main) (:main . Main)
+                                       (:prologue (:modules A)))
+                          (:prologues (1 (:modules A)))))))))

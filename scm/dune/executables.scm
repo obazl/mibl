@@ -300,6 +300,8 @@
          ;; (prologue (if (truthy? prologue) (sort! prologue sym<?) prologue))
          (_ (if (or *mibl-debug-executables* *mibl-debug-s7*) (format #t "~A: ~A\n" (uwhite "prologue") prologue)))
 
+         ;; (_ (error 'x "X"))
+
          ;; NB: pkg-manifest already includes conditionals
          ;; add conditionals to prologue
          ;; (conditionals (if-let ((clist (assoc-val :conditionals deps)))
@@ -486,8 +488,11 @@
                                            (list '(modules :standard)))))
              (pkg-path (assoc-val :pkg-path pkg))
              ;; 'name' fld is required, but just in case:
-             (privname (if-let ((privname (assoc 'name stanza-alist)))
-                               privname #f))
+             (privname (if-let ((pn (assoc-val 'name stanza-alist)))
+                               (car pn)
+                               (if-let ((pn (assoc-val 'public_name stanza-alist)))
+                                       (car pn)
+                                       (error 'No-name "Stanza missing name and public_name"))))
 
              (pubname (if-let ((pubname (assoc 'public_name stanza-alist)))
                               (cadr pubname) #f))

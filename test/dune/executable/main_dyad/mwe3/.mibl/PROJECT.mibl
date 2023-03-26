@@ -1,0 +1,22 @@
+((:@ (:name . "@")
+     (:path . /Users/gar/obazl/mibl/test/dune/executable/main_dyad/mwe3)
+     (:exports
+         (hash-table
+           'main.exe ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
+           ':bin:main ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
+           'main.bc ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
+           ':main.bc ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
+           ':bin:main.bc ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
+           ':main.exe ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
+           ':bin:main.exe ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
+           ':main ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
+           'main ((:exe . #t) (:pkg . ./) (:tgt . main.exe))))
+     (:opam
+         (hash-table)) (:shared-ppx (hash-table)) (:filegroups (hash-table))
+     (:pkgs
+         (hash-table
+           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/executable/main_dyad/mwe3") (:pkg-path . "./")
+                   (:realpath . "/Users/gar/obazl/mibl/test/dune/executable/main_dyad/mwe3")
+                   (dune (executable (public_name main) (name main)))
+                   (:modules (Main (:ml main.ml) (:mli main.mli)))
+                   (:mibl (:executable (:privname . main) (:pubname . main) (:main . Main))))))))

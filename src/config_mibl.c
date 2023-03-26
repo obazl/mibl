@@ -19,9 +19,9 @@ extern int  verbosity;
 #if defined(DEBUG_TRACE)
 bool mibl_debug_mibl = false;
 bool mibl_debug_miblrc   = false;
-bool mibl_debug_traversal = false;
-bool mibl_debug_traversal_opam = false;
-bool mibl_trace_mibl   = false;
+/* bool mibl_debug_traversal = false; */
+/* bool mibl_debug_traversal_opam = false; */
+/* bool mibl_trace_mibl   = false; */
 #endif
 
 #if INTERFACE
@@ -80,6 +80,7 @@ struct mibl_config_s mibl_config = {
     .libct            = 0
 };
 
+// returns 1 on success
 LOCAL int _miblrc_handler(void* config, const char* section, const char* name, const char* value)
 {
 #if defined(DEBUG_TRACE)
@@ -97,22 +98,22 @@ LOCAL int _miblrc_handler(void* config, const char* section, const char* name, c
         return 1;
     }
 
-    if (MATCH("mibl", "flags")) {
-        if (verbose && verbosity > 1) log_debug("miblrc [mibl] debug: %s", value);
+    if (MATCH("mibl", "flag")) {
+        if (verbose && verbosity > 1)
+            log_debug("miblrc [mibl] debug: %s", value);
 
-        //FIXME: we do not want to depend on s7 here, so we need to store any flags from miblrc into mibl_config
+        //FIXME? directly use mibl_s7_set_flag instead of mibl_config struct
+        //FIXME? we do not want to depend on s7 here, so we need to store any flags from miblrc into mibl_config
 
         char *token, *sep = " ,\t";
         token = strtok((char*)value, sep);
         while( token != NULL ) {
             /* log_debug("miblrc [mibl] flags token: %s", token); */
-            /* mibl_s7_set_flag(token, true); */
+            mibl_s7_set_flag(token, true);
             token = strtok(NULL, sep);
         }
         return 1;
     }
-
-    //FIXME: directly use mibl_s7_set_flag instead of mibl_config struct
 
     if (MATCH("mibl", "emit")) {
         if (verbose && verbosity > 1) log_debug("miblrc [mibl] emit: %s", value);
@@ -131,10 +132,9 @@ LOCAL int _miblrc_handler(void* config, const char* section, const char* name, c
             pconfig->emit_parsetree = true;
         } else {
             log_error("mibl ini file: invalid value %s for 'emit' in section 'mibl'; allowed values: parsetree, mibl, starlark, none", value);
-            ini_error = true;
+            /* ini_error = true; */
             return 0;
         }
-
         return 1;
     }
 
@@ -154,7 +154,7 @@ LOCAL int _miblrc_handler(void* config, const char* section, const char* name, c
         }
         else {
             log_error("mibl ini file: invalid value %s for 'log' in section 'mibl'; allowed values: exports, mibl, parsetree", value);
-            ini_error = true;
+            /* ini_error = true; */
             return 0;
         }
         return 1;
@@ -169,7 +169,7 @@ LOCAL int _miblrc_handler(void* config, const char* section, const char* name, c
         while( token != NULL ) {
             if (token[0] == '/') {
                 log_error("Ini file: 'pkg' values in section 'mibl' must be relative paths: %s", token);
-                ini_error = true;
+                /* ini_error = true; */
                 return 0;
             } else {
                 log_debug("miblrc pushing pkg: %s", token);
@@ -193,7 +193,7 @@ LOCAL int _miblrc_handler(void* config, const char* section, const char* name, c
         while( token != NULL ) {
             if (token[0] == '/') {
                 log_error("Ini file: 'exclude' values in section 'srcs' must be relative paths: %s", token);
-                ini_error = true;
+                /* ini_error = true; */
                 return 0;
             } else {
                 /* log_debug("pushing exclude dir: %s", token); */
@@ -212,7 +212,7 @@ LOCAL int _miblrc_handler(void* config, const char* section, const char* name, c
         while( token != NULL ) {
             if (token[0] == '/') {
                 log_error("Ini file: 'include' values in section 'srcs' must be relative paths: %s", token);
-                ini_error = true;
+                /* ini_error = true; */
                 return 0;
             } else {
                 /* FIXME: support concats, e.g. foo/bar:foo/baz */
@@ -231,7 +231,7 @@ LOCAL int _miblrc_handler(void* config, const char* section, const char* name, c
         while( token != NULL ) {
             if (token[0] == '/') {
                 log_error("Ini file: 'dir' values in section 'watch' must be relative paths: %s", token);
-                ini_error = true;
+                /* ini_error = true; */
                 return 0;
             } else {
                 /* log_debug("pushing watch dir: %s", token); */
@@ -316,29 +316,59 @@ EXPORT void show_mibl_config(void)
     fflush(NULL);
 }
 
-EXPORT void mibl_configure(void)
+LOCAL void _load_user_mibl_config(void)
 {
-    /* mibl_debug_mibl = true; */
-    /* mibl_debug_miblrc = true; */
 #if defined(DEBUG_TRACE)
-    if (mibl_debug_mibl)
-        log_trace("mibl_configure");
+    if (mibl_trace)
+        log_trace(BLU "_load_user_mibl_config" CRESET);
 #endif
-    /* **************** */
-    /* project-local .config/miblrc config file */
+    utstring_new(obazl_ini_path);
+    utstring_printf(obazl_ini_path,
+                    "%s/.config/mibl/miblrc",
+                    getenv("HOME"));
 
-    utarray_new(mibl_config.pkgs, &ut_str_icd);
-    utarray_new(mibl_config.exclude_dirs, &ut_str_icd);
-    utarray_new(mibl_config.include_dirs, &ut_str_icd);
-    utarray_new(mibl_config.watch_dirs, &ut_str_icd);
+    int rc = access(utstring_body(obazl_ini_path), R_OK);
+    if (rc) {
+        if (verbose)
+            log_warn("NOT FOUND: user miblrc config file %s",
+                     utstring_body(obazl_ini_path));
+        return;
+    }
 
-    if (getenv("BAZEL_TEST")) goto summary;
+    if (verbose)
+        log_info("loading user miblrc config file: %s",
+                 utstring_body(obazl_ini_path));
 
+    /* PARSE INI FILE */
+    rc = ini_parse(utstring_body(obazl_ini_path), _miblrc_handler, &mibl_config);
+
+    if (rc < 0) { // libinih convention
+        //FIXME: deal with missing .config/miblrc
+        perror("ini_parse");
+        log_fatal("Can't load/parse ini file: %s",
+                  utstring_body(obazl_ini_path));
+        exit(EXIT_FAILURE);
+    }
+    if (verbose && verbosity > 1)
+        log_info("Loaded miblrc config file: %s",
+                 utstring_body(obazl_ini_path));
+    /* } */
+
+    utarray_sort(mibl_config.include_dirs, strsort);
+    utarray_sort(mibl_config.exclude_dirs, strsort);
+}
+
+LOCAL void _load_ws_mibl_config(void)
+{
+#if defined(DEBUG_TRACE)
+    if (mibl_trace)
+        log_trace(BLU "_load_ws_mibl_config" CRESET);
+#endif
     utstring_new(obazl_ini_path);
     utstring_printf(obazl_ini_path, "%s/%s",
                     rootws, MIBL_INI_FILE);
 
-    rc = access(utstring_body(obazl_ini_path), R_OK);
+    int rc = access(utstring_body(obazl_ini_path), R_OK);
     if (rc) {
         //FIXME: also look in XDG_CONFIG_HOME
         utstring_renew(obazl_ini_path);
@@ -351,35 +381,50 @@ EXPORT void mibl_configure(void)
             return;
         }
     }
-    /* } else { */
-        ini_error = false;
-        if (verbose)
-            log_info("loading miblrc config file: %s",
-                     utstring_body(obazl_ini_path));
 
-        /* PARSE INI FILE */
-        rc = ini_parse(utstring_body(obazl_ini_path), _miblrc_handler, &mibl_config);
+    if (verbose)
+        log_info("loading miblrc config file: %s",
+                 utstring_body(obazl_ini_path));
 
-        if (rc < 0) {
-            //FIXME: deal with missing .config/miblrc
-            perror("ini_parse");
-            log_fatal("Can't load/parse ini file: %s",
-                      utstring_body(obazl_ini_path));
-            exit(EXIT_FAILURE);
-        }
-        if (ini_error) {
-            log_error("Error parsing ini file");
-            exit(EXIT_FAILURE);
-            /* } else { */
-            /*     log_debug("Config loaded from %s", utstring_body(obazl_ini_path)); */
-        }
-        if (verbose && verbosity > 1)
-            log_info("Loaded miblrc config file: %s",
-                     utstring_body(obazl_ini_path));
+    /* PARSE INI FILE */
+    rc = ini_parse(utstring_body(obazl_ini_path), _miblrc_handler, &mibl_config);
+
+    if (rc < 0) { // libinih convention
+        //FIXME: deal with missing .config/miblrc
+        perror("ini_parse");
+        log_fatal("Can't load/parse ini file: %s",
+                  utstring_body(obazl_ini_path));
+        exit(EXIT_FAILURE);
+    }
+    if (verbose && verbosity > 1)
+        log_info("Loaded miblrc config file: %s",
+                 utstring_body(obazl_ini_path));
     /* } */
 
     utarray_sort(mibl_config.include_dirs, strsort);
     utarray_sort(mibl_config.exclude_dirs, strsort);
+}
+
+EXPORT void mibl_configure(void)
+{
+    /* mibl_debug_mibl = true; */
+    /* mibl_debug_miblrc = true; */
+#if defined(DEBUG_TRACE)
+    if (mibl_trace)
+        log_trace(UBLU "mibl_configure" CRESET);
+#endif
+    /* **************** */
+    /* project-local .config/miblrc config file */
+
+    utarray_new(mibl_config.pkgs, &ut_str_icd);
+    utarray_new(mibl_config.exclude_dirs, &ut_str_icd);
+    utarray_new(mibl_config.include_dirs, &ut_str_icd);
+    utarray_new(mibl_config.watch_dirs, &ut_str_icd);
+
+    if (getenv("BAZEL_TEST")) goto summary;
+
+    _load_user_mibl_config();
+    _load_ws_mibl_config();
 
  summary:
     if (verbose && verbosity > 1) {

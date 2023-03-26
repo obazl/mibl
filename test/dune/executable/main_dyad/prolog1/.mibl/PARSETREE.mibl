@@ -1,0 +1,15 @@
+((:@ (:name . "@")
+     (:path . /Users/gar/obazl/mibl/test/dune/executable/main_dyad/prolog1)
+     (:exports
+         (hash-table)) (:opam (hash-table)) (:shared-ppx (hash-table))
+     (:filegroups
+         (hash-table))
+     (:pkgs
+         (hash-table
+           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/executable/main_dyad/prolog1") (:pkg-path . "./")
+                   (:realpath . "/Users/gar/obazl/mibl/test/dune/executable/main_dyad/prolog1")
+                   (:structures (:static (A a.ml)))
+                   (dune (executable (name main) (public_name main) (flags (:standard -linkall))
+                                     (link_flags -link_flag_a) (ocamlc_flags -compile_flag_vm)
+                                     (ocamlopt_flags -compile_flag_opt)))
+                   (:modules (Main (:ml main.ml) (:mli main.mli))))))))

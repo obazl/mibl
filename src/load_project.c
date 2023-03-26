@@ -29,6 +29,8 @@
 s7_pointer deps_list;
 
 #if defined(DEBUG_TRACE)
+bool mibl_debug_traversal = false;
+bool mibl_debug_traversal_opam = false;
 extern bool mibl_debug_deps;
 #endif
 bool mibl_show_deps = false;
