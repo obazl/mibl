@@ -9,16 +9,16 @@
           (format #t "~A: ~A~%" (ublue "ws-path") ws-path)
           (format #t "~A: ~A~%" (ublue "pkg-path") pkg-path)
           (format #t "~A: ~A~%" (ublue "pwd") (pwd))
-          (format #t "~A: ~A~%" (ublue "tmp-dir") *tmp-dir*)))
+          (format #t "~A: ~A~%" (ublue "tmp-dir") *mibl-tmp-dir*)))
 
-    (system (format #f "cp -v ~A/~A ~A" pkg-path mly-src *tmp-dir*))
+    (system (format #f "cp -v ~A/~A ~A" pkg-path mly-src *mibl-tmp-dir*))
     (let ((yacc-cmd
-           (format #f "ocamlyacc ~A/~A" *tmp-dir* mly-src)))
+           (format #f "ocamlyacc ~A/~A" *mibl-tmp-dir* mly-src)))
       (if *mibl-debug-s7*
           (format #t "~A: ~A~%" (red "yacc-cmd") yacc-cmd))
       (system yacc-cmd)
       (let* ((ocamldep-cmd
-              (format #f "ocamldep -one-line -modules -I ~A ~A/*" pkg-path *tmp-dir*))
+              (format #f "ocamldep -one-line -modules -I ~A ~A/*" pkg-path *mibl-tmp-dir*))
              (deps (string-trim '(#\newline) (system ocamldep-cmd #t)))
              (file-deps (string-split deps #\newline)))
         (if *mibl-debug-s7*

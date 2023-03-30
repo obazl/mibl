@@ -51,25 +51,6 @@
 ;; We also need to disentangle the 'flags' field; for example '-open
 ;; Foo' is for module compilation, not linkage of executables.
 
-(define (prologue-contains-module? prologue-key modname pkg)
-  (if (or *mibl-debug-executables* *mibl-debug-s7*)
-      (begin
-        (format #t "~A: ~A ~A\n"
-                (ublue "prologue-contains-module?") prologue-key modname)
-        (format #t "~A: ~A\n" (yellow "pkg") pkg)))
-  (if-let ((prologues (assoc-in '(:mibl :prologues) pkg)))
-          (let* ((prologues (cdr prologues))
-                 (the-prologue (assoc-val prologue-key prologues))
-                 (modules (assoc-val :modules the-prologue))
-                 )
-            ;; (format #t "~A: ~A\n" (yellow "prologues") prologues)
-            ;; (format #t "~A: ~A\n" (yellow "the-prologue") the-prologue)
-            ;; (format #t "~A: ~A\n" (yellow "modules") modules)
-            (if (member modname modules)
-                #t #f))
-          ;; should not happen:
-          (error 'Missing-prologues "Pkg is missing a :prologues list")))
-
 (define (-exec-flags->mibl stanza-alist)
   (if (or *mibl-debug-executables* *mibl-debug-s7*)
       (format #t "~A: ~A\n"
@@ -293,9 +274,9 @@
 
          ;; prologue: pkg-manifest excluding main executables
          (prologue (let* ((modules (assoc-val :modules (cdr pkg-manifest)))
-                          (prologue (filter (lambda (m) (not (member m mains))) modules)))
+                          (prologue (filter (lambda (m) (not (member m mains))) (copy modules))))
                      (if (truthy? prologue)
-                         (cons :prologue prologue)
+                         (cons :prologue (sort! prologue sym<?))
                          #f)))
          ;; (prologue (if (truthy? prologue) (sort! prologue sym<?) prologue))
          (_ (if (or *mibl-debug-executables* *mibl-debug-s7*) (format #t "~A: ~A\n" (uwhite "prologue") prologue)))
@@ -599,7 +580,7 @@
                                       `((:main . ,(normalize-module-name privname)))
                                       (if (truthy? common-flds) common-flds '())
                                       (if (truthy? common-opts) common-opts '())
-                                      (if (truthy? prologue) (list prologue) '())
+                                      (if (truthy? prologue) (list (copy prologue)) '())
                                       (if (truthy? link-flds) link-flds '())
                                       (if (truthy? compile-flds) (list compile-flds) '())
                                       (if (truthy? cc-flds) (list cc-flds) '())
@@ -629,6 +610,7 @@
          (_ (if (or *mibl-debug-executables* *mibl-debug-s7*)
                 (format #t "~A: ~A\n" (green "stanza-alist") stanza-alist)))
 
+         ;; FIXME: 'names' is required
          (privnames (if (case kind ((:executable :test) #t) (else #f))
                         (if-let ((privnames
                                  (assoc-val 'names stanza-alist)))
@@ -640,17 +622,26 @@
          (pubnames (if (case kind ((:executable :test) #t) (else #f)) ;; (equal? kind :executable)
                        (if-let ((pubnames
                                  (assoc-val 'public_names stanza-alist)))
-                               pubnames privnames)
-                       privnames))
+                               pubnames
+                               #f)
+                       #f))
 
+         ;; FIXME: create a (privname . pubname) map (alist) instead of maintaining two lists
+         (names-map (if pubnames
+                        (map cons privnames pubnames)
+                        (map (lambda (nm) (cons nm #f)) privnames)))
+         (_ (if (or *mibl-debug-executables* *mibl-debug-s7*)
+                (format #t "~A: ~A~%" (yellow "names-map") names-map)))
+         ;; (_ (error 'x "X"))
 
          ;;rename privpub to ??? stanza-modules?
          ;; NB: no need to unify pub and privnames, we only build privnames,
          ;; though pubnames may be used as target names. so use exemodules.
-         (privpubmodules (remove-duplicates
-                          (map normalize-module-name
-                               (flatten (concatenate privnames pubnames)))))
-         (_ (if (or *mibl-debug-executables* *mibl-debug-s7*) (format #t "~A: ~A~%" (yellow "privpubmodules") privpubmodules)))
+         ;; (privpubmodules (remove-duplicates
+         ;;                  (map normalize-module-name
+         ;;                       (flatten (concatenate privnames pubnames)))))
+         ;; (_ (if (or *mibl-debug-executables* *mibl-debug-s7*) (format #t "~A: ~A~%" (yellow "privpubmodules") privpubmodules)))
+
          (filtered-stanza-alist stanza-alist)
          ;; (filtered-stanza-alist (alist-delete '(names public_names) stanza-alist))
          (text-exe? (-is-test-executable? ws pkg stanza))
@@ -720,10 +711,12 @@
 
           (if (or *mibl-debug-executables* *mibl-debug-s7*)
               (format #t "~A: ~A, ~A~%" (bgred "ITERATING EXECUTABLES") privnames pubnames))
-          (map (lambda (privname pubname)
+          (map (lambda (priv-pub)
                  (if (or *mibl-debug-executables* *mibl-debug-s7*)
-                     (format #t "~A: ~A, ~A~%" (umagenta "encoding pubpriv exec") privname pubname))
-                 (let ((privmodule (normalize-module-name privname)))
+                     (format #t "~A: ~A~%" (umagenta "encoding pubpriv exec") priv-pub))
+                 (let ((privname (car priv-pub))
+                       (pubname (cdr priv-pub))
+                       (privmodule (normalize-module-name (car priv-pub))))
 
                    (if (not test-exe?) ;; (-is-test-executable? ws pkg stanza))
                        (begin
@@ -842,5 +835,7 @@
                    ;;   (prune-mibl-rule x)
                    ;;   )
                    ))
-               privnames pubnames)
+               ;;privnames pubnames
+               names-map
+               )
            ))))

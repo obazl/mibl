@@ -179,7 +179,7 @@
           (format #t "~A: ~A~%" (ublue "module->local-deps") module))
 
       (let* ((module-tlbl (find-module-in-pkg module pkg))
-             (_ (format #t "~A: ~A~%" (ublue "module tagged lbl") module-tlbl))
+             ;; (_ (format #t "~A: ~A~%" (ublue "module tagged lbl") module-tlbl))
              (ml-deps (if-let ((deps (assoc-val :ml (cdr module-tlbl))))
                               (cdr deps)
                               (if-let ((deps (assoc-val :ml_ (cdr module-tlbl))))
@@ -544,21 +544,21 @@
                   (format #t "~A: ~A~%" (blue "mly module") mly))
               (let* ((mly-src (assoc-val :mly (cdr mly)))
                      (principal (format #f "~A" (bname mly-src)))
-                     (cp-cmd (format #f "cp -v ~A/~A ~A" pkg-path mly-src *tmp-dir*)))
+                     (cp-cmd (format #f "cp -v ~A/~A ~A" pkg-path mly-src *mibl-tmp-dir*)))
                 (if *mibl-debug-s7*
                     (begin
                       (format #t "~A: ~A~%" (blue "mly-src") mly-src)
                       (format #t "~A: ~A~%" (blue "cp-cmd") cp-cmd)))
                 (system cp-cmd) ;;;;;;;;;;;;;;;; SYS
                 (let ((yacc-cmd
-                       (format #f "ocamlyacc ~A/~A" *tmp-dir* mly-src)))
+                       (format #f "ocamlyacc ~A/~A" *mibl-tmp-dir* mly-src)))
                   (if *mibl-debug-s7*
                       (format #t "~A: ~A~%" (blue "yacc-cmd") yacc-cmd))
                   (system yacc-cmd)  ;;;;;;;;;;;;;;;; SYS
                   (let* ((ocamldep-cmd
                           (format
                            #f "ocamldep -one-line -modules -I ~A ~A/~A.*"
-                           pkg-path *tmp-dir* principal))
+                           pkg-path *mibl-tmp-dir* principal))
                          (deps (string-trim '(#\newline) (system ocamldep-cmd #t))) ;;;;;;;;;;;;;;;; SYS
                          (file-deps (string-split deps #\newline)))
                     (if *mibl-debug-s7*
@@ -632,21 +632,21 @@
               (let* ((mll-src (cdr mll))
                      (ml-src (format #f "~A.ml" (bname mll-src)))
                      ;;FIXME: if verbose, add '-v' to cmd
-                     (cp-cmd (format #f "cp ~A/~A ~A" pkg-path mll-src *tmp-dir*)))
+                     (cp-cmd (format #f "cp ~A/~A ~A" pkg-path mll-src *mibl-tmp-dir*)))
                 (if *mibl-debug-s7*
                     (begin
                       (format #t "~A: ~A~%" (blue "mll-src") mll-src)
                       (format #t "~A: ~A~%" (blue "cp-cmd") cp-cmd)))
                 (system cp-cmd) ;;;;;;;;;;;;;;;; SYS
                 (let ((lex-cmd
-                       (format #f "ocamllex -q ~A/~A" *tmp-dir* mll-src)))
+                       (format #f "ocamllex -q ~A/~A" *mibl-tmp-dir* mll-src)))
                   (if *mibl-debug-s7*
                       (format #t "~A: ~A~%" (blue "lex-cmd") lex-cmd))
                   (system lex-cmd)  ;;;;;;;;;;;;;;;; SYS
                   (let* ((ocamldep-cmd
                           (format
                            #f "ocamldep -one-line -modules -I ~A ~A/~A"
-                           pkg-path *tmp-dir* ml-src))
+                           pkg-path *mibl-tmp-dir* ml-src))
                          (deps (string-trim '(#\newline) (system ocamldep-cmd #t))) ;;;;;;;;;;;;;;;; SYS
                          (file-deps (cdr (string-split deps #\newline))))
                     (if *mibl-debug-s7*
@@ -758,7 +758,7 @@
           (format #t "~A: ~A~%" (blue "ws-path") ws-path)
           (format #t "~A: ~A~%" (blue "pkg-path") pkg-path)
           (format #t "~A: ~A~%" (blue "pwd") (pwd))
-          (format #t "~A: ~A~%" (blue "tmp-dir") *tmp-dir*)))
+          (format #t "~A: ~A~%" (blue "tmp-dir") *mibl-tmp-dir*)))
 
     ;; 1. copy mly file to tmp dir (ensure tmp dir empty first?)
     ;; 2. run ocamlyacc on it

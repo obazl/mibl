@@ -35,12 +35,12 @@
                                        (begin
                                          (if *mibl-debug-s7*
                                              (begin
-                                               (format #t "~A: ~A~%" (bgred "pkg-shared-opts") pkg-shared-opts)
-                                               (format #t "~A: ~A~%" (ublue "opts-fld") opts-fld)))
+                                               (format #t "~A: ~A~%" (green "pkg-shared-opts") pkg-shared-opts)
+                                               (format #t "~A: ~A~%" (green "opts-fld") opts-fld)))
                                          (let* ((opts (cdr opts-fld))
                                                 (shared (rassoc opts pkg-shared-opts)))
                                            (if *mibl-debug-s7*
-                                               (format #t "~A: ~A~%" (bgred "rassoc") shared))
+                                               (format #t "~A: ~A~%" (green "rassoc") shared))
                                            (if (null? shared)
                                                (begin
                                                  (if *mibl-debug-s7*
@@ -57,7 +57,7 @@
                                                      (format #t "~A: ~A~%" (ugreen "updated stanza") stanza))
                                                  ))))))))))
                         (cdr dune))
-              (format #t "~A: ~A~%" (bgred "updating pkg with shared opts") pkg-shared-opts)
+              ;; (format #t "~A: ~A~%" (green "updating pkg with shared opts") pkg-shared-opts)
               (if (truthy? pkg-shared-opts)
                   (let ((key (case opt-type
                                ((:opts) :shared-opts)
