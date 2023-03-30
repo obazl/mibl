@@ -6,6 +6,10 @@
 
 #include "meta_packages.h"
 
+#if defined(DEBUG_TRACE)
+extern bool mibl_trace;
+#endif
+
 #if EXPORT_INTERFACE
 struct obzl_meta_package {
     char *name;

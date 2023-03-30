@@ -23,6 +23,8 @@
 #include <string.h>
 #endif
 
+s7_pointer g_dunefile_port;
+
 extern const UT_icd ut_str_icd;
 
 extern s7_scheme *s7;
@@ -289,11 +291,11 @@ char *dunefile_to_string(UT_string *dunefile_name)
 #endif
     /* core/dune file size: 45572 */
     // 2K
-#define BUFSZ 131072
-    static char inbuf[BUFSZ];
-    memset(inbuf, '\0', BUFSZ);
-    static char outbuf[BUFSZ + 20];
-    memset(outbuf, '\0', BUFSZ);
+#define DUNE_BUFSZ 131072
+    static char inbuf[DUNE_BUFSZ];
+    memset(inbuf, '\0', DUNE_BUFSZ);
+    static char outbuf[DUNE_BUFSZ + 20];
+    memset(outbuf, '\0', DUNE_BUFSZ);
 
     /* FIXME: what about e.g. unicode in string literals? */
     errno = 0;
@@ -314,10 +316,10 @@ char *dunefile_to_string(UT_string *dunefile_name)
     if (mibl_debug) log_debug("filesize: %d", fileSize);
 #endif
 
-    if (fileSize > BUFSZ) {
+    if (fileSize > DUNE_BUFSZ) {
         printf(RED "ERROR:" CRESET
-               " dune file '%s' size (%" PRIu64 " > BUFSZ (%d)\n", utstring_body(dunefile_name), fileSize, BUFSZ);
-        log_error("dune file size (%d) > BUFSZ (%d)", fileSize, BUFSZ);
+               " dune file '%s' size (%" PRIu64 " > DUNE_BUFSZ (%d)\n", utstring_body(dunefile_name), fileSize, DUNE_BUFSZ);
+        log_error("dune file size (%d) > DUNE_BUFSZ (%d)", fileSize, DUNE_BUFSZ);
         exit(EXIT_FAILURE);     /* FIXME: exit gracefully */
     }
     rewind(instream);
@@ -332,10 +334,10 @@ char *dunefile_to_string(UT_string *dunefile_name)
     int read_ct = 0;
     do {
         /* printf("reading...\n"); */
-        if (outFileSizeCounter > BUFSZ) {
+        if (outFileSizeCounter > DUNE_BUFSZ) {
             /* probably won't see a 16K dune file */
-            read_ct = fread(inbuf, 1, (size_t) BUFSZ, instream);
-            if (read_ct != BUFSZ) {
+            read_ct = fread(inbuf, 1, (size_t) DUNE_BUFSZ, instream);
+            if (read_ct != DUNE_BUFSZ) {
                 if (ferror(instream) != 0) {
                     printf(RED "ERROR" CRESET " fread error 1 for %s\n",
                               utstring_body(dunefile_name));
@@ -343,13 +345,13 @@ char *dunefile_to_string(UT_string *dunefile_name)
                               utstring_body(dunefile_name));
                     exit(EXIT_FAILURE); //FIXME: exit gracefully
                 } else {
-                    // readed < BUFSZ?
+                    // readed < DUNE_BUFSZ?
                 }
             } else {
-                // readed BUFSZ bytes?
+                // readed DUNE_BUFSZ bytes?
             }
             /* log_debug("writing"); */
-            outFileSizeCounter -= BUFSZ;
+            outFileSizeCounter -= DUNE_BUFSZ;
         }
         else {
             read_ct = fread(inbuf, 1, (size_t) outFileSizeCounter, instream);
@@ -417,18 +419,18 @@ char *dunefile_to_string(UT_string *dunefile_name)
                 /* log_debug("to buf: '%s'", outptr); */
             }
 #endif
-            if (ct >= BUFSZ) {
+            if (ct >= DUNE_BUFSZ) {
                 printf("output string has been truncated!\n");
             }
             outptr = outptr + (cursor - inptr) - 1;
             outptr[cursor - inptr] = '\0';
-            ct = strlcat(outptr, " ./", BUFSZ);
+            ct = strlcat(outptr, " ./", DUNE_BUFSZ);
             outptr += 3;
 
             inptr = inptr + (cursor - inptr) + 1;
             /* printf(GRN "inptr:\n" CRESET " %s\n", inptr); */
 
-            if (ct >= BUFSZ) {
+            if (ct >= DUNE_BUFSZ) {
                 printf(RED "ERROR" CRESET "write count exceeded output bufsz\n");
                 exit(EXIT_FAILURE);
                 // output string has been truncated

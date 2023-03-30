@@ -1,0 +1,67 @@
+cc_library(
+    name = "mustach",
+    # alwayslink = True,
+    # linkstatic = True,
+    srcs = [
+        # COREOBJS := mustach.o mustach-wrap.o
+        "mustach.c", "mustach.h",
+        "mustach-wrap.c", "mustach-wrap.h",
+        "main.c",
+        "mustach-cjson.c", "mustach-cjson.h",
+    ],
+    hdrs = ["mustach.h", "mustach-cjson.h"],
+    deps = ["//vendored/cjson"],
+    copts = [
+        "-x", "c",
+        # "-Wall",
+        # "-pedantic",
+        "-I", "vendored",
+        "-I", "external/mibl/vendored",
+
+        "-DTOOL=MUSTACH_TOOL_CJSON"
+    ] + select({
+        "//bzl/host:macos": ["-std=c11"],
+        "//bzl/host:linux": [], # FIXME
+        "//conditions:default":  [] #"-std=c11"]
+    }) + select({
+        # "//config/mode:pedantic?": ["-pedantic"],
+        "//conditions:default":  []
+    }),
+    visibility = [
+        "//src/findlib:__pkg__"
+    ],
+)
+
+cc_binary(
+    name = "mustach.exe",
+    # alwayslink = True,
+    # linkstatic = True,
+    srcs = [
+        # COREOBJS := mustach.o mustach-wrap.o
+        "mustach.c", "mustach.h",
+        "mustach-wrap.c", "mustach-wrap.h",
+        "main.c",
+        "mustach-cjson.c", "mustach-cjson.h",
+    ],
+    deps = ["//vendored/cjson"],
+    copts = [
+        "-x", "c",
+        # "-Wall",
+        # "-pedantic",
+        "-I", "vendored",
+        "-I", "external/mibl/vendored",
+
+        "-DTOOL=MUSTACH_TOOL_CJSON"
+    ] + select({
+        "//bzl/host:macos": ["-std=c11"],
+        "//bzl/host:linux": [], # FIXME
+        "//conditions:default":  [] #"-std=c11"]
+    }) + select({
+        # "//config/mode:pedantic?": ["-pedantic"],
+        "//conditions:default":  []
+    }),
+    visibility = [
+        "//src/findlib:__pkg__"
+    ],
+)
+

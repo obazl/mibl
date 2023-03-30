@@ -31,7 +31,7 @@
 #include "cmd_runner.h"
 
 #if defined(DEBUG_TRACE)
-extern bool mibl_debug_deps;
+bool mibl_debug_deps = false;
 #endif
 
 #if INTERFACE

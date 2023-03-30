@@ -45,6 +45,7 @@ UT_string *config_mibl;        /* work string */
 struct mibl_config_s {
     char *schema_version;
     int libct;
+    bool load_miblrc; // allows --no-miblrc
     //FIXME: remove debug flags, they're globals guarded by DEBUG_TRACE
     bool debug_ppx;
     bool debug_dune_rules;
@@ -66,8 +67,10 @@ struct mibl_config_s {
 };
 #endif
 
+/* global singleton */
 struct mibl_config_s mibl_config = {
     .schema_version   = MIBL_SCHEMA_VERSION,
+    .load_miblrc      = true,
     .debug_ppx        = false,
     .debug_dune_rules = false,
     .emit_parsetree   = false,
@@ -287,13 +290,42 @@ LOCAL int _miblrc_handler(void* config, const char* section, const char* name, c
     return 1;
 }
 
+EXPORT void mibl_check_tools(void) {
+    /* is shell available? */
+    int rc = system(NULL);
+    if (rc == 0) {
+        fprintf(stderr, "No system shell available\n");
+        exit(EXIT_FAILURE);
+    }
+
+    /* FIXME: not portable.  instead, scan $PATH...? */
+    /* if (system("which ocamldep > /dev/null 2>&1")) { */
+    /*     fprintf(stderr, "Cmd 'ocamldep' not found, but it is required by the conversion tool. If it is installed, try running 'eval $(opam env)'.\n"); */
+    /*     exit(EXIT_FAILURE); */
+    /* } */
+
+    /* if (system("which foobar > /dev/null 2>&1")) { */
+    /*     fprintf(stderr, RED "ERROR: " CRESET "Command 'foobar' not found. Please run 'opam install ocamldep'.\n"); */
+    /*     exit(EXIT_FAILURE); */
+    /* } */
+}
+
 EXPORT void show_mibl_config(void)
 {
     log_info(GRN "mibl configuration summary:" CRESET);
 
-    log_info("\tschema_version: %s", mibl_config.schema_version);
-    log_info("\temit_parsetree: %s",
-             mibl_config.emit_parsetree? "true" : "false");
+    log_info("\tschema_version: %s"   , mibl_config.schema_version);
+    log_info("\tload_miblrc: %d"      , mibl_config.load_miblrc);
+    log_info("\tdebug_ppx: %d"        , mibl_config.debug_ppx);
+    log_info("\tdebug_dune_rules: %d" , mibl_config.debug_dune_rules);
+    log_info("\temit_parsetree: %d"   , mibl_config.emit_parsetree);
+    log_info("\temit_mibl: %d"        , mibl_config.emit_mibl);
+    log_info("\temit_starlark: %d"    , mibl_config.emit_starlark);
+    log_info("\tshow_exports: %d"     , mibl_config.show_exports);
+    log_info("\tshow_project: %d"     , mibl_config.show_project);
+    log_info("\tshow_parsetree: %d"   , mibl_config.show_parsetree);
+    log_info("\tshow-starlark: %d"    , mibl_config.show_starlark);
+    log_info("\tlibct: %d"            , mibl_config.libct);
 
     char **p;
     p = NULL;
@@ -335,7 +367,7 @@ LOCAL void _load_user_mibl_config(void)
         return;
     }
 
-    if (verbose)
+    if (verbose && verbosity > 1)
         log_info("loading user miblrc config file: %s",
                  utstring_body(obazl_ini_path));
 
@@ -349,8 +381,8 @@ LOCAL void _load_user_mibl_config(void)
                   utstring_body(obazl_ini_path));
         exit(EXIT_FAILURE);
     }
-    if (verbose && verbosity > 1)
-        log_info("Loaded miblrc config file: %s",
+    if (verbose)
+        log_info("Loaded user miblrc: %s",
                  utstring_body(obazl_ini_path));
     /* } */
 
@@ -375,8 +407,8 @@ LOCAL void _load_ws_mibl_config(void)
         utstring_printf(obazl_ini_path, "%s/.miblrc", rootws);
         rc = access(utstring_body(obazl_ini_path), R_OK);
         if (rc) {
-            if (verbose)
-                log_warn("NOT FOUND: miblrc config file %s",
+            if (verbose && verbosity > 1)
+                log_info("Project miblrc not found %s",
                          utstring_body(obazl_ini_path));
             return;
         }
@@ -396,8 +428,8 @@ LOCAL void _load_ws_mibl_config(void)
                   utstring_body(obazl_ini_path));
         exit(EXIT_FAILURE);
     }
-    if (verbose && verbosity > 1)
-        log_info("Loaded miblrc config file: %s",
+    if (verbose)
+        log_info("Loaded project miblrc: %s",
                  utstring_body(obazl_ini_path));
     /* } */
 
@@ -423,8 +455,10 @@ EXPORT void mibl_configure(void)
 
     if (getenv("BAZEL_TEST")) goto summary;
 
-    _load_user_mibl_config();
-    _load_ws_mibl_config();
+    if (mibl_config.load_miblrc) {
+        _load_user_mibl_config();
+        _load_ws_mibl_config();
+    }
 
  summary:
     if (verbose && verbosity > 1) {

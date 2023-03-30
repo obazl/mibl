@@ -21,13 +21,16 @@
 
 #include "s7.h"
 
+/* #include "libmibl.h" */
+
 #include "coswitch.h"
 
 
 #if defined(DEBUG_TRACE)
-extern bool debug;
+extern bool mibl_debug;
+extern int  debug_level;
 extern bool debug_findlib;
-extern bool trace;
+extern bool mibl_trace;
 #endif
 
 extern bool verbose;
@@ -47,6 +50,7 @@ enum OPTS {
     FLAG_DEBUG,
     FLAG_TRACE,
     FLAG_VERBOSE,
+    FLAG_QUIET,
     FLAG_HELP,
     LAST
 };
@@ -63,52 +67,30 @@ void _print_usage(void) {
     printf("\t-v, --verbose\t\t\tEnable verbosity. Repeatable.\n");
 }
 
-/* we need s7 to read dune-package files */
-void _mibl_s7_init(void) {
-    s7 = s7_init();
+static struct option options[] = {
+    /* 0 */
+    [OPT_PKG] = {.long_name="pkg",.short_name='p',
+                 .flags=GOPT_ARGUMENT_REQUIRED
+    },
+    [FLAG_JSOO] = {.long_name="jsoo", .short_name='j',
+                   .flags=GOPT_ARGUMENT_REQUIRED},
+    [FLAG_CLEAN] = {.long_name="clean",.short_name='c',
+                    .flags=GOPT_ARGUMENT_FORBIDDEN},
+    [FLAG_DEBUG] = {.long_name="debug",.short_name='d',
+                    .flags=GOPT_ARGUMENT_FORBIDDEN | GOPT_REPEATABLE},
+    [FLAG_TRACE] = {.long_name="trace",.short_name='t',
+                    .flags=GOPT_ARGUMENT_FORBIDDEN},
+    [FLAG_VERBOSE] = {.long_name="verbose",.short_name='v',
+                      .flags=GOPT_ARGUMENT_FORBIDDEN | GOPT_REPEATABLE},
+    [FLAG_QUIET] = {.long_name="quiet",.short_name='q',
+                    .flags=GOPT_ARGUMENT_FORBIDDEN},
+    [FLAG_HELP] = {.long_name="help",.short_name='h',
+                   .flags=GOPT_ARGUMENT_FORBIDDEN},
+    [LAST] = {.flags = GOPT_LAST}
+};
 
-    /* trap error messages */
-    /* close_error_config(); */
-    error_config_opam();
-    init_error_handlers_opam();
-
-    /* tmp dir */
-    char tplt[] = "/tmp/obazl.XXXXXXXXXX";
-    char *tmpdir = mkdtemp(tplt);
-    /* printf("tmpdir: %s\n", tmpdir); */
-    s7_define_variable(s7, "*tmp-dir*", s7_make_string(s7, tmpdir));
-}
-
-int main(int argc, char *argv[])
+void _set_options(struct option options[])
 {
-    char *opam_switch = NULL;
-
-    utarray_new(opam_include_pkgs,&ut_str_icd);
-    utarray_new(opam_exclude_pkgs,&ut_str_icd);
-
-    static struct option options[] = {
-        /* 0 */
-        [OPT_PKG] = {.long_name="pkg",.short_name='p',
-                     .flags=GOPT_ARGUMENT_REQUIRED
-        },
-        [FLAG_JSOO] = {.long_name="jsoo", .short_name='j',
-                      .flags=GOPT_ARGUMENT_REQUIRED},
-        [FLAG_CLEAN] = {.long_name="clean",.short_name='c',
-                      .flags=GOPT_ARGUMENT_REQUIRED},
-        [FLAG_DEBUG] = {.long_name="debug",.short_name='d',
-                       .flags=GOPT_ARGUMENT_FORBIDDEN | GOPT_REPEATABLE},
-        [FLAG_TRACE] = {.long_name="trace",.short_name='t',
-                       .flags=GOPT_ARGUMENT_FORBIDDEN},
-        [FLAG_VERBOSE] = {.long_name="verbose",.short_name='v',
-                         .flags=GOPT_ARGUMENT_FORBIDDEN | GOPT_REPEATABLE},
-        [FLAG_HELP] = {.long_name="help",.short_name='h',
-                      .flags=GOPT_ARGUMENT_FORBIDDEN},
-        [LAST] = {.flags = GOPT_LAST}
-    };
-
-    argc = gopt (argv, options);
-    gopt_errors (argv[0], options);
-
     if (options[FLAG_HELP].count) {
         _print_usage();
         exit(EXIT_SUCCESS);
@@ -122,14 +104,14 @@ int main(int argc, char *argv[])
 
     if (options[FLAG_DEBUG].count) {
 #if defined(DEBUG_TRACE)
-        debug = true;
+        mibl_debug = true;
         mibl_debug_level = options[FLAG_DEBUG].count;
 #endif
     }
 
     if (options[FLAG_TRACE].count) {
 #if defined(DEBUG_TRACE)
-        trace = true;
+        mibl_trace = true;
 #endif
     }
 
@@ -141,12 +123,56 @@ int main(int argc, char *argv[])
         utarray_push_back(opam_include_pkgs, &optarg);
     }
 
-        /* case 'x': */
-        /*     printf("EXCL %s\n", optarg); */
-        /*     utarray_push_back(opam_exclude_pkgs, &optarg); */
-        /*     break; */
+    /* case 'x': */
+    /*     printf("EXCL %s\n", optarg); */
+    /*     utarray_push_back(opam_exclude_pkgs, &optarg); */
+    /*     break; */
+}
 
-    bazel_configure(NULL);
+/* we need s7 to read dune-package files */
+/* void _mibl_s7_init(void) { */
+/*     s7 = s7_init(); */
+
+/*     /\* trap error messages *\/ */
+/*     /\* close_error_config(); *\/ */
+/*     error_config_opam(); */
+/*     init_error_handlers_opam(); */
+
+/*     /\* tmp dir *\/ */
+/*     char tplt[] = "/tmp/obazl.XXXXXXXXXX"; */
+/*     char *tmpdir = mkdtemp(tplt); */
+/*     /\* printf("tmpdir: %s\n", tmpdir); *\/ */
+/*     s7_define_variable(s7, "*tmp-dir*", s7_make_string(s7, tmpdir)); */
+/* } */
+
+UT_string *setter;
+
+int main(int argc, char *argv[])
+{
+    argc = gopt(argv, options);
+    (void)argc;
+
+    gopt_errors (argv[0], options);
+
+    _set_options(options);
+
+    utstring_new(runfiles_root);
+    utstring_printf(runfiles_root, "%s", getcwd(NULL, 0));
+
+    mibl_s7_init();
+
+    /* mibl_s7_init2(NULL, // options[OPT_MAIN].argument, */
+    /*              NULL); // options[OPT_WS].argument); */
+
+    mibl_configure();           /* reads miblrc, may call s7 */
+    utstring_new(setter);
+
+    char *opam_switch = NULL;
+
+    utarray_new(opam_include_pkgs,&ut_str_icd);
+    utarray_new(opam_exclude_pkgs,&ut_str_icd);
+
+    bazel_configure(NULL);      /* run by mibl_s7_init??? */
 
     chdir(rootws);            /* always run from base ws root */
 
@@ -157,10 +183,6 @@ int main(int argc, char *argv[])
     else
         opam_configure("");
 
-    mibl_configure();
-
-    _mibl_s7_init();
-
     /* char *wd = getenv("BUILD_WORKING_DIRECTORY"); */
     /* if (wd) { */
     /*     /\* we launched from bazel workspace, cd to launch dir *\/ */
@@ -170,6 +192,11 @@ int main(int argc, char *argv[])
     /* walk_tree(opam_lib, pkg_path); */
 
     if (options[FLAG_CLEAN].count) {
+        clean_coswitch();
+        if (options[FLAG_QUIET].count < 1)
+            printf(GRN "INFO: " CRESET
+                   "Cleaned and reset coswitch."
+                   " To reinitialize run 'bazel run @obazl//coswitch'\n");
     } else {
         convert_findlib_pkgs(opam_include_pkgs, opam_exclude_pkgs);
     }

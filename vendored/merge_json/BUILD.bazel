@@ -1,0 +1,32 @@
+cc_binary(
+    name = "merge_json",
+    srcs = [
+        "merge_json.c",
+        "ansi_colors.h",
+    ],
+    deps = ["//vendor/cjson"],
+    copts = [
+        "-x", "c",
+        # "-Wall",
+        # "-pedantic",
+        "-I", "vendor",
+        # "-DTOOL=MUSTACH_TOOL_CJSON"
+    ] + select({
+        "//bzl/host:maco?": ["-std=c11"],
+        "//bzl/host:linux": [],
+        "//conditions:default":  [] #"-std=c11"]
+    }) + select({
+        # "//config/mode:pedantic?": ["-pedantic"],
+        "//conditions:default":  [] # FIXME
+    }),
+    visibility = [
+        # "//boot:__pkg__",
+        # "//bytecomp:__pkg__",
+        # "//config:__pkg__",
+        # "//lambda:__pkg__",
+        # "//runtime:__subpackages__",
+        # "//stdlib:__pkg__",
+        # "//utils:__pkg__"
+    ],
+)
+

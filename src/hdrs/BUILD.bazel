@@ -66,8 +66,9 @@ FILELOCS = [
     "$(location //src:deps.c)",
     "$(location //src:cmd_runner.c)",
 
-    "$(location //src:error_handler_opam.c)",
     "$(location //src:error_handler_dune.c)",
+    "$(location //src:error_handler_opam.c)",
+    "$(location //src:error_handler_s7.c)",
     "$(location //src:handlers.c)",
     "$(location //src:handlers_opam.c)",
 
@@ -157,8 +158,9 @@ genrule(
         "//src:deps.c",
         "//src:cmd_runner.c",
 
-        "//src:error_handler_opam.c",
         "//src:error_handler_dune.c",
+        "//src:error_handler_opam.c",
+        "//src:error_handler_s7.c",
         "//src:handlers.c",
         "//src:handlers_opam.c",
 
@@ -269,6 +271,7 @@ genrule(
 
         "load_project.h",
         "error_handler_dune.h",
+        "error_handler_s7.h",
         "error_handler_opam.h",
 
         "utils.h",
@@ -308,8 +311,9 @@ genrule(
         "//src/findlib:debug_findlib.c",
         "//src/findlib:debug_meta.c",
 
-        "//src:error_handler_opam.c",
         "//src:error_handler_dune.c",
+        "//src:error_handler_opam.c",
+        "//src:error_handler_s7.c",
         "//src:handlers.c",
         "//src:handlers_opam.c",
 
@@ -392,8 +396,9 @@ genrule(
         "$(location //src/findlib:debug_findlib.c)",
         "$(location //src/findlib:debug_meta.c)",
 
-        "$(location //src:error_handler_opam.c)",
         "$(location //src:error_handler_dune.c)",
+        "$(location //src:error_handler_opam.c)",
+        "$(location //src:error_handler_s7.c)",
         "$(location //src:handlers.c)",
         "$(location //src:handlers_opam.c)",
 

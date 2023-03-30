@@ -16,6 +16,7 @@
 #include "debug.h"
 
 bool mibl_debug       = false;
+bool mibl_debug_findlib = false;
 int  mibl_debug_level = 0;
 bool mibl_debug_xdg   = false;
 

@@ -1,0 +1,24 @@
+cc_library(
+    name = "cjson",
+    linkstatic = True,
+    srcs = ["cJSON.c", "cJSON.h"],
+    copts = [
+        "-x", "c",
+        # "-Wall",
+        # "-pedantic",
+        # "-I", "vendor",
+        # "-DTOOL=MUSTACH_TOOL_CJSON"
+    ] + select({
+        "//bzl/host:macos": ["-std=c11"],
+        "//bzl/host:linux": [],
+        "//conditions:default":  [] #"-std=c11"]
+    }) + select({
+        # "//config/mode:pedantic?": ["-pedantic"], #FIXME
+        "//conditions:default":  []
+    }),
+    visibility = [
+        "//src/findlib:__pkg__",
+        "//vendored/mustach:__pkg__",
+    ],
+)
+

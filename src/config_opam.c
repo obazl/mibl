@@ -47,6 +47,8 @@ UT_string *opam_coswitch_bin    = NULL;
 UT_string *opam_switch_lib      = NULL;
 UT_string *opam_coswitch_lib    = NULL;
 
+UT_string *opam_ocaml_version   = NULL;
+
 /* seets global opam_switch_* vars */
 EXPORT void opam_configure(char *_opam_switch)
 {
@@ -71,6 +73,7 @@ EXPORT void opam_configure(char *_opam_switch)
     utstring_new(opam_coswitch_bin);
     utstring_new(opam_switch_lib);
     utstring_new(opam_coswitch_lib);
+    utstring_new(opam_ocaml_version);
 
     /* FIXME: handle switch arg */
     /* FIXME: argv */
@@ -78,16 +81,15 @@ EXPORT void opam_configure(char *_opam_switch)
     if (strlen(_opam_switch) == 0) {
 
         exe = "opam";
-        /* char *argv[] = {"opam", "var", "switch",NULL}; */
-        char *argv[] = {"opam", "var", "ocaml:version", NULL};
+        char *argv[] = {"opam", "var", "switch", NULL};
 
         result = run_cmd(exe, argv);
         if (result == NULL) {
-            fprintf(stderr, "FAIL: run_cmd 'opam var ocaml:version'\n");
+            fprintf(stderr, "FAIL: run_cmd 'opam var switch'\n");
         } else {
             utstring_printf(opam_switch_id, "%s", result);
             if (verbose && verbosity > 1)
-                log_info(" Current OPAM switch ocaml version: %s", result);
+                log_info(" Current OPAM switch: %s", result);
 
 #if defined(DEBUG_TRACE)
             log_debug("cmd result: '%s'", utstring_body(opam_switch_id));
@@ -143,6 +145,22 @@ EXPORT void opam_configure(char *_opam_switch)
         log_debug("cmd result: '%s'", utstring_body(opam_switch_lib));
 #endif
     }
+
+    char *argv4[] = {"opam", "var", "ocaml:version", NULL};
+    result = NULL;
+    result = run_cmd(exe, argv4);
+    if (result == NULL) {
+        log_fatal("FAIL: run_cmd 'opam var prefix'\n");
+        exit(EXIT_FAILURE);
+    } else {
+        if (verbose && verbosity > 1)
+            log_info("Current OPAM ocaml version: %s", result);
+        utstring_printf(opam_ocaml_version, "%s", result);
+#if defined(DEBUG_TRACE)
+        log_debug("cmd result: '%s'", utstring_body(opam_ocaml_version));
+#endif
+    }
+
     return;
 }
 

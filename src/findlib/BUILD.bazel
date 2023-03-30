@@ -90,6 +90,7 @@ cc_library(
         "//conditions:default":   []
     }) + select({
         "//compilation_mode:dbg?": [
+            "//src:debug.c", "//src/hdrs:debug.h",
             "debug_meta.c", "//src/hdrs:debug_meta.h",
             "debug_findlib.c", "//src/hdrs:debug_findlib.h"
         ],
@@ -100,6 +101,9 @@ cc_library(
         # "log.h",
     ],
     copts = [
+        "-Wall",
+        "-Werror",
+        "-pedantic-errors",
         "-Isrc",
         "-Iexternal/mibl/src",
         "-I$(GENDIR)/src",
@@ -126,8 +130,11 @@ cc_library(
         "-Iexternal/mibl/src/findlib",
         "-I$(GENDIR)/external/mibl/src/findlib",
 
-        # "-Iexternal/libs7/src",
-        # "-Iexternal/libinih",
+        "-Ivendored",
+        "-Iexternal/mibl/vendored",
+
+        "-Ivendored/mustach",
+        "-Iexternal/mibl/vendored/mustach",
     ],
     defines = select({
         "//compilation_mode:dbg?": ["DEBUG_TRACE", "DEBUG_MIBL"],
@@ -154,6 +161,7 @@ cc_library(
         "//coswitch/templates/platforms/target:BUILD.bazel",
 
         "//coswitch/templates:toolchain/adapters/local.BUILD",
+        "//coswitch/templates:toolchain/adapters/local.BUILD.mustache",
         "//coswitch/templates:toolchain/adapters/linux/x86_64.BUILD",
         "//coswitch/templates:toolchain/adapters/linux/arm.BUILD",
         "//coswitch/templates:toolchain/adapters/macos/x86_64.BUILD",
@@ -174,7 +182,9 @@ cc_library(
         ":meta_lexis",
         ":meta_syntaxis",
         "//src/dune",
-        "//vendored/logc"
+        "//vendored/logc",
+        "//vendored/cjson",
+        "//vendored/mustach"
     ],
     # ] + select({
     #     "//compilation_mode:dbg?": ["//src:debug"],

@@ -50,7 +50,9 @@ filegroup(
         "cmd_runner.c", "//src/hdrs:cmd_runner.h",
         # "mibl_s7.c", "//src/hdrs:mibl_s7.h",
         "config_opam.c", "//src/hdrs:config_opam.h",
-        # "config_s7.c", "//src/hdrs:config_s7.h",
+        "config_s7.c", "//src/hdrs:config_s7.h",
+        # "error_handler_s7.c", "//src/hdrs:error_handler_s7.h",
+        "error_handler_dune.c", "//src/hdrs:error_handler_dune.h",
         "error_handler_opam.c", "//src/hdrs:error_handler_opam.h",
         "utils.c", "//src/hdrs:utils.h",
         "//src/xdg:xdg.c", "//src/hdrs:xdg.h",
@@ -91,7 +93,7 @@ MIBL_SRCS = [
     "config_s7.c",
     "deps.c",
     "cmd_runner.c",
-    "error_handler_dune.c",
+    "error_handler_s7.c",
     # "fs.c",
     # "log.c", "log.h",
     "utils.c",
@@ -110,7 +112,7 @@ cc_library(
         "//src/hdrs:config_s7.h",
         "//src/hdrs:deps.h",
         "//src/hdrs:cmd_runner.h",
-        "//src/hdrs:error_handler_dune.h",
+        "//src/hdrs:error_handler_s7.h",
         # "fs.h",
         "//src/hdrs:utils.h",
 
@@ -258,7 +260,7 @@ CMD_HDR = "\n".join([
 #     outs = [
 #         "load_project.h",
 #         "config_s7.h",
-#         "error_handler_dune.h",
+#         "error_handler_s7.h",
 #     ],
 #     cmd = " ".join([
 #         "SRC1=$(location load_project.c);",
@@ -266,7 +268,7 @@ CMD_HDR = "\n".join([
 #         "$(location :makeheaders)",
 #         "$(location load_project.c)",
 #         "$(location config_s7.c)",
-#         "$(location error_handler_dune.c)",
+#         "$(location error_handler_s7.c)",
 #         # do not emit headers:
 #         "$(location debug_s7.c):",
 #         "$(location globals.c):",

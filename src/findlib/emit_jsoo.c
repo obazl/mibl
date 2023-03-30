@@ -8,6 +8,10 @@
 extern int spfactor;
 extern char *sp;
 
+#if defined(DEBUG_TRACE)
+extern bool mibl_debug;
+#endif
+
 /* emit_bazel_jsoo:
  * jsoo_library(
  *    name = "js",

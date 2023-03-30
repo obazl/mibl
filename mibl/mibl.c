@@ -5,6 +5,7 @@
 #include "log.h"
 #include "s7.h"
 
+/* libmibl.a public header */
 #include "libmibl.h"
 
 #include "mibl.h"
@@ -67,6 +68,8 @@ enum OPTS {
     FLAG_EMIT_MIBL,
     FLAG_EMIT_S7,
 
+    FLAG_NO_MIBLRC,
+
     FLAG_TRACE,
     FLAG_VERBOSE,
     FLAG_QUIET,
@@ -74,23 +77,20 @@ enum OPTS {
     LAST
 };
 
-int _update_mibl_config(struct option options[],
-                        struct mibl_config_s *mibl_config)
+int _update_mibl_config(struct option options[])
+                        /* struct mibl_config_s *mibl_config) */
 {
     /* log_debug("_update_mibl_config"); */
 
-    if (options[FLAG_EMIT_PARSETREE].count)
-        mibl_config->emit_parsetree = true;
+    if (options[FLAG_NO_MIBLRC].count > 0) {
+        if (verbose && verbosity > 1)
+            log_info("miblrc processing disabled");
+        mibl_config.load_miblrc = false;
+    }
 
-    /* if (verbose && verbosity > 1) { */
-    /*     log_debug("SHOW_EXPORTS: %d", mibl_config->show_exports); */
-    /*     log_debug("SHOW_PARSETREE: %d", mibl_config->show_parsetree); */
-    /*     /\* log_debug("SHOW_MIBL: %d", mibl_config->show_mibl); *\/ */
-    /*     log_debug("SHOW_STARLARK: %d", mibl_config->show_starlark); */
-    /*     log_debug("EMIT_PARSETREE: %d", mibl_config->emit_parsetree); */
-    /*     log_debug("EMIT_MIBL: %d", mibl_config->emit_mibl); */
-    /*     log_debug("EMIT_STARLARK: %d", mibl_config->emit_starlark); */
-    /* } */
+    if (options[FLAG_EMIT_PARSETREE].count)
+        mibl_config.emit_parsetree = true;
+
     return 0;                   /* success */
 }
 
@@ -177,26 +177,6 @@ void _update_s7_globals(struct option options[])
         }
         utstring_free(flag);
     }
-}
-
-void _check_tools(void) {
-    /* is shell available? */
-    int rc = system(NULL);
-    if (rc == 0) {
-        fprintf(stderr, "No system shell available\n");
-        exit(EXIT_FAILURE);
-    }
-
-    /* FIXME: not portable.  instead, scan $PATH...? */
-    /* if (system("which ocamldep > /dev/null 2>&1")) { */
-    /*     fprintf(stderr, "Cmd 'ocamldep' not found, but it is required by the conversion tool. If it is installed, try running 'eval $(opam env)'.\n"); */
-    /*     exit(EXIT_FAILURE); */
-    /* } */
-
-    /* if (system("which foobar > /dev/null 2>&1")) { */
-    /*     fprintf(stderr, RED "ERROR: " CRESET "Command 'foobar' not found. Please run 'opam install ocamldep'.\n"); */
-    /*     exit(EXIT_FAILURE); */
-    /* } */
 }
 
 void _print_version(void) {
@@ -322,6 +302,9 @@ static struct option options[] = {
     [FLAG_EMIT_PROJECT] = {.long_name="emit-project",
                            .flags=GOPT_ARGUMENT_FORBIDDEN},
 
+    [FLAG_NO_MIBLRC] = {.long_name="no-miblrc",
+                        .flags=GOPT_ARGUMENT_FORBIDDEN},
+
     [FLAG_TRACE] = {.long_name="trace",.short_name='t',
                     .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_VERBOSE] = {.long_name="verbose",.short_name='v',
@@ -333,14 +316,8 @@ static struct option options[] = {
     [LAST] = {.flags = GOPT_LAST}
 };
 
-int main(int argc, char **argv, char **envp)
+void _set_options(struct option options[])
 {
-    argc = gopt(argv, options);
-    (void)argc;
-    gopt_errors(argv[0], options);
-
-    /* **************************************************************** */
-
     if (options[FLAG_HELP].count) {
         if (options[FLAG_HELP].count > 1)
             _print_debug_usage();
@@ -402,16 +379,25 @@ int main(int argc, char **argv, char **envp)
     if (options[FLAG_SHOW_TRAVERSAL].count) {
         mibl_show_traversal = true;
     }
+}
 
-    /* **************************************************************** */
+int main(int argc, char **argv, char **envp)
+{
+    /* argc = gopt(argv, options); */
+    /* (void)argc; */
 
-    _check_tools();
+    gopt_errors(argv[0], options);
 
-    struct mibl_config_s *mibl_config
-        = mibl_s7_init(NULL, // options[OPT_MAIN].argument,
-                       options[OPT_WS].argument);
+    _set_options(options);
 
-    if (_update_mibl_config(options, mibl_config)) exit(EXIT_FAILURE);
+    mibl_check_tools();
+
+    mibl_s7_init();
+
+    _update_mibl_config(options);
+
+    mibl_s7_init2(NULL, // options[OPT_MAIN].argument,
+                 options[OPT_WS].argument);
 
     _update_s7_globals(options);
 

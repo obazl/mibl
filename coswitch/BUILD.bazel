@@ -1,20 +1,18 @@
 # load("@rules_cc//cc:defs.bzl", "cc_library")
 
-load("//src:BUILD.bzl", "CMD_FLAGS")
+load("//src:BUILD.bzl", "COPTS")
 
-exports_files(["coswitch.c"]) # for makeheaders
+exports_files(["coswitch.c"]) # for makeheaders(?)
 
 ################################################################
 cc_binary(
     name  = "coswitch",
     visibility = ["//visibility:public"],
     srcs  = [
-        # "coswitch_cli.c",
-        # "coswitch_cli.h",
         "coswitch.c",
         "//src/hdrs:coswitch.h",
     ],
-    copts = CMD_FLAGS + [
+    copts = COPTS + [
         "-Isrc",
         "-Icoswitch",
         "-Iexternal/mibl/coswitch",

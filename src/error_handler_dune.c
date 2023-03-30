@@ -37,7 +37,9 @@ s7_pointer _s7_read_thunk_catcher(s7_scheme *s7, s7_pointer args)
         log_info(RED "fixing baddot in %s" CRESET,
                  utstring_body(dunefile_name));
         s7_close_input_port(s7, g_dunefile_port);
-        s7_gc_unprotect_at(s7, dune_gc_loc);
+
+        //FIXME FIXME
+        /* s7_gc_unprotect_at(s7, dune_gc_loc); */
 
         /* s7_show_stack(s7); */
         /* clear out old error */
@@ -243,138 +245,138 @@ void close_error_config(void) // s7_pointer err_port)
         s7_gc_unprotect_at(s7, gc_loc);
 }
 
-char *dunefile_to_string(UT_string *dunefile_name)
-{
-    /* FIXME: use malloc, this will rarely be called */
-    /* 16K should be enough for any dunefile? */
-#define DUNE_BUFSZ 16384
-    static char buffer[DUNE_BUFSZ];
-    memset(buffer, '\0', DUNE_BUFSZ);
-    /* FIXME: what about e.g. unicode in string literals? */
+/* char *dunefile_to_string(UT_string *dunefile_name) */
+/* { */
+/*     /\* FIXME: use malloc, this will rarely be called *\/ */
+/*     /\* 16K should be enough for any dunefile? *\/ */
+/* #define DUNE_BUFSZ 16384 */
+/*     static char buffer[DUNE_BUFSZ]; */
+/*     memset(buffer, '\0', DUNE_BUFSZ); */
+/*     /\* FIXME: what about e.g. unicode in string literals? *\/ */
 
-    FILE *inFp = fopen(utstring_body(dunefile_name), "r");
-    fseek(inFp, 0, SEEK_END);
-    uint64_t fileSize = ftell(inFp);
-    /* log_debug("filesize: %d", fileSize); */
-    if (fileSize > DUNE_BUFSZ) {
-        log_error("dune file size (%d) > DUNE_BUFSZ (%d)\n", fileSize, DUNE_BUFSZ);
-        exit(EXIT_FAILURE);     /* FIXME: exit gracefully */
-    }
-    rewind(inFp);
+/*     FILE *inFp = fopen(utstring_body(dunefile_name), "r"); */
+/*     fseek(inFp, 0, SEEK_END); */
+/*     uint64_t fileSize = ftell(inFp); */
+/*     /\* log_debug("filesize: %d", fileSize); *\/ */
+/*     if (fileSize > DUNE_BUFSZ) { */
+/*         log_error("dune file size (%d) > DUNE_BUFSZ (%d)\n", fileSize, DUNE_BUFSZ); */
+/*         exit(EXIT_FAILURE);     /\* FIXME: exit gracefully *\/ */
+/*     } */
+/*     rewind(inFp); */
 
-    char *fixbuf = malloc(fileSize + 1);
-    memset(fixbuf, '\0', fileSize);
+/*     char *fixbuf = malloc(fileSize + 1); */
+/*     memset(fixbuf, '\0', fileSize); */
 
-    uint64_t outFileSizeCounter = fileSize;
+/*     uint64_t outFileSizeCounter = fileSize; */
 
-    /* we fread() bytes from inFp in COPY_BUFFER_MAXSIZE increments,
-       until there is nothing left to fread() */
-    int read_ct = 0;
-    do {
-        if (outFileSizeCounter > DUNE_BUFSZ) {
-            /* probably won't see a 16K dune file */
-            read_ct = fread(buffer, 1, (size_t) DUNE_BUFSZ, inFp);
-            if (read_ct != DUNE_BUFSZ) {
-                if (ferror(inFp) != 0) {
-                    log_error("fread error 1 for %s\n",
-                              utstring_body(dunefile_name));
-                    exit(EXIT_FAILURE); //FIXME: exit gracefully
-                }
-            }
-            /* log_debug("writing"); */
-            outFileSizeCounter -= DUNE_BUFSZ;
-        }
-        else {
-            read_ct = fread(buffer, 1, (size_t) outFileSizeCounter, inFp);
-            if (read_ct != outFileSizeCounter) {
-                if (ferror(inFp) != 0) {
-                    log_error("fread error 2 for %s\n",
-                              utstring_body(dunefile_name));
-                    exit(EXIT_FAILURE); //FIXME: exit gracefully
-                } else {
-                    if (feof(inFp) == 0) {
-                        log_error("fread error 3 for %s\n",
-                                  utstring_body(dunefile_name));
-                        exit(EXIT_FAILURE); //FIXME: exit gracefully
-                    }
-                }
-            }
-            outFileSizeCounter = 0ULL;
-        }
-    } while (outFileSizeCounter > 0);
-    /* log_debug("readed %d bytes", read_ct); */
-    fclose(inFp);
+/*     /\* we fread() bytes from inFp in COPY_BUFFER_MAXSIZE increments, */
+/*        until there is nothing left to fread() *\/ */
+/*     int read_ct = 0; */
+/*     do { */
+/*         if (outFileSizeCounter > DUNE_BUFSZ) { */
+/*             /\* probably won't see a 16K dune file *\/ */
+/*             read_ct = fread(buffer, 1, (size_t) DUNE_BUFSZ, inFp); */
+/*             if (read_ct != DUNE_BUFSZ) { */
+/*                 if (ferror(inFp) != 0) { */
+/*                     log_error("fread error 1 for %s\n", */
+/*                               utstring_body(dunefile_name)); */
+/*                     exit(EXIT_FAILURE); //FIXME: exit gracefully */
+/*                 } */
+/*             } */
+/*             /\* log_debug("writing"); *\/ */
+/*             outFileSizeCounter -= DUNE_BUFSZ; */
+/*         } */
+/*         else { */
+/*             read_ct = fread(buffer, 1, (size_t) outFileSizeCounter, inFp); */
+/*             if (read_ct != outFileSizeCounter) { */
+/*                 if (ferror(inFp) != 0) { */
+/*                     log_error("fread error 2 for %s\n", */
+/*                               utstring_body(dunefile_name)); */
+/*                     exit(EXIT_FAILURE); //FIXME: exit gracefully */
+/*                 } else { */
+/*                     if (feof(inFp) == 0) { */
+/*                         log_error("fread error 3 for %s\n", */
+/*                                   utstring_body(dunefile_name)); */
+/*                         exit(EXIT_FAILURE); //FIXME: exit gracefully */
+/*                     } */
+/*                 } */
+/*             } */
+/*             outFileSizeCounter = 0ULL; */
+/*         } */
+/*     } while (outFileSizeCounter > 0); */
+/*     /\* log_debug("readed %d bytes", read_ct); *\/ */
+/*     fclose(inFp); */
 
-    /* printf(RED "READED:\n" CRESET " %s\n", buffer); */
+/*     /\* printf(RED "READED:\n" CRESET " %s\n", buffer); *\/ */
 
-    // FIXME: loop over the entire buffer
-    char *bptr = (char*)buffer;
-    char *fptr = (char*)fixbuf;
+/*     // FIXME: loop over the entire buffer */
+/*     char *bptr = (char*)buffer; */
+/*     char *fptr = (char*)fixbuf; */
 
-    regex_t re;
-    int rc = regcomp(&re, "\\. *)", REG_EXTENDED);
-    assert(rc == 0);
+/*     regex_t re; */
+/*     int rc = regcomp(&re, "\\. *)", REG_EXTENDED); */
+/*     assert(rc == 0); */
 
-    /* regmatch_t matches[1]; */
+/*     /\* regmatch_t matches[1]; *\/ */
 
-    while (true) {
-        /* printf(RED "bptr:\n" CRESET " %s\n", bptr); */
-        /* printf(RED "fixbuf:\n" CRESET " %s\n", fixbuf); */
+/*     while (true) { */
+/*         /\* printf(RED "bptr:\n" CRESET " %s\n", bptr); *\/ */
+/*         /\* printf(RED "fixbuf:\n" CRESET " %s\n", fixbuf); *\/ */
 
-        //FIXME: use regex.  When the need arises.
-        /* rc = regexec(&re, bptr, */
-        /*              sizeof(matches)/sizeof(matches[0]), */
-        /*              (regmatch_t*)&matches,0); */
-        /* if (rc == 0) { */
-        /*     printf(MAG "regex match:" CRESET " %s\n", */
-        /*            bptr + matches[0].rm_so); */
-        /*     /\* char *val = strndup(data+matches[1].rm_so, *\/ */
-        /*     /\*                     matches[1].rm_eo - matches[1].rm_so); *\/ */
-        /* } else { */
-        /*     printf("regex NO match\n"); */
-        /* } */
+/*         //FIXME: use regex.  When the need arises. */
+/*         /\* rc = regexec(&re, bptr, *\/ */
+/*         /\*              sizeof(matches)/sizeof(matches[0]), *\/ */
+/*         /\*              (regmatch_t*)&matches,0); *\/ */
+/*         /\* if (rc == 0) { *\/ */
+/*         /\*     printf(MAG "regex match:" CRESET " %s\n", *\/ */
+/*         /\*            bptr + matches[0].rm_so); *\/ */
+/*         /\*     /\\* char *val = strndup(data+matches[1].rm_so, *\\/ *\/ */
+/*         /\*     /\\*                     matches[1].rm_eo - matches[1].rm_so); *\\/ *\/ */
+/*         /\* } else { *\/ */
+/*         /\*     printf("regex NO match\n"); *\/ */
+/*         /\* } *\/ */
 
-        char *cursor = strstr((const char*) bptr, ".)");
+/*         char *cursor = strstr((const char*) bptr, ".)"); */
 
 
-        if (cursor == NULL) {
-            size_t ct = strlcpy(fptr, (const char*)bptr, strlen(fptr));
-            (void)ct;
-            break;
-        } else {
-            /* log_debug("FOUND \".)\" at pos: %d", cursor - buffer); */
-            size_t ct = strlcpy(fptr, (const char*)bptr, cursor - bptr);
-            (void)ct;
-            if (ct >= DUNE_BUFSZ) {
-                // output string has been truncated
-            }
-            fptr = fptr + (cursor - bptr) - 1;
-            fptr[cursor - bptr] = '\0';
-            ct = strlcat(fptr, " ./", DUNE_BUFSZ);
-            fptr += 3;
+/*         if (cursor == NULL) { */
+/*             size_t ct = strlcpy(fptr, (const char*)bptr, strlen(fptr)); */
+/*             (void)ct; */
+/*             break; */
+/*         } else { */
+/*             /\* log_debug("FOUND \".)\" at pos: %d", cursor - buffer); *\/ */
+/*             size_t ct = strlcpy(fptr, (const char*)bptr, cursor - bptr); */
+/*             (void)ct; */
+/*             if (ct >= DUNE_BUFSZ) { */
+/*                 // output string has been truncated */
+/*             } */
+/*             fptr = fptr + (cursor - bptr) - 1; */
+/*             fptr[cursor - bptr] = '\0'; */
+/*             ct = strlcat(fptr, " ./", DUNE_BUFSZ); */
+/*             fptr += 3; */
 
-            bptr = bptr + (cursor - bptr) + 1;
+/*             bptr = bptr + (cursor - bptr) + 1; */
 
-            /* printf(GRN "bptr:\n" CRESET " %s\n", bptr); */
+/*             /\* printf(GRN "bptr:\n" CRESET " %s\n", bptr); *\/ */
 
-            if (ct >= DUNE_BUFSZ) {
-                // output string has been truncated
-            }
-            /* log_debug("first seg: %s", fixbuf); */
-            /* log_debug("first seg len: %d", strlen((char*)fixbuf)); */
-            /* log_debug("cursor - buffer = %d", cursor - buffer); */
-            /* log_debug("second seg %s", buffer + 225); */
-            /* ct = strlcat((char*)fixbuf, buffer + (cursor - buffer) + 1, DUNE_BUFSZ); */
-            /* if (ct >= DUNE_BUFSZb) { */
-            /*     // output string has been truncated */
-            /* } */
-            /* log_debug("fixed: %s", (char*)fixbuf); */
-        }
+/*             if (ct >= DUNE_BUFSZ) { */
+/*                 // output string has been truncated */
+/*             } */
+/*             /\* log_debug("first seg: %s", fixbuf); *\/ */
+/*             /\* log_debug("first seg len: %d", strlen((char*)fixbuf)); *\/ */
+/*             /\* log_debug("cursor - buffer = %d", cursor - buffer); *\/ */
+/*             /\* log_debug("second seg %s", buffer + 225); *\/ */
+/*             /\* ct = strlcat((char*)fixbuf, buffer + (cursor - buffer) + 1, DUNE_BUFSZ); *\/ */
+/*             /\* if (ct >= DUNE_BUFSZb) { *\/ */
+/*             /\*     // output string has been truncated *\/ */
+/*             /\* } *\/ */
+/*             /\* log_debug("fixed: %s", (char*)fixbuf); *\/ */
+/*         } */
 
-    }
-    /* log_debug("final:\n %s", (char*)fixbuf); */
-    return fixbuf;
-}
+/*     } */
+/*     /\* log_debug("final:\n %s", (char*)fixbuf); *\/ */
+/*     return fixbuf; */
+/* } */
 
 s7_pointer fix_baddot(UT_string *dunefile_name)
 {

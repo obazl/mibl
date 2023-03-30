@@ -22,7 +22,7 @@ cc_library(
         "//conditions:default":   []
     }) + select({
         "//compilation_mode:dbg?": [
-            "//src:debug_srcs"
+            "//src:debug_srcs",
             # "debug.c", "//src/hdrs:debug.h",
             # "debug_mibl.c", "//src/hdrs:debug_mibl.h",
             # "debug_s7.c", "//src/hdrs:debug_s7.h"

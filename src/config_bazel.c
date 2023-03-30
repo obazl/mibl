@@ -184,7 +184,7 @@ void _set_rootws(char *ws_root)
         }
     }
 
-    rootws = strdup(utstring_body(_root_ws));
+      rootws = strdup(utstring_body(_root_ws));
     ews_root = strdup(rootws);  /* by default, effective ws == base ws */
 #if defined(DEBUG_TRACE)
     if (mibl_debug_bazel)
