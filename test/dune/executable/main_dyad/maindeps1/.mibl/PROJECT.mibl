@@ -2,15 +2,15 @@
      (:path . /Users/gar/obazl/mibl/test/dune/executable/main_dyad/maindeps1)
      (:exports
          (hash-table
-           ':main ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
-           ':bin:main ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
-           'main.exe ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
            'main ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
+           ':main ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
+           'main.exe ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
+           ':bin:main ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
            'main.bc ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
            ':main.bc ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
            ':bin:main.bc ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
-           ':bin:main.exe ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
-           ':main.exe ((:exe . #t) (:pkg . ./) (:tgt . main.exe))))
+           ':main.exe ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
+           ':bin:main.exe ((:exe . #t) (:pkg . ./) (:tgt . main.exe))))
      (:opam
          (hash-table)) (:shared-ppx (hash-table)) (:filegroups (hash-table))
      (:pkgs
@@ -24,9 +24,7 @@
                    (:modules (Main (:ml main.ml A) (:mli main.mli)))
                    (:mibl (:executable (:privname . main) (:pubname . main) (:main . Main)
                                        (:opts . 1) (:ocamlc-opts . 1) (:ocamlopt-opts . 1)
-                                       (:prologue . 1) (:link-opts . 1))
-                          (:prologues (1 (:modules A) (:opts . 1) (:link-opts . 1)
-                                         (:ocamlc-opts . 1) (:ocamlopt-opts . 1)))
+                                       (:link-opts . 1))
                           (:shared-opts ((1 (:standard) (:flags -linkall))))
                           (:shared-link-opts ((1 (:flags -link_flag_a))))
                           (:shared-ocamlc-opts ((1 (:flags -compile_flag_vm))))
