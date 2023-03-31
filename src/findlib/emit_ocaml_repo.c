@@ -32,7 +32,7 @@ LOCAL const char *ws_name = "mibl";
 extern UT_string *opam_ocaml_version;
 extern UT_string *opam_switch_bin;
 extern UT_string *opam_switch_lib;
-extern UT_string *runfiles_root;
+extern UT_string *mibl_runfiles_root;
 
 #if defined(DEBUG_TRACE)
 bool mibl_debug_symlinks = false;
@@ -51,7 +51,7 @@ static char *readtemplate(const char *filename, size_t *length)
     /* FIXME: use a proper runfiles library */
     utstring_printf(src,
                     "%s/external/%s/coswitch/templates/%s",
-                    utstring_body(runfiles_root),
+                    utstring_body(mibl_runfiles_root),
                     ws_name,
                     filename);
     int rc = access(utstring_body(src), F_OK);
@@ -164,7 +164,7 @@ void _copy_buildfile(char *buildfile, UT_string *to_file)
     /* FIXME: use a proper runfiles library */
     utstring_printf(src,
                     "%s/external/%s/coswitch/templates/%s",
-                    utstring_body(runfiles_root),
+                    utstring_body(mibl_runfiles_root),
                     ws_name,
                     buildfile);
     int rc = access(utstring_body(src), F_OK);
@@ -946,7 +946,7 @@ void _symlink_buildfile(char *buildfile, UT_string *to_file)
     utstring_new(src);
     utstring_printf(src,
                     "%s/external/%s/coswitch/templates/%s",
-                    utstring_body(runfiles_root),
+                    utstring_body(mibl_runfiles_root),
                     ws_name,
                     buildfile);
     int rc = access(utstring_body(src), F_OK);

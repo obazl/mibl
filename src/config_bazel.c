@@ -54,7 +54,7 @@ char *traversal_root;           /* maybe not same as ws root */
 
 UT_string *runtime_data_dir;
 
-UT_string *runfiles_root;
+UT_string *mibl_runfiles_root = NULL;
 
 UT_string *obazl_ini_path; // .config
 
@@ -130,8 +130,8 @@ void _set_rootws(char *ws_root)
     utstring_new(_root_ws);
 
     if (getenv("BAZEL_TEST")) {
-        /* rootws = strdup(utstring_body(runfiles_root)); */
-        utstring_printf(_root_ws, "%s", utstring_body(runfiles_root));
+        /* rootws = strdup(utstring_body(mibl_runfiles_root)); */
+        utstring_printf(_root_ws, "%s", utstring_body(mibl_runfiles_root));
         if (ws_root)
             utstring_printf(_root_ws, "/%s", ws_root);
         else {
@@ -139,7 +139,7 @@ void _set_rootws(char *ws_root)
         }
 #if defined(DEBUG_TRACE)
         if (mibl_debug_bazel)
-            log_debug("Running under bazel test; setting bws to runfiles root%s", utstring_body(runfiles_root));
+            log_debug("Running under bazel test; setting bws to runfiles root%s", utstring_body(mibl_runfiles_root));
 #endif
     }
     else {
@@ -284,11 +284,11 @@ EXPORT void bazel_configure(char *ws_root) // char *_exec_root)
     build_wd = getenv("BUILD_WORKING_DIRECTORY");
 
     //FIXME: is runfiles_root always === cwd?
-    utstring_new(runfiles_root);
-    utstring_printf(runfiles_root, "%s", getcwd(NULL, 0));
+    utstring_new(mibl_runfiles_root);
+    utstring_printf(mibl_runfiles_root, "%s", getcwd(NULL, 0));
 #if defined(DEBUG_TRACE)
     if (verbose)
-        log_info("runfiles_root: %s", utstring_body(runfiles_root));
+        log_info("mibl_runfiles_root: %s", utstring_body(mibl_runfiles_root));
 #endif
 
     if (getenv("BAZEL_TEST")) {
@@ -321,11 +321,6 @@ EXPORT void bazel_configure(char *ws_root) // char *_exec_root)
         log_debug("launch_dir: %s", launch_dir);
     }
 #endif
-
-    /* utstring_new(runfiles_root); */
-    /* utstring_printf(runfiles_root, "%s", getcwd(NULL, 0)); */
-    /* if (mibl_debug_bazel) */
-    /*     log_debug("runfiles_root: %s", utstring_body(runfiles_root)); */
 
     /* if ( !getenv("BAZEL_TEST") ) */
     _set_rootws(ws_root);

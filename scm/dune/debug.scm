@@ -27,8 +27,18 @@
   (mibl-pretty-print (assoc-val ws *mibl-project*))
   (newline))
 
+(define (mibl-debug-print-pkg pkg)
+  (format #t "~A: ~A~%" (ublue "debug-print-pkg") pkg)
+  (let* ((@ws (assoc-val :@ *mibl-project*))
+         (pkgs (assoc-val :pkgs @ws))
+         (the-pkg (hash-table-ref (car pkgs) pkg)))
+    ;;(format #t " ~A: ~A~%" (green "printing pkg") the-pkg)
+    (mibl-pretty-print the-pkg)))
+
 (define (mibl-debug-print-project)
-  (mibl-pretty-print *mibl-project*)
+  (if *mibl-show-pkg*
+      (mibl-debug-print-pkg *mibl-show-pkg*)
+      (mibl-pretty-print *mibl-project*))
   (newline))
 
 (define (Xmibl-debug-print-pkgs ws)

@@ -2286,7 +2286,7 @@ LOCAL void _update_pkg_mly_files(s7_pointer pkg_tbl,
                                  char *pkg_name, char *mname,
                                  char *fname, int ftype)
 {
-    // mly entry structure: (Foo (:mly foo.mly) (:ml_ foo.ml) (:ml-deps ...) (:mli_ foo.mli) (:mli-deps ...))
+    // mly entry structure: (Foo (:mly foo.mly) (:ml_ foo.ml Dep1 Dep2)  (:mli_ foo.mli Dep1 Dep2))
 #if defined(DEBUG_TRACE)
     if (mibl_trace) {
         log_trace(RED "_UPDATE_PKG_MLY_FILES" CRESET);
@@ -3704,7 +3704,7 @@ EXPORT s7_pointer g_load_project(s7_scheme *s7,  s7_pointer args)
                     load_project(rootdir, "."); //pathdir);
 #if defined(DEBUG_TRACE)
                     if (mibl_trace)
-                        printf(RED "LOADED DUNE 1" CRESET "\n");
+                        log_trace(RED "LOADED DUNE 1" CRESET);
 #endif
 
                     //FIXME: is this needed?
@@ -3752,7 +3752,7 @@ EXPORT s7_pointer g_load_project(s7_scheme *s7,  s7_pointer args)
                 (void)_pkg_tbl;
 #if defined(DEBUG_TRACE)
                 if (mibl_trace)
-                    printf(RED "LOADED DUNE 2" CRESET "\n");
+                    log_trace(RED "LOADED DUNE 2" CRESET);
 #endif
 
                 //FIXME: is this needed?

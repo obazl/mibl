@@ -1,3 +1,4 @@
+;; FIXME: do this in load_project c code
 (define (yacc-deps pkg principal-name)
   (if *mibl-debug-s7*
       (format #t "~A: ~A~%" (ublue "yacc-deps") principal-name))
@@ -57,23 +58,6 @@
                                       (if *mibl-debug-s7*
                                           (format #t "~A: ~A~%" (red "m-assoc in pkg") m-assoc))
                                       ;; (error 'stop (format #f "lex/yacc output file ~A already exists~%" fname))
-                                      ;; (if (proper-list? m-assoc)
-                                      ;;     ;; its a module entry, (A (:ml a.ml) (:mli a.mli))
-                                      ;;     (begin
-                                      ;;       (format #t "~A: ~A~%" (bgred "FOO") 99)
-                                      ;;       (set-cdr! m-assoc
-                                      ;;                 (append (cdr m-assoc)
-                                      ;;                         (list (cons
-                                      ;;                                (if (eq? kind :struct)
-                                      ;;                                    :ml-deps :mli-deps)
-                                      ;;                                mdeps))))
-                                      ;;       (format #t "~A: ~A~%" (bgred "m-assoc after") m-assoc))
-                                      ;;     ;; else its a struct entry, (A a.ml)
-                                      ;;     (begin
-                                      ;;       (format #t "~A: ~A~%" (bgred "BAR") 00)
-                                      ;;       (set-cdr! m-assoc
-                                      ;;                 (cons (cdr m-assoc)
-                                      ;;                       mdeps))))
                                       )
                                     ;;else
                                     ;; (error 'stop "STOP yacc")

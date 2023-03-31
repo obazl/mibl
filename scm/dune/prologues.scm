@@ -94,7 +94,7 @@
   (if (or *mibl-debug-prologues* *mibl-debug-s7*)
       (format #t "~A: ~A\n" (ublue "-derive-exe-ns for module") module))
   (if (alist? (cdr module))
-      ;; (A (:ml a.ml) (:mli a.mli) (:ml-deps...) (:mli-deps...))
+      ;; (A (:ml a.ml Dep1 Dep2) (:mli a.mli Dep1 Dep2))
       (begin)
       ;; else (A . a.ml) from :structures
       (if-let ((prologues (assoc-in '(:mibl :shared-prologues) pkg)))
@@ -170,65 +170,66 @@
                   ;; (format #t "ws key: ~A\n" (car ws-kv))
                   (let ((pkgs (car (assoc-val :pkgs (cdr ws-kv)))))
                     (for-each (lambda (pkg-kv)
-                                (let* ((stanzas (assoc-val :mibl (cdr pkg-kv)))
-                                       (_ (format #t "pkg: ~A\n" (car pkg-kv)))
-                                       ;; collect all executable :main modules
-                                       (mains (filter-map (lambda (stanza)
-                                                            (case (car stanza)
-                                                              ((:executable)
-                                                               (format #t "~A: ~A\n" (green "stanza") stanza)
-                                                               (assoc-val :main (cdr stanza)))
-                                                              (else #f)))
-                                                          stanzas)))
-                                  (if *mibl-debug-prologues* (format #t "~A: ~A\n" (green "mains") mains))
-                                  (for-each (lambda (stanza)
-                                              (format #t "  stanza: ~A\n" stanza)
-                                              (case (car stanza)
-                                                ((:executable)
-                                                 (if *mibl-debug-prologues*
-                                                     (format #t "~A: ~A\n" (green "executable") (assoc-val :main (cdr stanza))))
-                                                 (let ((stanza-alist (cdr stanza)))
-                                                   (if-let ((prologue (assoc :prologue stanza-alist)))
-                                                           (begin
-                                                             (if *mibl-debug-prologues*
-                                                                 (format #t "~A: ~A\n" (green "  prologue") prologue))
-                                                             (let ((prolog (remove-if list (lambda (x) (member x mains))
-                                                                                        (cdr prologue))))
-                                                               ;; (format #t "A plog after: ~A\n" prolog)
-                                                               (let ((main (assoc-val :main stanza-alist)))
-                                                                 (let-values (((ml-deps mli-deps) (module->local-deps main (cdr pkg-kv))))
-                                                                   ;; (format #t "  ml-deps: ~A\n" ml-deps)
-                                                                   ;; (format #t "  mli-deps: ~A\n" mli-deps)
-                                                                   (if (or (truthy? ml-deps) (truthy? mli-deps))
-                                                                       ;; move :main deps from :prologue to :deps
-                                                                       (let* ((main-deps (concatenate ml-deps mli-deps))
-                                                                              (_ (format #t "main-deps: ~A\n" main-deps))
-                                                                              (prolog (remove-if list (lambda (x)
-                                                                                                       ;; (format #t "B plog before: ~A\n" prolog)
-                                                                                                       ;; (format #t "x: ~A\n" x)
-                                                                                                       (member x main-deps))
-                                                                                                prolog)))
-                                                                         (format #t "B main-deps after: ~A\n" main-deps)
-                                                                         (format #t "B plog after: ~A\n" prolog)
+                                ;; (format #t "normz pkg: ~A\n" pkg-kv)
+                                (if-let ((stanzas (assoc-val :mibl (cdr pkg-kv))))
+                                        (let* (;; (_ (format #t "normz stanzas: ~A\n" stanzas))
+                                               ;; collect all executable :main modules
+                                               (mains (filter-map (lambda (stanza)
+                                                                    (case (car stanza)
+                                                                      ((:executable)
+                                                                       (format #t "~A: ~A\n" (green "stanza") stanza)
+                                                                       (assoc-val :main (cdr stanza)))
+                                                                      (else #f)))
+                                                                  stanzas)))
+                                          (if *mibl-debug-prologues* (format #t "~A: ~A\n" (green "mains") mains))
+                                          (for-each (lambda (stanza)
+                                                      (case (car stanza)
+                                                        ((:executable)
+                                                         ;; (format #t "~A: ~A\n" (cyan "before exe stanza") stanza)
+                                                         (if *mibl-debug-prologues*
+                                                             (format #t "~A: ~A\n" (green "executable") (assoc-val :main (cdr stanza))))
+                                                         (let ((stanza-alist (cdr stanza)))
+                                                           (if-let ((prologue (assoc :prologue stanza-alist)))
+                                                                   (begin
+                                                                     (if *mibl-debug-prologues*
+                                                                         (format #t "~A: ~A\n" (green "  prologue") prologue))
+                                                                     (let ((prolog (remove-if list (lambda (x) (member x mains))
+                                                                                              (cdr prologue))))
+                                                                       ;; (format #t "A plog after: ~A\n" prolog)
+                                                                       (let ((main (assoc-val :main stanza-alist)))
+                                                                         (let-values (((ml-deps mli-deps) (module->local-deps main (cdr pkg-kv))))
+                                                                           ;; (format #t "  ml-deps: ~A\n" ml-deps)
+                                                                           ;; (format #t "  mli-deps: ~A\n" mli-deps)
+                                                                           (if (or (truthy? ml-deps) (truthy? mli-deps))
+                                                                               ;; move :main deps from :prologue to :deps
+                                                                               (let* ((main-deps (concatenate ml-deps mli-deps))
+                                                                                      (_ (format #t "main-deps: ~A\n" main-deps))
+                                                                                      (prolog (remove-if list (lambda (x)
+                                                                                                                ;; (format #t "B plog before: ~A\n" prolog)
+                                                                                                                ;; (format #t "x: ~A\n" x)
+                                                                                                                (member x main-deps))
+                                                                                                         prolog)))
+                                                                                 (format #t "B main-deps after: ~A\n" main-deps)
+                                                                                 (format #t "B plog after: ~A\n" prolog)
 
-                                                                         ;; to limit the update to this stanza we
-                                                                         ;; must first dissoc
-                                                                         (dissoc! '(:prologue) stanza-alist)
-                                                                         ;; (alist-update-in! (cdr stanza) '(:prologue)
-                                                                         ;;                   (lambda (old)
-                                                                         ;;                     (format #t "replacing ~A\n" old)
-                                                                         ;;                     prolog))
+                                                                                 ;; to limit the update to this stanza we
+                                                                                 ;; must first dissoc
+                                                                                 (dissoc! '(:prologue) stanza-alist)
+                                                                                 ;; (alist-update-in! (cdr stanza) '(:prologue)
+                                                                                 ;;                   (lambda (old)
+                                                                                 ;;                     (format #t "replacing ~A\n" old)
+                                                                                 ;;                     prolog))
 
-                                                                         (set-cdr! stanza
-                                                                                   (append stanza-alist
-                                                                                           `((:prologue ,@prolog)
-                                                                                           ;;FIXME :deps, :manifest, or :main-deps?
-                                                                                             (:main-deps ,@main-deps)))))
-                                                                       ;; else no main-deps
-                                                                       (set-cdr! prologue prolog)
-                                                                       )
-                                                                   ))
-                                                                 )))
+                                                                                 (set-cdr! stanza
+                                                                                           (append stanza-alist
+                                                                                                   `((:prologue ,@prolog)
+                                                                                                     ;;FIXME :deps, :manifest, or :main-deps?
+                                                                                                     (:main-deps ,@main-deps)))))
+                                                                               ;; else no main-deps
+                                                                               (set-cdr! prologue prolog)
+                                                                               )
+                                                                           ))
+                                                                       )))
                                                            ;; now if :executable's :prologue is empty, remove it
                                                            ;; WARNING: pathological cases are possible.
                                                            ;; E.g. main1 dep A, main2 dep B; initial prologue is A B
@@ -239,18 +240,19 @@
                                                                    (begin
                                                                      ;; (format #t "XPL: ~A\n" (cdr prologue))
                                                                      (if (null? (cdr prologue))
-                                                                       (dissoc! '(:prologue) stanza-alist))))
+                                                                         (dissoc! '(:prologue) stanza-alist))))
                                                            (if *mibl-debug-prologues*
                                                                (format #t "~A: ~A\n" (green "normalized")
                                                                        (assoc :prologue stanza-alist)))
-                                                 ))
-                                                (else))
-                                              (format #t "after stanza: ~A\n" stanza))
-                                            stanzas))
-                                ;; now remove empty entries from pkg :prologues,
-                                ;; and remove pkg :prologues if empty
-                                (let ((stanzas (assoc-val :mibl (cdr pkg-kv))))
-                                  (dissoc! '(:prologues) stanzas)))
+                                                           )
+                                                         (format #t "~A: ~A\n" (cyan "  after stanza") stanza))
+                                                        (else)))
+                                                    stanzas)
+                                          ;; now remove empty entries from pkg :prologues,
+                                          ;; and remove pkg :prologues if empty
+                                          (let ((stanzas (assoc-val :mibl (cdr pkg-kv))))
+                                            ;; FIXME: only if empty
+                                            (dissoc! '(:prologues) stanzas)))))
                               pkgs)))
                 *mibl-project*)
       ;; (error 'x "X")

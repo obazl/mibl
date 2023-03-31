@@ -30,9 +30,7 @@
 
 #include "cmd_runner.h"
 
-#if defined(DEBUG_TRACE)
-bool mibl_debug_deps = false;
-#endif
+extern bool mibl_debug_deps;
 
 #if INTERFACE
 #define BUFSZ 4096 * 4

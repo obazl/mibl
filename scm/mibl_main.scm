@@ -18,8 +18,8 @@
          )
     _wss))
 
-(define (-resolve-labels ws)
-  (resolve-labels! (assoc-val ws *mibl-project*)))
+;; (define (-resolve-labels ws)
+;;   (normalize-lib-deps! (assoc-val ws *mibl-project*)))
 
 ;; (define (-miblarkize ws)
 ;;   (let* ((@ws (assoc-val ws *mibl-project*))
@@ -41,7 +41,9 @@
                         (parsetree->mibl ;; in libmibl.scm
                          (lambda () ;; our return thunk
                            (if *mibl-show-mibl*
-                               (mibl-debug-print-project))
+                               (mibl-debug-print-project)
+                               (if *mibl-show-pkg*
+                               (mibl-debug-print-pkg)))
                            (if (not *mibl-quiet*)
                                (format #t "~A: Returning...~%" (green "INFO")))
                            (return))

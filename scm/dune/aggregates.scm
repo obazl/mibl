@@ -1,5 +1,47 @@
-;; normalize-manifests: one for each aggregate, plus pkg files (:modules,
+;; derive :manifest for aggregate from (modules) list
+(define (get-manifest pkg kind wrapped? stanza-alist) ;;  deps
+  (if (or *mibl-debug-s7* *mibl-debug-modules*)
+      (begin
+        (format #t "~A: ~A\n" (ublue "get-manifest") stanza-alist)
+        (if *mibl-debug-show-pkgs* (format #t "~A: ~A\n" "pkg" pkg))
+        (format #t "~A: ~A\n" "kind" kind)))
+  ;; (if deps
+  (let* ((submods+sigs-list
+          ;; the main routine:
+          (expand-modules-fld
+           kind
+           (assoc 'modules stanza-alist)
+           ;; files
+           (assoc :modules pkg)
+           ;; deps
+           (assoc :signatures pkg)
+           (assoc :structures pkg)))
+         (_ (if *mibl-debug-modules*
+                (_ (format #t "~A: ~A\n" (uwhite "1 submods+sigs-list") submods+sigs-list))))
+         (submods+sigs-list (if (equal? (cadr submods+sigs-list)
+                                     '(:signatures))
+                                (list (car submods+sigs-list))
+                                submods+sigs-list))
+         (submods+sigs-list (if (equal? (cdr submods+sigs-list)
+                                     '(:modules))
+                                (cdr submods+sigs-list)
+                                ;; (cdr submods+sigs-list)
+                                submods+sigs-list)))
+    (if (or *mibl-debug-s7* *mibl-debug-modules*)
+        (format #t "~A: ~A\n" (uwhite "submods+sigs-list") submods+sigs-list))
+    (if (null? submods+sigs-list)
+        '()
+        (cons :manifest
+              (remove () submods+sigs-list)))))
+            ;; (let ((submods (reverse (car submods+sigs-list)))
+            ;;       (subsigs (reverse (cdr submods+sigs-list))))
+            ;;   (cons :manifest (remove '()
+            ;;                            (list submods subsigs)))))))
+
+;; normalize-aggregate-manifests!: one for each aggregate, plus pkg files (:modules,
 ;; :signatures, :structures) are manifests.
+
+;; updates stanzas
 
 ;; task 1: remove items from pkg-structs and pkg-sigs if they are also
 ;; in pkg-modules. this can happen with lex and yacc files.
@@ -20,9 +62,10 @@
 ;; (even then this may not always work, e.g. given (modules foo bar)
 ;; where bar is generated.
 
-(define (normalize-manifests! ws)
+;;FIXME: not necessary???
+(define (normalize-aggregate-manifests! ws)
   (if (or *mibl-debug-s7* *mibl-debug-updaters*)
-      (format #t "~A: ~A~%" (bgblue "normalize-manifests") ws))
+      (format #t "~A: ~A~%" (bgblue "normalize-aggregate-manifests!") ws))
   (let* ((@ws (assoc-val ws *mibl-project*))
          (pkgs (car (assoc-val :pkgs @ws))))
     (for-each (lambda (pkg-kv)
@@ -32,8 +75,11 @@
                   ;; (format #t "~%~A: ~A~%" (bgcyan "pkg key") pkg-key)
 
                   ;; (format #t "~A: ~A~%" (bgmagenta ":structures before") (assoc :structures pkg))
-                  ;; task 1.
-                  (set! pkg (normalize-pkg-files! pkg))
+                  ;; task 1: reconcile pkg files: :modules, :structures, :signatures etc.
+
+                  ;; (set! pkg (normalize-pkg-files! pkg))
+
+
                   ;; (format #t "~A: ~A~%" (bgmagenta ":structures after") (assoc :structures pkg))
                   ;; (set! pkg (-normalize-pkg-files pkg))
                   ;; (format #t "~A: ~A~%" (bgred "normed pkg") pkg)

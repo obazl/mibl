@@ -99,68 +99,97 @@
     (threads . threads)
     (unix . unix)))
 
-(define (-fixup-dep-sym ws-id dep pkg-path exports)
+;; a dep sym, e.g. (:deps (:remote bigarray parsexp sexplib0)) may be:
+;; :here (current pkg), :local (other pkg in ws), :remote (other bazel ws)
+;; :builtin (e.g. bigarray, num), or :opam
+
+;; Dune's (libraries ...) only lists pkgs, :here should not
+;; occur. But we also use this routine to resolve deps in pkg-files,
+;; so we must check for :here deps.
+
+;; Support for multiple wss in one project not yet supported, so we
+;; also do not check for :remote.
+(define (-fixup-dep-sym ws-id dep pkg exports)
   (if *mibl-debug-s7*
-      (format #t "~A: ~A~%" (bgblue "-fixup-dep-sym") dep))
+      (format #t "~A: ~A~%" (ublue "-fixup-dep-sym") dep))
   ;; possible keys for dep 'foo:
   ;; 'foo, :foo, :lib:foo, :exe:foo, etc.
   ;; assume ref is to lib, so search for :lib:foo
 
-  ;; builtin ocaml pkgs
   (if-let ((x (assoc-val dep ocaml-std-pkgs)))
-          (string->symbol (format #f "@ocaml//~A" x))
-          ;; try :lib:foo
-          (let* ((key (string->keyword
-                       (format #f "lib:~A" dep)))
-                 (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (uwhite "trying") key)))
-                 (resolved (hash-table-ref exports key)))
-            (if resolved
-                (let* ((pkg (assoc-val :pkg resolved))
-                       (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (ured "pkg") pkg)))
-                       (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (ured "pkg-path") pkg-path)))
-                       (tgt (assoc-val :tgt resolved))
-                       (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (ured "tgt") tgt))))
-                  ;;(cons dep resolved)
-                  ;;(string->symbol (format #f "BBBB//~A:~A" pkg tgt)))
-                  (if (equal? pkg pkg-path)
-                      (string->symbol (format #f ":~A" tgt))
-                      (string->symbol (format #f "//~A:~A" pkg tgt))))
-                ;; else :foo
-                (let* ((key (string->keyword
-                             (format #f "~A" dep)))
-                       (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (uwhite "trying2") key)))
-                       ;; (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (bgblue "exports") exports)))
-                       ;; (_ (mibl-debug-print-exports-table ws-id))
-                       (resolved (hash-table-ref exports key)))
-                  (if resolved
-                      (let* ((pkg (assoc-val :pkg resolved))
-                             (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (ured "pkg") pkg)))
-                             (tgt (assoc-val :tgt resolved))
-                             (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (ured "tgt") tgt))))
-                        (if (equal? pkg pkg-path)
-                            (string->symbol (format #f ":~A" tgt))
-                            (string->symbol (format #f "//~A:~A" pkg tgt))))
-                      ;; else 'foo
-                      (let* ((key (string->symbol
-                                   (format #f "~A" dep)))
-                             (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (uwhite "trying3") key)))
-                             (resolved (hash-table-ref exports key)))
-                        (if resolved
-                            (let* ((pkg (assoc-val :pkg resolved))
-                                   (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (ured "pkg") pkg)))
-                                   (tgt (assoc-val :tgt resolved))
-                                   (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (ured "tgt") tgt))))
-                              (cons dep resolved))
-                            (let ((segs (string-split (format #f "~A" key) ".")))
-                              (if *mibl-debug-s7*
-                                  (format #t "~A: ~A~%" (ured "unresolved; assume opam") key))
-                              (if (= 1 (length segs))
-                                  (string->symbol (format #f "@~A//lib/~A" dep dep))
-                                  (string->symbol (format #f "@~A//lib/~{~A~^/~}" (car segs) (cdr segs)))))))))))))
+          ;; builtin ocaml pkgs - distributed with but not automatically handled by compiler
+          (begin
+            (if *mibl-debug-s7* (format #t "~A: ~A~%" (uwhite "builtin") x))
+            ;;(string->symbol (format #f "@ocaml//~A" x))
+            `(:builtin . ,x)
+            )
+          ;; else try :here
+          (if-let ((module-tlbl (find-module-in-pkg dep pkg)))
+                  (begin
+                    (format #t "FOUND :here dep: ~A\n" module-tlbl)
+                    `(:here . ,dep))
+
+                  ;; else try :local by lookup in exports tbl
+                  ;; requires one lookup per possible key
+                  ;; first lookup, :lib:foo
+                  (let* ((pkg-path (assoc-val :pkg-path pkg))
+                         (key (string->keyword (format #f "lib:~A" dep)))
+                         (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (uwhite "trying 1") key)))
+                         (resolved (hash-table-ref exports key)))
+                    (if resolved
+                        (let* ((pkg (assoc-val :pkg resolved))
+                               (_ (if *mibl-debug-s7*
+                                      (begin
+                                        (format #t "~A: ~A~%" (ured "pkg") pkg)
+                                        (format #t "~A: ~A~%" (ured "this pkg-path") pkg-path))))
+                               (tgt (assoc-val :tgt resolved))
+                               (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (ured "tgt") tgt))))
+                          ;; (if (equal? pkg pkg-path)
+                          ;;     (string->symbol (format #f ":~A" tgt))
+                          ;;     (string->symbol (format #f "//~A:~A" pkg tgt)))
+                          `(:local (:path . ,pkg) (:tgt . ,tgt))
+                          )
+                        ;; else second lookup, :foo
+                        (let* ((key (string->keyword
+                                     (format #f "~A" dep)))
+                               (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (uwhite "trying2") key)))
+                               ;; (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (bgblue "exports") exports)))
+                               ;; (_ (mibl-debug-print-exports-table ws-id))
+                               (resolved (hash-table-ref exports key)))
+                          (if resolved
+                              (let* ((pkg (assoc-val :pkg resolved))
+                                     (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (ured "pkg") pkg)))
+                                     (tgt (assoc-val :tgt resolved))
+                                     (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (ured "tgt") tgt))))
+                                ;; (if (equal? pkg pkg-path)
+                                ;;     (string->symbol (format #f ":~A" tgt))
+                                ;;     (string->symbol (format #f "//~A:~A" pkg tgt)))
+                                `(:local (:path . ,pkg) (:tgt . ,tgt)))
+                              ;; else third lookup, 'foo
+                              (let* ((key (string->symbol
+                                           (format #f "~A" dep)))
+                                     (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (uwhite "trying3") key)))
+                                     (resolved (hash-table-ref exports key)))
+                                (if resolved
+                                    (let* ((pkg (assoc-val :pkg resolved))
+                                           (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (ured "pkg") pkg)))
+                                           (tgt (assoc-val :tgt resolved))
+                                           (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (ured "tgt") tgt))))
+                                      ;; (cons dep resolved)
+                                      `(:local (:path . ,pkg) (:tgt . ,tgt)))
+                                    ;; else not in exports tbl
+                                    (let ((segs (string-split (format #f "~A" key) ".")))
+                                      (if *mibl-debug-s7*
+                                          (format #t "~A: ~A~%" (red "unresolved; assume opam") key))
+                                      `(:opam . ,key)
+                                      ;; (if (= 1 (length segs))
+                                      ;;     (string->symbol (format #f "@~A//lib/~A" dep dep))
+                                      ;;     (string->symbol (format #f "@~A//lib/~{~A~^/~}" (car segs) (cdr segs))))
+                                      ))))))))))
 
 (define (-fixup-conditionals! ws pkg stanza)
   (if *mibl-debug-s7*
-      (format #t "~A: ~A\n" (bgblue "-fixup-conditionals!") stanza))
+      (format #t "~A: ~A\n" (ublue "-fixup-conditionals!") stanza))
   (if (not (member (car stanza) '(:diff :menhir)))
       (if-let ((conditionals (if-let ((dc
                                        (assoc-in '(:deps :conditionals)
@@ -258,14 +287,14 @@
                                         ;; std dep form: (:foo (:pkg...)(:tgt...))
                                         (-fixup-std-dep-form ws-id pkg dep exports))
                                        ((symbol? dep)
-                                        (-fixup-dep-sym ws-id dep pkg-path exports))
+                                        (-fixup-dep-sym ws-id dep pkg exports))
                                        (else (error 'fixme
                                                     (format #f "~A: ~A~%" (bgred "unrecognized :archive dep type") dep)))))
                                     (cdr compile-deps))))
                          (if *mibl-debug-s7*
                              (format #t "~A: ~A~%" (ured "fixed-up compile-deps") fixdeps))
                          (set-cdr! compile-deps fixdeps)
-                         (set-car! compile-deps :resolved)))
+                         (set-car! compile-deps :Resolved)))
 
                      ;; else no compile-deps
                      )
@@ -286,7 +315,7 @@
                                         ;; std dep form: (:foo (:pkg...)(:tgt...))
                                         (-fixup-std-dep-form ws pkg dep exports))
                                        ((symbol? dep)
-                                        (-fixup-dep-sym ws-id dep pkg-path exports))
+                                        (-fixup-dep-sym ws-id dep pkg exports))
                                        (else (error 'fixme
                                                     (format #f "~A: ~A~%" (bgred "unrecognized ppx-dep type") dep)))))
                                     (cdr ppx-deps))))
@@ -458,7 +487,7 @@
 
               ((:archive :ns-archive :library :ns-library)
                (if *mibl-debug-s7*
-                   (format #t "~A: ~A~%" (blue " agg fixup") (car stanza)))
+                   (format #t "~A: ~A~%" (blue "aggregate fixup") (car stanza)))
                ;; (let ((deps (assoc-val :deps stanza-alist)))
                ;;   (format #t "archive deps: ~A~%" deps)))
                (let* ((deps (if-let ((deps (assoc-in '(:deps :remote) stanza-alist)))
@@ -476,18 +505,17 @@
                  (if deps
                      (begin
                        (if *mibl-debug-s7*
-                           (format #t "~A: ~A~%" (ured "resolving dep labels 3") deps))
+                           (format #t "~A: ~A~%" (ugreen "resolving libdeps 3") deps))
                        (let ((exports (car (assoc-val :exports ws)))
                              (fixdeps
                               (map (lambda (dep)
                                      (if *mibl-debug-s7*
-                                         (format #t "~A: ~A~%" (uwhite "fixup dep") dep))
+                                         (format #t "~A: ~A~%" (green "resolving dep") dep))
                                      (cond
-                                      ((list? dep)
-                                       ;; std dep form: (:foo (:pkg...)(:tgt...))
+                                      ((list? dep) ;; std dep form: (:foo (:pkg...)(:tgt...))
                                        (-fixup-std-dep-form ws pkg dep exports))
-                                      ((symbol? dep)
-                                       (-fixup-dep-sym ws-id dep pkg-path exports))
+                                      ((symbol? dep) ;; e.g. (:deps (:remote bigarray parsexp sexplib0))
+                                       (-fixup-dep-sym ws-id dep pkg exports))
                                       (else (error 'fixme
                                                    (format #f "~A: ~A~%" (bgred "unrecognized :archive dep type") dep)))))
                                    (cdr deps))))
@@ -511,7 +539,7 @@
                                         ;; std dep form: (:foo (:pkg...)(:tgt...))
                                         (-fixup-std-dep-form ws pkg dep exports))
                                        ((symbol? dep)
-                                        (-fixup-dep-sym ws-id dep pkg-path exports))
+                                        (-fixup-dep-sym ws-id dep pkg exports))
                                        (else (error 'fixme
                                                     (format #f "~A: ~A~%" (bgred "unrecognized ppx-dep type") dep)))))
                                     (cdr ppx-deps))))
@@ -537,7 +565,7 @@
                                         ;; std dep form: (:foo (:pkg...)(:tgt...))
                                         (-fixup-std-dep-form ws pkg dep exports))
                                        ((symbol? dep)
-                                        (-fixup-dep-sym ws-id dep pkg-path exports))
+                                        (-fixup-dep-sym ws-id dep pkg exports))
                                        (else (error 'fixme
                                                     (format #f "~A: ~A~%" (bgred "unrecognized ppx-dep type") dep)))))
                                     (cdr ppx-codeps))))
@@ -576,7 +604,7 @@
               ;;                          ;; std dep form: (:foo (:pkg...)(:tgt...))
               ;;                          (-fixup-std-dep-form ws pkg dep exports))
               ;;                         ((symbol? dep)
-              ;;                          (-fixup-dep-sym ws-id dep pkg-path exports))
+              ;;                          (-fixup-dep-sym ws-id dep pkg exports))
               ;;                         (else (error 'fixme
               ;;                                      (format #f "~A: ~A~%" (bgred "unrecognized :archive dep type") dep)))))
               ;;                      (cdr deps))))
@@ -597,16 +625,49 @@
                (error 'fixme
                       (format #t "~A: ~A~%" (bgred "unhandled fixup stanza") stanza))))))))
 
-;; updates stanzas. initial conditions:
-;; * manifest deps derived from static file inventory
-(define resolve-labels!
+(define (-fixup-module-deps! ws pkg module-spec)
+  ;; module-spec: (A (ml: a.ml ...) (:mli a.mli ...))
+  ;; (or :ml_, :mli_)
+  (if *mibl-debug-s7*
+      (format #t "~A: ~A\n" (ublue "-fixup-module-deps!") module-spec))
+  (let* ((exports (car (assoc-val :exports ws)))
+         (ml-deps (if-let ((mldeps (assoc-val :ml (cdr module-spec))))
+                               mldeps
+                               (assoc-val :ml_ (cdr module-spec)))))
+    (format #t "~A: ~A\n" (ublue "ml-deps") ml-deps)
+    (let ((newdeps (map (lambda (dep)
+                          (-fixup-dep-sym :@ dep pkg exports))
+                        (cdr ml-deps))))
+      (format #t "~A: ~A\n" (ublue "newdeps") newdeps)
+      (set-cdr! ml-deps newdeps))))
+
+(define (-fixup-struct-deps! ws-id pkg struct)
+  (if *mibl-debug-s7*
+      (format #t "~A: ~A\n" (ublue "-fixup-struct-deps!") struct))
+  )
+
+(define (-fixup-sig-deps! ws-id pkg sig)
+  (if *mibl-debug-s7*
+      (format #t "~A: ~A\n" (ublue "-fixup-sig-deps!") sig))
+  )
+
+;; updates stanzas/pkg files. initial conditions:
+;; * :deps derived from (libraries) fld of (library) stanza
+;; * module deps listed in :modules, :structures, :signatures
+;; result:
+;;     :deps - module names replaced by bazel labels
+;;     pkg file deps: opam pkg modules removed
+;; e.g. sexplib0 =>  @sexplib0//lib/sexplib0
+;; method: try to resolve each module locally
+;; if that fails, assume it is an opam pkg
+(define normalize-lib-deps!
   (let ((+documentation+ "Map dune target references to bazel labels using exports table.")
-        (+signature+ '(resolve-labels! workspace-id)))
+        (+signature+ '(normalize-lib-deps! workspace-id)))
     (lambda (ws-id)
       (let ((ws (assoc-val ws-id *mibl-project*)))
         (if *mibl-debug-s7*
             (format #t "~%~A for ws: ~A\n"
-                (bgred "resolve-labels!") (assoc :name ws)))
+                (bgred "normalize-lib-deps!") ws)) ;;(assoc :name ws)))
         ;; (assoc-val 'name ws))
         (let* ((pkgs (car (assoc-val :pkgs ws)))
                ;; (_ (if *mibl-debug-s7* (format #t "PKGS: ~A\n" pkgs)))
@@ -623,8 +684,20 @@
                                             (-fixup-stanza! ws-id pkg stanza)
                                             (if *mibl-debug-s7*
                                                 (format #t "stanza: ~A~%" stanza)))
-                                          stanzas)))
+                                          stanzas))
+                        (if-let ((modules (assoc-val :modules (cdr pkg-kv))))
+                                (for-each (lambda (module)
+                                            (-fixup-module-deps! ws pkg module))
+                                          modules))
+                        (if-let ((structs (assoc-val :structures (cdr pkg-kv))))
+                                (for-each (lambda (struct)
+                                            (-fixup-struct-deps! ws-id pkg struct))
+                                          structs))
+                        (if-let ((sigs (assoc-val :signatures (cdr pkg-kv))))
+                                (for-each (lambda (sig)
+                                            (-fixup-sig-deps! ws-id pkg sig))
+                                          sigs))
+                        )
                       )
                     pkgs)
           )))))
-

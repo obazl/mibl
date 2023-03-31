@@ -191,6 +191,7 @@ char **mibl_s7_flag;
 /*     return s7_make_string(s7, ews_root); */
 /* } */
 
+/* called by load-project, repl. needed for project scripting. */
 EXPORT void initialize_mibl_data_model(s7_scheme *s7)
 {
 #if defined(DEBUG_TRACE)
@@ -557,12 +558,16 @@ void _s7_init(void)
 #endif
 
     s7 = s7_init();             /* @libs7//src:s7.c */
+    s7_pointer lp = s7_load_path(s7);
+    char *s = TO_STR(lp);
+    /* log_debug("mibl_s7_init initial *load-path*: %s", s); */
+    free(s);
 
 #if defined(DEBUG_TRACE)
-    if (mibl_debug)
-        log_debug("runfiles_root: %s", utstring_body(runfiles_root));
+    if (mibl_debug) {
+        log_debug("mibl_runfiles_root: %s", utstring_body(mibl_runfiles_root));
+    }
 #endif
-
     build_ws_dir= getenv("BUILD_WORKSPACE_DIRECTORY");
     if (build_ws_dir)
         bzl_mode = true;
@@ -572,7 +577,15 @@ void _s7_init(void)
     char *dso_dir;
     if (bzl_mode) {
         /* running under bazel run or test */
-        dso_dir = utstring_body(runfiles_root);
+
+        /* add @libs7//scm to *load-path* */
+        char *libs7_scmdir = realpath("../libs7/scm", NULL);
+        /* log_debug("libs7_scmdir: %s", libs7_scmdir); */
+        s7_add_to_load_path(s7, libs7_scmdir);
+        free(libs7_scmdir);
+
+        /* load libc_s7 */
+        dso_dir = utstring_body(mibl_runfiles_root);
 #if defined(DEBUG_TRACE)
         if (mibl_trace)
             log_debug("bzl mode: %s", dso_dir);
@@ -580,8 +593,10 @@ void _s7_init(void)
         utstring_printf(libc_s7, "%s/%s",
                         dso_dir,
                         "external/libs7/src/libc_s7" DSO_EXT);
+
     } else {
         /* running standalone, outside of bazel */
+        /* FIXME: add /usr/share/lib/libs7/scm */
         dso_dir = utstring_body(xdg_data_home);
         utstring_printf(libc_s7, "%s/%s",
                         dso_dir,
@@ -593,6 +608,7 @@ void _s7_init(void)
 
     s7_config_libc_s7(s7, utstring_body(libc_s7)); /* @libs7//src:s7.c*/
     utstring_free(libc_s7);
+
     /* libc stuff is in *libc*, which is an environment
      * (i.e. (let? *libc*) => #t)
      * import the stuff we're likely to use into the root env:
@@ -614,19 +630,12 @@ void _s7_init(void)
     s7_define_variable(s7, "*tmp-dir*", s7_make_string(s7, tmpdir));
 }
 
-/* void _mibl_s7_init(void) */
-/* { */
-/* #if defined(DEBUG_TRACE) */
-/*     if (mibl_trace) log_trace("_mibl_s7_init"); */
-/* #endif */
-
-/*     _s7_init();             /\* @libs7//src:s7.c *\/ */
-
-/* } */
-
 /* s7 kws used by tree-crawlers to create parsetree mibl */
 void _define_mibl_s7_keywords(void)
 {
+#if defined(DEBUG_TRACE)
+    if (mibl_trace) log_trace(BLU "_define_mibl_s7_keywords" CRESET);
+#endif
 
     /* initialize s7 stuff */
     dune_project_sym = s7_make_symbol(s7, "dune-project"),
@@ -663,8 +672,8 @@ void _define_mibl_s7_keywords(void)
 void _define_mibl_s7_flags(void)
 {
 #if defined(DEBUG_TRACE)
-    if (mibl_debug_s7_config)
-        log_debug("_define_mibl_s7_flags");
+    if (mibl_trace)
+        log_debug(BLU "_define_mibl_s7_flags" CRESET);
 #endif
 
     /* define global flags */
@@ -686,12 +695,11 @@ void _define_mibl_s7_vars(void)
 {
 #if defined(DEBUG_TRACE)
     if (mibl_debug_s7_config)
-        log_debug("_define_mibl_s7_vars");
+        log_debug(BLU "_define_mibl_s7_vars" CRESET);
 #endif
 
     s7_define_variable(s7, "*mibl-shared-ppx-pkg*",
                        s7_make_string(s7, "bzl"));
-
 }
 
 /* FIXME: if var does not exist, create it.
@@ -700,7 +708,8 @@ void _define_mibl_s7_vars(void)
 EXPORT void mibl_s7_set_flag(char *flag, bool val) {
 #if defined(DEBUG_TRACE)
     if (mibl_trace)
-        log_trace("mibl_s7_set_flag: %s: %d", flag, val);
+        log_trace(BLU "mibl_s7_set_flag:" CRESET
+                  " %s: %d", flag, val);
 #endif
     s7_pointer fld = s7_name_to_value(s7, flag);
     if (fld == s7_undefined(s7)) {
@@ -745,7 +754,7 @@ EXPORT void show_s7_config(void)
     /* s7_pointer lp = s7_load_path(s7); */
     log_info("*load-path*:"); // %s", TO_STR(lp));
     fflush(NULL);
-    /* log_info("runfiles_root: %s", utstring_body(runfiles_root)); */
+    /* log_info("mibl_runfiles_root: %s", utstring_body(mibl_runfiles_root)); */
 
     exec_sexp =
         "(for-each (lambda (path)"
@@ -760,13 +769,14 @@ EXPORT void show_s7_config(void)
     fflush(NULL);
 }
 
+/* called by all apps */
 EXPORT void mibl_s7_init(void)
 {
 #if defined(DEBUG_TRACE)
-    if (mibl_trace)
+    if (mibl_trace) {
         log_debug(UBLU "mibl_s7_init" CRESET);
+    }
 #endif
-
     /* _mibl_s7_init(); */
     _s7_init();
 
@@ -776,14 +786,14 @@ EXPORT void mibl_s7_init(void)
 
     _define_mibl_s7_vars();
 
+    s7_pointer lp = s7_load_path(s7);
+    char *s = TO_STR(lp);
+    /* log_debug("mibl_s7_init *load-path*: %s", s); */
+    free(s);
+
     /* FIXME: this should be a var, not a fn */
     /* s7_define_safe_function(s7, "effective-ws-root", */
     /*                         g_effective_ws_root, */
     /*                         0, 1, 0, NULL); */
 
-    //FIXME: move to mibl_s7.c?
-    /* s7_define_function(s7, "mibl-load-project", g_load_project, */
-    /*                    0, 2, 0, */
-    /*                    /\* LOAD_DUNE_FORMAL_PARAMS, *\/ */
-    /*                    LOAD_DUNE_HELP); */
 }

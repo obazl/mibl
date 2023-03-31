@@ -31,29 +31,36 @@
   ;; either by crawling the tree or by reading .mibl/PARSETREE.s7
   ;; (-mibl-load-project root-path ws-path)
 
-  (miblize :@)
+  (prune-pkg-file-deps!)
+
+  (miblize :@) ;; dune->mibl
 
   (add-filegroups-to-pkgs :@)
 
-  (normalize-manifests! :@)
+  ;; reconcile pkg files: :modules, :structures, :signatures etc.
+  (normalize-pkg-files!)
 
-  ;; (mibl-debug-print-project)
+  (normalize-aggregate-manifests! :@)
+
+  ;; (format #t "RETURNING XXXXXXXXXXXXXXXX\n")
   ;; (return)
 
   (normalize-rule-deps! :@)
 
-  ;;(miblarkize :@)
-  (dune-stanzas->mibl :@)
+  ;;(miblarkize :@) ;; renamed:
+  (dune-stanzas->mibl-keywords :@) ; e.g. (rule...) to (:write-file...)
 
   ;; (resolve-pkg-file-deps :@)  ;; OBSOLETE
 
-  (resolve-labels! :@)
+  (normalize-lib-deps! :@)
 
   (resolve-file-exports! :@)
 
   (handle-shared-ppx :@)
 
   (if *mibl-shared-deps* (handle-shared-deps :@))
+  (format #t "RETURNING XXXXXXXXXXXXXXXX\n")
+  (return)
 
   (if *mibl-shared-opts* (handle-shared-opts :@))
 

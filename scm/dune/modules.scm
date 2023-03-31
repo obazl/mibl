@@ -3,45 +3,6 @@
 
 ;; mibl/dune/modules.scm
 
-;;(define (  get-manifest pkg kind wrapped? stanza-alist) ;;  deps
-(define (get-manifest pkg kind wrapped? stanza-alist) ;;  deps
-  (if (or *mibl-debug-s7* *mibl-debug-modules*)
-      (begin
-        (format #t "~A: ~A\n" (ublue "get-manifest") stanza-alist)
-        (if *mibl-debug-show-pkgs* (format #t "~A: ~A\n" "pkg" pkg))
-        (format #t "~A: ~A\n" "kind" kind)))
-  ;; (if deps
-  (let* ((submods+sigs-list
-          (modules-fld->submodules-fld
-           kind
-           (assoc 'modules stanza-alist)
-           ;; files
-           (assoc :modules pkg)
-           ;; deps
-           (assoc :signatures pkg)
-           (assoc :structures pkg)))
-         (_ (if *mibl-debug-modules*
-                (_ (format #t "~A: ~A\n" (uwhite "1 submods+sigs-list") submods+sigs-list))))
-         (submods+sigs-list (if (equal? (cadr submods+sigs-list)
-                                     '(:signatures))
-                                (list (car submods+sigs-list))
-                                submods+sigs-list))
-         (submods+sigs-list (if (equal? (cdr submods+sigs-list)
-                                     '(:modules))
-                                (cdr submods+sigs-list)
-                                ;; (cdr submods+sigs-list)
-                                submods+sigs-list)))
-    (if (or *mibl-debug-s7* *mibl-debug-modules*)
-        (format #t "~A: ~A\n" (uwhite "submods+sigs-list") submods+sigs-list))
-    (if (null? submods+sigs-list)
-        '()
-        (cons :manifest
-              (remove () submods+sigs-list)))))
-            ;; (let ((submods (reverse (car submods+sigs-list)))
-            ;;       (subsigs (reverse (cdr submods+sigs-list))))
-            ;;   (cons :manifest (remove '()
-            ;;                            (list submods subsigs)))))))
-
 ;; only used for generated files, so returns :ml_, :mli_
 (define (filename->module-assoc filename)
   (if (or *mibl-debug-s7* *mibl-debug-modules*)
@@ -268,7 +229,7 @@
         ))))
 
 ;; was (define (modules->modstbl modules srcfiles) ;; lookup_tables.scm
-;; expand (modules ...) and convert to (:submodules ...)
+;; expand (modules ...), returning ((:modules ...) (:signatures ...))
 ;; variants:
 ;; (modules) - empty, exclude all
 ;; (modules :standard) == (modules (:standard)) == omitted == include all
@@ -279,15 +240,15 @@
 ;; so rules should be processed first.
 
 ;;  expand-modules-fld!
-(define modules-fld->submodules-fld
+(define expand-modules-fld
   ;;TODO: direct/indirect distinction. indirect are generated src files
   (let ((+documentation+ "Expand  'modules' field (of library or executable stanzas) and convert to pair of :submodules :subsigs assocs. modules-spec is a '(modules ...)' field from a library stanza; pkg-modules is the list of modules in the package: an alist whose assocs have the form (A (:ml a.ml)(:mli a.mli)), i.e. keys are module names.")
-        (+signature+ '(kind modules-fld->submodules-fld modules-spec pkg-modules pkg-sigs pkg-structs))) ;;  modules-deps
+        (+signature+ '(kind expand-modules-fld modules-spec pkg-modules pkg-sigs pkg-structs))) ;;  modules-deps
         ;; modules-ht)))
     (lambda (kind modules-spec pkg-modules pkg-sigs pkg-structs)
       (if (or *mibl-debug-s7* *mibl-debug-modules*)
           (begin
-            (format #t "~A\n" (ublue "modules-fld->submodules-fld"))
+            (format #t "~A\n" (ublue "expand-modules-fld"))
             (format #t "modules-spec: ~A\n" modules-spec)
             (format #t "pkg-modules: ~A\n" pkg-modules)
             ;; (format #t "deps: ~A\n" deps)
@@ -353,7 +314,7 @@
                                     ;; or (A B C)
                                     ;; just unroll and recur
                                     (if (equal? '(:standard) (car modules-spec))
-                                        (modules-fld->submodules-fld kind
+                                        (expand-modules-fld kind
                                          (append
                                           (list 'modules :standard) (cdr modules-spec))
                                          pkg-modules
@@ -365,7 +326,7 @@
                                               (recur (cdr modules-spec)
                                                      submods
                                                      (cons :HAHA subsigs)))
-                                            (modules-fld->submodules-fld kind
+                                            (expand-modules-fld kind
                                                                          (cons
                                                                           'modules (car modules-spec))
                                                                          pkg-modules
@@ -452,52 +413,6 @@
       ) ;; lamda
     ) ;; let
   ) ;; define
-
-;; (define (expand-modules-fld modules srcfiles)
-;;   ;; modules:: (modules Test_tezos)
-;;   ;; (format #t "  expand-modules-fld: ~A\n" modules)
-;;   ;; see also modules->modstbl in dune_stanza_fields.scm
-;;   (let* ((modules (cdr modules)))
-;;     (if (null? modules)
-;;         (values '() '())
-;;         ;; (let ((result
-;;         (let recur ((modules modules)
-;;                     (direct '())
-;;                     (indirect '()))
-;;           ;; (format #t "ms: ~A; direct: ~A\n" modules direct)
-;;           (cond
-;;            ((null? modules)
-;;             (values direct indirect))
-
-;;            ((equal? :standard (car modules))
-;;             (let ((newseq (srcs->module-names srcfiles))) ;;  direct
-;;               ;; (format #t "modules :STANDARD ~A\n" newseq)
-;;               ;; (format #t "CDRMODS ~A\n" (cdr modules))
-;;               (recur (cdr modules) (append newseq direct) indirect)))
-;;            ;; (concatenate direct
-;;            ;;              (norm-std-modules (cdr modules))))
-;;            ((pair? (car modules))
-;;             (let-values (((exp gen)
-;;                           (recur (car modules) '() '())))
-;;               (recur (cdr modules)
-;;                      (concatenate exp direct)
-;;                      (concatenate gen indirect))))
-
-;;            ((indirect-module-dep? (car modules) srcfiles)
-;;             (begin
-;;               ;; (format #t "INDIRECT: ~A\n" (car modules))
-;;               (recur (cdr modules)
-;;                      direct (cons (car modules) indirect))))
-
-;;            (else
-;;             (recur (cdr modules)
-;;                    (cons (car modules) direct)
-;;                    indirect))))
-;;         ;;      ))
-;;         ;; ;;(format #t "RESULT: ~A\n" result)
-;;         ;; (reverse result))
-;;         ))
-;;   )
 
 (if *mibl-debug-s7-loads*
     (format #t "loaded modules.scm\n"))

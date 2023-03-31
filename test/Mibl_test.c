@@ -108,7 +108,7 @@ void test_a(void) {
         /* /\* "(flush-output-port) " *\/ */
         /* "(miblarkize :@) " */
         /* /\* "(resolve-pkg-file-deps :@) " *\/ */
-        /* "(resolve-labels! :@) " */
+        /* "(normalize-lib-deps! :@) " */
         /* "(handle-shared-ppx :@) " */
         /* /\* "(if *mibl-shared-deps*" *\/ */
         /* /\* "  (begin " *\/ */

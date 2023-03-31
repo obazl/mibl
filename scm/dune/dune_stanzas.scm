@@ -234,6 +234,7 @@
     ;;             clauses))))
       select))
 
+;; wtf? what is an exe-library?
 (define (normalize-exe-libraries libs-assoc stanza-alist)
   ;; (format #t "normalize-exe-libraries: ~A\n" libs-assoc)
   (let-values (((constant contingent)
@@ -361,6 +362,115 @@
 
       ;; (format #t "dune pkg name: ~A\n" package)
       (cons :install (list (cdr stanza))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; replace e.g. :rule by :write-file, :ocamlc, :node, etc.
+;; depending on action tool
+;; :executable by :test if deps include unit test pkg
+(define (dune-stanzas->mibl pkg)
+  (if *mibl-debug-s7*
+      (format #t "~A: ~A~%" (blue "mibl-stanzas->mibl") pkg))
+
+  (set! -sh-test-id 0)
+
+  (if-let ((dune-pkg (assoc :mibl pkg)))
+          (for-each
+           (lambda (stanza)
+             (if *mibl-debug-s7*
+                 (format #t "~A: ~A~%" (magenta "stanza") stanza))
+             ;; first do write-file etc.
+             (case (car stanza)
+               ((:rule)
+                ;; if multiple cmds (progn) do not miblarkize
+                (if *mibl-debug-s7*
+                    (format #t "~A: ~A~%" (red "cmd ct:")
+                        (length (assoc-in* '(:actions :cmd) (cdr stanza)))))
+                (if (< (length (assoc-in* '(:actions :cmd) (cdr stanza))) 2)
+                    (let ((tool (assoc-in '(:actions :cmd :tool) (cdr stanza))))
+                      (if *mibl-debug-s7*
+                          (format #t "~A: ~A~%" (green "tool") tool))
+                      (if tool
+                          (let ((tool (cadr tool)))
+                            (if *mibl-debug-s7*
+                                (format #t "~A: ~A~%" (green "tool") tool))
+                            (case tool
+                              ((:write-file) ;;FIXME: what if we have write-file in an alias rule?
+                               (if *mibl-debug-s7*
+                                   (format #t "~A: ~A~%" (red "miblarking") stanza))
+                               (set-car! stanza :write-file))
+
+                              ((::cmp) (set-car! stanza :bindiff-test))
+                              ((::diff) (set-car! stanza :diff-test))
+
+                              ((:cppo) (set-car! stanza :cppo))
+
+                              ((::ocamlc)
+                               (if-let ((deps (assoc :deps (cdr stanza))))
+                                       (set-car! deps :srcs))
+                               (set-car! stanza :ocamlc))
+
+                              ((::diff) (set-car! stanza :diff))
+                              ((::node) (set-car! stanza :node))
+                              (else ;; nop
+                               '())))
+                          ))))
+
+               ((:ns-archive)
+                ;; convert to archive if only one submodule
+                ;; AND submodule name = ns name
+                (if (= (length (cdr (assoc-in '(:manifest :modules) (cdr stanza))))
+                       1)
+                    (let ((mname (cdr (assoc-in '(:manifest :modules) (cdr stanza))))
+                          (ns (assoc-val :ns (cdr stanza))))
+                      (if (equal? mname ns)
+                          (begin
+                            (set-car! stanza :archive)
+                            (set-cdr! stanza (dissoc '(:ns) (cdr stanza))))))))
+
+               ((:executable)
+                (if *mibl-debug-s7*
+                    (format #t "~A: ~A~%" (uwhite "miblarkizing executable") (car stanza)))
+                (let* ((stanza-alist (cdr stanza))
+                       (compile-deps (assoc-in '(:compile :deps :resolved) stanza-alist))
+                       (prologue (assoc :prologue stanza-alist)))
+                  (if *mibl-debug-s7*
+                      (begin
+                        (format #t "~A: ~A~%" (uwhite "compile-deps") compile-deps)
+                        (format #t "~A: ~A~%" (uwhite "prologue") prologue)))
+                  (if compile-deps
+                      (let ((test? (find-if (lambda (dep)
+                                              (member dep unit-test-pkgs))
+                                            (cdr compile-deps))))
+                        (if test? (set-car! stanza :test) #f)))
+                  ;; (if (truthy? prologue)
+                  ;;     (update-pkg-prologues! prologue dune-pkg stanza-alist))
+                  ))
+               (else
+                ))
+             ;; aliases
+             ;; (if (alist? (cdr stanza))
+             ;;     (if (assoc :alias (cdr stanza))
+             ;;         (-alias-args->miblark pkg stanza)))
+             )
+           (cdr dune-pkg))
+      ;; else no dune file
+      ))
+
+;; renamed from (define (miblarkize ws)
+;; convert dune stanza names to mibl keywords
+(define (dune-stanzas->mibl-keywords ws)
+  (let* ((@ws (assoc-val ws *mibl-project*))
+         (pkgs (car (assoc-val :pkgs @ws))))
+
+    (for-each (lambda (kv)
+                (if *mibl-debug-s7*
+                    (format #t "~A: ~A~%" (blue "dune-pkg->mibl") kv))
+                ;; dir may have dune-project but no dune file:
+                (if (not (null? (cdr kv)))
+                    ;; (dune-pkg->mibl ws (cdr kv)))
+                    (dune-stanzas->mibl (cdr kv)))
+                )
+              pkgs)))
 
 
 ;; (display "loaded dune/dune_stanzas.scm") (newline)

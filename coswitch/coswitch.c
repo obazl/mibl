@@ -48,6 +48,7 @@ enum OPTS {
     FLAG_JSOO,
     FLAG_CLEAN,
     FLAG_DEBUG,
+    FLAG_SHOW_CONFIG,
     FLAG_TRACE,
     FLAG_VERBOSE,
     FLAG_QUIET,
@@ -78,6 +79,8 @@ static struct option options[] = {
                     .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_DEBUG] = {.long_name="debug",.short_name='d',
                     .flags=GOPT_ARGUMENT_FORBIDDEN | GOPT_REPEATABLE},
+    [FLAG_SHOW_CONFIG] = {.long_name="show-config",
+                          .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_TRACE] = {.long_name="trace",.short_name='t',
                     .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_VERBOSE] = {.long_name="verbose",.short_name='v',
@@ -156,8 +159,8 @@ int main(int argc, char *argv[])
 
     _set_options(options);
 
-    utstring_new(runfiles_root);
-    utstring_printf(runfiles_root, "%s", getcwd(NULL, 0));
+    utstring_new(mibl_runfiles_root);
+    utstring_printf(mibl_runfiles_root, "%s", getcwd(NULL, 0));
 
     mibl_s7_init();
 
@@ -173,6 +176,13 @@ int main(int argc, char *argv[])
     utarray_new(opam_exclude_pkgs,&ut_str_icd);
 
     bazel_configure(NULL);      /* run by mibl_s7_init??? */
+
+    if (options[FLAG_SHOW_CONFIG].count) {
+        show_bazel_config();
+        show_mibl_config();
+        show_s7_config();
+        exit(0);
+    }
 
     chdir(rootws);            /* always run from base ws root */
 

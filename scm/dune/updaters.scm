@@ -139,7 +139,7 @@
                                 stanzas))))
               pkgs)
     (if (or *mibl-debug-s7* *mibl-debug-updaters*)
-        (format #t "~A: ~A~%" (bgblue "//normalize-manifests") ws))
+        (format #t "~A: ~A~%" (bgblue "//normalize-rule-deps!") ws))
     ))
 
   ;; (let* ((@ws (assoc-val ws *mibl-project*))

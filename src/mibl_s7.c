@@ -112,11 +112,11 @@ extern UT_string *xdg_data_home;
 char *scm_runfiles_dirs[] = {
     /* this seems to work when pgm is run from mibl repo or as external */
     /* minimum: mibl/libs7 */
-    "../mibl/scm",
     "../mibl/scm/dune",
     "../mibl/scm/meta",
     "../mibl/scm/opam",
-    "../libs7/scm",
+    "../mibl/scm",
+    /* "../libs7/scm", */
 
     /* starlark */
     /* "../obazl/obazlark", */
@@ -126,9 +126,9 @@ char *scm_runfiles_dirs[] = {
 };
 char **scm_dir;
 
-LOCAL void _config_s7_load_path_bazel_test_env(void)
+LOCAL void _config_s7_load_path_bazel_env(void)
 {
-    s7_pointer tmp_load_path = s7_list(s7, 0);
+    /* s7_pointer tmp_load_path = s7_list(s7, 0); */
 #if defined(DEBUG_TRACE)
 #ifdef BAZEL_CURRENT_REPOSITORY
     if (mibl_debug)
@@ -141,159 +141,160 @@ LOCAL void _config_s7_load_path_bazel_test_env(void)
         /* log_debug("scm_dir: %s", *scm_dir); */
         tmpdir = realpath(*scm_dir, NULL);
         /* log_debug("tmpscm: %s", tmpdir); */
-        /* s7_add_to_load_path(s7, tmpdir); */
-        tmp_load_path =
-            s7_append(s7, tmp_load_path,
-                      s7_list(s7, 1,
-                              s7_make_string(s7, tmpdir)));
+        s7_add_to_load_path(s7, tmpdir);
+        /* tmp_load_path = */
+        /*     s7_append(s7, tmp_load_path, */
+        /*               s7_list(s7, 1, */
+        /*                       s7_make_string(s7, tmpdir))); */
         free(tmpdir);
         (void)*scm_dir++;
     }
-    s7_define_variable(s7, "*load-path*", tmp_load_path);
+    //FIXME: uas s7_add_to_load_path!!!
+    /* s7_define_variable(s7, "*load-path*", tmp_load_path); */
 }
 
 /* we must read the manifest, because we do not know what clients may
    add as scm runtime deps. */
-LOCAL __attribute__((unused)) void _config_s7_load_path_bazel_run_env(char *manifest)
-{
-    FILE * fp;
-    char * line = NULL;
-    size_t len = 0;
-    ssize_t read;
+/* LOCAL __attribute__((unused)) void _config_s7_load_path_bazel_run_env(char *manifest) */
+/* { */
+/*     FILE * fp; */
+/*     char * line = NULL; */
+/*     size_t len = 0; */
+/*     ssize_t read; */
 
-    /* put project-local .mibl on load-path if it exits. do
-       not create it. */
+/*     /\* put project-local .mibl on load-path if it exits. do */
+/*        not create it. *\/ */
 
-    /* utstring_new(codept_args_file); */
-    /* utstring_printf(codept_args_file, "%s/%s", utstring_body(config_mibl), codept_args_filename); */
+/*     /\* utstring_new(codept_args_file); *\/ */
+/*     /\* utstring_printf(codept_args_file, "%s/%s", utstring_body(config_mibl), codept_args_filename); *\/ */
 
-    /* utstring_new(codept_deps_file); */
-    /* utstring_printf(codept_deps_file, "%s/%s", utstring_body(config_mibl), codept_deps_filename); */
+/*     /\* utstring_new(codept_deps_file); *\/ */
+/*     /\* utstring_printf(codept_deps_file, "%s/%s", utstring_body(config_mibl), codept_deps_filename); *\/ */
 
-    /*
-      build scripts list their scm srcs in the 'data' attrib, which
-      puts them in the runfiles area. they are listed in MANIFEST, so
-      we need to parse it to find out which dirs we need to add to the
-      s7 load path.
-     */
+/*     /\* */
+/*       build scripts list their scm srcs in the 'data' attrib, which */
+/*       puts them in the runfiles area. they are listed in MANIFEST, so */
+/*       we need to parse it to find out which dirs we need to add to the */
+/*       s7 load path. */
+/*      *\/ */
 
-    /* bazel (sys) script dir */
-    fp = fopen(manifest, "r");
-    if (fp == NULL) {
-        log_error("fopen failure %s", manifest);
-        /* exit(EXIT_FAILURE); */
-    }
+/*     /\* bazel (sys) script dir *\/ */
+/*     fp = fopen(manifest, "r"); */
+/*     if (fp == NULL) { */
+/*         log_error("fopen failure %s", manifest); */
+/*         /\* exit(EXIT_FAILURE); *\/ */
+/*     } */
 
-#if defined(DEBUG_TRACE)
-    if (mibl_debug)
-        log_debug("Reading MANIFEST");
-#endif
+/* #if defined(DEBUG_TRACE) */
+/*     if (mibl_debug) */
+/*         log_debug("Reading MANIFEST"); */
+/* #endif */
 
-    /* char *mibl_mibl = NULL; */
+/*     /\* char *mibl_mibl = NULL; *\/ */
 
-    s7_pointer load_dirs = s7_make_hash_table(s7, 5);
-    s7_pointer sdir;
+/*     s7_pointer load_dirs = s7_make_hash_table(s7, 5); */
+/*     s7_pointer sdir; */
 
-    /*
-      We we need to get these paths from the MANIFEST since it has
-      absolute paths, and we could be running from any dir (when used
-      as a tool lib).
+/*     /\* */
+/*       We we need to get these paths from the MANIFEST since it has */
+/*       absolute paths, and we could be running from any dir (when used */
+/*       as a tool lib). */
 
-      We build the path list by following the MANIFEST order for
-      libs7, but not mibl since the MANIFEST seems to put that
-      last. So we save the latter when we find it, then when done with
-      the MANIFEST we put the mibl/scm on top of the stack. Finally
-      we append our list to *load-path*, which puts "." on top.
-    */
+/*       We build the path list by following the MANIFEST order for */
+/*       libs7, but not mibl since the MANIFEST seems to put that */
+/*       last. So we save the latter when we find it, then when done with */
+/*       the MANIFEST we put the mibl/scm on top of the stack. Finally */
+/*       we append our list to *load-path*, which puts "." on top. */
+/*     *\/ */
 
-    s7_pointer tmp_load_path = s7_list(s7, 0);
+/*     s7_pointer tmp_load_path = s7_list(s7, 0); */
 
-    while ((read = getline(&line, &len, fp)) != -1) {
-        /* log_debug("Retrieved line of length %zu:", read); */
-        /* log_debug("%s", line); */
+/*     while ((read = getline(&line, &len, fp)) != -1) { */
+/*         /\* log_debug("Retrieved line of length %zu:", read); *\/ */
+/*         /\* log_debug("%s", line); *\/ */
 
-        line[strcspn(line, "\n")] = '\0';    /* trim trailing newline */
+/*         line[strcspn(line, "\n")] = '\0';    /\* trim trailing newline *\/ */
 
-        /* two tokens per line, first is path relative to exec dir,
-           second is corresponding absolute path */
-        char *token, *sep = " ";
-        token = strtok((char*)line, sep);
-        if (token != NULL) {
-            token = strtok(NULL, sep);
-        } else {
-            /* log_debug("skipping entry"); */
-            continue;
-        }
+/*         /\* two tokens per line, first is path relative to exec dir, */
+/*            second is corresponding absolute path *\/ */
+/*         char *token, *sep = " "; */
+/*         token = strtok((char*)line, sep); */
+/*         if (token != NULL) { */
+/*             token = strtok(NULL, sep); */
+/*         } else { */
+/*             /\* log_debug("skipping entry"); *\/ */
+/*             continue; */
+/*         } */
 
-        if ( (strncmp(basename(token),
-                      "libc_s7.so", 10) == 0) ) {
-#if defined(DEBUG_TRACE)
-            if (mibl_trace)
-                log_info("FOUND LIBC_S7.SO: %s", token);
-#endif
+/*         if ( (strncmp(basename(token), */
+/*                       "libc_s7.so", 10) == 0) ) { */
+/* #if defined(DEBUG_TRACE) */
+/*             if (mibl_trace) */
+/*                 log_info("FOUND LIBC_S7.SO: %s", token); */
+/* #endif */
 
-            tmp_load_path =
-                s7_append(s7, tmp_load_path,
-                          s7_list(s7, 1,
-                                  s7_make_string(s7,
-                                                 dirname(token))));
+/*             tmp_load_path = */
+/*                 s7_append(s7, tmp_load_path, */
+/*                           s7_list(s7, 1, */
+/*                                   s7_make_string(s7, */
+/*                                                  dirname(token)))); */
 
-            continue;
-        }
+/*             continue; */
+/*         } */
 
-        char *ext = strrchr(token, '.');
-        if (ext != NULL) {
-            if (strncmp(ext, ".so", 3) == 0) {
-                log_info("SHARED: %s", token);
-            }
+/*         char *ext = strrchr(token, '.'); */
+/*         if (ext != NULL) { */
+/*             if (strncmp(ext, ".so", 3) == 0) { */
+/*                 log_info("SHARED: %s", token); */
+/*             } */
 
-            if ( (strncmp(ext, ".scm", 4) == 0) && strlen(ext) == 4) {
-                char *scriptdir = dirname(token);
-                /* log_info("SCRIPTDIR: %s", scriptdir); */
+/*             if ( (strncmp(ext, ".scm", 4) == 0) && strlen(ext) == 4) { */
+/*                 char *scriptdir = dirname(token); */
+/*                 /\* log_info("SCRIPTDIR: %s", scriptdir); *\/ */
 
-                /* char *substr = strstr(scriptdir, "mibl/scm"); */
-                /* if (substr != NULL) { */
-                /*     /\* log_debug("FOUND mibl path: %s, %s", *\/ */
-                /*     /\*           line, scriptdir); *\/ */
-                /*     if (mibl_mibl == NULL) { */
-                /*         int len = strlen(scriptdir) + 1; */
-                /*         mibl_mibl = calloc(len, 1); */
-                /*         strlcpy(mibl_mibl, scriptdir, len); */
-                /*     } */
-                /*     continue; */
-                /* } */
+/*                 /\* char *substr = strstr(scriptdir, "mibl/scm"); *\/ */
+/*                 /\* if (substr != NULL) { *\/ */
+/*                 /\*     /\\* log_debug("FOUND mibl path: %s, %s", *\\/ *\/ */
+/*                 /\*     /\\*           line, scriptdir); *\\/ *\/ */
+/*                 /\*     if (mibl_mibl == NULL) { *\/ */
+/*                 /\*         int len = strlen(scriptdir) + 1; *\/ */
+/*                 /\*         mibl_mibl = calloc(len, 1); *\/ */
+/*                 /\*         strlcpy(mibl_mibl, scriptdir, len); *\/ */
+/*                 /\*     } *\/ */
+/*                 /\*     continue; *\/ */
+/*                 /\* } *\/ */
 
-                sdir = s7_make_string(s7, scriptdir);
-                s7_pointer r = s7_hash_table_ref(s7, load_dirs, sdir);
-                if (r == s7_f(s7)) {
-                    // add to hash to ensure uniqueness
-                    /* log_debug("adding to hash"); */
-                    s7_hash_table_set(s7, load_dirs,
-                                      sdir, s7_t(s7));
+/*                 sdir = s7_make_string(s7, scriptdir); */
+/*                 s7_pointer r = s7_hash_table_ref(s7, load_dirs, sdir); */
+/*                 if (r == s7_f(s7)) { */
+/*                     // add to hash to ensure uniqueness */
+/*                     /\* log_debug("adding to hash"); *\/ */
+/*                     s7_hash_table_set(s7, load_dirs, */
+/*                                       sdir, s7_t(s7)); */
 
-                    tmp_load_path = s7_append(s7, tmp_load_path,
-                                    s7_list(s7, 1,
-                                            s7_make_string(s7, scriptdir)));
-                }
-            }
-        }
-    }
-    fclose(fp);
+/*                     tmp_load_path = s7_append(s7, tmp_load_path, */
+/*                                     s7_list(s7, 1, */
+/*                                             s7_make_string(s7, scriptdir))); */
+/*                 } */
+/*             } */
+/*         } */
+/*     } */
+/*     fclose(fp); */
 
-    /* log_debug("tmp_load_path: %s", TO_STR(tmp_load_path)); */
-    /* tmp_load_path = s7_cons(s7, */
-    /*                         s7_make_string(s7, mibl_mibl), */
-    /*                         tmp_load_path); */
-    /* log_debug("2 tmp_load_path: %s", TO_STR(tmp_load_path)); */
+/*     /\* log_debug("tmp_load_path: %s", TO_STR(tmp_load_path)); *\/ */
+/*     /\* tmp_load_path = s7_cons(s7, *\/ */
+/*     /\*                         s7_make_string(s7, mibl_mibl), *\/ */
+/*     /\*                         tmp_load_path); *\/ */
+/*     /\* log_debug("2 tmp_load_path: %s", TO_STR(tmp_load_path)); *\/ */
 
-    /* now put default "." on top of tmp stack */
-    /* s7_pointer loadp = s7_load_path(s7); */
-    /* tmp_load_path = s7_append(s7, loadp, tmp_load_path); */
-    /* log_debug("lp: %s", s7_object_to_c_string(s7, tmp_load_path)); */
+/*     /\* now put default "." on top of tmp stack *\/ */
+/*     /\* s7_pointer loadp = s7_load_path(s7); *\/ */
+/*     /\* tmp_load_path = s7_append(s7, loadp, tmp_load_path); *\/ */
+/*     /\* log_debug("lp: %s", s7_object_to_c_string(s7, tmp_load_path)); *\/ */
 
-    /* replace *load-path* with our shiny new stack */
-    s7_define_variable(s7, "*load-path*", tmp_load_path);
-}
+/*     /\* replace *load-path* with our shiny new stack *\/ */
+/*     s7_define_variable(s7, "*load-path*", tmp_load_path); */
+/* } */
 
 LOCAL void _config_s7_load_path_rootws(void)
 {
@@ -592,7 +593,9 @@ EXPORT void set_load_path(void) // char *scriptfile)
 #if defined(DEBUG_TRACE)
     if (mibl_debug) {
         s7_pointer lp = s7_load_path(s7);
-        log_debug("*load-path*: %s", s7_object_to_c_string(s7, lp));
+        char *s = TO_STR(lp);
+        log_debug("*load-path*: %s", s);
+        free(s);
     }
 #endif
 
@@ -621,7 +624,7 @@ EXPORT void set_load_path(void) // char *scriptfile)
         //FIXME: only way find dirs for the s7 *load-path* is to crawl
         //the runfiles dir looking for scm files.
         /* _config_s7_load_path_bazel_run_env(manifest); */
-        _config_s7_load_path_bazel_test_env();
+        _config_s7_load_path_bazel_env();
         s7_pointer lp = s7_load_path(s7);
         (void)lp;
 #if defined(DEBUG_TRACE)
@@ -644,20 +647,23 @@ EXPORT void set_load_path(void) // char *scriptfile)
                ensures a pristine runtime env. The user can always add
                directories to load-path. The only exception is the
                project-local script directory in <projroot>/.mibl . */
-            /*         s7_pointer lp = s7_load_path(s7); */
-            /* #if defined(DEBUG_TRACE) */
-            /*         if (mibl_debug) { */
-            /*             log_debug("1 *LOAD-PATH*: %s", TO_STR(lp)); */
-            /*         } */
-            /* #endif */
+            #if defined(DEBUG_TRACE)
+                    if (mibl_debug) {
+                        s7_pointer lp = s7_load_path(s7);
+                        char *s = TO_STR(lp);
+                        log_debug("1 *LOAD-PATH*: %s", s);
+                        free(s);
+                    }
+            #endif
 
             /* _config_s7_load_path_bazel_run_env(manifest); */
-            _config_s7_load_path_bazel_test_env();
-            s7_pointer lp = s7_load_path(s7);
-            (void)lp;
+            _config_s7_load_path_bazel_env();
 #if defined(DEBUG_TRACE)
             if (mibl_debug) {
+                s7_pointer lp = s7_load_path(s7);
+                char *s = TO_STR(lp);
                 log_debug("3 *LOAD-PATH*: %s", TO_STR(lp));
+                free(s);
             }
 #endif
         }
@@ -681,7 +687,8 @@ EXPORT void set_load_path(void) // char *scriptfile)
 // to configure we need scm dirs for *load-path*, ws_root for traversal
 // to run we need main_script
 // q: script runs load-project; doesn't that handle ws root?
-void _mibl_s7_configure(char *main_script, char *ws_root)
+/* called by scripters, not coswitch */
+void _mibl_s7_configure_paths(char *main_script, char *ws_root)
 {
     set_load_path(); //callback_script_file);
 
@@ -732,6 +739,8 @@ void _mibl_s7_configure(char *main_script, char *ws_root)
     /* return s7; */
 }
 
+/* called by apps needing to run a script */
+/* i.e. by convert but not coswitch */
 EXPORT struct mibl_config_s *mibl_s7_init2(char *scm_dir, char *ws_root)
 {
     // scm_dir augments default *load-path*, which contains the mibl/scm dirs
@@ -743,10 +752,14 @@ EXPORT struct mibl_config_s *mibl_s7_init2(char *scm_dir, char *ws_root)
 
    /* s7 = s7_configure(scm_dir, ws_root); //FIXME: ws_root not used by s7_configure? */
 
+    bazel_configure(ws_root);
+
     /* reads miblrc, sets struct mibl_config, may set s7 flags */
     mibl_configure();  // may call s7_set
 
     _mibl_s7_configure_x();        /* just some s7_define_variable */
+
+    _mibl_s7_configure_paths(scm_dir, ws_root);
 
     /* always run from base ws root, set by bazel_configure */
     /* for test targets base == runfiles dir */
@@ -759,6 +772,13 @@ EXPORT struct mibl_config_s *mibl_s7_init2(char *scm_dir, char *ws_root)
         log_info("pwd: %s", getcwd(NULL,0));
         log_info("*load-path*: %s", TO_STR(s7_load_path(s7)));
     }
+
+    //FIXME: move to mibl_s7.c?
+    s7_define_function(s7, "mibl-load-project", g_load_project,
+                       0, 2, 0,
+                       /* LOAD_DUNE_FORMAL_PARAMS, */
+                       LOAD_DUNE_HELP);
+
     return &mibl_config;
 }
 
@@ -767,15 +787,16 @@ EXPORT void mibl_s7_run(char *main_script, char *ws)
 {
 #if defined(DEBUG_TRACE)
     if (mibl_trace) {
-        log_debug("mibl_run: %s, %s", main_script, ws);
-        log_debug("mibl_run cwd: %s", getcwd(NULL, 0));
+        log_trace(BLU "mibl_run:" CRESET
+                  " %s, %s", main_script, ws);
+        log_trace("mibl_run cwd: %s", getcwd(NULL, 0));
     }
 #endif
 
-    if (verbose) {
-        log_debug("mibl_run: %s, %s", main_script, ws);
-        log_debug("mibl_run cwd: %s", getcwd(NULL, 0));
-    }
+    /* if (verbose) { */
+    /*     log_debug("mibl_run: %s, %s", main_script, ws); */
+    /*     log_debug("mibl_run cwd: %s", getcwd(NULL, 0)); */
+    /* } */
 
     if (s7_name_to_value(s7, "*mibl-dev-mode*") == s7_t(s7)) {
         if (s7_name_to_value(s7, "*mibl-debug-report*") == s7_t(s7)) {
@@ -910,6 +931,9 @@ EXPORT void mibl_s7_run(char *main_script, char *ws)
                       main_script);
             fflush(NULL);
             exit(EXIT_FAILURE);
+        } else {
+            if (verbose && verbosity > 1)
+                log_debug("loaded main_script: %s", main_script);
         }
     } else {
         log_info(GRN "INFO: " CRESET "main_script is NULL");

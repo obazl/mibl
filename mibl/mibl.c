@@ -22,6 +22,8 @@ extern bool mibl_show_raw_deps;
 extern bool mibl_show_traversal;
 extern bool verbose;
 
+extern UT_string *mibl_runfiles_root;
+
 /* extern char *ews_root; */
 extern int dir_ct;
 extern int file_ct;
@@ -42,6 +44,7 @@ enum OPTS {
     FLAG_SHOW_CONFIG,
     FLAG_SHOW_PARSETREE,
     FLAG_SHOW_MIBL,
+    FLAG_SHOW_PKG,
     FLAG_SHOW_TRAVERSAL,
     FLAG_DEBUG,
     FLAG_DEBUG_REPORT,
@@ -125,6 +128,13 @@ void _update_s7_globals(struct option options[])
 
     if (options[FLAG_SHOW_MIBL].count)
         mibl_s7_set_flag("*mibl-show-mibl*", true);
+
+    if (options[FLAG_SHOW_PKG].count) {
+        //FIXME: pkg is relative to ws; this prints pkg in root ws
+        s7_define_variable(s7, "*mibl-show-pkg*",
+                       s7_make_string(s7, options[FLAG_SHOW_PKG].argument));
+    } else
+        mibl_s7_set_flag("*mibl-show-pkg*", false);
 
     if (options[FLAG_SHOW_PARSETREE].count)
         mibl_s7_set_flag("*mibl-show-parsetree*", true);
@@ -257,6 +267,8 @@ static struct option options[] = {
                           .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_SHOW_MIBL] = {.long_name="show-mibl",
                           .flags=GOPT_ARGUMENT_FORBIDDEN},
+    [FLAG_SHOW_PKG] = {.long_name="show-pkg",
+                       .flags=GOPT_ARGUMENT_REQUIRED},
     [FLAG_SHOW_PARSETREE] = {.long_name="show-parsetree",
                           .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_SHOW_TRAVERSAL] = {.long_name="show-traversal",
@@ -383,14 +395,16 @@ void _set_options(struct option options[])
 
 int main(int argc, char **argv, char **envp)
 {
-    /* argc = gopt(argv, options); */
-    /* (void)argc; */
-
+    argc = gopt(argv, options);
+    (void)argc;
     gopt_errors(argv[0], options);
 
     _set_options(options);
 
     mibl_check_tools();
+
+    utstring_new(mibl_runfiles_root);
+    utstring_printf(mibl_runfiles_root, "%s", getcwd(NULL, 0));
 
     mibl_s7_init();
 

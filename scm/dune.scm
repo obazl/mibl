@@ -38,7 +38,7 @@
 ;; (load "dune/expanders.scm")
 (load "dune/fields.scm")
 (load "dune/flags.scm")
-(load "dune/labels.scm")
+(load "dune/lib_deps.scm")
 (load "dune/libraries.scm")
 (load "dune/modules.scm")
 (load "dune/opam.scm")

@@ -64,6 +64,7 @@
                    ))))
         `,@result))))
 
+;; WARNING: runs menhir cmd
 (define (menhir->mibl ws pkg stanza)
   (if *mibl-debug-s7*
       (format #t "~A: ~A~%" (bgblue "menhir->mibl") stanza))
@@ -174,10 +175,13 @@
                                             (if (proper-list? m-assoc)
                                                 ;; its a module entry, (A (:ml a.ml) (:mli a.mli))
                                                 (begin ;; if mdeps not empty
+                                                  (error 'Fixme-menhir-deps "Fixme: menhir deps")
                                                   (set-cdr! m-assoc
                                                             (append (cdr m-assoc)
                                                                     (list (cons
                                                                            (if (eq? kind :struct)
+                                                                               ;; :ml-deps, :mli-deps removed
+                                                                               ;; append deps to :ml or :mli list
                                                                                :ml-deps :mli-deps)
                                                                            mdeps))))
                                                   ;; (format #t "~A: ~A~%" (bgred "m-assoc after") m-assoc)
