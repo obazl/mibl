@@ -31,7 +31,15 @@
   ;; either by crawling the tree or by reading .mibl/PARSETREE.s7
   ;; (-mibl-load-project root-path ws-path)
 
+  ;; (format #t "RETURNING XXXXXXXXXXXXXXXX\n")
+  ;; (return)
+
+  (lexyacc-file-deps!)
+
   (prune-pkg-file-deps!)
+
+  (format #t "RETURNING XXXXXXXXXXXXXXXX\n")
+  (return)
 
   (miblize :@) ;; dune->mibl
 

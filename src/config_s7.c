@@ -119,6 +119,7 @@ static char *mibl_s7_flags[] = {
     "*mibl-debug-flags*",
     "*mibl-debug-file-exports*",
     "*mibl-debug-genrules*",
+    "*mibl-debug-lexyacc*",
     "*mibl-debug-mibl*",
     "*mibl-debug-modules*",
     "*mibl-debug-prologues*",
@@ -627,7 +628,7 @@ void _s7_init(void)
     if (mibl_debug)
         log_debug("tmpdir: %s", tmpdir);
 #endif
-    s7_define_variable(s7, "*tmp-dir*", s7_make_string(s7, tmpdir));
+    s7_define_variable(s7, "*mibl-tmp-dir*", s7_make_string(s7, tmpdir));
 }
 
 /* s7 kws used by tree-crawlers to create parsetree mibl */

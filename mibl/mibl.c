@@ -39,6 +39,7 @@ enum OPTS {
     OPT_FLAGS, /* ad-hoc flags; if not passed, (if *mibl-foo*...) fails */
 
     FLAG_HELP,
+    FLAG_MENHIR,                /* treat .mly files as menhir */
     FLAG_SHOW_DEPS,
     FLAG_SHOW_RAW_DEPS,
     FLAG_SHOW_CONFIG,
@@ -104,6 +105,11 @@ void _update_s7_globals(struct option options[])
 
     if (options[FLAG_VERBOSE].count)
         mibl_s7_set_flag("*mibl-verbose*", true);
+
+    if (options[FLAG_MENHIR].count)
+        mibl_s7_set_flag("*mibl-menhir*", true);
+    else
+        mibl_s7_set_flag("*mibl-menhir*", false);
 
     if (options[FLAG_DEBUG_PPX].count)
         mibl_s7_set_flag("*mibl-debug-ppx*", true);
@@ -254,6 +260,9 @@ static struct option options[] = {
                   .flags=GOPT_ARGUMENT_REQUIRED | GOPT_REPEATABLE},
     [OPT_WS] = {.long_name="workspace",.short_name='w',
                 .flags=GOPT_ARGUMENT_REQUIRED},
+    [FLAG_MENHIR] = {.long_name="menhir",
+                     .flags=GOPT_ARGUMENT_FORBIDDEN},
+
     [OPT_FLAGS] = {.long_name="flags",
                    .flags=GOPT_ARGUMENT_REQUIRED},
 
