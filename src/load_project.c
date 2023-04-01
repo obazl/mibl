@@ -540,6 +540,17 @@ LOCAL void _update_pkg_files(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
                   ftsentry->fts_name, ext);
 #endif
 
+    if (ftsentry->fts_name[0] == '#') {
+        // skip e.g. #BUILD.bazel#
+        return;
+    }
+
+    if (ftsentry->fts_name[strlen(ftsentry->fts_name) - 1] == '~') {
+        // skip backup files
+        return;
+    }
+
+
     if (_exclusions(ftsentry, ext)) {
 #if defined(DEBUG_TRACE)
         if (mibl_debug_traversal)
@@ -1188,26 +1199,35 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
         }
 #endif
 
-        s7_pointer ml_assoc = s7_cons(s7,
-                                      s7_make_keyword(s7,
-                                                      (ftype == TAG_ML)
-                                                      ?"ml"
-                                                      :(ftype == TAG_ML_DYN)
-                                                      ?"ml_"
-                                                      :(ftype == TAG_MLI)
-                                                      ?"mli"
-                                                      :(ftype == TAG_MLI_DYN)
-                                                      ?"mli_"
-                                                      :(ftype == TAG_MLL)
-                                                      ?"mll"
-                                                      :(ftype == TAG_MLY)
-                                                      ?"mly"
-                                                      :"UNKNOWN"
-                                                      ),
-                                      s7_cons(s7,
-                                              s7_make_symbol(s7, fname),
-                                              mdeps));
-
+        s7_pointer ml_assoc;
+        if (ftype == TAG_MLY) {
+            ml_assoc = s7_cons(s7,
+                               s7_make_keyword(s7, "mly"),
+                               s7_make_symbol(s7, fname));
+        }
+        else if (ftype == TAG_MLL) {
+            ml_assoc = s7_cons(s7,
+                               s7_make_keyword(s7, "mll"),
+                               s7_make_symbol(s7, fname));
+        } else {
+            ml_assoc = s7_cons(s7,
+                               s7_make_keyword(s7,
+                                               (ftype == TAG_ML)
+                                               ?"ml"
+                                               :(ftype == TAG_ML_DYN)
+                                               ?"ml_"
+                                               :(ftype == TAG_MLI)
+                                               ?"mli"
+                                               :(ftype == TAG_MLI_DYN)
+                                               ?"mli_"
+                                               :(ftype == TAG_MLL)
+                                               ?"mll"
+                                               :"UNKNOWN"
+                                               ),
+                               s7_cons(s7,
+                                       s7_make_symbol(s7, fname),
+                                       mdeps));
+        }
         /* s7_pointer ml_deps_assoc = s7_cons(s7, deps_kw, */
         /*                                    s7_make_symbol(s7, "Foo")); */
 
@@ -2286,7 +2306,7 @@ LOCAL void _update_pkg_mly_files(s7_pointer pkg_tbl,
                                  char *pkg_name, char *mname,
                                  char *fname, int ftype)
 {
-    // mly entry structure: (Foo (:mly foo.mly) (:ml_ foo.ml Dep1 Dep2)  (:mli_ foo.mli Dep1 Dep2))
+    // mly entry structure: (Foo (:mly . foo.mly) (:ml_ foo.ml Dep1 Dep2)  (:mli_ foo.mli Dep1 Dep2))
 #if defined(DEBUG_TRACE)
     if (mibl_trace) {
         log_trace(RED "_UPDATE_PKG_MLY_FILES" CRESET);
@@ -2344,7 +2364,7 @@ LOCAL void _update_pkg_mly_files(s7_pointer pkg_tbl,
                 s7_list(s7, 2, static_kw, mly_assoc);
 
             s7_pointer ocamlyacc_assoc = s7_list(s7, 2,
-                                            mly_kw, statics_assoc);
+                                                 mly_kw, statics_assoc);
 #if defined(DEBUG_TRACE)
             if (mibl_debug_traversal) log_debug("ocamlyacc_assoc: %s", TO_STR(ocamlyacc_assoc));
 #endif
@@ -2933,6 +2953,9 @@ LOCAL void _handle_ml_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
         log_warn("UNHANDLED: :%-6s %s", "mld", ftsentry->fts_name);
         /* _update_pkg_files(pkg_tbl, ftsentry, ext); */
     }
+    else if (ext[strlen(ext) - 1] == '~') {
+        return;                 /* skip backup files */
+    }
     else if ((strncmp(ext, ".md", 3) == 0)
         && (strlen(ext) == 3)) {
         /* log_warn("UNHANDLED: :%-6s %s", "md", ftsentry->fts_name); */
@@ -2988,6 +3011,7 @@ LOCAL void _handle_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
         }
         else if ((strncmp(ext, ".md", 3) == 0)
                  && (strlen(ext) == 3)) {
+            //FIXME: handle_md, not _ml?
             _handle_ml_file(pkg_tbl, ftsentry, ext);
         }
         else if ((strncmp(ext, ".sh", 3) == 0)
