@@ -115,10 +115,10 @@
   ;; (display (format #f "normalize-stanza-env: ~A" stanza)) (newline)
   (cons 'env (list (cdr stanza))))
 
-;; (define (update-public-exe-table pkg-path pubname filename)
+;; (define (update-public-exe-table pkg-path findlib-name filename)
 ;;   ;; (format #t "update-public-exe-table: ~A => ~A/~A\n"
-;;   ;;         pubname pkg-path filename)
-;;   (let* ((pubname (symbol->string pubname))
+;;   ;;         findlib-name pkg-path filename)
+;;   (let* ((findlib-name (symbol->string findlib-name))
 
 ;;          ;; FIXME: only for executables
 ;;          (target-label (string-append "//" pkg-path ":"
@@ -126,12 +126,12 @@
 ;;                                       ".exe")))
 
 ;;     (hash-table-set! public-exe->label
-;;                      (string->symbol pubname) target-label)
+;;                      (string->symbol findlib-name) target-label)
 ;;     (hash-table-set! public-exe->label
-;;                      (string->symbol (string-append pubname ".exe"))
+;;                      (string->symbol (string-append findlib-name ".exe"))
 ;;                      target-label)
 ;;     (hash-table-set! public-exe->label
-;;                      (string->symbol (string-append pubname ".bc"))
+;;                      (string->symbol (string-append findlib-name ".bc"))
 ;;                      target-label)
 
 ;;     (let recur ((path-segs (reverse (string-split pkg-path #\/)))
@@ -140,7 +140,7 @@
 ;;       (if (null? path-segs)
 ;;           '()
 ;;           (let* ((pfx (string-append (car path-segs) "/" pfx))
-;;                  (k (string-append pfx pubname)))
+;;                  (k (string-append pfx findlib-name)))
 ;;             ;; (format #t " k: ~A;  pfx:   ~A\n" k pfx)
 ;;             ;; (format #t " target label: ~A\n" target-label)
 ;;             (hash-table-set! public-exe->label

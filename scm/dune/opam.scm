@@ -1,8 +1,8 @@
-(define (update-opam-table! ws kind opam-pkg pubname pkg-path privname)
+(define (update-opam-table! ws kind opam-pkg findlib-name pkg-path privname)
   ;; kind:  :lib, :bin, :man, :files, :sub
   (if *mibl-debug-s7*
       (begin
-        (format #t "~A path: ~A~%" (bgmagenta "update-opam-table!") pubname)
+        (format #t "~A path: ~A~%" (bgmagenta "update-opam-table!") findlib-name)
         (format #t "~A: ~A~%" (green "kind") kind)
         (format #t "~A: ~A~%" (green "pkg-path") pkg-path)
         (format #t "~A: ~A~%" (green "privname") privname)
@@ -41,7 +41,7 @@
                                       (append old
                                               (list
                                                (if (eq? kind :bin)
-                                                  `(,pubname
+                                                  `(,findlib-name
                                                     (,pkg-path . ,privname))
                                                   `((,pkg-path . ,privname))))
                                                  )))
@@ -60,7 +60,7 @@
                   (hash-table-set! opam opam-pkg
                                    `((:path . ,ws-path)
                                      ,(if (eq? kind :bin)
-                                          `(,kind (,pubname
+                                          `(,kind (,findlib-name
                                                   (,pkg-path . ,privname)))
                                           `(,kind (,pkg-path . ,privname))))))))
     (if *mibl-debug-s7*

@@ -372,7 +372,7 @@ s7_pointer _load_acons(s7_scheme *s7)
     return _s7_acons;
 }
 
-s7_pointer _load_assoc()
+s7_pointer _load_assoc(void)
 {
     if (assoc == NULL) {
         assoc = s7_name_to_value(s7, "assoc");
@@ -386,7 +386,7 @@ s7_pointer _load_assoc()
     return assoc;
 }
 
-s7_pointer _load_assoc_in()
+s7_pointer _load_assoc_in(void)
 {
     if (assoc_in == NULL) {
         assoc_in = s7_name_to_value(s7, "assoc-in");
@@ -400,7 +400,7 @@ s7_pointer _load_assoc_in()
     return assoc_in;
 }
 
-s7_pointer _load_assoc_val()
+s7_pointer _load_assoc_val(void)
 {
     if (assoc_val == NULL) {
         assoc_val = s7_name_to_value(s7, "assoc-in");
@@ -414,7 +414,7 @@ s7_pointer _load_assoc_val()
     return assoc_val;
 }
 
-s7_pointer _load_append()
+s7_pointer _load_append(void)
 {
     if (_s7_append == NULL) {
         _s7_append = s7_name_to_value(s7, "append");
@@ -442,7 +442,7 @@ s7_pointer _load_list_set(s7_scheme *s7)
     return _s7_list_set;
 }
 
-s7_pointer _load_sort()
+s7_pointer _load_sort(void)
 {
     sort_bang = s7_name_to_value(s7, "sort!");
     if (assoc == s7_undefined(s7)) {
@@ -454,7 +454,7 @@ s7_pointer _load_sort()
     return sort_bang;
 }
 
-s7_pointer _load_string_lt()
+s7_pointer _load_string_lt(void)
 {
     string_lt = s7_name_to_value(s7, "string<?");
     if (assoc == s7_undefined(s7)) {

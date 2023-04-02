@@ -1,4 +1,3 @@
-
 #include <dirent.h>
 #include <errno.h>
 #include <fts.h>
@@ -16,7 +15,7 @@ bool mibl_debug_deps = false;
 bool mibl_show_raw_deps = false;
 
 LOCAL int _select_ocaml_srcs(const struct dirent *de) {
-    /* log_debug("selecting on %s", de->d_name); */
+    log_debug("selecting on %s", de->d_name);
     char *ext = strrchr(de->d_name, '.');
     if (ext == NULL) {
         return 0;
@@ -80,10 +79,12 @@ UT_array *_ws_src_dirs(char *const *rootdir)
                     scan_ct = scandir(ftsentry->fts_path, &namelist,
                                       _select_ocaml_srcs,
                                       alphasort);
-                    /* log_debug("scan_ct: %d", scan_ct); */
+                    log_debug("scan_ct: %d", scan_ct);
+                    log_debug("fts_path: %s", ftsentry->fts_path);
+                    log_debug("fts_name: %s", ftsentry->fts_name);
                     if (scan_ct > 0) {
-                        char *s = strndup(ftsentry->fts_name,
-                                          strlen(ftsentry->fts_name));
+                        char *s = strndup(ftsentry->fts_path+2, // chop './' pfx
+                                          strlen(ftsentry->fts_path) - 1);
                         /* utarray_push_back makes a copy */
                         utarray_push_back(_ocaml_src_dirs, &s);
                         free(s);
@@ -110,6 +111,17 @@ UT_array *_ws_src_dirs(char *const *rootdir)
 s7_pointer _codept_deps(UT_array *_ocaml_src_dirs)
 {
     int n = utarray_len(_ocaml_src_dirs);
+
+    // WARNING: we can only run codept on one dir at a time, due to
+    // the flat namespace. E.g. sexplib has src/std.ml and
+    // num/lib/std.ml If we codept both of those at once only one will
+    // be returned since the key is the module name, and they're both
+    // Std.
+
+    // Maybe a bug in codept. It should return an entry in
+    // 'dependencies for both, since those are keyed by file path.
+    // Also the 'local list, being keyed by module name, should
+    // include multiple entries for modules with multiple impl files.
 
     char **argv = calloc(6 + n, sizeof(char*));
     argv[0] = "codept";
@@ -148,6 +160,8 @@ s7_pointer _codept_deps(UT_array *_ocaml_src_dirs)
         return s7_nil(s7);
     }
 
+    log_debug("CODEPT: %s", result);
+    exit(0);
     s7_pointer depgraph_port = s7_open_input_string(s7, result);
     s7_pointer depgraph = s7_read(s7, depgraph_port);
     s7_pointer env = s7_inlet(s7,
@@ -179,6 +193,173 @@ s7_pointer _codept_deps(UT_array *_ocaml_src_dirs)
     /* char *s = TO_STR(deps_list); */
     /* log_debug("DEPS_LIST: %s", s); */
     /* free(s); */
+
+   return deps_list;
+}
+
+s7_pointer _codept_deps_pkg(char *pkgdir)
+{
+#if defined(DEBUG_TRACE)
+    if (mibl_trace) {
+        log_trace("_codept_deps_pkg: %s", pkgdir);
+    }
+#endif
+
+    char **argv = calloc(7, sizeof(char*));
+    argv[0] = "codept";
+    argv[1] = "-verbosity";
+    argv[2] = "info";
+    argv[3] = "-sexp";
+    argv[4] = "-k";
+    argv[5] = (char*)pkgdir;
+    /* /\* now add ocaml src dirs collected by load_project *\/ */
+    /* int i = 5; */
+    /* char **p = NULL; */
+    /* p = NULL; */
+    /* while ( (p=(char**)utarray_next(_ocaml_src_dirs,p))) { */
+    /*     argv[i] = *p; */
+    /*     i++; */
+    /* } */
+    argv[6] = NULL;
+    /* log_debug("I: %d", i); */
+
+    char *exe = NULL;
+    const char *result = NULL;
+    exe = "codept";
+
+    /* FIXME: write to tmp dir instead of buffer */
+    /* or write to DEPS.mibl? */
+    result = run_cmd(exe, argv);
+    if (result == NULL) {
+        log_error(" run_cmd 'codept ...'\n");
+        fprintf(stderr,
+                "%s:%d "
+                RED "ERROR: " CRESET
+                " run_cmd 'codept ...'\n",
+                __FILE__, __LINE__);
+        s7_flush_output_port(s7, s7_current_output_port(s7));
+        s7_flush_output_port(s7, s7_current_error_port(s7));
+        fflush(NULL);
+        return s7_nil(s7);
+    }
+
+    log_debug("CODEPT: %s", result);
+    exit(0);
+    s7_pointer depgraph_port = s7_open_input_string(s7, result);
+    s7_pointer depgraph = s7_read(s7, depgraph_port);
+    s7_pointer env = s7_inlet(s7,
+                              s7_list(s7, 1,
+                                      s7_cons(s7,
+                                              s7_make_symbol(s7, "depgraph"),
+                                              depgraph)));
+
+    if (mibl_show_raw_deps) {
+        log_info("DEPS:");
+        char *sexp = "(mibl-pretty-print depgraph) ";
+        s7_pointer r = s7_eval_c_string_with_environment(s7, sexp, env);
+        (void)r;
+        s7_newline(s7, s7_current_output_port(s7));
+        /* char *tostr = TO_STR(deps_list); */
+        /* log_debug("DEPS-LIST: %s", tostr); */
+        /* free(tostr); */
+        s7_flush_output_port(s7, s7_current_output_port(s7));
+    }
+
+    /* FIXME: this will fail if depgraph is empty, */
+    char *sexp =
+        "(let ((deps-list (assoc-val 'dependencies depgraph))) "
+        "  (car deps-list)) "
+        ;
+
+    s7_pointer deps_list = s7_eval_c_string_with_environment(s7, sexp, env);
+    (void)deps_list;
+    /* char *s = TO_STR(deps_list); */
+    /* log_debug("DEPS_LIST: %s", s); */
+    /* free(s); */
+
+   return deps_list;
+}
+
+s7_pointer analyze_deps_file(FTSENT *ftsentry)
+{
+#if defined(DEBUG_TRACE)
+    if (mibl_trace) {
+        log_trace("analyze_deps_file");
+        log_debug("ftsentry->fts_path: '%s'", ftsentry->fts_path);
+        log_debug("ftsentry->fts_name: '%s'", ftsentry->fts_name);
+        log_trace("cwd: %s", getcwd(NULL,0));
+        /* char **p; */
+        /* p = NULL; */
+        /* log_debug("ocaml src dirs:"); */
+        /* while ( (p=(char**)utarray_next(ocaml_src_dirs,p))) { */
+        /*     log_info("\t%s",*p); */
+        /* } */
+    }
+#endif
+
+    char **argv = calloc(7, sizeof(char*));
+    argv[0] = "codept";
+    argv[1] = "-verbosity";
+    argv[2] = "info";
+    argv[3] = "-sexp";
+    argv[4] = "-k";
+    argv[5] = ftsentry->fts_path + 2; // drop leading ./
+    argv[6] = NULL;
+    /* log_debug("I: %d", i); */
+
+    char *exe = NULL;
+    const char *result = NULL;
+    exe = "codept";
+
+    /* FIXME: write to tmp dir instead of buffer */
+    /* or write to DEPS.mibl? */
+    result = run_cmd(exe, argv);
+    if (result == NULL) {
+        log_error(" run_cmd 'codept ...'\n");
+        fprintf(stderr,
+                "%s:%d "
+                RED "ERROR: " CRESET
+                " run_cmd 'codept ...'\n",
+                __FILE__, __LINE__);
+        s7_flush_output_port(s7, s7_current_output_port(s7));
+        s7_flush_output_port(s7, s7_current_error_port(s7));
+        fflush(NULL);
+        return s7_nil(s7);
+    }
+
+    /* log_debug("CODEPT: %s", result); */
+
+    s7_pointer depgraph_port = s7_open_input_string(s7, result);
+    s7_pointer depgraph = s7_read(s7, depgraph_port);
+    s7_pointer env = s7_inlet(s7,
+                              s7_list(s7, 1,
+                                      s7_cons(s7,
+                                              s7_make_symbol(s7, "depgraph"),
+                                              depgraph)));
+
+    if (mibl_show_raw_deps) {
+        log_info("DEPS:");
+        char *sexp = "(mibl-pretty-print depgraph) ";
+        s7_pointer r = s7_eval_c_string_with_environment(s7, sexp, env);
+        (void)r;
+        s7_newline(s7, s7_current_output_port(s7));
+        /* char *tostr = TO_STR(deps_list); */
+        /* log_debug("DEPS-LIST: %s", tostr); */
+        /* free(tostr); */
+        s7_flush_output_port(s7, s7_current_output_port(s7));
+    }
+
+    /* FIXME: this will fail if depgraph is empty, */
+    char *sexp =
+        "(let ((deps-list (assoc-val 'dependencies depgraph))) "
+        "  (car deps-list)) "
+        ;
+
+    s7_pointer deps_list = s7_eval_c_string_with_environment(s7, sexp, env);
+    (void)deps_list;
+    char *s = TO_STR(deps_list);
+    log_debug("DEPS_LIST: %s", s);
+    free(s);
 
    return deps_list;
 }
@@ -262,7 +443,7 @@ s7_pointer _ocamldep_deps(UT_array *_ocaml_src_dirs)
 }
 
 /* analyze_deps - run codept and ingest resulting sexp */
-s7_pointer analyze_deps(char *const *rootdir) //, UT_array *ocaml_src_dirs)
+s7_pointer analyze_deps_wsroot(char *const *rootdir) //, UT_array *ocaml_src_dirs)
 {
 #if defined(DEBUG_TRACE)
     if (mibl_trace) {
@@ -284,13 +465,14 @@ s7_pointer analyze_deps(char *const *rootdir) //, UT_array *ocaml_src_dirs)
     UT_array *_ocaml_src_dirs = _ws_src_dirs(rootdir);
 
 #if defined(DEBUG_TRACE)
-    if (mibl_debug_deps) {
+    /* if (mibl_debug_deps) { */
+        log_debug("ocaml_src_dirs for codept:");
         char **p = NULL;
         p = NULL;
         while ( (p=(char**)utarray_next(_ocaml_src_dirs,p))) {
             log_debug("src dir: %s", *p);
         }
-    }
+    /* } */
 #endif
 
     s7_pointer depslist;
@@ -311,6 +493,56 @@ s7_pointer analyze_deps(char *const *rootdir) //, UT_array *ocaml_src_dirs)
     return depslist;
 }
 
+s7_pointer analyze_deps_pkg(char *pkgdir)
+{
+#if defined(DEBUG_TRACE)
+    if (mibl_trace) {
+        log_trace("analyze_deps_pkg: %s", pkgdir);
+        log_trace("cwd: %s", getcwd(NULL,0));
+        log_debug("pkgdir: '%s'", pkgdir);
+        /* char **p; */
+        /* p = NULL; */
+        /* log_debug("ocaml src dirs:"); */
+        /* while ( (p=(char**)utarray_next(ocaml_src_dirs,p))) { */
+        /*     log_info("\t%s",*p); */
+        /* } */
+    }
+#endif
+
+    /* _check_tools(); */
+
+    /* NB: the utarray must be freed */
+/*     UT_array *_ocaml_src_dirs = _ws_src_dirs(rootdir); */
+
+/* #if defined(DEBUG_TRACE) */
+/*     /\* if (mibl_debug_deps) { *\/ */
+/*         log_debug("ocaml_src_dirs for codept:"); */
+/*         char **p = NULL; */
+/*         p = NULL; */
+/*         while ( (p=(char**)utarray_next(_ocaml_src_dirs,p))) { */
+/*             log_debug("src dir: %s", *p); */
+/*         } */
+/*     /\* } *\/ */
+/* #endif */
+
+    s7_pointer depslist;
+    /* depslist = _ocamldep_deps(_ocaml_src_dirs); */
+    /* depslist = _codept_deps(_ocaml_src_dirs); */
+
+    if (system("which codept > /dev/null 2>&1")) {
+        /* codept not found, try ocamldep */
+        /* depslist _ocamldep_deps(_ocaml_src_dirs); */
+        log_error("Required tool: codept not found.");
+        exit(EXIT_FAILURE);
+    } else {
+        depslist = _codept_deps_pkg(pkgdir);
+    }
+
+    /* utarray_free(_ocaml_src_dirs); */
+
+    return depslist;
+}
+
 s7_pointer get_deps(char *_pkg, char *tgt, s7_pointer deps_list)
 {
 #if defined(DEBUG_TRACE)
@@ -318,10 +550,12 @@ s7_pointer get_deps(char *_pkg, char *tgt, s7_pointer deps_list)
         log_trace("get_deps: %s : %s", _pkg, tgt);
 #endif
 
-    /* char *tostr = TO_STR(deps_list); */
-    /* log_debug("DEPS-LIST: %s", tostr); */
-    /* free(tostr); */
-    /* s7_flush_output_port(s7, s7_current_output_port(s7)); */
+    /* return s7_nil(s7); */
+
+    char *tostr = TO_STR(deps_list);
+    log_debug("DEPS-LIST: %s", tostr);
+    free(tostr);
+    s7_flush_output_port(s7, s7_current_output_port(s7));
 
     /* NB: _pkg has leading "./", e.g. "./src/foo" */
     char *pkg;
@@ -342,7 +576,7 @@ s7_pointer get_deps(char *_pkg, char *tgt, s7_pointer deps_list)
                                       s7_cons(s7,
                                               s7_make_symbol(s7, "tgt"),
                                               s7_make_string(s7, tgt))));
-
+    log_debug("ENV: %s", TO_STR(env));
     char *sexp =
         "(let* ((path (format #f \"~A/~A\" pkg tgt)) "
         "       (key `(file ,(symbol path)))) "
@@ -356,9 +590,6 @@ s7_pointer get_deps(char *_pkg, char *tgt, s7_pointer deps_list)
         "                 (fixed (map (lambda (lst) "
         "                                  (if (> (length lst) 1) "
         "                                      (list->vector lst) lst)) "
-        /* "                                  (if (> (length lst) 1) " */
-        /* "                                      (symbol (string-join (map symbol->string lst) \".\")) " */
-        /* "                                       lst)) " */
         "                             dlist))) "
 #if defined(DEBUG_TRACE)
         /* "            (format #t \"deps: ~A~%\" (flatten fixed)) " */

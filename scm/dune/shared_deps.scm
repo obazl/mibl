@@ -1,47 +1,38 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (-handle-shared-deps pkg-kv)
-  (if *mibl-debug-s7*
-      (format #t "~A: ~A~%" (ublue "handle-shared-deps") pkg-kv))
+  (mibl-trace-entry "handle-shared-deps" pkg-kv)
   (let* ((pkg (cdr pkg-kv))
          (pkg-shared-deps '()))
     (if-let ((dune (assoc :mibl pkg)))
             (begin
               (for-each (lambda (stanza)
-                          (if *mibl-debug-s7*
-                              (format #t "~A: ~A~%" (bgblue "stanza") stanza))
+                          (mibl-trace "stanza" stanza)
                           (if (member (car stanza) '(:archive :library :ns-archive :ns-library :executable))
                               (let* ((shared-ct (length pkg-shared-deps))
                                      (deps (assoc :deps (cdr stanza))))
                                 (if deps
                                     (let ((resolved (assoc :resolved (cdr deps))))
-                                      (if *mibl-debug-s7*
-                                          (begin
-                                            (format #t "~A: ~A~%" (bgred "pkg-shared-deps") pkg-shared-deps)
-                                            (format #t "~A: ~A~%" (ublue "deps") deps)
-                                            (format #t "~A: ~A~%" (ublue "resolved") resolved)))
+                                      (mibl-trace "pkg-shared-deps" pkg-shared-deps)
+                                      (mibl-trace "deps" deps)
+                                      (mibl-trace "resolved" resolved)
                                       (if resolved
                                           (if (not (number? (cdr resolved)))
                                               (let* ((deplist (cdr resolved))
                                                      (shared (rassoc deplist pkg-shared-deps)))
-                                                (if *mibl-debug-s7*
-                                                    (begin
-                                                      (format #t "~A: ~A~%" (bgred "deplist") deplist)
-                                                      (format #t "~A: ~A~%" (bgred "rassoc") shared)))
+                                                (mibl-trace "deplist" deplist)
+                                                (mibl-trace "rassoc" shared)
                                                 (if (null? shared)
                                                     (begin
-                                                      (if *mibl-debug-s7*
-                                                          (format #t "~A: ~A~%" (green "adding") deplist))
+                                                      (mibl-trace "adding to shared-deps" deplist)
                                                       (set! pkg-shared-deps
                                                             (append pkg-shared-deps
                                                                     `((,(+ 1 shared-ct) . ,deplist))))
                                                       (set-cdr! resolved (+ 1 shared-ct)))
                                                     (begin
                                                       ;; update stanza :deps with key
-                                                      (if *mibl-debug-s7*
-                                                          (format #t "~A: ~A => ~A~%" (ugreen "updating stanza") resolved (car shared)))
+                                                      (mibl-trace "updating stanza" (car shared))
                                                       (set-cdr! resolved (car shared))
-                                                      (if *mibl-debug-s7*
-                                                          (format #t "~A: ~A~%" (ugreen "updated stanza") resolved))
+                                                      (mibl-trace "updated stanza" resolved)
                                                       ))))))))))
                         (cdr dune))
               ;; now add pkg-shared-deps to pkg with key :shared-deps

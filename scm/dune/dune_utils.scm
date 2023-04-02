@@ -273,44 +273,44 @@
           (let* (;;(modname (assoc-in '(:name :module) stanza-alist))
                  (privname (assoc-in '(:name :private) stanza-alist))
                  (modname (normalize-module-name (cadr privname)))
-                 (pubname (assoc-in  '(:name :public) stanza-alist))
+                 (findlib-name (assoc-in  '(:name :public) stanza-alist))
                  (label (string-append
                          "//" pkg-path ":"
-                         (if pubname
-                             (symbol->string (cadr pubname))
+                         (if findlib-name
+                             (symbol->string (cadr findlib-name))
                              (symbol->string (cadr privname)))))
 
-                 (entry (if (and privname pubname)
+                 (entry (if (and privname findlib-name)
                             `((:private ,(cadr privname))
-                              (:public ,(cadr pubname))
+                              (:public ,(cadr findlib-name))
                               (:module ,modname)
                               (:pkg ,pkg-path)
                               (:label ,label))
                             ;; else privname only
                             `((:private ,(cadr privname))
-                              ;; set pubname <= privname?
+                              ;; set findlib-name <= privname?
                               (:pkg ,pkg-path)
                               (:label ,label)))))
             ;; (format #t "    modname: ~A\n" modname)
             ;; (format #t "    privname: ~A\n" privname)
-            ;; (format #t "    pubname: ~A\n" pubname)
+            ;; (format #t "    findlib-name: ~A\n" findlib-name)
 
             ;; we always have a privname?
             (hash-table-set! pname-tbl (cadr privname) entry)
             (hash-table-set! pname-tbl modname entry)
 
-            (if pubname
-                (hash-table-set! pname-tbl (cadr pubname) entry))
+            (if findlib-name
+                (hash-table-set! pname-tbl (cadr findlib-name) entry))
 
             ;; (begin
             ;;   (hash-table-set! pname-tbl
-            ;;                    (cadr pubname)
+            ;;                    (cadr findlib-name)
             ;;                    entry)
             ;;   ;; (cadr modname))
             ;;   (hash-table-set! pname-tbl
             ;;                    (cadr modname)
             ;;                    entry)
-            ;;   ;; (cadr pubname))
+            ;;   ;; (cadr findlib-name))
             ;;   )
                 ))
          ;; ((:executable)

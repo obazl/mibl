@@ -571,8 +571,8 @@ LOCAL void _update_pkg_files(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
     /* if (mibl_debug_traversal) */
     /*     log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
 
-    char *file_ext =  strrchr(ftsentry->fts_name, '.');
-    file_ext++; // exclude dot
+    /* char *file_ext =  strrchr(ftsentry->fts_name, '.'); */
+    /* file_ext++; // exclude dot */
 
     if (pkg_alist == s7_f(s7)) {
         // FIXME: should not happen, we always add a pkg entry first
@@ -719,8 +719,8 @@ LOCAL void _update_cc_src_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
     /* if (mibl_debug_traversal) */
     /*     log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
 
-    char *cc_ext =  strrchr(ftsentry->fts_name, '.');
-    cc_ext++; // exclude dot
+    /* char *cc_ext =  strrchr(ftsentry->fts_name, '.'); */
+    /* cc_ext++; // exclude dot */
 
     if (pkg_alist == s7_f(s7)) {
         // FIXME: should not happen, we always add a pkg entry first
@@ -851,8 +851,8 @@ LOCAL void _update_cc_hdr_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
     /* if (mibl_debug_traversal) */
     /*     log_debug("pkg_alist: %s", TO_STR(pkg_alist)); */
 
-    char *cc_ext =  strrchr(ftsentry->fts_name, '.');
-    cc_ext++; // exclude dot
+    /* char *cc_ext =  strrchr(ftsentry->fts_name, '.'); */
+    /* cc_ext++; // exclude dot */
 
     if (pkg_alist == s7_f(s7)) {
         // FIXME: should not happen, we always add a pkg entry first
@@ -2886,6 +2886,12 @@ LOCAL void _handle_ml_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
     if ((strncmp(ext, ".ml", 3) == 0)
         && (strlen(ext) == 3)) {
 
+        deps_list = analyze_deps_file(ftsentry);
+        if ( !s7_is_list(s7, deps_list) ) {
+            log_error("analyze_deps failed");
+            exit(EXIT_FAILURE);
+        }
+
         int ln = strlen(ftsentry->fts_name);
         if (ln > 7) {
             if (strncmp((ftsentry->fts_name) + (ln-7), "cppo", 4) == 0) {
@@ -2899,6 +2905,12 @@ LOCAL void _handle_ml_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
     }
     else if ((strncmp(ext, ".mli", 4) == 0)
         && (strlen(ext) == 4)) {
+
+        deps_list = analyze_deps_file(ftsentry);
+        if ( !s7_is_list(s7, deps_list) ) {
+            log_error("analyze_deps failed");
+            exit(EXIT_FAILURE);
+        }
 
         int ln = strlen(ftsentry->fts_name);
         if (ln > 8) {
@@ -4141,15 +4153,15 @@ EXPORT s7_pointer load_project(const char *home_sfx, const char *traversal_root)
     }
 #endif
 
-    deps_list = analyze_deps(_traversal_root);
-    if ( !s7_is_list(s7, deps_list) ) {
-        log_error("analyze_deps failed");
-        exit(EXIT_FAILURE);
-    /* } else { */
-    /*     /\* case: dune file but no ocaml srcs *\/ */
-    /*     if (deps_list == s7_nil(s7)) */
-    /*         return deps_list;             /\* empty list *\/ */
-    }
+    /* deps_list = analyze_deps_wsroot(_traversal_root); */
+    /* if ( !s7_is_list(s7, deps_list) ) { */
+    /*     log_error("analyze_deps failed"); */
+    /*     exit(EXIT_FAILURE); */
+    /* /\* } else { *\/ */
+    /* /\*     /\\* case: dune file but no ocaml srcs *\\/ *\/ */
+    /* /\*     if (deps_list == s7_nil(s7)) *\/ */
+    /* /\*         return deps_list;             /\\* empty list *\\/ *\/ */
+    /* } */
 
     errno = 0;
     tree = fts_open(_traversal_root,
@@ -4225,6 +4237,21 @@ EXPORT s7_pointer load_project(const char *home_sfx, const char *traversal_root)
                             log_info(RED "traversing" CRESET " %s",
                                      ftsentry->fts_path);
 #endif
+
+                        // codept analysis of pkg will not work because it recurs on subdirs.
+                        // that will break if the same module name occurs in multiple subdirs.
+                        /* if (strlen(ftsentry->fts_path) > 1) { */
+                        /*     deps_list = analyze_deps_pkg(ftsentry->fts_path+2); // skip ./ pfx */
+                        /*     if ( !s7_is_list(s7, deps_list) ) { */
+                        /*         log_error("analyze_deps failed"); */
+                        /*         exit(EXIT_FAILURE); */
+                        /*         /\* } else { *\/ */
+                        /*         /\*     /\\* case: dune file but no ocaml srcs *\\/ *\/ */
+                        /*         /\*     if (deps_list == s7_nil(s7)) *\/ */
+                        /*         /\*         return deps_list;             /\\* empty list *\\/ *\/ */
+                        /*     } */
+                        /* } */
+
                         dir_ct++;
                         _handle_dir(pkg_tbl, tree, ftsentry);
                         /* printf("pkg tbl: %s\n", TO_STR(pkg_tbl)); */

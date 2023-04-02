@@ -14,21 +14,6 @@
           (format #t "~A: ~A~%" (white "pkg-structs") pkg-structs))))
   "mytest.ml")
 
-;; (define (-resolve-module-deps m stanza pkg)
-;;   (format #t "~A: ~A~%" (blue "-resolve-module-deps") m)
-;;   (format #t "~A: ~A~%" (white "stanza") stanza)
-;;   (let* ((m-fname (-module->filename m pkg))
-;;          (pkg-path (assoc-val :pkg-path pkg))
-;;          (cmd (format #f "ocamldep -modules ~A/~A" pkg-path m-fname))
-;;          (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (green "cmd") cmd)))
-;;          (ocamldeps
-;;           (system cmd #t)))
-;;     (format #t "~A: '~A'~%" (red "ocamldeps") ocamldeps)
-;;     ;; search pkg-local modules for dep
-;;     ;; else search exports table for dep
-;;     ;; else assume opam
-;;     (list m '(:deps (:foo :bar)))))
-
 (define (-fixup-std-dep-form ws pkg dep exports)
   (if *mibl-debug-s7*
       (format #t "~A: ~A~%" (ublue "-fixup-std-dep-form") dep))
@@ -110,8 +95,7 @@
 ;; Support for multiple wss in one project not yet supported, so we
 ;; also do not check for :remote.
 (define (-fixup-dep-sym ws-id dep pkg exports)
-  (if *mibl-debug-s7*
-      (format #t "~A: ~A~%" (ublue "-fixup-dep-sym") dep))
+  (mibl-trace-entry "-fixup-dep-sym" dep *mibl-debug-deps*)
   ;; possible keys for dep 'foo:
   ;; 'foo, :foo, :lib:foo, :exe:foo, etc.
   ;; assume ref is to lib, so search for :lib:foo
@@ -119,14 +103,14 @@
   (if-let ((x (assoc-val dep ocaml-std-pkgs)))
           ;; builtin ocaml pkgs - distributed with but not automatically handled by compiler
           (begin
-            (if *mibl-debug-s7* (format #t "~A: ~A~%" (uwhite "builtin") x))
+            (mibl-trace "builtin" x *mibl-debug-deps*)
             ;;(string->symbol (format #f "@ocaml//~A" x))
             `(:builtin . ,x)
             )
           ;; else try :here
-          (if-let ((module-tlbl (find-module-in-pkg dep pkg)))
+          (if-let ((module-tlbl (module-name->tagged-label dep pkg)))
                   (begin
-                    (format #t "FOUND :here dep: ~A\n" module-tlbl)
+                    (mibl-trace "FOUND :here dep" module-tlbl)
                     `(:here . ,dep))
 
                   ;; else try :local by lookup in exports tbl
@@ -134,25 +118,23 @@
                   ;; first lookup, :lib:foo
                   (let* ((pkg-path (assoc-val :pkg-path pkg))
                          (key (string->keyword (format #f "lib:~A" dep)))
-                         (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (uwhite "trying 1") key)))
+                         (mibl-trace-let "trying 1" key *mibl-debug-deps*)
                          (resolved (hash-table-ref exports key)))
                     (if resolved
                         (let* ((pkg (assoc-val :pkg resolved))
-                               (_ (if *mibl-debug-s7*
-                                      (begin
-                                        (format #t "~A: ~A~%" (ured "pkg") pkg)
-                                        (format #t "~A: ~A~%" (ured "this pkg-path") pkg-path))))
+                               (mibl-trace-let "pkg" pkg *mibl-debug-deps*)
+                               (mibl-trace-let "this pkg-path" pkg-path *mibl-debug-deps*)
                                (tgt (assoc-val :tgt resolved))
-                               (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (ured "tgt") tgt))))
+                               (mibl-trace-let "tgt" tgt *mibl-debug-deps*))
                           ;; (if (equal? pkg pkg-path)
                           ;;     (string->symbol (format #f ":~A" tgt))
                           ;;     (string->symbol (format #f "//~A:~A" pkg tgt)))
-                          `(:local (:path . ,pkg) (:tgt . ,tgt))
+                          `(:local (:pkg . ,pkg) (:tgt . ,tgt))
                           )
                         ;; else second lookup, :foo
                         (let* ((key (string->keyword
                                      (format #f "~A" dep)))
-                               (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (uwhite "trying2") key)))
+                               (mibl-trace-let "trying2" key *mibl-debug-deps*)
                                ;; (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (bgblue "exports") exports)))
                                ;; (_ (mibl-debug-print-exports-table ws-id))
                                (resolved (hash-table-ref exports key)))
@@ -164,7 +146,7 @@
                                 ;; (if (equal? pkg pkg-path)
                                 ;;     (string->symbol (format #f ":~A" tgt))
                                 ;;     (string->symbol (format #f "//~A:~A" pkg tgt)))
-                                `(:local (:path . ,pkg) (:tgt . ,tgt)))
+                                `(:local (:pkg . ,pkg) (:tgt . ,tgt)))
                               ;; else third lookup, 'foo
                               (let* ((key (string->symbol
                                            (format #f "~A" dep)))
@@ -176,12 +158,13 @@
                                            (tgt (assoc-val :tgt resolved))
                                            (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (ured "tgt") tgt))))
                                       ;; (cons dep resolved)
-                                      `(:local (:path . ,pkg) (:tgt . ,tgt)))
+                                      `(:local (:pkg . ,pkg) (:tgt . ,tgt)))
                                     ;; else not in exports tbl
                                     (let ((segs (string-split (format #f "~A" key) ".")))
                                       (if *mibl-debug-s7*
                                           (format #t "~A: ~A~%" (red "unresolved; assume opam") key))
-                                      `(:opam? . ,key)
+                                      ;;FIXME FIXME
+                                      `(:unresolved . ,key)
                                       ;; (if (= 1 (length segs))
                                       ;;     (string->symbol (format #f "@~A//lib/~A" dep dep))
                                       ;;     (string->symbol (format #f "@~A//lib/~{~A~^/~}" (car segs) (cdr segs))))
@@ -628,41 +611,52 @@
 (define (-fixup-module-deps! ws pkg module-spec)
   ;; module-spec: (A (ml: a.ml ...) (:mli a.mli ...))
   ;; (or :ml_, :mli_)
-  (if *mibl-debug-s7*
-      (format #t "~A: ~A\n" (ublue "-fixup-module-deps!") module-spec))
+  (mibl-trace-entry "-fixup-module-deps!" module-spec *mibl-debug-deps*)
   (let* ((exports (car (assoc-val :exports ws)))
          (ml-deps (if-let ((mldeps (assoc-val :ml (cdr module-spec))))
                                mldeps
-                               (assoc-val :ml_ (cdr module-spec)))))
-    (format #t "~A: ~A\n" (ublue "ml-deps") ml-deps)
+                               (assoc-val :ml_ (cdr module-spec))))
+         (mli-deps (if-let ((mldeps (assoc-val :mli (cdr module-spec))))
+                               mldeps
+                               (assoc-val :mli_ (cdr module-spec))))
+         )
+    (mibl-trace "ml-deps" ml-deps *mibl-debug-deps*)
     (let ((newdeps (map (lambda (dep)
                           (-fixup-dep-sym :@ dep pkg exports))
                         (cdr ml-deps))))
-      (format #t "~A: ~A\n" (ublue "newdeps") newdeps)
-      (set-cdr! ml-deps newdeps))))
+      (mibl-trace "newdeps A" newdeps *mibl-debug-deps*)
+      (set-cdr! ml-deps newdeps))
+
+    (mibl-trace "mli-deps" ml-deps *mibl-debug-deps*)
+    (let ((newdeps (map (lambda (dep)
+                          (-fixup-dep-sym :@ dep pkg exports))
+                        (cdr mli-deps))))
+      (mibl-trace "newdeps A" newdeps *mibl-debug-deps*)
+      (set-cdr! mli-deps newdeps))
+    ))
+
 
 (define (-fixup-struct-deps! ws pkg struct-spec)
-  (if *mibl-debug-s7*
-      (format #t "~A: ~A\n" (ublue "-fixup-struct-deps!") struct-spec))
+  (mibl-trace-entry "-fixup-struct-deps!" struct-spec *mibl-debug-deps*)
   ;; struct-spec: (:structures (:static (a.ml ...)) (:dynamic (b.ml ...)))
   (let* ((exports (car (assoc-val :exports ws)))
          (statics (if-let ((deps (assoc-val :static (cdr struct-spec))))
                        deps '()))
          (dynamics (if-let ((deps (assoc-val :dynamic (cdr struct-spec))))
                        deps '())))
-    (format #t "~A: ~A\n" (ublue "struct statics") statics)
-    (format #t "~A: ~A\n" (ublue "struct dynamics") dynamics)
+    (mibl-trace "struct statics" statics *mibl-debug-deps*)
+    (mibl-trace "struct dynamics" dynamics *mibl-debug-deps*)
     (for-each (lambda (struct) ;; (Foo foo.ml ...)
-                (format #t "~A: ~A\n" (ublue "struct") struct)
+                (mibl-trace "struct" struct *mibl-debug-deps*)
                 (let* ((s-deps (cdr struct))
                        ;; s-deps:  (foo.ml Dep1 Dep2 ...)
                        ;; we will set-cdr! on this
-                       (_ (format #t "~A: ~A\n" (ublue "sdeps") s-deps))
+                       (mibl-trace-let "sdeps" s-deps *mibl-debug-deps*)
                        (newdeps (map (lambda (dep)
-                                       (format #t "~A: ~A\n" (ublue "fixing") dep)
+                                       (mibl-trace "Fixing" dep *mibl-debug-deps*)
                                        (-fixup-dep-sym :@ dep pkg exports))
                                      (cdr s-deps))))
-                  (format #t "~A: ~A\n" (ublue "newdeps") newdeps)
+                  (mibl-trace "Newdeps B" newdeps *mibl-debug-deps*)
                   (set-cdr! s-deps newdeps)
                   ))
               statics)
@@ -690,7 +684,7 @@
                                        (format #t "~A: ~A\n" (ublue "fixing") dep)
                                        (-fixup-dep-sym :@ dep pkg exports))
                                      (cdr s-deps))))
-                  (format #t "~A: ~A\n" (ublue "newdeps") newdeps)
+                  (format #t "~A: ~A\n" (ublue "newdeps C") newdeps)
                   (set-cdr! s-deps newdeps)
                   ))
               statics)))

@@ -132,7 +132,7 @@
                    (map (lambda (fld-assoc)
                           (case (car fld-assoc)
                             ;; ((name) (cons :privname (cadr fld-assoc)))
-                            ;; ((public_name) (cons :pubname (cadr fld-assoc)))
+                            ;; ((public_name) (cons :findlib-name (cadr fld-assoc)))
 
                             ((flags) (normalize-stanza-fld-flags fld-assoc :compile))
                             ((ocamlc_flags) (normalize-stanza-fld-flags fld-assoc :ocamlc))

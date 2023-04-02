@@ -70,7 +70,7 @@
                       (values))
 
                      ((name) (cons :privname (cadr fld-assoc)))
-                     ((public_name) (cons :pubname (cadr fld-assoc)))
+                     ((public_name) (cons :findlib-name (cadr fld-assoc)))
 
                      ((flags) (normalize-stanza-fld-flags fld-assoc :compile))
                      ((library_flags) (normalize-stanza-fld-flags fld-assoc :archive))
@@ -184,7 +184,7 @@
                                            (if-let ((pn
                                                      (assoc-val :privname lib-flds)))
                                                    pn
-                                                   (assoc-val :pubname lib-flds))
+                                                   (assoc-val :findlib-name lib-flds))
                                            ))
                                lib-flds)
                        lib-flds))
@@ -262,9 +262,9 @@
         (privname (if-let ((privname (assoc-val 'name (cdr stanza))))
                           (car privname) #f))
         (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (uwhite "privname") privname)))
-        (pubname (if-let ((pubname (assoc-val 'public_name (cdr stanza))))
-                         (car pubname) #f))
-        (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (uwhite "pubname") pubname)))
+        (findlib-name (if-let ((findlib-name (assoc-val 'public_name (cdr stanza))))
+                         (car findlib-name) #f))
+        (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (uwhite "findlib-name") findlib-name)))
         )
     ;; libs may be referenced w/o ns, e.g. mylib,
     ;; or (in rule actions) w/ns, e.g. lib:mylib
@@ -284,17 +284,17 @@
           ;;                        pkg-path privname)
           ))
 
-    (if pubname
+    (if findlib-name
         (begin
           (if *mibl-debug-s7*
-              (format #t "~A: ~A~%" (ucyan "lib:adding pubname to exports") pubname))
+              (format #t "~A: ~A~%" (ucyan "lib:adding findlib-name to exports") findlib-name))
           (update-exports-table! ws #f
                                  (assoc-val 'modes (cdr stanza))
-                                 ;; (string->symbol (format #f "~A" pubname))
-                                 pubname
+                                 ;; (string->symbol (format #f "~A" findlib-name))
+                                 findlib-name
                                  pkg-path privname)
           (update-exports-table! ws :lib (assoc-val :modes (cdr stanza))
-                                 pubname pkg-path privname)
+                                 findlib-name pkg-path privname)
 
           ;; opam table entry
           ;; Key: 'js_of_ocaml-compiler
@@ -317,8 +317,8 @@
           ;;                    (:sub (path/b/to libb)))))
 
           (update-opam-table! ws :lib
-                              pubname ;; opam pkg name
-                              pubname ;; lib name
+                              findlib-name ;; opam pkg name
+                              findlib-name ;; lib name
                               pkg-path
                               privname ;; lib name
                               )))

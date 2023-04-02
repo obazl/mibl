@@ -13,17 +13,17 @@
   ;; (format #t "    stanza-alist: ~A\n" stanza-alist)
   (error 'OBSOLETE
          (format #f "do not use normalize-stanza-fld-name"))
-  (let ((pubname (assoc 'public_name stanza-alist)))
-    (if pubname
+  (let ((findlib-name (assoc 'public_name stanza-alist)))
+    (if findlib-name
         (begin
           ;; (update-public-exe-table pkg-path
-          ;;                          (cadr pubname)
-          ;;                          (cadr pubname))
+          ;;                          (cadr findlib-name)
+          ;;                          (cadr findlib-name))
           ;; (update-public-exe-table pkg-path
           ;;                          (cadr privname)
-          ;;                          (cadr pubname))
+          ;;                          (cadr findlib-name))
           `(:name ((:private ,(cadr privname))
-                   (:public ,(cadr pubname)))))
+                   (:public ,(cadr findlib-name)))))
         (begin
           ;; (update-public-exe-table pkg-path (cadr privname)
           ;;                          (cadr privname))

@@ -38,8 +38,8 @@
 
   (prune-pkg-file-deps!)
 
-  (format #t "RETURNING XXXXXXXXXXXXXXXX\n")
-  (return)
+  ;; (format #t "RETURNING XXXXXXXXXXXXXXXX\n")
+  ;; (return)
 
   (miblize :@) ;; dune->mibl
 
@@ -62,13 +62,26 @@
 
   (normalize-lib-deps! :@)
 
+  (resolve-unresolved-file-deps!) ;; after pruning only
+
+  (resolve-unresolved-aggregate-deps!)
+
+  (resolve-unresolved-ppx-deps!)
+
+  ;; (format #t "RETURNING XXXXXXXXXXXXXXXX\n")
+  ;; (return)
+
   (resolve-file-exports! :@)
 
   (handle-shared-ppx :@)
 
+  ;; (format #t "RETURNING XXXXXXXXXXXXXXXX\n")
+  ;; (return)
+
   (if *mibl-shared-deps* (handle-shared-deps :@))
-  (format #t "RETURNING XXXXXXXXXXXXXXXX\n")
-  (return)
+
+  ;; (format #t "RETURNING XXXXXXXXXXXXXXXX\n")
+  ;; (return)
 
   (if *mibl-shared-opts* (handle-shared-opts :@))
 

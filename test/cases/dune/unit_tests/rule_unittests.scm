@@ -141,13 +141,13 @@ xpkg
                (libraries core_kernel ppx_version)))
        (lib-alist (cdr lib))
        (name (assoc 'name lib-alist))
-       (pubname (assoc 'public_name lib-alist))
+       (findlib-name (assoc 'public_name lib-alist))
        (preproc (assoc 'preprocess lib-alist))
        (libs (assoc 'libraries lib-alist))
        )
   libs)
   preproc)
-  pubname)
+  findlib-name)
   lib-alist)
 
 (let ((pkg (

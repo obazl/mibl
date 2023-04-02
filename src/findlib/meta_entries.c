@@ -155,7 +155,7 @@ void normalize_entries(obzl_meta_entries *entries, obzl_meta_entry *_entry)
 }
 
 /* **************************************************************** */
-EXPORT obzl_meta_entry *obzl_meta_entry_new()
+EXPORT obzl_meta_entry *obzl_meta_entry_new(void)
 {
     return (obzl_meta_entry*)calloc(sizeof(obzl_meta_entry), 1);
 }

@@ -150,8 +150,8 @@
       (format #t "~A: ~A~%" (ublue "-map-link-flds->mibl") stanza-alist))
   (map (lambda (fld-assoc)
          ;; (format #t "link fld-assoc: ~A\n" fld-assoc)
-         ;; (if (equal? pubname 'rpc_openapi)
-         ;;     (format #t "rpc_openapi pubname: ~A\n"
+         ;; (if (equal? findlib-name 'rpc_openapi)
+         ;;     (format #t "rpc_openapi findlib-name: ~A\n"
          ;;                fld-assoc))
          (case (car fld-assoc)
 
@@ -475,8 +475,8 @@
                                        (car pn)
                                        (error 'No-name "Stanza missing name and public_name"))))
 
-             (pubname (if-let ((pubname (assoc 'public_name stanza-alist)))
-                              (cadr pubname) #f))
+             (findlib-name (if-let ((findlib-name (assoc 'public_name stanza-alist)))
+                              (cadr findlib-name) #f))
              (package (if-let ((p (assoc-val 'package stanza-alist)))
                               (car p) #f))
              (_ (if (or *mibl-debug-executables* *mibl-debug-s7*) (format #t "~A: ~A~%" (uwhite "package") package)))
@@ -488,10 +488,10 @@
         (if (or *mibl-debug-executables* *mibl-debug-s7*)
             (begin
               (format #t "~A: ~A\n" (green "privname") privname)
-              (format #t "~A: ~A\n" (green "pubname") pubname)
+              (format #t "~A: ~A\n" (green "findlib-name") findlib-name)
               (format #t "~A: ~A\n" (green "modules") modules)))
 
-        (if pubname
+        (if findlib-name
             (begin
               (update-exports-table! ws
                                      (if (-is-test-executable? ws pkg stanza) :test :exe)
@@ -505,20 +505,20 @@
                   (if package
                       (update-opam-table! ws :bin
                                           package
-                                          pubname
+                                          findlib-name
                                           pkg-path
                                           privname ;; lib name
                                           )))))
-        (if (and privname pubname
-                 (not (equal? privname pubname)))
+        (if (and privname findlib-name
+                 (not (equal? privname findlib-name)))
             (error 'FIXME
-                   (format #f "name and public_name mismatch: ~A, ~A" privname pubname)))
+                   (format #f "name and public_name mismatch: ~A, ~A" privname findlib-name)))
         ;; (begin
         ;;   (update-exports-table! ws
         ;;                          (if (-is-test-executable? ws pkg stanza) :test :exe)
         ;;                          ;; (string->symbol (format #f ":test:~A" privname))
         ;;                          ;; (string->symbol (format #f ":bin:~A" privname)))
-        ;;                          pubname
+        ;;                          findlib-name
         ;;                          pkg-path privname)
         ;;   ;; (error 'fixme "STOP modes privname")
         ;;   ;; (if (assoc-in '(:link :modes) stanza-alist)
@@ -528,7 +528,7 @@
         ;;       (if package
         ;;           (update-opam-table! ws :bin
         ;;                               package
-        ;;                               pubname
+        ;;                               findlib-name
         ;;                               pkg-path
         ;;                               privname ;; lib name
         ;;                               )))))
@@ -569,14 +569,14 @@
 
           ;; `(:main ,(normalize-module-name (cadr fld-assoc))))
           ;; (list (-executable->mibl kind
-          ;;                          pkg privname pubname
+          ;;                          pkg privname findlib-name
           ;;                          filtered-stanza-alist))
           (let ((result
                  (list (cons kind
                              (remove '()
                                      (append
                                       `((:privname . ,privname))
-                                      (if pubname `((:pubname . ,pubname)) '())
+                                      (if findlib-name `((:findlib-name . ,findlib-name)) '())
                                       `((:main . ,(normalize-module-name privname)))
                                       (if (truthy? common-flds) common-flds '())
                                       (if (truthy? common-opts) common-opts '())
@@ -619,16 +619,16 @@
          (exemodules (map normalize-module-name privnames))
          (_ (if (or *mibl-debug-executables* *mibl-debug-s7*) (format #t "~A: ~A~%" (umagenta "exemodules") exemodules)))
 
-         (pubnames (if (case kind ((:executable :test) #t) (else #f)) ;; (equal? kind :executable)
-                       (if-let ((pubnames
+         (findlib-names (if (case kind ((:executable :test) #t) (else #f)) ;; (equal? kind :executable)
+                       (if-let ((findlib-names
                                  (assoc-val 'public_names stanza-alist)))
-                               pubnames
+                               findlib-names
                                #f)
                        #f))
 
-         ;; FIXME: create a (privname . pubname) map (alist) instead of maintaining two lists
-         (names-map (if pubnames
-                        (map cons privnames pubnames)
+         ;; FIXME: create a (privname . findlib-name) map (alist) instead of maintaining two lists
+         (names-map (if findlib-names
+                        (map cons privnames findlib-names)
                         (map (lambda (nm) (cons nm #f)) privnames)))
          (_ (if (or *mibl-debug-executables* *mibl-debug-s7*)
                 (format #t "~A: ~A~%" (yellow "names-map") names-map)))
@@ -636,10 +636,10 @@
 
          ;;rename privpub to ??? stanza-modules?
          ;; NB: no need to unify pub and privnames, we only build privnames,
-         ;; though pubnames may be used as target names. so use exemodules.
+         ;; though findlib-names may be used as target names. so use exemodules.
          ;; (privpubmodules (remove-duplicates
          ;;                  (map normalize-module-name
-         ;;                       (flatten (concatenate privnames pubnames)))))
+         ;;                       (flatten (concatenate privnames findlib-names)))))
          ;; (_ (if (or *mibl-debug-executables* *mibl-debug-s7*) (format #t "~A: ~A~%" (yellow "privpubmodules") privpubmodules)))
 
          (filtered-stanza-alist stanza-alist)
@@ -653,7 +653,7 @@
     (if (or *mibl-debug-executables* *mibl-debug-s7*)
         (begin
           (format #t "~A: ~A~%" (uwhite "exec privnames") privnames)
-          (format #t "~A: ~A~%" (uwhite "exec pubnames") pubnames)))
+          (format #t "~A: ~A~%" (uwhite "exec findlib-names") findlib-names)))
     ;; (error 'fixme "STOP execs")
 
     ;; flags and (libraries) etc. apply to each of the executables
@@ -682,7 +682,7 @@
                 ;; (error 'fixme "STOP execs llopts")
 
                 (format #t "~A: ~A~%" (uwhite "privnames") privnames)
-                (format #t "~A: ~A~%" (uwhite "pubnames") pubnames)))
+                (format #t "~A: ~A~%" (uwhite "findlib-names") findlib-names)))
           ;; (format #t "filtered-stanza-alist: ~A\n" filtered-stanza-alist)
           ;; (if (equal? kind :executable)
 
@@ -690,10 +690,10 @@
           ;; (if (> (length (cdr privnames)) 1)
           ;;     (begin
           ;;       ;; (format #t "MULTIPLE NAMES\n")
-          ;;       (if (not (null? pubnames))
+          ;;       (if (not (null? findlib-names))
           ;;           (if (not (equal?
           ;;                     (length (cdr privnames))
-          ;;                     (length (cdr pubnames))))
+          ;;                     (length (cdr findlib-names))))
           ;;               (error
           ;;                'bad-arg
           ;;                "names and public_names differ in length"))
@@ -705,41 +705,41 @@
           ;; in dunefiles, so we add them to the lookup table too.
 
           ;; (cond
-          ;;  ((and (not (null? pubnames))
+          ;;  ((and (not (null? findlib-names))
           ;;        (not (null? privnames)))
-          ;;   (format #t "~A: ~A, ~A~%" (bgblue "iter over priv/pubnames") pubnames privnames)
+          ;;   (format #t "~A: ~A, ~A~%" (bgblue "iter over priv/findlib-names") findlib-names privnames)
 
           (if (or *mibl-debug-executables* *mibl-debug-s7*)
-              (format #t "~A: ~A, ~A~%" (bgred "ITERATING EXECUTABLES") privnames pubnames))
+              (format #t "~A: ~A, ~A~%" (bgred "ITERATING EXECUTABLES") privnames findlib-names))
           (map (lambda (priv-pub)
                  (if (or *mibl-debug-executables* *mibl-debug-s7*)
                      (format #t "~A: ~A~%" (umagenta "encoding pubpriv exec") priv-pub))
                  (let ((privname (car priv-pub))
-                       (pubname (cdr priv-pub))
+                       (findlib-name (cdr priv-pub))
                        (privmodule (normalize-module-name (car priv-pub))))
 
                    (if (not test-exe?) ;; (-is-test-executable? ws pkg stanza))
                        (begin
                          (if (or *mibl-debug-executables* *mibl-debug-s7*)
-                             (format #t "~A: ~A, ~A~%" (umagenta "updating exports w/exec") privname pubname))
+                             (format #t "~A: ~A, ~A~%" (umagenta "updating exports w/exec") privname findlib-name))
                          (update-exports-table! ws :exe
                                                 (assoc-val 'modes stanza-alist)
-                                                pubname pkg-path privname)
+                                                findlib-name pkg-path privname)
                          (update-exports-table! ws :exe (assoc-val 'modes stanza-alist)
                                                 privname pkg-path privname)
                          (update-exports-table! ws :bin (assoc-val 'modes stanza-alist)
-                                                pubname pkg-path privname)
+                                                findlib-name pkg-path privname)
                          (update-exports-table! ws :bin (assoc-val 'modes stanza-alist)
                                                 privname pkg-path privname)
                          (update-opam-table! ws :bin
                                              package
-                                             pubname
+                                             findlib-name
                                              pkg-path
                                              privname ;; lib name
                                              )))
 
                    (if (or *mibl-debug-executables* *mibl-debug-s7*)
-                       (format #t "~A: ~A, ~A~%" (bgmagenta "constructing pubpriv exec") privname pubname))
+                       (format #t "~A: ~A, ~A~%" (bgmagenta "constructing pubpriv exec") privname findlib-name))
                    ;; NB: to avoid structure sharing we need to copy toplevel :manifest subtree
                    (let* (;; (link-flds (copy link-flds))
                           ;; (_ (if (or *mibl-debug-executables* *mibl-debug-s7*) (format #t "~A: ~A~%" (umagenta "link-flds") link-flds)))
@@ -810,9 +810,9 @@
                                    (format #t "~A: ~A~%" (umagenta "-compile-modules") compile-modules)
                                    (format #t "~A: ~A~%" (umagenta "-compile-flds") -compile-flds)
                                    (format #t "~A: ~A~%" (umagenta "compile-flds") compile-flds)
-                                   (format #t "~A: ~A~%" (umagenta "pubname") pubname))))
+                                   (format #t "~A: ~A~%" (umagenta "findlib-name") findlib-name))))
                           (mibl (append ;; kind
-                                 `((:pubname . ,pubname))
+                                 `((:findlib-name . ,findlib-name))
                                  `((:privname . ,privname))
                                  `((:main . ,(normalize-module-name privname)))
                                  (if (truthy? common-flds) common-flds '())
@@ -830,12 +830,12 @@
                          (format #t "~A: ~A~%" (umagenta "finished construction") mibl))
                      mibl)
                    ;; (let ((x (-executable->mibl kind
-                   ;;                             pkg privname pubname
+                   ;;                             pkg privname findlib-name
                    ;;                             filtered-stanza-alist)))
                    ;;   (prune-mibl-rule x)
                    ;;   )
                    ))
-               ;;privnames pubnames
+               ;;privnames findlib-names
                names-map
                )
            ))))

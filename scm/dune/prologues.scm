@@ -154,7 +154,7 @@
 ;; E.g. parsetree:
 ;; (:structures (:static (A a.ml)))
 ;; (:modules (Main (:ml main.ml A) (:mli main.mli)))
-;; (:mibl (:executable (:privname . main) (:pubname . main) (:main . Main)
+;; (:mibl (:executable (:privname . main) (:findlib-name . main) (:main . Main)
 ;;                     (:prologue . 1))
 ;;        (:prologues (1 (:modules A))))
 ;; In this case the prologue should be removed since A is in the depgraph of Main.

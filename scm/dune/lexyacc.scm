@@ -146,7 +146,7 @@
                       (mibl-trace "mly module" mly-module *mibl-debug-lexyacc*)
 
                       ;; task: find yacc module in pkg files and update its deps
-                      (let* ((mly-tlbl (find-module-in-pkg mly-module pkg))
+                      (let* ((mly-tlbl (module-name->tagged-label mly-module pkg))
                              (mibl-trace-let "mly tlbl" mly-tlbl *mibl-debug-lexyacc*)
                              ;; mly-tlbl should have :ml_ and :mli_
                              (mly-ml_  (assoc :ml_ (cdr mly-tlbl)))
@@ -205,7 +205,7 @@
                     (mibl-trace "pkg" pkg *mibl-debug-lexyacc*)
 
                     ;; task: find mll module in pkg files and update its deps
-                    (let* ((mll-tlbl (find-module-in-pkg mll-module pkg))
+                    (let* ((mll-tlbl (module-name->tagged-label mll-module pkg))
                            (mibl-trace-let "mll tlbl" mll-tlbl *mibl-debug-lexyacc*)
                            ;; mll-tlbl should have :ml_ not :ml e.g. (:ml_ lexer.ml)
                            (mll-ml_ (assoc :ml_ (cdr mll-tlbl))))

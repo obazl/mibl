@@ -555,7 +555,7 @@ bool obzl_meta_flags_to_cmtag(obzl_meta_flags *flags,
 }
 
 /* **************************************************************** */
-EXPORT void initialize_config_flags()
+EXPORT void initialize_config_flags(void)
 {
     utarray_new(pos_flags, &ut_str_icd);
     utarray_new(neg_flags, &ut_str_icd);
