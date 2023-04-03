@@ -2,6 +2,9 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <glob.h>
+#if INTERFACE
+#include <inttypes.h>
+#endif
 #include <libgen.h>
 #ifdef __linux__
 #include <linux/limits.h>
@@ -47,11 +50,8 @@ extern bool bzl_mode;
 /* char *callback_script_file = "dune.scm"; // passed in 'data' attrib */
 char *callback = "camlark_handler"; /* fn in callback_script_file  */
 
-#if EXPORT_INTERFACE
-#define TO_STR(x) s7_object_to_c_string(s7, x)
-#define NM_TO_STR(x) s7_object_to_c_string(s7, s7_name_to_value(s7, x))
-#define TO_BOOL(x) s7_boolean(s7, s7_name_to_value(s7, x))
-
+#if INTERFACE
+#define print_s7_int PRId64
 #endif
 
 s7_scheme *s7;                  /* GLOBAL s7 */

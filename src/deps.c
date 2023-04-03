@@ -1,6 +1,7 @@
 #include <dirent.h>
 #include <errno.h>
 #include <fts.h>
+#include <inttypes.h>
 #include <unistd.h>
 
 #include "log.h"
@@ -11,6 +12,9 @@
 #if defined(DEBUG_TRACE)
 bool mibl_debug_deps = false;
 #endif
+
+char *tostr1;
+char *tostr2;
 
 bool mibl_show_raw_deps = false;
 
@@ -176,9 +180,9 @@ s7_pointer _codept_deps(UT_array *_ocaml_src_dirs)
         s7_pointer r = s7_eval_c_string_with_environment(s7, sexp, env);
         (void)r;
         s7_newline(s7, s7_current_output_port(s7));
-        /* char *tostr = TO_STR(deps_list); */
-        /* log_debug("DEPS-LIST: %s", tostr); */
-        /* free(tostr); */
+        /* tostr1 = TO_STR(deps_list); */
+        /* log_debug("DEPS-LIST: %s", tostr1); */
+        /* free(tostr1); */
         s7_flush_output_port(s7, s7_current_output_port(s7));
     }
 
@@ -229,6 +233,9 @@ s7_pointer _codept_deps_pkg(char *pkgdir)
 
     /* FIXME: write to tmp dir instead of buffer */
     /* or write to DEPS.mibl? */
+#if defined(DEBUG_TRACE)
+    log_debug("running codept cmd");
+#endif
     result = run_cmd(exe, argv);
     if (result == NULL) {
         log_error(" run_cmd 'codept ...'\n");
@@ -243,7 +250,7 @@ s7_pointer _codept_deps_pkg(char *pkgdir)
         return s7_nil(s7);
     }
 
-    log_debug("CODEPT: %s", result);
+    log_debug("XCODEPT: %s", result);
     exit(0);
     s7_pointer depgraph_port = s7_open_input_string(s7, result);
     s7_pointer depgraph = s7_read(s7, depgraph_port);
@@ -259,9 +266,9 @@ s7_pointer _codept_deps_pkg(char *pkgdir)
         s7_pointer r = s7_eval_c_string_with_environment(s7, sexp, env);
         (void)r;
         s7_newline(s7, s7_current_output_port(s7));
-        /* char *tostr = TO_STR(deps_list); */
-        /* log_debug("DEPS-LIST: %s", tostr); */
-        /* free(tostr); */
+        /* tostr1 = TO_STR(deps_list); */
+        /* log_debug("DEPS-LIST: %s", tostr1); */
+        /* free(tostr1); */
         s7_flush_output_port(s7, s7_current_output_port(s7));
     }
 
@@ -280,6 +287,8 @@ s7_pointer _codept_deps_pkg(char *pkgdir)
    return deps_list;
 }
 
+s7_int gc_depgraph_port, gc_depgraph, gc_env, gc_deps_list;
+
 s7_pointer analyze_deps_file(FTSENT *ftsentry)
 {
 #if defined(DEBUG_TRACE)
@@ -296,6 +305,7 @@ s7_pointer analyze_deps_file(FTSENT *ftsentry)
         /* } */
     }
 #endif
+    log_info("analyze traversal ct: %d", tct);
 
     char **argv = calloc(7, sizeof(char*));
     argv[0] = "codept";
@@ -313,7 +323,9 @@ s7_pointer analyze_deps_file(FTSENT *ftsentry)
 
     /* FIXME: write to tmp dir instead of buffer */
     /* or write to DEPS.mibl? */
+    log_debug("running codept cmd");
     result = run_cmd(exe, argv);
+    log_debug("returned: %s", result);
     if (result == NULL) {
         log_error(" run_cmd 'codept ...'\n");
         fprintf(stderr,
@@ -327,25 +339,63 @@ s7_pointer analyze_deps_file(FTSENT *ftsentry)
         return s7_nil(s7);
     }
 
-    /* log_debug("CODEPT: %s", result); */
+#if defined(DEBUG_TRACE)
+    log_debug("CODEPT result string: %s", result);
+#endif
 
     s7_pointer depgraph_port = s7_open_input_string(s7, result);
+    gc_depgraph_port = s7_gc_protect(s7, depgraph_port);
+#if defined(DEBUG_TRACE)
+    LOG_S7_DEBUG("depgraph_port", depgraph_port);
+#endif
+    /* free((void*)result); */
+
     s7_pointer depgraph = s7_read(s7, depgraph_port);
+    log_debug("aaXXXXXXXXXXXXXXXX");
+    gc_depgraph = s7_gc_protect(s7, depgraph);
+#if defined(DEBUG_TRACE)
+    LOG_S7_DEBUG("depgraph", depgraph);
+#endif
+
     s7_pointer env = s7_inlet(s7,
                               s7_list(s7, 1,
                                       s7_cons(s7,
                                               s7_make_symbol(s7, "depgraph"),
                                               depgraph)));
+#if defined(DEBUG_TRACE)
+    LOG_S7_DEBUG("env", env);
+#endif
+    gc_env = s7_gc_protect(s7, env);
 
     if (mibl_show_raw_deps) {
-        log_info("DEPS:");
-        char *sexp = "(mibl-pretty-print depgraph) ";
-        s7_pointer r = s7_eval_c_string_with_environment(s7, sexp, env);
-        (void)r;
+
+        log_info("RAWDEPS:");
+        char *sexpx = "(mibl-pretty-print depgraph) ";
+
+        /* s7_pointer old_port = s7_set_current_error_port(s7, s7_open_output_string(s7)); */
+        /* s7_int gc_x = -1; */
+        /* if (old_port != s7_nil(s7)) */
+	/*     gc_x = s7_gc_protect(s7, old_port); */
+        s7_pointer r = s7_eval_c_string_with_environment(s7, sexpx, env);
+        tostr1 = TO_STR(r);
+        fprintf(stderr, "RAW: %s\n", tostr1);
+        log_debug("r: %s", tostr1);
+        free(tostr1);
+        (void)r; // no need to gc protect
+        errmsg = s7_get_output_string(s7, s7_current_error_port(s7));
+        /* if we got something, wrap it in "[]" */
+        if ((errmsg) && (*errmsg))
+	    log_error("[%s]", errmsg);
+
+        /* s7_close_output_port(s7, s7_current_error_port(s7)); */
+	  /* s7_set_current_error_port(s7, old_port); */
+	  /* if (gc_x != -1) */
+	  /*   s7_gc_unprotect_at(s7, gc_x); */
+
         s7_newline(s7, s7_current_output_port(s7));
-        /* char *tostr = TO_STR(deps_list); */
-        /* log_debug("DEPS-LIST: %s", tostr); */
-        /* free(tostr); */
+        /* tostr1 = TO_STR(deps_list); */
+        /* log_debug("DEPS-LIST: %s", tostr1); */
+        /* free(tostr1); */
         s7_flush_output_port(s7, s7_current_output_port(s7));
     }
 
@@ -356,10 +406,24 @@ s7_pointer analyze_deps_file(FTSENT *ftsentry)
         ;
 
     s7_pointer deps_list = s7_eval_c_string_with_environment(s7, sexp, env);
-    (void)deps_list;
-    char *s = TO_STR(deps_list);
-    log_debug("DEPS_LIST: %s", s);
-    free(s);
+#if defined(DEBUG_TRACE)
+    /* tostr1 = TO_STR(deps_list); */
+    /* fprintf(stderr, "DEPS_list: %s\n", tostr1); */
+    LOG_S7_DEBUG("DEPS_list", deps_list);
+    /* free(tostr1); */
+#endif
+
+    gc_deps_list = s7_gc_protect(s7, deps_list);
+    /* (void)deps_list; */
+#if defined(DEBUG_TRACE)
+    tostr1 = TO_STR(deps_list);
+    log_debug("DEPS_LIST: %s", tostr1);
+    free(tostr1);
+#endif
+
+    s7_gc_unprotect_at(s7, gc_depgraph_port);
+    s7_gc_unprotect_at(s7, gc_depgraph);
+    s7_gc_unprotect_at(s7, gc_env);
 
    return deps_list;
 }
@@ -404,10 +468,7 @@ s7_pointer _ocamldep_deps(UT_array *_ocaml_src_dirs)
 
     s7_pointer depgraph_port = s7_open_input_string(s7, result);
     s7_pointer depgraph = s7_read(s7, depgraph_port);
-    char *s = TO_STR(depgraph);
-    log_debug("OCAMLDEPS: %s", s);
-    free(s);
-    exit(0);
+    LOG_S7_DEBUG("DEPGRAPH", depgraph);
 
     s7_pointer env = s7_inlet(s7,
                               s7_list(s7, 1,
@@ -421,9 +482,9 @@ s7_pointer _ocamldep_deps(UT_array *_ocaml_src_dirs)
         s7_pointer r = s7_eval_c_string_with_environment(s7, sexp, env);
         (void)r;
         s7_newline(s7, s7_current_output_port(s7));
-        /* char *tostr = TO_STR(deps_list); */
-        /* log_debug("DEPS-LIST: %s", tostr); */
-        /* free(tostr); */
+        /* tostr1 = TO_STR(deps_list); */
+        /* log_debug("DEPS-LIST: %s", tostr1); */
+        /* free(tostr1); */
         s7_flush_output_port(s7, s7_current_output_port(s7));
     }
 
@@ -550,12 +611,13 @@ s7_pointer get_deps(char *_pkg, char *tgt, s7_pointer deps_list)
         log_trace("get_deps: %s : %s", _pkg, tgt);
 #endif
 
+    s7_int gc_loc;
+
     /* return s7_nil(s7); */
 
-    char *tostr = TO_STR(deps_list);
-    log_debug("DEPS-LIST: %s", tostr);
-    free(tostr);
-    s7_flush_output_port(s7, s7_current_output_port(s7));
+#if defined(DEBUG_TRACE)
+    LOG_S7_DEBUG("DEPS-LIST", deps_list);
+#endif
 
     /* NB: _pkg has leading "./", e.g. "./src/foo" */
     char *pkg;
@@ -576,13 +638,42 @@ s7_pointer get_deps(char *_pkg, char *tgt, s7_pointer deps_list)
                                       s7_cons(s7,
                                               s7_make_symbol(s7, "tgt"),
                                               s7_make_string(s7, tgt))));
-    log_debug("ENV: %s", TO_STR(env));
+
+    gc_loc = s7_gc_protect(s7, env);
+    if (env != s7_gc_protected_at(s7, gc_loc)) {
+        log_error("%d: %s is not gc protected at %" print_s7_int ": %s?",
+                   __LINE__,
+                   tostr1 = TO_STR(env), gc_loc,
+                   tostr2 = TO_STR(s7_gc_protected_at(s7, gc_loc)));
+        free(tostr1); free(tostr2);
+    }
+
+#if defined(DEBUG_TRACE)
+    LOG_S7_DEBUG("ENV", env);
+#endif
+    /* char *sexp = */
+    /*     "(begin " */
+    /*     "(format #t \"XXXX depslist: ~A\n\" deps-list)" */
+    /*     ")" */
+    /*     ; */
+
+    s7_flush_output_port(s7, s7_current_output_port(s7));
+
     char *sexp =
+        "(begin "
+        " (format #t \"XXXXXXXXXXXXXXXX\n\")"
         "(let* ((path (format #f \"~A/~A\" pkg tgt)) "
         "       (key `(file ,(symbol path)))) "
 #if defined(DEBUG_TRACE)
-        /* mibl_debug_deps? "  (format #t \"KEY: ~A~%\" key) " : "" */
+        "  (format #t \"pkg: ~A~%\" pkg) "
+        "  (format #t \"tgt: ~A~%\" tgt) "
 #endif
+        /* "  (format #t \"deps-list: ~A~%\" deps-list) " */
+        /* /\* "(for-each (lambda (x) x) deps-list)" *\/ */
+        /* /\* "(for-each (lambda (x) (format #t \"X: ~A\\n\" x)) deps-list)" *\/ */
+        /* "))" */
+        /* ; */
+
         "  (if-let ((needle (find-if (lambda (x) (equal? key (car x))) deps-list))) "
         "      (if-let ((deps (cdr needle))) "
         "        (if (truthy? deps) "
@@ -592,25 +683,40 @@ s7_pointer get_deps(char *_pkg, char *tgt, s7_pointer deps_list)
         "                                      (list->vector lst) lst)) "
         "                             dlist))) "
 #if defined(DEBUG_TRACE)
-        /* "            (format #t \"deps: ~A~%\" (flatten fixed)) " */
+        "            (format #t \"deps: ~A~%\" (flatten fixed)) "
 #endif
         "            (flatten fixed)) "
         "            '()) "
         "         '()) "
-        "       '()))"
+        "       '())))"
         ;
 
+    log_info("get deps traversal ct: %d", tct);
+
+    log_debug("sexp: %s", sexp);
     s7_pointer deps = s7_eval_c_string_with_environment(s7, sexp, env);
+#if defined(DEBUG_TRACE)
+    tostr1 = TO_STR(deps);
+    fprintf(stderr, "DEPS1: %s\n", tostr1);
+    log_debug("DEPS2: %s", tostr1);
+    free(tostr1);
+#endif
+
+    gc_deps = s7_gc_protect(s7, deps);
+    s7_flush_output_port(s7, s7_current_output_port(s7));
+
     /* (void)deps; */
 #if defined(DEBUG_TRACE)
-    if (mibl_debug_deps) {
-        char *tostr = TO_STR(deps);
-        log_debug("DEPS-LIST: %s", tostr);
-        free(tostr);
+    /* if (mibl_debug_deps) { */
+        tostr1 = TO_STR(deps);
+        log_debug("DEPS-LIST: %s", tostr1);
+        free(tostr1);
         fflush(NULL);
-    }
+    /* } */
 #endif
     s7_flush_output_port(s7, s7_current_output_port(s7));
+
+    s7_gc_unprotect_at(s7, gc_loc);
 
     return deps;  // s7_list(s7, 1, s7_make_symbol(s7, "Foobar"));
 }

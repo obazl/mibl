@@ -35,7 +35,7 @@ extern bool debug;
 extern bool trace;
 #endif
 
-#define TO_STR(x) s7_object_to_c_string(s7, x)
+/* #define TO_STR(x) s7_object_to_c_string(s7, x) */
 
 /* s7_pointer */
 void *read_dune_package(UT_string *dunefile_name)

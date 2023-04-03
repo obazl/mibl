@@ -48,7 +48,7 @@ EXPORT char * run_cmd(char *executable, char **argv)
         utstring_printf(tmp, "%s ", *ptr);
         ptr++;
     }
-#if defined(DEBUG_TRACE)
+
     if (mibl_debug_deps) {
         log_debug("run cmd: %s", utstring_body(tmp));
         char **p = argv;
@@ -57,7 +57,6 @@ EXPORT char * run_cmd(char *executable, char **argv)
             p++;
         }
     }
-#endif
     utstring_free(tmp);
 #endif
 
@@ -77,11 +76,17 @@ EXPORT char * run_cmd(char *executable, char **argv)
         exit(EXIT_FAILURE);
     }
 
+    log_debug("cout_pipe[0]: %d", cout_pipe[0]);
+    log_debug("cout_pipe[1]: %d", cout_pipe[1]);
+    log_debug("cerr_pipe[0]: %d", cout_pipe[0]);
+    log_debug("cerr_pipe[1]: %d", cout_pipe[1]);
+
     posix_spawn_file_actions_t action;
     posix_spawn_file_actions_init(&action);
 
     /* child inherits open FDs, so: */
     /* close read end of pipes on child */
+    /* so we do not need to close pipe[0] */
     posix_spawn_file_actions_addclose(&action, cout_pipe[0]);
     posix_spawn_file_actions_addclose(&action, cerr_pipe[0]);
 
@@ -135,8 +140,11 @@ EXPORT char * run_cmd(char *executable, char **argv)
     if (waitrc == -1) {
         perror("spawn_cmd waitpid error");
         log_error("spawn_cmd");
+        close(cout_pipe[0]);
+        close(cerr_pipe[0]);
+        close(cout_pipe[1]);
+        close(cerr_pipe[1]);
         posix_spawn_file_actions_destroy(&action);
-        //FIXME: close pipes?
         return NULL;
     }
 #if defined(DEBUG_TRACE)
@@ -166,8 +174,8 @@ EXPORT char * run_cmd(char *executable, char **argv)
             if (bytes_read > 0) {
                 fprintf(stdout, "Read message: %s", buffer);
             }
-            close(cout_pipe[1]);
-            close(cerr_pipe[1]);
+            close(cout_pipe[0]);
+            close(cerr_pipe[0]);
             posix_spawn_file_actions_destroy(&action);
             return NULL; //exit(EXIT_FAILURE);
         }
@@ -194,8 +202,8 @@ EXPORT char * run_cmd(char *executable, char **argv)
         if (rc == 0) {
             fprintf(stderr, "pselect timed out.\n");
             /* return 1; */
-            close(cout_pipe[1]);
-            close(cerr_pipe[1]);
+            close(cout_pipe[0]);
+            close(cerr_pipe[0]);
             posix_spawn_file_actions_destroy(&action);
             return NULL; //exit(EXIT_FAILURE);
         }
@@ -213,16 +221,16 @@ EXPORT char * run_cmd(char *executable, char **argv)
             bytes_read = read(cout_pipe[0], &buffer[0], BUFSZ);
             if (bytes_read > 0) {
                 log_error("cmd runner buffer too small! please file an issue.");
-                close(cout_pipe[1]);
-                close(cerr_pipe[1]);
+                close(cout_pipe[0]);
+                close(cerr_pipe[0]);
                 posix_spawn_file_actions_destroy(&action);
                 return NULL;
             }
         }
-
-        close(cout_pipe[1]);
-        close(cerr_pipe[1]);
+        close(cout_pipe[0]);
+        close(cerr_pipe[0]);
         posix_spawn_file_actions_destroy(&action);
+        log_debug("cmd returning");
         return buffer;
     }
     else if (WIFSIGNALED(rc)) {
@@ -232,8 +240,8 @@ EXPORT char * run_cmd(char *executable, char **argv)
 #ifdef WCOREDUMP
         log_error("WCOREDUMP?: %d", WCOREDUMP(rc));
 #endif
-        close(cout_pipe[1]);
-        close(cerr_pipe[1]);
+        close(cout_pipe[0]);
+        close(cerr_pipe[0]);
         posix_spawn_file_actions_destroy(&action);
         return NULL;
     } else if (WIFSTOPPED(rc)) {
@@ -243,8 +251,8 @@ EXPORT char * run_cmd(char *executable, char **argv)
            child process is being traced (see ptrace(2)). */
         log_error("WIFSTOPPED(rc)");
         log_error("WSTOPSIG: %d", WSTOPSIG(rc));
-        close(cout_pipe[1]);
-        close(cerr_pipe[1]);
+        close(cout_pipe[0]);
+        close(cerr_pipe[0]);
         posix_spawn_file_actions_destroy(&action);
         return NULL;
     }
