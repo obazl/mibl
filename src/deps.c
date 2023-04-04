@@ -6,6 +6,7 @@
 
 #include "log.h"
 #include "utarray.h"
+#include "utstring.h"
 #include "s7.h"
 #include "deps.h"
 
@@ -180,9 +181,7 @@ s7_pointer _codept_deps(UT_array *_ocaml_src_dirs)
         s7_pointer r = s7_eval_c_string_with_environment(s7, sexp, env);
         (void)r;
         s7_newline(s7, s7_current_output_port(s7));
-        /* tostr1 = TO_STR(deps_list); */
-        /* log_debug("DEPS-LIST: %s", tostr1); */
-        /* free(tostr1); */
+        /* LOG_S7_DEBUG("DEPS-LIST", tostr1); */
         s7_flush_output_port(s7, s7_current_output_port(s7));
     }
 
@@ -194,9 +193,7 @@ s7_pointer _codept_deps(UT_array *_ocaml_src_dirs)
 
     s7_pointer deps_list = s7_eval_c_string_with_environment(s7, sexp, env);
     (void)deps_list;
-    /* char *s = TO_STR(deps_list); */
-    /* log_debug("DEPS_LIST: %s", s); */
-    /* free(s); */
+    /* LOG_S7_DEBUG("DEPS_LIST", deps_list); */
 
    return deps_list;
 }
@@ -266,9 +263,7 @@ s7_pointer _codept_deps_pkg(char *pkgdir)
         s7_pointer r = s7_eval_c_string_with_environment(s7, sexp, env);
         (void)r;
         s7_newline(s7, s7_current_output_port(s7));
-        /* tostr1 = TO_STR(deps_list); */
-        /* log_debug("DEPS-LIST: %s", tostr1); */
-        /* free(tostr1); */
+        /* LOG_S7_DEBUG("DEPS-LIST", r); */
         s7_flush_output_port(s7, s7_current_output_port(s7));
     }
 
@@ -280,22 +275,21 @@ s7_pointer _codept_deps_pkg(char *pkgdir)
 
     s7_pointer deps_list = s7_eval_c_string_with_environment(s7, sexp, env);
     (void)deps_list;
-    /* char *s = TO_STR(deps_list); */
     /* log_debug("DEPS_LIST: %s", s); */
-    /* free(s); */
 
    return deps_list;
 }
 
 s7_int gc_depgraph_port, gc_depgraph, gc_env, gc_deps_list;
 
-s7_pointer analyze_deps_file(FTSENT *ftsentry)
+/* s7_pointer analyze_deps_file(FTSENT *ftsentry) */
+s7_pointer analyze_deps_file(char *pkg, char *tgt)
 {
 #if defined(DEBUG_TRACE)
     if (mibl_trace) {
-        log_trace("analyze_deps_file");
-        log_debug("ftsentry->fts_path: '%s'", ftsentry->fts_path);
-        log_debug("ftsentry->fts_name: '%s'", ftsentry->fts_name);
+        log_trace(RED "analyze_deps_file" CRESET);
+        log_debug("pkg: '%s'", pkg); //ftsentry->fts_path);
+        log_debug("tgt: '%s'", tgt); //ftsentry->fts_name);
         log_trace("cwd: %s", getcwd(NULL,0));
         /* char **p; */
         /* p = NULL; */
@@ -304,8 +298,13 @@ s7_pointer analyze_deps_file(FTSENT *ftsentry)
         /*     log_info("\t%s",*p); */
         /* } */
     }
+
+    UT_string *fname;
+    utstring_new(fname);
+    utstring_printf(fname, "%s/%s", pkg, tgt);
+
+    log_info(RED "analyze traversal ct:" CRESET " %d", tct);
 #endif
-    log_info("analyze traversal ct: %d", tct);
 
     char **argv = calloc(7, sizeof(char*));
     argv[0] = "codept";
@@ -313,7 +312,7 @@ s7_pointer analyze_deps_file(FTSENT *ftsentry)
     argv[2] = "info";
     argv[3] = "-sexp";
     argv[4] = "-k";
-    argv[5] = ftsentry->fts_path + 2; // drop leading ./
+    argv[5] = utstring_body(fname);  // ftsentry->fts_path + 2; // drop leading ./
     argv[6] = NULL;
     /* log_debug("I: %d", i); */
 
@@ -323,9 +322,10 @@ s7_pointer analyze_deps_file(FTSENT *ftsentry)
 
     /* FIXME: write to tmp dir instead of buffer */
     /* or write to DEPS.mibl? */
-    log_debug("running codept cmd");
+
+    /* log_debug("running codept cmd"); */
     result = run_cmd(exe, argv);
-    log_debug("returned: %s", result);
+    /* log_debug("returned: %s", result); */
     if (result == NULL) {
         log_error(" run_cmd 'codept ...'\n");
         fprintf(stderr,
@@ -343,16 +343,24 @@ s7_pointer analyze_deps_file(FTSENT *ftsentry)
     log_debug("CODEPT result string: %s", result);
 #endif
 
+    log_debug("XXXX opening depgraph_port");
     s7_pointer depgraph_port = s7_open_input_string(s7, result);
-    gc_depgraph_port = s7_gc_protect(s7, depgraph_port);
+    s7_gc_protect_via_stack(s7, depgraph_port);
 #if defined(DEBUG_TRACE)
     LOG_S7_DEBUG("depgraph_port", depgraph_port);
 #endif
-    /* free((void*)result); */
-
+    log_debug("XXXX reading depgraph");
     s7_pointer depgraph = s7_read(s7, depgraph_port);
-    log_debug("aaXXXXXXXXXXXXXXXX");
-    gc_depgraph = s7_gc_protect(s7, depgraph);
+    fprintf(stderr, "UUUU readed\n");
+    log_debug("XXXX readed depgraph_port");
+    s7_gc_protect_via_stack(s7, depgraph);
+    s7_gc_unprotect_via_stack(s7, depgraph_port);
+    s7_close_input_port(s7, depgraph_port);
+    log_debug("XXXX closed depgraph_port");
+
+    /* log_debug("aaXXXXXXXXXXXXXXXX"); */
+
+    /* gc_depgraph = s7_gc_protect(s7, depgraph); */
 #if defined(DEBUG_TRACE)
     LOG_S7_DEBUG("depgraph", depgraph);
 #endif
@@ -362,10 +370,11 @@ s7_pointer analyze_deps_file(FTSENT *ftsentry)
                                       s7_cons(s7,
                                               s7_make_symbol(s7, "depgraph"),
                                               depgraph)));
+    s7_gc_protect_via_stack(s7, env);
 #if defined(DEBUG_TRACE)
     LOG_S7_DEBUG("env", env);
 #endif
-    gc_env = s7_gc_protect(s7, env);
+    /* gc_env = s7_gc_protect(s7, env); */
 
     if (mibl_show_raw_deps) {
 
@@ -377,10 +386,7 @@ s7_pointer analyze_deps_file(FTSENT *ftsentry)
         /* if (old_port != s7_nil(s7)) */
 	/*     gc_x = s7_gc_protect(s7, old_port); */
         s7_pointer r = s7_eval_c_string_with_environment(s7, sexpx, env);
-        tostr1 = TO_STR(r);
-        fprintf(stderr, "RAW: %s\n", tostr1);
-        log_debug("r: %s", tostr1);
-        free(tostr1);
+        LOG_S7_DEBUG("raw", r);
         (void)r; // no need to gc protect
         errmsg = s7_get_output_string(s7, s7_current_error_port(s7));
         /* if we got something, wrap it in "[]" */
@@ -393,9 +399,6 @@ s7_pointer analyze_deps_file(FTSENT *ftsentry)
 	  /*   s7_gc_unprotect_at(s7, gc_x); */
 
         s7_newline(s7, s7_current_output_port(s7));
-        /* tostr1 = TO_STR(deps_list); */
-        /* log_debug("DEPS-LIST: %s", tostr1); */
-        /* free(tostr1); */
         s7_flush_output_port(s7, s7_current_output_port(s7));
     }
 
@@ -407,172 +410,114 @@ s7_pointer analyze_deps_file(FTSENT *ftsentry)
 
     s7_pointer deps_list = s7_eval_c_string_with_environment(s7, sexp, env);
 #if defined(DEBUG_TRACE)
-    /* tostr1 = TO_STR(deps_list); */
-    /* fprintf(stderr, "DEPS_list: %s\n", tostr1); */
     LOG_S7_DEBUG("DEPS_list", deps_list);
-    /* free(tostr1); */
 #endif
 
     gc_deps_list = s7_gc_protect(s7, deps_list);
     /* (void)deps_list; */
 #if defined(DEBUG_TRACE)
-    tostr1 = TO_STR(deps_list);
-    log_debug("DEPS_LIST: %s", tostr1);
-    free(tostr1);
+    LOG_S7_DEBUG("DEPS_LIST", deps_list);
 #endif
 
-    s7_gc_unprotect_at(s7, gc_depgraph_port);
-    s7_gc_unprotect_at(s7, gc_depgraph);
-    s7_gc_unprotect_at(s7, gc_env);
+    s7_gc_unprotect_via_stack(s7, depgraph);
+    s7_gc_unprotect_via_stack(s7, env);
 
+    log_debug("returning deps_list");
    return deps_list;
 }
 
-s7_pointer _ocamldep_deps(UT_array *_ocaml_src_dirs)
-{
-    int n = utarray_len(_ocaml_src_dirs);
+/* s7_pointer _ocamldep_deps(UT_array *_ocaml_src_dirs) */
+/* { */
+/*     int n = utarray_len(_ocaml_src_dirs); */
 
-    char **argv = calloc(3 + n, sizeof(char*));
-    argv[0] = "ocamldep";
-    argv[1] = "-modules";
-    /* now add ocaml src dirs collected by load_project */
-    int i = 2;
-    char **p = NULL;
-    p = NULL;
-    while ( (p=(char**)utarray_next(_ocaml_src_dirs,p))) {
-        argv[i] = *p;
-        i++;
-    }
-    argv[i] = NULL;
-    /* log_debug("I: %d", i); */
+/*     char **argv = calloc(3 + n, sizeof(char*)); */
+/*     argv[0] = "ocamldep"; */
+/*     argv[1] = "-modules"; */
+/*     /\* now add ocaml src dirs collected by load_project *\/ */
+/*     int i = 2; */
+/*     char **p = NULL; */
+/*     p = NULL; */
+/*     while ( (p=(char**)utarray_next(_ocaml_src_dirs,p))) { */
+/*         argv[i] = *p; */
+/*         i++; */
+/*     } */
+/*     argv[i] = NULL; */
+/*     /\* log_debug("I: %d", i); *\/ */
 
-    char *exe = NULL;
-    const char *result = NULL;
-    exe = "ocamldep";
+/*     char *exe = NULL; */
+/*     const char *result = NULL; */
+/*     exe = "ocamldep"; */
 
-    /* FIXME: write to tmp dir instead of buffer */
-    /* or write to DEPS.mibl? */
-    result = run_cmd(exe, argv);
-    if (result == NULL) {
-        log_error(" run_cmd 'ocamldep ...'\n");
-        fprintf(stderr,
-                "%s:%d "
-                RED "ERROR: " CRESET
-                " run_cmd 'ocamldep ...'\n",
-                __FILE__, __LINE__);
-        s7_flush_output_port(s7, s7_current_output_port(s7));
-        s7_flush_output_port(s7, s7_current_error_port(s7));
-        fflush(NULL);
-        return s7_nil(s7);
-    }
+/*     /\* FIXME: write to tmp dir instead of buffer *\/ */
+/*     /\* or write to DEPS.mibl? *\/ */
+/*     result = run_cmd(exe, argv); */
+/*     if (result == NULL) { */
+/*         log_error(" run_cmd 'ocamldep ...'\n"); */
+/*         fprintf(stderr, */
+/*                 "%s:%d " */
+/*                 RED "ERROR: " CRESET */
+/*                 " run_cmd 'ocamldep ...'\n", */
+/*                 __FILE__, __LINE__); */
+/*         s7_flush_output_port(s7, s7_current_output_port(s7)); */
+/*         s7_flush_output_port(s7, s7_current_error_port(s7)); */
+/*         fflush(NULL); */
+/*         return s7_nil(s7); */
+/*     } */
 
-    s7_pointer depgraph_port = s7_open_input_string(s7, result);
-    s7_pointer depgraph = s7_read(s7, depgraph_port);
-    LOG_S7_DEBUG("DEPGRAPH", depgraph);
+/*     s7_pointer depgraph_port = s7_open_input_string(s7, result); */
+/*     s7_pointer depgraph = s7_read(s7, depgraph_port); */
+/*     LOG_S7_DEBUG("DEPGRAPH", depgraph); */
 
-    s7_pointer env = s7_inlet(s7,
-                              s7_list(s7, 1,
-                                      s7_cons(s7,
-                                              s7_make_symbol(s7, "depgraph"),
-                                              depgraph)));
+/*     s7_pointer env = s7_inlet(s7, */
+/*                               s7_list(s7, 1, */
+/*                                       s7_cons(s7, */
+/*                                               s7_make_symbol(s7, "depgraph"), */
+/*                                               depgraph))); */
 
-    if (mibl_show_raw_deps) {
-        log_info("DEPS:");
-        char *sexp = "(mibl-pretty-print depgraph) ";
-        s7_pointer r = s7_eval_c_string_with_environment(s7, sexp, env);
-        (void)r;
-        s7_newline(s7, s7_current_output_port(s7));
-        /* tostr1 = TO_STR(deps_list); */
-        /* log_debug("DEPS-LIST: %s", tostr1); */
-        /* free(tostr1); */
-        s7_flush_output_port(s7, s7_current_output_port(s7));
-    }
+/*     if (mibl_show_raw_deps) { */
+/*         log_info("DEPS:"); */
+/*         char *sexp = "(mibl-pretty-print depgraph) "; */
+/*         s7_pointer r = s7_eval_c_string_with_environment(s7, sexp, env); */
+/*         (void)r; */
+/*         s7_newline(s7, s7_current_output_port(s7)); */
+/*         /\* LOG_S7_DEBUG("DEPS-LIST:", r); *\/ */
+/*         s7_flush_output_port(s7, s7_current_output_port(s7)); */
+/*     } */
 
-    /* FIXME: this will fail if depgraph is empty, */
-    char *sexp =
-        "(let ((deps-list (assoc-val 'dependencies depgraph))) "
-        "  (car deps-list)) "
-        ;
+/*     /\* FIXME: this will fail if depgraph is empty, *\/ */
+/*     char *sexp = */
+/*         "(let ((deps-list (assoc-val 'dependencies depgraph))) " */
+/*         "  (car deps-list)) " */
+/*         ; */
 
-    s7_pointer deps_list = s7_eval_c_string_with_environment(s7, sexp, env);
-    (void)deps_list;
-    /* char *s = TO_STR(deps_list); */
-    /* log_debug("DEPS_LIST: %s", s); */
-    /* free(s); */
+/*     s7_pointer deps_list = s7_eval_c_string_with_environment(s7, sexp, env); */
+/*     (void)deps_list; */
+/*     /\* LOG_S7_DEBUG("DEPS_LIST", deps_list); *\/ */
+/*     /\* free(s); *\/ */
 
-   return deps_list;
-}
+/*    return deps_list; */
+/* } */
 
 /* analyze_deps - run codept and ingest resulting sexp */
-s7_pointer analyze_deps_wsroot(char *const *rootdir) //, UT_array *ocaml_src_dirs)
-{
-#if defined(DEBUG_TRACE)
-    if (mibl_trace) {
-        log_trace("analyze_deps");
-        log_trace("cwd: %s", getcwd(NULL,0));
-        log_debug("traversal root: '%s'", *rootdir);
-        /* char **p; */
-        /* p = NULL; */
-        /* log_debug("ocaml src dirs:"); */
-        /* while ( (p=(char**)utarray_next(ocaml_src_dirs,p))) { */
-        /*     log_info("\t%s",*p); */
-        /* } */
-    }
-#endif
+/* s7_pointer analyze_deps_wsroot(char *const *rootdir) //, UT_array *ocaml_src_dirs) */
+/* { */
+/* #if defined(DEBUG_TRACE) */
+/*     if (mibl_trace) { */
+/*         log_trace("analyze_deps"); */
+/*         log_trace("cwd: %s", getcwd(NULL,0)); */
+/*         log_debug("traversal root: '%s'", *rootdir); */
+/*         /\* char **p; *\/ */
+/*         /\* p = NULL; *\/ */
+/*         /\* log_debug("ocaml src dirs:"); *\/ */
+/*         /\* while ( (p=(char**)utarray_next(ocaml_src_dirs,p))) { *\/ */
+/*         /\*     log_info("\t%s",*p); *\/ */
+/*         /\* } *\/ */
+/*     } */
+/* #endif */
 
-    /* _check_tools(); */
+/*     /\* _check_tools(); *\/ */
 
-    /* NB: the utarray must be freed */
-    UT_array *_ocaml_src_dirs = _ws_src_dirs(rootdir);
-
-#if defined(DEBUG_TRACE)
-    /* if (mibl_debug_deps) { */
-        log_debug("ocaml_src_dirs for codept:");
-        char **p = NULL;
-        p = NULL;
-        while ( (p=(char**)utarray_next(_ocaml_src_dirs,p))) {
-            log_debug("src dir: %s", *p);
-        }
-    /* } */
-#endif
-
-    s7_pointer depslist;
-    /* depslist = _ocamldep_deps(_ocaml_src_dirs); */
-    /* depslist = _codept_deps(_ocaml_src_dirs); */
-
-    if (system("which codept > /dev/null 2>&1")) {
-        /* codept not found, try ocamldep */
-        /* depslist _ocamldep_deps(_ocaml_src_dirs); */
-        log_error("Required tool: codept not found.");
-        exit(EXIT_FAILURE);
-    } else {
-        depslist = _codept_deps(_ocaml_src_dirs);
-    }
-
-    utarray_free(_ocaml_src_dirs);
-
-    return depslist;
-}
-
-s7_pointer analyze_deps_pkg(char *pkgdir)
-{
-#if defined(DEBUG_TRACE)
-    if (mibl_trace) {
-        log_trace("analyze_deps_pkg: %s", pkgdir);
-        log_trace("cwd: %s", getcwd(NULL,0));
-        log_debug("pkgdir: '%s'", pkgdir);
-        /* char **p; */
-        /* p = NULL; */
-        /* log_debug("ocaml src dirs:"); */
-        /* while ( (p=(char**)utarray_next(ocaml_src_dirs,p))) { */
-        /*     log_info("\t%s",*p); */
-        /* } */
-    }
-#endif
-
-    /* _check_tools(); */
-
-    /* NB: the utarray must be freed */
+/*     /\* NB: the utarray must be freed *\/ */
 /*     UT_array *_ocaml_src_dirs = _ws_src_dirs(rootdir); */
 
 /* #if defined(DEBUG_TRACE) */
@@ -586,38 +531,86 @@ s7_pointer analyze_deps_pkg(char *pkgdir)
 /*     /\* } *\/ */
 /* #endif */
 
-    s7_pointer depslist;
-    /* depslist = _ocamldep_deps(_ocaml_src_dirs); */
-    /* depslist = _codept_deps(_ocaml_src_dirs); */
+/*     s7_pointer depslist; */
+/*     /\* depslist = _ocamldep_deps(_ocaml_src_dirs); *\/ */
+/*     /\* depslist = _codept_deps(_ocaml_src_dirs); *\/ */
 
-    if (system("which codept > /dev/null 2>&1")) {
-        /* codept not found, try ocamldep */
-        /* depslist _ocamldep_deps(_ocaml_src_dirs); */
-        log_error("Required tool: codept not found.");
-        exit(EXIT_FAILURE);
-    } else {
-        depslist = _codept_deps_pkg(pkgdir);
-    }
+/*     if (system("which codept > /dev/null 2>&1")) { */
+/*         /\* codept not found, try ocamldep *\/ */
+/*         /\* depslist _ocamldep_deps(_ocaml_src_dirs); *\/ */
+/*         log_error("Required tool: codept not found."); */
+/*         exit(EXIT_FAILURE); */
+/*     } else { */
+/*         depslist = _codept_deps(_ocaml_src_dirs); */
+/*     } */
 
-    /* utarray_free(_ocaml_src_dirs); */
+/*     utarray_free(_ocaml_src_dirs); */
 
-    return depslist;
-}
+/*     return depslist; */
+/* } */
 
-s7_pointer get_deps(char *_pkg, char *tgt, s7_pointer deps_list)
+/* s7_pointer analyze_deps_pkg(char *pkgdir) */
+/* { */
+/* #if defined(DEBUG_TRACE) */
+/*     if (mibl_trace) { */
+/*         log_trace("cwd: %s", getcwd(NULL,0)); */
+/*         log_debug("pkgdir: '%s'", pkgdir); */
+/*         /\* char **p; *\/ */
+/*         /\* p = NULL; *\/ */
+/*         /\* log_debug("ocaml src dirs:"); *\/ */
+/*         /\* while ( (p=(char**)utarray_next(ocaml_src_dirs,p))) { *\/ */
+/*         /\*     log_info("\t%s",*p); *\/ */
+/*         /\* } *\/ */
+/*     } */
+/* #endif */
+
+/*     /\* _check_tools(); *\/ */
+
+/*     /\* NB: the utarray must be freed *\/ */
+/* /\*     UT_array *_ocaml_src_dirs = _ws_src_dirs(rootdir); *\/ */
+
+/* /\* #if defined(DEBUG_TRACE) *\/ */
+/* /\*     /\\* if (mibl_debug_deps) { *\\/ *\/ */
+/* /\*         log_debug("ocaml_src_dirs for codept:"); *\/ */
+/* /\*         char **p = NULL; *\/ */
+/* /\*         p = NULL; *\/ */
+/* /\*         while ( (p=(char**)utarray_next(_ocaml_src_dirs,p))) { *\/ */
+/* /\*             log_debug("src dir: %s", *p); *\/ */
+/* /\*         } *\/ */
+/* /\*     /\\* } *\\/ *\/ */
+/* /\* #endif *\/ */
+
+/*     s7_pointer depslist; */
+/*     /\* depslist = _ocamldep_deps(_ocaml_src_dirs); *\/ */
+/*     /\* depslist = _codept_deps(_ocaml_src_dirs); *\/ */
+
+/*     if (system("which codept > /dev/null 2>&1")) { */
+/*         /\* codept not found, try ocamldep *\/ */
+/*         /\* depslist _ocamldep_deps(_ocaml_src_dirs); *\/ */
+/*         log_error("Required tool: codept not found."); */
+/*         exit(EXIT_FAILURE); */
+/*     } else { */
+/*         depslist = _codept_deps_pkg(pkgdir); */
+/*     } */
+
+/*     /\* utarray_free(_ocaml_src_dirs); *\/ */
+
+/*     return depslist; */
+/* } */
+
+s7_pointer get_deps(char *_pkg, char *tgt) // , s7_pointer deps_list)
 {
 #if defined(DEBUG_TRACE)
     if (mibl_debug_deps)
-        log_trace("get_deps: %s : %s", _pkg, tgt);
+        log_trace(RED "get_deps:" CRESET " %s : %s", _pkg, tgt);
+        log_trace("traversal ct: %d", tct);
 #endif
-
-    s7_int gc_loc;
 
     /* return s7_nil(s7); */
 
-#if defined(DEBUG_TRACE)
-    LOG_S7_DEBUG("DEPS-LIST", deps_list);
-#endif
+/* #if defined(DEBUG_TRACE) */
+/*     LOG_S7_DEBUG("DEPS-LIST", deps_list); */
+/* #endif */
 
     /* NB: _pkg has leading "./", e.g. "./src/foo" */
     char *pkg;
@@ -627,96 +620,88 @@ s7_pointer get_deps(char *_pkg, char *tgt, s7_pointer deps_list)
         pkg = _pkg;
     (void)pkg;
 
-    s7_pointer env = s7_inlet(s7,
+    s7_pointer deps_list = analyze_deps_file(pkg, tgt);
+
+    //    {
+        s7_pointer env = s7_inlet(s7,
                               s7_list(s7, 3,
                                       s7_cons(s7,
                                               s7_make_symbol(s7, "deps-list"),
+                                              // s7_nil(s7)),
                                               deps_list),
                                       s7_cons(s7,
                                               s7_make_symbol(s7, "pkg"),
-                                              s7_make_string(s7, pkg)),
+                                              s7_make_symbol(s7, pkg)),
                                       s7_cons(s7,
                                               s7_make_symbol(s7, "tgt"),
-                                              s7_make_string(s7, tgt))));
-
-    gc_loc = s7_gc_protect(s7, env);
-    if (env != s7_gc_protected_at(s7, gc_loc)) {
-        log_error("%d: %s is not gc protected at %" print_s7_int ": %s?",
-                   __LINE__,
-                   tostr1 = TO_STR(env), gc_loc,
-                   tostr2 = TO_STR(s7_gc_protected_at(s7, gc_loc)));
-        free(tostr1); free(tostr2);
-    }
+                                              s7_make_symbol(s7, tgt))));
+        s7_gc_protect_via_stack(s7, env);
+        s7_gc_unprotect_at(s7, gc_deps_list);
 
 #if defined(DEBUG_TRACE)
-    LOG_S7_DEBUG("ENV", env);
+        LOG_S7_DEBUG("ENV", env);
 #endif
-    /* char *sexp = */
-    /*     "(begin " */
-    /*     "(format #t \"XXXX depslist: ~A\n\" deps-list)" */
-    /*     ")" */
-    /*     ; */
 
-    s7_flush_output_port(s7, s7_current_output_port(s7));
+        /* char *sexp = */
+        /*     "(begin " */
+        /*     "(format #t \"XXXX depslist: ~A\n\" deps-list)" */
+        /*     ")" */
+        /*     ; */
 
-    char *sexp =
-        "(begin "
-        " (format #t \"XXXXXXXXXXXXXXXX\n\")"
-        "(let* ((path (format #f \"~A/~A\" pkg tgt)) "
-        "       (key `(file ,(symbol path)))) "
+        s7_flush_output_port(s7, s7_current_output_port(s7));
+
+        /* char *sexp = */
+        /*     "(let ((p (format #f \"~A/~A\" pkg tgt))) '())" */
+        /*     ; */
+            /* "(let ((p (string-append (symbol->string pkg) \"/\" (symbol->string tgt)))) (format () \"~A~%\" p) '())" */
+
+              /* (let ((path (format #f \"~A/~A\" pkg tgt))) \ */
+
+
+        char *sexp =
+            "(begin "
+            "  (let* ((path (format #f \"~A/~A\" pkg tgt)) "
+            "         (key `(file ,(symbol path)))) "
+            "  (if-let ((needle (find-if (lambda (x) (equal? key (car x))) deps-list))) "
+            "      (if-let ((deps (cdr needle))) "
+            "        (if (truthy? deps) "
+            "          (let* ((dlist (cadar deps)) "
+            "                 (fixed (map (lambda (lst) "
+            "                                  (if (> (length lst) 1) "
+            "                                      (list->vector lst) lst)) "
+            "                             dlist))) "
+            "            (flatten fixed)) "
+            "            '()) "
+            "         '()) "
+            "       '())))"
+            ;
+        /* (void)sexp; */
+
+        log_debug("sexp: %s", sexp);
+
+        /* errno = 0; */
+        /* char *x = malloc(10024); */
+        /* if (errno) { */
+        /*     log_error("MALLOC FAIL"); */
+        /*     exit(1); */
+        /* } else { */
+        /*     free(x); */
+        /*     log_info("malloc ok"); */
+        /* } */
+
+        /* s7_pointer deps = s7_list(s7, 1, s7_make_symbol(s7, "testdep")); */
+        log_debug("bbbbbbbbbbbbbbbb");
+        s7_pointer deps = s7_eval_c_string_with_environment(s7, sexp, env);
+        s7_gc_unprotect_via_stack(s7, env);
+        gc_deps = s7_gc_protect(s7, deps);
+        s7_flush_output_port(s7, s7_current_output_port(s7));
+
 #if defined(DEBUG_TRACE)
-        "  (format #t \"pkg: ~A~%\" pkg) "
-        "  (format #t \"tgt: ~A~%\" tgt) "
+        LOG_S7_DEBUG("DEPS", deps);
 #endif
-        /* "  (format #t \"deps-list: ~A~%\" deps-list) " */
-        /* /\* "(for-each (lambda (x) x) deps-list)" *\/ */
-        /* /\* "(for-each (lambda (x) (format #t \"X: ~A\\n\" x)) deps-list)" *\/ */
-        /* "))" */
-        /* ; */
-
-        "  (if-let ((needle (find-if (lambda (x) (equal? key (car x))) deps-list))) "
-        "      (if-let ((deps (cdr needle))) "
-        "        (if (truthy? deps) "
-        "          (let* ((dlist (cadar deps)) "
-        "                 (fixed (map (lambda (lst) "
-        "                                  (if (> (length lst) 1) "
-        "                                      (list->vector lst) lst)) "
-        "                             dlist))) "
-#if defined(DEBUG_TRACE)
-        "            (format #t \"deps: ~A~%\" (flatten fixed)) "
-#endif
-        "            (flatten fixed)) "
-        "            '()) "
-        "         '()) "
-        "       '())))"
-        ;
-
-    log_info("get deps traversal ct: %d", tct);
-
-    log_debug("sexp: %s", sexp);
-    s7_pointer deps = s7_eval_c_string_with_environment(s7, sexp, env);
-#if defined(DEBUG_TRACE)
-    tostr1 = TO_STR(deps);
-    fprintf(stderr, "DEPS1: %s\n", tostr1);
-    log_debug("DEPS2: %s", tostr1);
-    free(tostr1);
-#endif
-
-    gc_deps = s7_gc_protect(s7, deps);
-    s7_flush_output_port(s7, s7_current_output_port(s7));
-
-    /* (void)deps; */
-#if defined(DEBUG_TRACE)
-    /* if (mibl_debug_deps) { */
-        tostr1 = TO_STR(deps);
-        log_debug("DEPS-LIST: %s", tostr1);
-        free(tostr1);
-        fflush(NULL);
-    /* } */
-#endif
-    s7_flush_output_port(s7, s7_current_output_port(s7));
-
-    s7_gc_unprotect_at(s7, gc_loc);
+        s7_flush_output_port(s7, s7_current_output_port(s7));
+        s7_flush_output_port(s7, s7_current_error_port(s7));
+        // }
 
     return deps;  // s7_list(s7, 1, s7_make_symbol(s7, "Foobar"));
 }

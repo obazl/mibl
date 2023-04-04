@@ -36,8 +36,10 @@ DIRLOCS = [
     ## meta_syntaxis.c is generated so needs special treatment
     "SRC4=$(location //src/findlib:meta_syntaxis.c);",
     "SRCDIR4=`dirname $$SRC4`;",
-    # "SRC5=$(location //convert:convert.c);",
+
+    # "SRC5=$(location //src/dune:dune_readers.c);",
     # "SRCDIR5=`dirname $$SRC5`;",
+
     "SRC6=$(location //src/xdg:xdg.c);",
     "SRCDIR6=`dirname $$SRC6`;",
     "SRC7=$(location //src/opam:opam_lexer.c);",
@@ -65,6 +67,8 @@ FILELOCS = [
 
     "$(location //src:deps.c)",
     "$(location //src:cmd_runner.c)",
+
+    "$(location //src/dune:dune_readers.c)",
 
     "$(location //src:error_handler_dune.c)",
     "$(location //src:error_handler_opam.c)",

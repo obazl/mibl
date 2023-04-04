@@ -35,7 +35,6 @@ extern UT_string *opam_switch_lib;
 /* **************************************************************** */
 /* s7_scheme *s7;                  /\* GLOBAL s7 *\/ */
 /* /\* const char *errmsg = NULL; *\/ */
-/* #define TO_STR(x) s7_object_to_c_string(s7, x) */
 
 /* static int level = 0; */
 extern int spfactor;
@@ -175,7 +174,7 @@ void emit_opam_pkg_bindir(const char *pkg) // UT_string *dune_pkg_file)
         utstring_printf(outpath, "%s/%s/bin/%s",
                         utstring_body(opam_coswitch_lib),
                         pkg,
-                        *p); // TO_STR(binfile));
+                        *p);
 #if defined(DEBUG_TRACE)
         log_debug("SYMLINK DST: %s", utstring_body(outpath));
 #endif
@@ -296,7 +295,7 @@ void emit_opam_pkg_bindir(const char *pkg) // UT_string *dune_pkg_file)
         utstring_printf(outpath, "%s/%s/stublibs/%s",
                         utstring_body(opam_coswitch_lib),
                         pkg,
-                        *p); // TO_STR(binfile));
+                        *p);
 #if defined(DEBUG_TRACE)
         log_debug("SYMLINK DST: %s", utstring_body(outpath));
 #endif

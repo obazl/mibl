@@ -34,7 +34,6 @@
 /* **************************************************************** */
 /* s7_scheme *s7;                  /\* GLOBAL s7 *\/ */
 /* /\* const char *errmsg = NULL; *\/ */
-/* #define TO_STR(x) s7_object_to_c_string(s7, x) */
 
 extern int level;
 extern int spfactor;

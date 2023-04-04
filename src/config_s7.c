@@ -56,6 +56,9 @@ char *callback = "camlark_handler"; /* fn in callback_script_file  */
 
 s7_scheme *s7;                  /* GLOBAL s7 */
 
+s7_int gc_wss;
+s7_int gc_mibl_project;
+
 s7_pointer dune_project_sym;
 s7_pointer dune_stanzas_kw;
 s7_pointer dune_stanzas_sym;
@@ -113,6 +116,7 @@ static char *mibl_s7_flags[] = {
     "*mibl-debug-action-directives*",
     "*mibl-debug-alias*",
     "*mibl-debug-cleanup*",
+    "*mibl-debug-cmd-runner*",
     "*mibl-debug-emit*",
     "*mibl-debug-executables*",
     "*mibl-debug-expanders*",
@@ -244,7 +248,12 @@ EXPORT void initialize_mibl_data_model(s7_scheme *s7)
                     rootws);
 
     s7_pointer wss = s7_eval_c_string(s7, utstring_body(init_sexp));
-    (void)wss;
+    gc_wss = s7_gc_protect(s7, wss);
+    /* (void)gc_wss; */
+    /* (void)wss; */
+
+    s7_pointer mp = s7_name_to_value(s7, "*mibl-project*");
+    gc_mibl_project = s7_gc_protect(s7, mp);
 
     /* char *s = TO_STR(wss); */
     /* log_debug(RED "INITIAL *mibl-project*: %s" CRESET, s); */
@@ -261,9 +270,6 @@ EXPORT void initialize_mibl_data_model(s7_scheme *s7)
     /* fprintf(stdout, "WWWW: %s\n", xs); */
 
     if (verbose && verbosity > 1) {
-        log_info(GRN "*mibl-project*:" CRESET " %s",
-                 NM_TO_STR("*mibl-project*"));
-        fflush(stdout);
         /* printf("XXXX %s\n", NM_TO_STR("*mibl-project*")); */
         /* fflush(stdout); */
     }
@@ -328,7 +334,8 @@ s7_pointer _init_scheme_fns(s7_scheme *s7)
         _s7_set_cdr = s7_name_to_value(s7, "set-cdr!");
         if (_s7_set_cdr == s7_undefined(s7)) {
             log_error("unbound symbol: set-cdr!");
-            log_info("*load-path*: %s", TO_STR(s7_load_path(s7)));
+            s7_pointer lp = s7_load_path(s7);
+            LOG_S7_DEBUG("*load-path*", lp);
             s7_error(s7, s7_make_symbol(s7, "unbound-symbol"),
                      s7_list(s7, 1, s7_make_string(s7, "set-cdr!")));
         }
@@ -338,7 +345,8 @@ s7_pointer _init_scheme_fns(s7_scheme *s7)
         _s7_quote = s7_name_to_value(s7, "quote");
         if (_s7_quote == s7_undefined(s7)) {
             log_error("unbound symbol: quote");
-            log_info("*load-path*: %s", TO_STR(s7_load_path(s7)));
+            s7_pointer lp = s7_load_path(s7);
+            LOG_S7_DEBUG("*load-path* 2", lp);
             s7_error(s7, s7_make_symbol(s7, "unbound-symbol"),
                      s7_list(s7, 1, s7_make_string(s7, "quote")));
         }
@@ -362,7 +370,8 @@ s7_pointer _load_acons(s7_scheme *s7)
         _s7_acons = s7_name_to_value(s7, "acons");
         if (_s7_acons == s7_undefined(s7)) {
             log_error("unbound symbol: acons");
-            log_info("*load-path*: %s", TO_STR(s7_load_path(s7)));
+            s7_pointer lp = s7_load_path(s7);
+            LOG_S7_DEBUG("*load-path* 3", lp);
             s7_error(s7, s7_make_symbol(s7, "unbound-symbol"),
                      s7_list(s7, 1, s7_make_string(s7, "acons")));
         }
@@ -378,7 +387,8 @@ s7_pointer _load_assoc(void)
         assoc = s7_name_to_value(s7, "assoc");
         if (assoc == s7_undefined(s7)) {
             log_error("unbound symbol: assoc");
-            log_info("*load-path*: %s", TO_STR(s7_load_path(s7)));
+            s7_pointer lp = s7_load_path(s7);
+            LOG_S7_DEBUG("*load-path* 4", lp);
             s7_error(s7, s7_make_symbol(s7, "unbound-symbol"),
                      s7_list(s7, 1, s7_make_string(s7, "assoc")));
         }
@@ -392,7 +402,8 @@ s7_pointer _load_assoc_in(void)
         assoc_in = s7_name_to_value(s7, "assoc-in");
         if (assoc == s7_undefined(s7)) {
             log_error("unbound symbol: assoc-in");
-            log_info("*load-path*: %s", TO_STR(s7_load_path(s7)));
+            s7_pointer lp = s7_load_path(s7);
+            LOG_S7_DEBUG("*load-path* 5", lp);
             s7_error(s7, s7_make_symbol(s7, "unbound-symbol"),
                      s7_list(s7, 1, s7_make_string(s7, "assoc-in")));
         }
@@ -406,7 +417,8 @@ s7_pointer _load_assoc_val(void)
         assoc_val = s7_name_to_value(s7, "assoc-in");
         if (assoc == s7_undefined(s7)) {
             log_error("unbound symbol: assoc-in");
-            log_info("*load-path*: %s", TO_STR(s7_load_path(s7)));
+            s7_pointer lp = s7_load_path(s7);
+            LOG_S7_DEBUG("*load-path* 6", lp);
             s7_error(s7, s7_make_symbol(s7, "unbound-symbol"),
                      s7_list(s7, 1, s7_make_string(s7, "assoc-in")));
         }
@@ -420,7 +432,8 @@ s7_pointer _load_append(void)
         _s7_append = s7_name_to_value(s7, "append");
         if (assoc == s7_undefined(s7)) {
             log_error("unbound symbol: append");
-            log_info("*load-path*: %s", TO_STR(s7_load_path(s7)));
+            s7_pointer lp = s7_load_path(s7);
+            LOG_S7_DEBUG("*load-path* 7", lp);
             s7_error(s7, s7_make_symbol(s7, "unbound-symbol"),
                      s7_list(s7, 1, s7_make_string(s7, "append")));
         }
@@ -434,7 +447,8 @@ s7_pointer _load_list_set(s7_scheme *s7)
         _s7_list_set = s7_name_to_value(s7, "list-set!");
         if (_s7_list_set == s7_undefined(s7)) {
             log_error("unbound symbol: list-set!");
-            log_info("*load-path*: %s", TO_STR(s7_load_path(s7)));
+            s7_pointer lp = s7_load_path(s7);
+            LOG_S7_DEBUG("*load-path* 8", lp);
             s7_error(s7, s7_make_symbol(s7, "unbound-symbol"),
                      s7_list(s7, 1, s7_make_string(s7, "list-set!")));
         }
@@ -447,7 +461,8 @@ s7_pointer _load_sort(void)
     sort_bang = s7_name_to_value(s7, "sort!");
     if (assoc == s7_undefined(s7)) {
         log_error("unbound symbol: sort!");
-        log_info("*load-path*: %s", TO_STR(s7_load_path(s7)));
+        s7_pointer lp = s7_load_path(s7);
+        LOG_S7_DEBUG("*load-path* 9", lp);
         s7_error(s7, s7_make_symbol(s7, "unbound-symbol"),
                  s7_list(s7, 1, s7_make_string(s7, "sort!")));
     }
@@ -459,7 +474,8 @@ s7_pointer _load_string_lt(void)
     string_lt = s7_name_to_value(s7, "string<?");
     if (assoc == s7_undefined(s7)) {
         log_error("unbound symbol: string<?");
-        log_info("*load-path*: %s", TO_STR(s7_load_path(s7)));
+        s7_pointer lp = s7_load_path(s7);
+        LOG_S7_DEBUG("*load-path* 10", lp);
         s7_error(s7, s7_make_symbol(s7, "unbound-symbol"),
                  s7_list(s7, 1, s7_make_string(s7, "string<?")));
     }
@@ -559,12 +575,12 @@ void _s7_init(void)
 #endif
 
     s7 = s7_init();             /* @libs7//src:s7.c */
-    s7_pointer lp = s7_load_path(s7);
-    char *s = TO_STR(lp);
-    /* log_debug("mibl_s7_init initial *load-path*: %s", s); */
-    free(s);
+    s7_gc_on(s7, s7_f(s7));
 
 #if defined(DEBUG_TRACE)
+    s7_pointer lp = s7_load_path(s7);
+    LOG_S7_DEBUG("*load-path* 11", lp);
+
     if (mibl_debug) {
         log_debug("mibl_runfiles_root: %s", utstring_body(mibl_runfiles_root));
     }
@@ -619,7 +635,8 @@ void _s7_init(void)
     /* trap error messages */
     /* close_error_config(); */
     error_config();
-    init_error_handlers();
+    log_debug("running init_error_handlers");
+    init_error_handlers_dune();
 
     /* tmp dir */
     char tplt[] = "/tmp/obazl.XXXXXXXXXX";
@@ -753,7 +770,7 @@ EXPORT void show_s7_config(void)
     s7_flush_output_port(s7, s7_current_output_port(s7));
 
     /* s7_pointer lp = s7_load_path(s7); */
-    log_info("*load-path*:"); // %s", TO_STR(lp));
+    /* LOG_S7_DEBUG("*load-path*" lp); */
     fflush(NULL);
     /* log_info("mibl_runfiles_root: %s", utstring_body(mibl_runfiles_root)); */
 
@@ -787,10 +804,10 @@ EXPORT void mibl_s7_init(void)
 
     _define_mibl_s7_vars();
 
+#if defined(DEBUG_TRACE)
     s7_pointer lp = s7_load_path(s7);
-    char *s = TO_STR(lp);
-    /* log_debug("mibl_s7_init *load-path*: %s", s); */
-    free(s);
+    LOG_S7_DEBUG("mibl_s7_init *load-path*", lp);
+#endif
 
     /* FIXME: this should be a var, not a fn */
     /* s7_define_safe_function(s7, "effective-ws-root", */

@@ -35,8 +35,6 @@ extern bool debug;
 extern bool trace;
 #endif
 
-/* #define TO_STR(x) s7_object_to_c_string(s7, x) */
-
 /* s7_pointer */
 void *read_dune_package(UT_string *dunefile_name)
 {
@@ -145,37 +143,34 @@ EXPORT UT_array *get_pkg_executables(void *_stanzas)
 #if defined(DEBUG_TRACE)
     if (mibl_debug) {
         /* log_debug("Pkg: %s", utstring_body(dune_pkg_file)); */
-        log_debug(RED "executables" CRESET ": %s", TO_STR(executables));
+        LOG_S7_DEBUG("executables", executables);
     }
 #endif
 
     /* /\* result is list of executables installed in $PREFIX/bin *\/ */
     /* if (s7_is_list(s7, executables)) { */
     /*     if (verbose) { */
-    /*         printf(GRN "EXECUTABLES:" CRESET " %s\n", */
-    /*                /\* " for %s: %s\n", *\/ */
-    /*                /\* utstring_body(dune_pkg_file), *\/ */
-    /*                TO_STR(executables)); */
     /*     } */
     /* } */
     iter = s7_make_iterator(s7, executables);
         //gc_loc = s7_gc_protect(s7, iter);
-    if (!s7_is_iterator(iter))
-        fprintf(stderr, "%d: %s is not an iterator\n",
-                __LINE__, TO_STR(iter));
+    if (!s7_is_iterator(iter)) {
+        log_error("not an iterator");
+        LOG_S7_DEBUG("not an iterator", iter);
+    }
     if (s7_iterator_is_at_end(s7, iter))
-        fprintf(stderr, "%d: %s is prematurely done\n",
-                __LINE__, TO_STR(iter));
+        LOG_S7_DEBUG("iterator prematurely done", iter);
 
     char *f;
     while (true) {
         binfile = s7_iterate(s7, iter);
         if (s7_iterator_is_at_end(s7, iter)) break;
 #if defined(DEBUG_TRACE)
-        log_debug("\tbin: %s", TO_STR(binfile));
+        LOG_S7_DEBUG("binfile", binfile);
 #endif
         f = TO_STR(binfile);
         utarray_push_back(bins, &f);
+        free(f);
     }
         /* utstring_renew(opam_bin); */
         /* utstring_printf(opam_bin, "%s/%s", */
@@ -247,7 +242,7 @@ EXPORT UT_array *get_pkg_stublibs(char *pkg, void *_stanzas)
 #if defined(DEBUG_TRACE)
     if (mibl_debug) {
         /* log_debug("Pkg: %s", utstring_body(dune_pkg_file)); */
-        log_debug(RED "STUBLIBS" CRESET ": %s", TO_STR(stublibs));
+        LOG_S7_DEBUG(RED "STUBLIBS" CRESET, stublibs);
     }
 #endif
 
@@ -263,22 +258,23 @@ EXPORT UT_array *get_pkg_stublibs(char *pkg, void *_stanzas)
     /* } */
     iter = s7_make_iterator(s7, stublibs);
         //gc_loc = s7_gc_protect(s7, iter);
-    if (!s7_is_iterator(iter))
-        fprintf(stderr, "%d: %s is not an iterator\n",
-                __LINE__, TO_STR(iter));
+    if (!s7_is_iterator(iter)) {
+        log_error("not an iterator");
+        LOG_S7_DEBUG("not an iterator", iter);
+    }
     if (s7_iterator_is_at_end(s7, iter))
-        fprintf(stderr, "%d: %s is prematurely done\n",
-                __LINE__, TO_STR(iter));
+        LOG_S7_DEBUG("iterator prematurely done", iter);
 
     char *f;
     while (true) {
         stublib_file = s7_iterate(s7, iter);
         if (s7_iterator_is_at_end(s7, iter)) break;
 #if defined(DEBUG_TRACE)
-        log_debug("\tstublib: %s", TO_STR(stublib_file));
+        LOG_S7_DEBUG("stublib_file", stublib_file);
 #endif
         f = TO_STR(stublib_file);
         utarray_push_back(stubs, &f);
+        free(f);
     }
     return stubs;
 }

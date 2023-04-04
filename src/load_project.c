@@ -72,7 +72,7 @@ void s7_show_stack(s7_scheme *sc);
 /* TODO: validate dunefile_port */
 /* s7 defined in s7_config.c */
 LOCAL s7_pointer _s7_read_thunk(s7_scheme *s7, s7_pointer args) {
-    /* printf("_s7_read_thunk\n"); */
+    printf("_s7_read_thunk\n");
     return s7_read(s7, g_dunefile_port);
 }
 
@@ -95,15 +95,15 @@ LOCAL s7_pointer s7_read_thunk;
 /*         return 0; */
 /* } */
 
-LOCAL s7_pointer _read_thunk(s7_scheme *s7, s7_pointer args) {
-    /* printf("_read_thunk\n"); */
+LOCAL s7_pointer _mibl_read_thunk(s7_scheme *s7, s7_pointer args) {
+    fprintf(stderr, "_mibl_read_thunk\n");
+    fprintf(stderr, "s7_read_thunk_catcher: %d\n", s7_is_defined(s7, "s7-read-thunk-catcher"));
     /* s7_pointer body = s7_eval_c_string(s7, "(lambda () (+ #f 2))"); */
     /* s7_pointer err = s7_eval_c_string(s7, "(lambda (type info) 'oops)"); */
-    s7_pointer result = s7_call_with_catch(s7, s7_t(s7),
-                                           s7_read_thunk,
-                                           s7_read_thunk_catcher
-                                           /* body, */
-                                           /* err */
+    s7_pointer result = s7_call_with_catch(s7,
+                                           s7_t(s7),      /* tag */
+                                           s7_read_thunk, /* body */
+                                           s7_read_thunk_catcher /* err */
                                            );
     /* printf("TTTTTTTTTTTTTTTT: %s\n", result); */
     return result;
@@ -160,7 +160,7 @@ LOCAL s7_pointer _read_dunefile(char *path) //, char *fname)
                                      _s7_read_thunk,
                                      0, 0, false, "");
     mibl_read_thunk = s7_make_function(s7, "mibl-read-thunk",
-                                       _read_thunk,
+                                       _mibl_read_thunk,
                                        0, 0, false, "");
 
     dune_gc_loc = s7_gc_protect(s7, g_dunefile_port);
@@ -184,7 +184,7 @@ LOCAL s7_pointer _read_dunefile(char *path) //, char *fname)
 
         /* s7_show_stack(s7); */
         /* print_backtrace(s7); */
-        s7_pointer stanza = s7_call(s7, mibl_read_thunk, s7_list(s7, 0));
+        s7_pointer stanza = s7_call(s7, mibl_read_thunk, s7_nil(s7)); //list(s7, 0));
         if (stanza == s7_eof_object(s7)) {
             break;
         }
@@ -1192,9 +1192,9 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
 
         s7_pointer mdeps;
         if (ftype == TAG_ML)
-            mdeps = get_deps(pkg_name, fname, deps_list);
+            mdeps = get_deps(pkg_name, fname); // , deps_list);
         else if (ftype == TAG_MLI)
-            mdeps = get_deps(pkg_name, fname, deps_list);
+            mdeps = get_deps(pkg_name, fname); // , deps_list);
         else
             mdeps = s7_nil(s7);
 #if defined(DEBUG_TRACE)
@@ -1308,11 +1308,12 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
                                          modules_kw,
                                          /* static_kw, */
                                          mname_sym);
+            s7_gc_protect_via_stack(s7, keypath);
 #if defined(DEBUG_TRACE)
             if (mibl_debug_traversal) {
                 /* LOG_S7_DEBUG("assoc-in", assoc_in); */
                 LOG_S7_DEBUG("keypath", keypath);
-                /* LOG_S7_DEBUG("pkg_alist", pkg_alist); */
+                LOG_S7_DEBUG("pkg_alist", pkg_alist);
             }
 #endif
 
@@ -1320,6 +1321,8 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
                                               s7_list(s7, 2,
                                                       keypath,
                                                       pkg_alist));
+            s7_gc_protect_via_stack(s7, module_alist);
+            s7_gc_unprotect_via_stack(s7, keypath);
 
 #if defined(DEBUG_TRACE)
             if (mibl_debug_traversal) {
@@ -1469,7 +1472,7 @@ LOCAL void _update_pkg_sigs(s7_pointer pkg_tbl,
         /* s7_pointer sig_assoc = s7_list(s7, 2, mname_sym, mli_file); */
 
         s7_pointer mdeps;
-        mdeps = get_deps(pkg_name, fname, deps_list);
+        mdeps = get_deps(pkg_name, fname); // , deps_list);
         s7_gc_unprotect_at(s7, gc_deps_list);
 
         s7_pointer sig_assoc = s7_cons(s7, mname_sym,
@@ -1622,6 +1625,7 @@ LOCAL void _update_pkg_structs(s7_pointer pkg_tbl,
     }
 #endif
     s7_pointer pkg_key = make_pkg_key(pkg_name);
+    s7_gc_protect_via_stack(s7, pkg_key);
     // s7_make_string(s7, pkg_name);
 #if defined(DEBUG_TRACE)
     if (mibl_debug_traversal) LOG_S7_DEBUG("pkg_key", pkg_key);
@@ -1663,10 +1667,12 @@ LOCAL void _update_pkg_structs(s7_pointer pkg_tbl,
         /* if (mibl_debug_traversal) */
         /*     LOG_S7_DEBUG("ml_assoc", ml_assoc); */
 
+    /* LOG_S7_DEBUG("pkg_key 2", pkg_key); */
         s7_pointer mdeps;
-        mdeps = get_deps(pkg_name, fname, deps_list);
+        mdeps = get_deps(pkg_name, fname); // , deps_list);
         /* gc_mdeps = gc_protect(s7, mdeps); */
         s7_gc_unprotect_at(s7, gc_deps_list);
+    /* LOG_S7_DEBUG("pkg_key 3", pkg_key); */
 
         s7_pointer struct_assoc =
             s7_cons(s7, mname_sym,
@@ -1682,8 +1688,10 @@ LOCAL void _update_pkg_structs(s7_pointer pkg_tbl,
 
         if (structs_alist == s7_f(s7)) {
 #if defined(DEBUG_TRACE)
-            if (mibl_debug_traversal)
+            if (mibl_debug_traversal) {
+                LOG_S7_DEBUG("pkg_key", pkg_key);
                 LOG_S7_DEBUG("INITIALIZING keypath", keypath);
+            }
 #endif
             /* (:structures (:static (:Foo (:ml foo.ml)) */
             /*               (:dynamic (:ml bar.ml)))) */
@@ -1711,11 +1719,16 @@ LOCAL void _update_pkg_structs(s7_pointer pkg_tbl,
                                                      s7_list(s7, 1,
                                                              structs_assoc));
 #if defined(DEBUG_TRACE)
-                if (mibl_debug_traversal)
+                if (mibl_debug_traversal) {
+                    LOG_S7_DEBUG("pkg_key", pkg_key);
                     LOG_S7_DEBUG("updated pkg_alist", new_pkg_alist);
+                    fprintf(stderr, "GGGGGGGGGGGGGGGG\n");
+                    LOG_S7_DEBUG("pkg_key", pkg_key);
+                }
 #endif
 
                 s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg_alist);
+                log_debug("hhhhhhhhhhhhhhhh");
             } else {
                 log_debug("OLD");
 
@@ -2859,12 +2872,12 @@ LOCAL void _handle_ml_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
         && (strlen(ext) == 3)) {
 
         fflush(NULL);
-        deps_list = analyze_deps_file(ftsentry);
-        /* deps_list is gc_protected */
-        if ( !s7_is_list(s7, deps_list) ) {
-            log_error("analyze_deps failed");
-            exit(EXIT_FAILURE);
-        }
+        /* deps_list = analyze_deps_file(ftsentry); */
+        /* /\* deps_list is gc_protected *\/ */
+        /* if ( !s7_is_list(s7, deps_list) ) { */
+        /*     log_error("analyze_deps failed"); */
+        /*     exit(EXIT_FAILURE); */
+        /* } */
 
         int ln = strlen(ftsentry->fts_name);
         if (ln > 7) {
@@ -2880,13 +2893,13 @@ LOCAL void _handle_ml_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
     else if ((strncmp(ext, ".mli", 4) == 0)
         && (strlen(ext) == 4)) {
 
-        fflush(NULL);
-        deps_list = analyze_deps_file(ftsentry);
-        /* deps_list is gc_protected */
-        if ( !s7_is_list(s7, deps_list) ) {
-            log_error("analyze_deps failed");
-            exit(EXIT_FAILURE);
-        }
+        /* fflush(NULL); */
+        /* deps_list = analyze_deps_file(ftsentry); */
+        /* /\* deps_list is gc_protected *\/ */
+        /* if ( !s7_is_list(s7, deps_list) ) { */
+        /*     log_error("analyze_deps failed"); */
+        /*     exit(EXIT_FAILURE); */
+        /* } */
 
         int ln = strlen(ftsentry->fts_name);
         if (ln > 8) {
@@ -4129,6 +4142,17 @@ EXPORT s7_pointer load_project(const char *home_sfx, const char *traversal_root)
 
     s7_pointer pkg_tbl =
         s7_eval_c_string(s7, "(cadr (assoc-in '(:@ :pkgs) *mibl-project*))");
+    s7_int gc_pkg_tbl = s7_gc_protect(s7, pkg_tbl);
+    if (pkg_tbl != s7_gc_protected_at(s7, gc_pkg_tbl)) {
+        log_error("%d: %s is not gc protected at %" print_s7_int ": %s?",
+                  __LINE__,
+                  tostr1 = TO_STR(pkg_tbl), gc_pkg_tbl,
+                  tostr2 = TO_STR(s7_gc_protected_at(s7, gc_pkg_tbl)));
+        free(tostr1); free(tostr2);
+        exit(1);
+    }
+    (void)gc_pkg_tbl;
+
 #if defined(DEBUG_TRACE)
     if (mibl_debug_traversal)
         LOG_S7_DEBUG("building pkg_tbl", pkg_tbl);
@@ -4149,7 +4173,8 @@ EXPORT s7_pointer load_project(const char *home_sfx, const char *traversal_root)
     if (NULL != tree) {
         while( (ftsentry = fts_read(tree)) != NULL) {
             tct++;
-            fflush(NULL);
+            log_debug("traversal ct: %d", tct);
+
             s7_flush_output_port(s7, s7_current_output_port(s7));
             s7_flush_output_port(s7, s7_current_error_port(s7));
 

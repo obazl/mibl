@@ -31,6 +31,9 @@ filegroup(
 filegroup(
     name = "handlers_srcs",
     srcs = [
+        "//src/dune:dune_readers.c",
+        "//src/hdrs:dune_readers.h",
+
         "//src:handlers.c",
         "//src/hdrs:handlers.h",
         # "handlers_findlib.c",
@@ -93,7 +96,8 @@ MIBL_SRCS = [
     "config_s7.c",
     "deps.c",
     "cmd_runner.c",
-    "error_handler_s7.c",
+    "error_handler_dune.c",
+    # "error_handler_s7.c",
     # "fs.c",
     # "log.c", "log.h",
     "utils.c",
@@ -112,9 +116,13 @@ cc_library(
         "//src/hdrs:config_s7.h",
         "//src/hdrs:deps.h",
         "//src/hdrs:cmd_runner.h",
-        "//src/hdrs:error_handler_s7.h",
+        "//src/hdrs:error_handler_dune.h",
+        # "//src/hdrs:error_handler_s7.h",
         # "fs.h",
         "//src/hdrs:utils.h",
+
+        "//src/dune:dune_readers.c",
+        "//src/hdrs:dune_readers.h",
 
         "//src/xdg:xdg.c", "//src/hdrs:xdg.h",
 
@@ -359,7 +367,7 @@ cc_library(
         "//conditions:default":   []
     }),
     deps = [
-        "//src/dune",
+        # "//src/dune",
         "//src/findlib",
         # "//src:mibl",
         "//vendored/libinih:inih",

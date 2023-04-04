@@ -581,7 +581,7 @@ LOCAL void _mibl_s7_configure_x(void)
     }
 #if defined(DEBUG_TRACE)
     if (mibl_debug)
-        log_debug("exclusions list: %s", TO_STR(_s7_exclusions));
+        LOG_S7_DEBUG("exclusions list", _s7_exclusions);
 #endif
     s7_define_variable(s7, "*mibl-scan-exclusions*", _s7_exclusions);
 }
@@ -593,9 +593,7 @@ EXPORT void set_load_path(void) // char *scriptfile)
 #if defined(DEBUG_TRACE)
     if (mibl_debug) {
         s7_pointer lp = s7_load_path(s7);
-        char *s = TO_STR(lp);
-        log_debug("*load-path*: %s", s);
-        free(s);
+        LOG_S7_DEBUG("*load-path*", lp);
     }
 #endif
 
@@ -629,7 +627,7 @@ EXPORT void set_load_path(void) // char *scriptfile)
         (void)lp;
 #if defined(DEBUG_TRACE)
         if (mibl_debug) {
-            log_debug("2 *LOAD-PATH*: %s", TO_STR(lp));
+            LOG_S7_DEBUG("2 *LOAD-PATH*", lp);
         }
 #endif
     }
@@ -650,9 +648,7 @@ EXPORT void set_load_path(void) // char *scriptfile)
             #if defined(DEBUG_TRACE)
                     if (mibl_debug) {
                         s7_pointer lp = s7_load_path(s7);
-                        char *s = TO_STR(lp);
-                        log_debug("1 *LOAD-PATH*: %s", s);
-                        free(s);
+                        LOG_S7_DEBUG("1 *LOAD-PATH*", lp);
                     }
             #endif
 
@@ -661,9 +657,7 @@ EXPORT void set_load_path(void) // char *scriptfile)
 #if defined(DEBUG_TRACE)
             if (mibl_debug) {
                 s7_pointer lp = s7_load_path(s7);
-                char *s = TO_STR(lp);
-                log_debug("3 *LOAD-PATH*: %s", TO_STR(lp));
-                free(s);
+                log_debug("3 *LOAD-PATH*", lp);
             }
 #endif
         }
@@ -770,7 +764,10 @@ EXPORT struct mibl_config_s *mibl_s7_init2(char *scm_dir, char *ws_root)
 
     if (verbose) {
         log_info("pwd: %s", getcwd(NULL,0));
-        log_info("*load-path*: %s", TO_STR(s7_load_path(s7)));
+#if defined(DEBUG_TRACE)
+        s7_pointer lp =s7_load_path(s7);
+        LOG_S7_DEBUG("*load-path*", lp);
+#endif
     }
 
     //FIXME: move to mibl_s7.c?
@@ -968,7 +965,7 @@ EXPORT void mibl_s7_run(char *main_script, char *ws)
     /* } */
 
 #if defined(DEBUG_TRACE)
-    if (mibl_debug) log_debug("s7 args: %s", TO_STR(_s7_args));
+    if (mibl_debug) LOG_S7_DEBUG("s7 args", _s7_args);
 #endif
 
     /* s7_gc_on(s7, s7_f(s7)); */
@@ -977,7 +974,7 @@ EXPORT void mibl_s7_run(char *main_script, char *ws)
     /* s7_int main_gc_loc = s7_gc_protect(s7, _main); */
 
     if (verbose && verbosity > 2) {
-        log_info("calling s7: %s", TO_STR(_main));
+        LOG_S7_DEBUG("calling s7", _main);
     }
     if (verbose)
         log_info("workspace root: %s", ws);

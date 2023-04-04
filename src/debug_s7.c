@@ -23,7 +23,7 @@ char *tostr2 = NULL;
 #define TO_STR(x) s7_object_to_c_string(s7, x)
 #define NM_TO_STR(x) s7_object_to_c_string(s7, s7_name_to_value(s7, x))
 #define TO_BOOL(x) s7_boolean(s7, s7_name_to_value(s7, x))
-#define LOG_S7_DEBUG(msg, obj) ((tostr1 = TO_STR(obj)), (fprintf(stderr, GRN "S7: " CRESET #msg ": %s", tostr1)), (free(tostr1)))
+#define LOG_S7_DEBUG(msg, obj) ((tostr1 = TO_STR(obj)), (fprintf(stderr, GRN " S7: " CRESET "%s:%d " #msg ": %s\n", __FILE__, __LINE__, tostr1)), (free(tostr1)))
 #endif
 
 

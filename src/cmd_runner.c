@@ -30,7 +30,10 @@
 
 #include "cmd_runner.h"
 
+bool mibl_debug_cmd_runner = false;
+#if defined(DEBUG_TRACE)
 extern bool mibl_debug_deps;
+#endif
 
 #if INTERFACE
 #define BUFSZ 4096 * 4
@@ -41,23 +44,25 @@ char buffer[BUFSZ];
 EXPORT char * run_cmd(char *executable, char **argv)
 {
 #if defined(DEBUG_TRACE)
-    char **ptr = argv;
-    UT_string *tmp;
-    utstring_new(tmp);
-    while (*ptr) {
-        utstring_printf(tmp, "%s ", *ptr);
-        ptr++;
-    }
-
-    if (mibl_debug_deps) {
-        log_debug("run cmd: %s", utstring_body(tmp));
-        char **p = argv;
-        while(*p != NULL) {
-            log_debug("arg: %s", *p);
-            p++;
+    if (mibl_debug_cmd_runner) {
+        char **ptr = argv;
+        UT_string *tmp;
+        utstring_new(tmp);
+        while (*ptr) {
+            utstring_printf(tmp, "%s ", *ptr);
+            ptr++;
         }
+
+        if (mibl_debug_deps) {
+            log_debug(RED "run_cmd:" CRESET " %s", utstring_body(tmp));
+            char **p = argv;
+            while(*p != NULL) {
+                log_debug("arg: %s", *p);
+                p++;
+            }
+        }
+        utstring_free(tmp);
     }
-    utstring_free(tmp);
 #endif
 
     pid_t pid;
@@ -76,10 +81,10 @@ EXPORT char * run_cmd(char *executable, char **argv)
         exit(EXIT_FAILURE);
     }
 
-    log_debug("cout_pipe[0]: %d", cout_pipe[0]);
-    log_debug("cout_pipe[1]: %d", cout_pipe[1]);
-    log_debug("cerr_pipe[0]: %d", cout_pipe[0]);
-    log_debug("cerr_pipe[1]: %d", cout_pipe[1]);
+    /* log_debug("cout_pipe[0]: %d", cout_pipe[0]); */
+    /* log_debug("cout_pipe[1]: %d", cout_pipe[1]); */
+    /* log_debug("cerr_pipe[0]: %d", cout_pipe[0]); */
+    /* log_debug("cerr_pipe[1]: %d", cout_pipe[1]); */
 
     posix_spawn_file_actions_t action;
     posix_spawn_file_actions_init(&action);
@@ -230,7 +235,7 @@ EXPORT char * run_cmd(char *executable, char **argv)
         close(cout_pipe[0]);
         close(cerr_pipe[0]);
         posix_spawn_file_actions_destroy(&action);
-        log_debug("cmd returning");
+        /* log_debug("cmd returning"); */
         return buffer;
     }
     else if (WIFSIGNALED(rc)) {

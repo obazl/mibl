@@ -191,7 +191,7 @@ s7_pointer _s7_read_error_handler(s7_scheme *s7, s7_pointer args)
     return(s7_f(s7));
 }
 
-void init_error_handlers(void)
+void init_error_handlers_s7(void)
 {
     /* s7_read_thunk_catcher = s7_make_function(s7, "s7-read-thunk-catcher", */
     /*                                          _s7_read_thunk_catcher, */
