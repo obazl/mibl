@@ -1,0 +1,20 @@
+cc_library(
+    name = "colorful_printf",
+    linkstatic = True,
+    srcs = ["colorprint.c", "colorprint.h"],
+    copts = [
+        "-x", "c",
+        "-Wall",
+        "-pedantic",
+    ] + select({
+        "//bzl/host:macos": ["-std=c11"],
+        "//bzl/host:linux": [],
+        "//conditions:default":  [] #"-std=c11"]
+    }) + select({
+        # "//config/mode:pedantic?": ["-pedantic"], #FIXME
+        "//conditions:default":  []
+    }),
+    visibility = [
+    ],
+)
+
