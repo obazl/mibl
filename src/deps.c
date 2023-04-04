@@ -280,9 +280,11 @@ s7_pointer _codept_deps_pkg(char *pkgdir)
    return deps_list;
 }
 
+s7_int gc_module_deps;          /* gc protects deps returned by get_deps */
 s7_int gc_depgraph_port, gc_depgraph, gc_env, gc_deps_list;
 
 /* s7_pointer analyze_deps_file(FTSENT *ftsentry) */
+/* returns gc_protected deps-list */
 s7_pointer analyze_deps_file(char *pkg, char *tgt)
 {
 #if defined(DEBUG_TRACE)
@@ -401,11 +403,11 @@ s7_pointer analyze_deps_file(char *pkg, char *tgt)
         ;
 
     s7_pointer deps_list = s7_eval_c_string_with_environment(s7, sexp, env);
+    gc_deps_list = s7_gc_protect(s7, deps_list);
 #if defined(DEBUG_TRACE)
     LOG_S7_DEBUG("DEPS_list", deps_list);
 #endif
 
-    gc_deps_list = s7_gc_protect(s7, deps_list);
     /* (void)deps_list; */
 #if defined(DEBUG_TRACE)
     LOG_S7_DEBUG("DEPS_LIST", deps_list);
@@ -589,6 +591,7 @@ s7_pointer analyze_deps_file(char *pkg, char *tgt)
 /*     return depslist; */
 /* } */
 
+/* returns gc_protected deps list */
 s7_pointer get_deps(char *_pkg, char *tgt) // , s7_pointer deps_list)
 {
 #if defined(DEBUG_TRACE)
@@ -612,9 +615,9 @@ s7_pointer get_deps(char *_pkg, char *tgt) // , s7_pointer deps_list)
     (void)pkg;
 
     s7_pointer deps_list = analyze_deps_file(pkg, tgt);
+    /* deps_list is gc_protected */
 
-    //    {
-        s7_pointer env = s7_inlet(s7,
+    s7_pointer env = s7_inlet(s7,
                               s7_list(s7, 3,
                                       s7_cons(s7,
                                               s7_make_symbol(s7, "deps-list"),
@@ -626,73 +629,76 @@ s7_pointer get_deps(char *_pkg, char *tgt) // , s7_pointer deps_list)
                                       s7_cons(s7,
                                               s7_make_symbol(s7, "tgt"),
                                               s7_make_symbol(s7, tgt))));
-        s7_gc_protect_via_stack(s7, env);
-        s7_gc_unprotect_at(s7, gc_deps_list);
+    s7_gc_protect_via_stack(s7, env);
+    /* deps_list is referenced by env inlet, so we can unprotect it */
+    s7_gc_unprotect_at(s7, gc_deps_list);
 
 #if defined(DEBUG_TRACE)
-        LOG_S7_DEBUG("ENV", env);
+    LOG_S7_DEBUG("ENV", env);
 #endif
 
-        /* char *sexp = */
-        /*     "(begin " */
-        /*     "(format #t \"XXXX depslist: ~A\n\" deps-list)" */
-        /*     ")" */
-        /*     ; */
+    /* char *sexp = */
+    /*     "(begin " */
+    /*     "(format #t \"XXXX depslist: ~A\n\" deps-list)" */
+    /*     ")" */
+    /*     ; */
 
-        s7_flush_output_port(s7, s7_current_output_port(s7));
+    s7_flush_output_port(s7, s7_current_output_port(s7));
 
-        /* char *sexp = */
-        /*     "(let ((p (format #f \"~A/~A\" pkg tgt))) '())" */
-        /*     ; */
-            /* "(let ((p (string-append (symbol->string pkg) \"/\" (symbol->string tgt)))) (format () \"~A~%\" p) '())" */
+    /* char *sexp = */
+    /*     "(let ((p (format #f \"~A/~A\" pkg tgt))) '())" */
+    /*     ; */
+    /* "(let ((p (string-append (symbol->string pkg) \"/\" (symbol->string tgt)))) (format () \"~A~%\" p) '())" */
 
-              /* (let ((path (format #f \"~A/~A\" pkg tgt))) \ */
+    /* (let ((path (format #f \"~A/~A\" pkg tgt))) \ */
 
 
-        char *sexp =
-            "(begin "
-            "  (let* ((path (format #f \"~A/~A\" pkg tgt)) "
-            "         (key `(file ,(symbol path)))) "
-            "  (if-let ((needle (find-if (lambda (x) (equal? key (car x))) deps-list))) "
-            "      (if-let ((deps (cdr needle))) "
-            "        (if (truthy? deps) "
-            "          (let* ((dlist (cadar deps)) "
-            "                 (fixed (map (lambda (lst) "
-            "                                  (if (> (length lst) 1) "
-            "                                      (list->vector lst) lst)) "
-            "                             dlist))) "
-            "            (flatten fixed)) "
-            "            '()) "
-            "         '()) "
-            "       '())))"
-            ;
-        /* (void)sexp; */
+    char *sexp =
+        "(begin "
+        "  (let* ((path (format #f \"~A/~A\" pkg tgt)) "
+        "         (key `(file ,(symbol path)))) "
+        "  (if-let ((needle (find-if (lambda (x) (equal? key (car x))) deps-list))) "
+        "      (if-let ((deps (cdr needle))) "
+        "        (if (truthy? deps) "
+        "          (let* ((dlist (cadar deps)) "
+        "                 (fixed (map (lambda (lst) "
+        "                                  (if (> (length lst) 1) "
+        "                                      (list->vector lst) lst)) "
+        "                             dlist))) "
+        "            (flatten fixed)) "
+        "            '()) "
+        "         '()) "
+        "       '())))"
+        ;
+    /* (void)sexp; */
 
-        /* log_debug("sexp: %s", sexp); */
+    /* log_debug("sexp: %s", sexp); */
 
-        /* errno = 0; */
-        /* char *x = malloc(10024); */
-        /* if (errno) { */
-        /*     log_error("MALLOC FAIL"); */
-        /*     exit(1); */
-        /* } else { */
-        /*     free(x); */
-        /*     log_info("malloc ok"); */
-        /* } */
+    /* errno = 0; */
+    /* char *x = malloc(10024); */
+    /* if (errno) { */
+    /*     log_error("MALLOC FAIL"); */
+    /*     exit(1); */
+    /* } else { */
+    /*     free(x); */
+    /*     log_info("malloc ok"); */
+    /* } */
 
-        /* s7_pointer deps = s7_list(s7, 1, s7_make_symbol(s7, "testdep")); */
+    /* s7_pointer deps = s7_list(s7, 1, s7_make_symbol(s7, "testdep")); */
 
-        s7_pointer deps = s7_eval_c_string_with_environment(s7, sexp, env);
-        s7_gc_unprotect_via_stack(s7, env);
-        gc_deps = s7_gc_protect(s7, deps);
-        s7_flush_output_port(s7, s7_current_output_port(s7));
+    s7_pointer deps = s7_eval_c_string_with_environment(s7, sexp, env);
+    gc_module_deps = s7_gc_protect(s7, deps);
+
+    /* we're done with env and sexp, so unprotect */
+    s7_gc_unprotect_via_stack(s7, env);
+    /* s7_flush_output_port(s7, s7_current_output_port(s7)); */
 
 #if defined(DEBUG_TRACE)
-        LOG_S7_DEBUG("DEPS", deps);
+    LOG_S7_DEBUG("DEPS", deps);
 #endif
-        s7_flush_output_port(s7, s7_current_output_port(s7));
-        s7_flush_output_port(s7, s7_current_error_port(s7));
-        // }
+    s7_flush_output_port(s7, s7_current_output_port(s7));
+    s7_flush_output_port(s7, s7_current_error_port(s7));
+    // }
 
     return deps;  // s7_list(s7, 1, s7_make_symbol(s7, "Foobar"));
 }

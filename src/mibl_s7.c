@@ -988,6 +988,7 @@ EXPORT void mibl_s7_run(char *main_script, char *ws)
     /* **************************************************************** */
 
     /* log_info("RESULT: %s\n", TO_STR(result)); */
+    fprintf(stderr, "s7_gc_unprotect_at _main: %ld\n", (long)_main);
     s7_gc_unprotect_at(s7, (s7_int)_main);
 
     errmsg = (char*)s7_get_output_string(s7, s7_current_error_port(s7));

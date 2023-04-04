@@ -214,6 +214,7 @@ LOCAL s7_pointer _read_dunefile(char *path) //, char *fname)
                 log_info(RED "fixing baddot in %s" CRESET,
                          utstring_body(dunefile_name));
                 s7_close_input_port(s7, dunefile_port);
+                /* fprintf(stderr, "s7_gc_unprotect_at: %ld", (long)dune_gc_loc); */
                 s7_gc_unprotect_at(s7, dune_gc_loc);
 
                 s7_show_stack(s7);
@@ -310,6 +311,7 @@ LOCAL s7_pointer _read_dunefile(char *path) //, char *fname)
         }
     }
     s7_gc_unprotect_at(s7, dune_gc_loc);
+    /* fprintf(stderr, "s7_gc_unprotect_at dune_gc_loc: %ld\n", (long)dune_gc_loc); */
     s7_close_input_port(s7, dunefile_port);
 
 #if defined(DEBUG_TRACE)
@@ -1190,20 +1192,24 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
         }
 #endif
 
+        /* get_deps returns mdeps protected by gc_module_deps */
         s7_pointer mdeps;
         if (ftype == TAG_ML)
             mdeps = get_deps(pkg_name, fname); // , deps_list);
         else if (ftype == TAG_MLI)
             mdeps = get_deps(pkg_name, fname); // , deps_list);
-        else
+        else {
             mdeps = s7_nil(s7);
+            gc_module_deps = s7_gc_protect(s7, mdeps);
+        }
 #if defined(DEBUG_TRACE)
         if (mibl_debug_deps) {
             log_debug("fname: %s", fname);
             LOG_S7_DEBUG("MDEPS", mdeps);
         }
 #endif
-        s7_gc_unprotect_at(s7, gc_deps_list);
+        /* fprintf(stderr, "s7_gc_unprotect_at gc_deps_list: %ld\n", (long)gc_deps_list); */
+        /* s7_gc_unprotect_at(s7, gc_deps_list); */
 
         s7_pointer ml_assoc;
         if (ftype == TAG_MLY) {
@@ -1234,6 +1240,9 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
                                        s7_make_symbol(s7, fname),
                                        mdeps));
         }
+        /* mdeps is now protected by inclusion in ml_assoc, so unprotect it*/
+        s7_gc_unprotect_at(s7, gc_module_deps);
+
         /* s7_pointer ml_deps_assoc = s7_cons(s7, deps_kw, */
         /*                                    s7_make_symbol(s7, "Foo")); */
 
@@ -1471,14 +1480,16 @@ LOCAL void _update_pkg_sigs(s7_pointer pkg_tbl,
 
         /* s7_pointer sig_assoc = s7_list(s7, 2, mname_sym, mli_file); */
 
-        s7_pointer mdeps;
+        s7_pointer mdeps; /* gc protected by gc_module_deps */
         mdeps = get_deps(pkg_name, fname); // , deps_list);
-        s7_gc_unprotect_at(s7, gc_deps_list);
 
         s7_pointer sig_assoc = s7_cons(s7, mname_sym,
                                        s7_cons(s7,
                                                mli_file,
                                                mdeps));
+        s7_gc_protect_via_stack(s7, sig_assoc);
+        /* mdeps is now protected by inclusion in sig_assoc, so unprotect it*/
+        s7_gc_unprotect_at(s7, gc_module_deps);
 
 #if defined(DEBUG_TRACE)
         if (mibl_debug_traversal) {
@@ -1496,6 +1507,7 @@ LOCAL void _update_pkg_sigs(s7_pointer pkg_tbl,
 
             s7_pointer statics_assoc =
                 s7_list(s7, 2, static_kw, sig_assoc);
+            s7_gc_unprotect_via_stack(s7, sig_assoc);
 
             s7_pointer sigs_assoc = s7_list(s7, 2,
                                             sigs_kw, statics_assoc);
@@ -1567,6 +1579,7 @@ LOCAL void _update_pkg_sigs(s7_pointer pkg_tbl,
                 s7_pointer new_sigs_alist_cdr =
                     s7_append(s7, sigs_alist_cdr,
                               s7_list(s7, 1, sig_assoc));
+                s7_gc_unprotect_via_stack(s7, sig_assoc);
 
 #if defined(DEBUG_TRACE)
                 if (mibl_debug_traversal)
@@ -1671,7 +1684,8 @@ LOCAL void _update_pkg_structs(s7_pointer pkg_tbl,
         s7_pointer mdeps;
         mdeps = get_deps(pkg_name, fname); // , deps_list);
         /* gc_mdeps = gc_protect(s7, mdeps); */
-        s7_gc_unprotect_at(s7, gc_deps_list);
+        /* fprintf(stderr, "s7_gc_unprotect_at gc_deps_list 3: %ld\n", (long)gc_deps_list); */
+        /* s7_gc_unprotect_at(s7, gc_deps_list); */
     /* LOG_S7_DEBUG("pkg_key 3", pkg_key); */
 
         s7_pointer struct_assoc =
@@ -1680,6 +1694,8 @@ LOCAL void _update_pkg_structs(s7_pointer pkg_tbl,
                             s7_make_symbol(s7, fname),
                             mdeps));
                     /* s7_make_symbol(s7, fname)); */
+        /* mdeps is now protected by inclusion in ml_assoc, so unprotect it*/
+        s7_gc_unprotect_at(s7, gc_module_deps);
 
         /* s7_list(s7, 2, mname_sym, s7_make_symbol(s7, fname)); */
 #if defined(DEBUG_TRACE)
@@ -4362,6 +4378,7 @@ EXPORT s7_pointer load_project(const char *home_sfx, const char *traversal_root)
         /* fprintf(stdout, "%s\n", NM_TO_STR("*mibl-project*")); */
         s7_flush_output_port(s7, s7_current_output_port(s7));
         s7_flush_output_port(s7, s7_current_error_port(s7));
+        /* fprintf(stderr, "s7_gc_unprotect_at gc_loc: %ld\n", (long)gc_loc); */
         s7_gc_unprotect_at(s7, gc_loc);
         fflush(NULL);
 
