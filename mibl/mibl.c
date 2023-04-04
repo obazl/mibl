@@ -48,7 +48,7 @@ enum OPTS {
     FLAG_SHOW_PKG,
     FLAG_SHOW_TRAVERSAL,
     FLAG_DEBUG,
-    FLAG_DEBUG_REPORT,
+    FLAG_REPORT_PARSETREE,
     FLAG_DEBUG_S7_LOADS,
 #if defined(DEV_MODE)
     FLAG_DEBUG_DEPS,
@@ -95,6 +95,11 @@ int _update_mibl_config(struct option options[])
     if (options[FLAG_EMIT_PARSETREE].count)
         mibl_config.emit_parsetree = true;
 
+    if (options[FLAG_REPORT_PARSETREE].count) {
+        mibl_config.emit_parsetree = true;
+        /* mibl_s7_set_flag("*mibl-report-parsetree*", true); */
+    }
+
     return 0;                   /* success */
 }
 
@@ -123,9 +128,6 @@ void _update_s7_globals(struct option options[])
     if (options[FLAG_DEBUG_S7_LOADS].count)
         mibl_s7_set_flag("*mibl-debug-s7-loads*", true);
 
-    if (options[FLAG_DEBUG_REPORT].count)
-        mibl_s7_set_flag("*mibl-debug-report*", true);
-
     if (options[FLAG_DEV_MODE].count)
         mibl_s7_set_flag("*mibl-dev-mode*", true);
 
@@ -149,9 +151,6 @@ void _update_s7_globals(struct option options[])
 
     if (options[FLAG_EMIT_MIBL].count)
         mibl_s7_set_flag("*mibl-emit-mibl*", true);
-
-    /* if (options[FLAG_EMIT_PARSETREE].count) */
-    /*     mibl_s7_set_flag("*mibl-emit-parsetree*", true); */
 
     if (options[FLAG_EMIT_S7].count)
         mibl_s7_set_flag("*mibl-emit-s7*", true);
@@ -210,7 +209,7 @@ void _print_usage(void) {
     printf("\n");
     printf("Flags:\n");
     printf("  Emit flags control file writing.\n");
-    printf("\t--emit-parsetree\tWrite file PARSETREE.{mibl,s7}.\n");
+    printf("\t--emit-parsetree\tWrite files PARSETREE.{mibl,s7}.\n");
     printf("\t--emit-wss\t\tSet var *mibl-emit-wss*; default script writes WS files.\n");
     printf("\t--emit-pkgs\t\tSet var *mibl-emit-pkgs; default script writes PKG files.\n");
 
@@ -222,6 +221,9 @@ void _print_usage(void) {
     /* printf("\t--clean\t\t\tSet var *mibl-clean*; default script removes *.mibl and *.s7 files.\n"); */
     /* printf("\t--clean-mibl\t\tSet var *mibl-clean-mibl*; default script removes *.mibl files.\n"); */
     /* printf("\t--clean-s7\t\tSet var *mibl-clean-s7*; default script removes *.s7 files.\n"); */
+
+    printf("  Report flags control file writing and halt.\n");
+    printf("\t--report-parsetree\tWrite files PARSETREE.{mibl,s7} and halt.\n");
 
     printf("\n");
     printf("  Show flags control output to stdout.\n");
@@ -291,8 +293,8 @@ static struct option options[] = {
                          .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_DEBUG_PPX] = {.long_name="debug-ppx",
                        .flags=GOPT_ARGUMENT_FORBIDDEN},
-    [FLAG_DEBUG_REPORT] = {.long_name="debug-report",
-                       .flags=GOPT_ARGUMENT_FORBIDDEN},
+    [FLAG_REPORT_PARSETREE] = {.long_name="report-parsetree",
+                               .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_DEBUG_S7] = {.long_name="debug-s7",
                        .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_DEBUG_S7_LOADS] = {.long_name="debug-s7-loads",

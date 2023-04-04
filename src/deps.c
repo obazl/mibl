@@ -298,13 +298,12 @@ s7_pointer analyze_deps_file(char *pkg, char *tgt)
         /*     log_info("\t%s",*p); */
         /* } */
     }
+    log_info(RED "analyze traversal ct:" CRESET " %d", tct);
+#endif
 
     UT_string *fname;
     utstring_new(fname);
     utstring_printf(fname, "%s/%s", pkg, tgt);
-
-    log_info(RED "analyze traversal ct:" CRESET " %d", tct);
-#endif
 
     char **argv = calloc(7, sizeof(char*));
     argv[0] = "codept";
@@ -343,24 +342,17 @@ s7_pointer analyze_deps_file(char *pkg, char *tgt)
     log_debug("CODEPT result string: %s", result);
 #endif
 
-    log_debug("XXXX opening depgraph_port");
     s7_pointer depgraph_port = s7_open_input_string(s7, result);
     s7_gc_protect_via_stack(s7, depgraph_port);
 #if defined(DEBUG_TRACE)
     LOG_S7_DEBUG("depgraph_port", depgraph_port);
 #endif
-    log_debug("XXXX reading depgraph");
     s7_pointer depgraph = s7_read(s7, depgraph_port);
-    fprintf(stderr, "UUUU readed\n");
-    log_debug("XXXX readed depgraph_port");
+
     s7_gc_protect_via_stack(s7, depgraph);
     s7_gc_unprotect_via_stack(s7, depgraph_port);
     s7_close_input_port(s7, depgraph_port);
-    log_debug("XXXX closed depgraph_port");
 
-    /* log_debug("aaXXXXXXXXXXXXXXXX"); */
-
-    /* gc_depgraph = s7_gc_protect(s7, depgraph); */
 #if defined(DEBUG_TRACE)
     LOG_S7_DEBUG("depgraph", depgraph);
 #endif
@@ -422,8 +414,7 @@ s7_pointer analyze_deps_file(char *pkg, char *tgt)
     s7_gc_unprotect_via_stack(s7, depgraph);
     s7_gc_unprotect_via_stack(s7, env);
 
-    log_debug("returning deps_list");
-   return deps_list;
+    return deps_list;
 }
 
 /* s7_pointer _ocamldep_deps(UT_array *_ocaml_src_dirs) */
@@ -677,7 +668,7 @@ s7_pointer get_deps(char *_pkg, char *tgt) // , s7_pointer deps_list)
             ;
         /* (void)sexp; */
 
-        log_debug("sexp: %s", sexp);
+        /* log_debug("sexp: %s", sexp); */
 
         /* errno = 0; */
         /* char *x = malloc(10024); */
@@ -690,7 +681,7 @@ s7_pointer get_deps(char *_pkg, char *tgt) // , s7_pointer deps_list)
         /* } */
 
         /* s7_pointer deps = s7_list(s7, 1, s7_make_symbol(s7, "testdep")); */
-        log_debug("bbbbbbbbbbbbbbbb");
+
         s7_pointer deps = s7_eval_c_string_with_environment(s7, sexp, env);
         s7_gc_unprotect_via_stack(s7, env);
         gc_deps = s7_gc_protect(s7, deps);

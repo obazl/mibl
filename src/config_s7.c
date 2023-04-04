@@ -128,7 +128,6 @@ static char *mibl_s7_flags[] = {
     "*mibl-debug-modules*",
     "*mibl-debug-prologues*",
     "*mibl-debug-ppx*",
-    "*mibl-debug-report*",
     "*mibl-debug-rule-stanzas*",
     "*mibl-debug-s7*",
     "*mibl-debug-s7-loads*",
@@ -145,7 +144,7 @@ static char *mibl_s7_flags[] = {
     /* "*mibl-emit-parsetree*", */
     "*mibl-emit-pkgs*",
     "*mibl-emit-project*",
-    "*mibl-emit-s7*",
+    /* "*mibl-emit-s7*", */
     "*mibl-emit-starlark*",
     "*mibl-emit-wss*",
     "*mibl-js-emit-rules-closure*",
@@ -158,6 +157,7 @@ static char *mibl_s7_flags[] = {
     "*mibl-ns-topdown*",
     "*mibl-ppxlib-ppx-driver*",
     "*mibl-quiet*",
+    "*mibl-report-parsetree*",
     "*mibl-shared-deps*",
     "*mibl-shared-opts*",
     /* "*mibl-shared-ppx-pkg*", */
@@ -575,7 +575,7 @@ void _s7_init(void)
 #endif
 
     s7 = s7_init();             /* @libs7//src:s7.c */
-    s7_gc_on(s7, s7_f(s7));
+    /* s7_gc_on(s7, s7_f(s7)); */
 
 #if defined(DEBUG_TRACE)
     s7_pointer lp = s7_load_path(s7);
@@ -635,7 +635,7 @@ void _s7_init(void)
     /* trap error messages */
     /* close_error_config(); */
     error_config();
-    log_debug("running init_error_handlers");
+    /* log_debug("running init_error_handlers"); */
     init_error_handlers_dune();
 
     /* tmp dir */

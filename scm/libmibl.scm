@@ -105,7 +105,7 @@
   (if *mibl-emit-pkgs*
       (emit-mibl-pkgs))
 
-  ;; (if *mibl-debug-report*
+  ;; (if *mibl-report-parsetree*
   ;;     (emit-mibl-project))
 
   ;; (return)

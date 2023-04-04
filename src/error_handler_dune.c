@@ -23,7 +23,7 @@ s7_int gc_loc = -1;
 
 s7_pointer _s7_read_thunk_catcher(s7_scheme *s7, s7_pointer args)
 {
-    LOG_S7_DEBUG("s7_read_thunk_catcher args", args);
+    /* LOG_S7_DEBUG("s7_read_thunk_catcher args", args); */
     /* log_info("s7_read_thunk_catcher arg0: %s", TO_STR(s7_car(args))); */
     /* log_info("s7_read_thunk_catcher arg1: %s", TO_STR(s7_cadr(args))); */
     /* s7_show_stack(s7); */
@@ -192,14 +192,14 @@ s7_pointer _s7_read_error_handler(s7_scheme *s7, s7_pointer args)
 
 void init_error_handlers_dune(void)
 {
-    log_debug("init_error_handlers_dune");
+    /* log_debug("init_error_handlers_dune"); */
     s7_read_thunk_catcher = s7_define_function(s7, "s7-read-thunk-catcher", _s7_read_thunk_catcher,
                                                2, // required args
                                                0, // optional args
                                                false, // rest_arg
                                                "read-thunk error handler"); // docstring
 
-    log_debug("s7_read_thunk_catcher: %d\n", s7_is_defined(s7, "s7-read-thunk-catcher"));
+    /* log_debug("s7_read_thunk_catcher: %d\n", s7_is_defined(s7, "s7-read-thunk-catcher")); */
 
    s7_define_function(s7, "error-handler", _s7_error_handler,
                       1, 0, false, "our error handler");

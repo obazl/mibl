@@ -72,7 +72,7 @@ void s7_show_stack(s7_scheme *sc);
 /* TODO: validate dunefile_port */
 /* s7 defined in s7_config.c */
 LOCAL s7_pointer _s7_read_thunk(s7_scheme *s7, s7_pointer args) {
-    printf("_s7_read_thunk\n");
+    /* printf("_s7_read_thunk\n"); */
     return s7_read(s7, g_dunefile_port);
 }
 
@@ -96,8 +96,8 @@ LOCAL s7_pointer s7_read_thunk;
 /* } */
 
 LOCAL s7_pointer _mibl_read_thunk(s7_scheme *s7, s7_pointer args) {
-    fprintf(stderr, "_mibl_read_thunk\n");
-    fprintf(stderr, "s7_read_thunk_catcher: %d\n", s7_is_defined(s7, "s7-read-thunk-catcher"));
+    /* fprintf(stderr, "_mibl_read_thunk\n"); */
+    /* fprintf(stderr, "s7_read_thunk_catcher: %d\n", s7_is_defined(s7, "s7-read-thunk-catcher")); */
     /* s7_pointer body = s7_eval_c_string(s7, "(lambda () (+ #f 2))"); */
     /* s7_pointer err = s7_eval_c_string(s7, "(lambda (type info) 'oops)"); */
     s7_pointer result = s7_call_with_catch(s7,
@@ -1722,13 +1722,11 @@ LOCAL void _update_pkg_structs(s7_pointer pkg_tbl,
                 if (mibl_debug_traversal) {
                     LOG_S7_DEBUG("pkg_key", pkg_key);
                     LOG_S7_DEBUG("updated pkg_alist", new_pkg_alist);
-                    fprintf(stderr, "GGGGGGGGGGGGGGGG\n");
                     LOG_S7_DEBUG("pkg_key", pkg_key);
                 }
 #endif
 
                 s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg_alist);
-                log_debug("hhhhhhhhhhhhhhhh");
             } else {
                 log_debug("OLD");
 
@@ -4170,10 +4168,19 @@ EXPORT s7_pointer load_project(const char *home_sfx, const char *traversal_root)
     /* s7_gc_on(s7, s7_f(s7)); */
 
     /* TRAVERSAL STARTS HERE */
+    /* fprintf(stderr, "/"); */
+    bool swap = false;
     if (NULL != tree) {
         while( (ftsentry = fts_read(tree)) != NULL) {
             tct++;
-            log_debug("traversal ct: %d", tct);
+            /* log_debug("traversal ct: %d", tct); */
+            if (swap) {
+                fprintf(stderr, "/\b");
+                swap = !swap;
+            } else {
+                fprintf(stderr, "\\\b");
+                swap = !swap;
+            }
 
             s7_flush_output_port(s7, s7_current_output_port(s7));
             s7_flush_output_port(s7, s7_current_error_port(s7));
@@ -4326,7 +4333,7 @@ EXPORT s7_pointer load_project(const char *home_sfx, const char *traversal_root)
     } else {
         log_error("TREE == NULL");
     }
-
+    fprintf(stderr, "\b");
     /* s7_gc_on(s7, s7_t(s7)); */
 
     /* s7_pointer pkg_tbl = */

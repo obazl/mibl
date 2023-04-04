@@ -796,7 +796,7 @@ EXPORT void mibl_s7_run(char *main_script, char *ws)
     /* } */
 
     if (s7_name_to_value(s7, "*mibl-dev-mode*") == s7_t(s7)) {
-        if (s7_name_to_value(s7, "*mibl-debug-report*") == s7_t(s7)) {
+        if (s7_name_to_value(s7, "*mibl-report-parsetree*") == s7_t(s7)) {
             log_error("debug:report is incompatible with --dev");
             return;
         }
@@ -806,11 +806,11 @@ EXPORT void mibl_s7_run(char *main_script, char *ws)
         }
     }
 
-    if (s7_name_to_value(s7, "*mibl-debug-report*") == s7_t(s7)) {
+    if (s7_name_to_value(s7, "*mibl-report-parsetree*") == s7_t(s7)) {
         mibl_config.emit_parsetree = true;
         mibl_s7_set_flag("*mibl-emit-mibl*", true);
         mibl_s7_set_flag("*mibl-emit-s7*", true);
-        mibl_s7_set_flag("*mibl-emit-result*", true);
+        /* mibl_s7_set_flag("*mibl-emit-result*", true); */
         /* log_debug("DEBUG REPORT"); */
     }
 
@@ -915,6 +915,8 @@ EXPORT void mibl_s7_run(char *main_script, char *ws)
         if (s7_name_to_value(s7, "*mibl-dev-mode*") == s7_f(s7)) {
             /* log_debug("EMITTING PARSETREE"); */
             _emit_mibl_file("PARSETREE");
+            //FIXME: cleanup
+            exit(EXIT_SUCCESS);
         } else {
             log_error("--emit-parsetree incompatible with --dev");
         }
