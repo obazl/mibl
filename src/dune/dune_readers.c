@@ -48,10 +48,13 @@ s7_pointer g_s7_read_thunk_catcher(s7_scheme *s7, s7_pointer args)
     /* if arg0 == 'read-error and */
     if (strstr(TO_STR(s7_cadr(args)),
                "(\"unexpected close paren:") != NULL) {
+
+        const char *dunefile = s7_port_filename(s7, g_dunefile_port);
+
         /* printf("XXXXXXXXXXXXXXXX\n"); */
         /* if (strstr(errmsg, "BADDOT") != NULL) { */
-        log_info(RED "fixing baddot in %s" CRESET,
-                 utstring_body(dunefile_name));
+        log_info(RED "fixing baddot in %s" CRESET, dunefile);
+                 /* utstring_body(dunefile_name)); */
         s7_close_input_port(s7, g_dunefile_port);
 
         //FIXME FIXME
@@ -65,7 +68,7 @@ s7_pointer g_s7_read_thunk_catcher(s7_scheme *s7, s7_pointer args)
         /* init_error_handlers(); */
 
         // FIXME: test case: 'include' after baddot
-        s7_pointer fixed = fix_baddot(dunefile_name);
+        s7_pointer fixed = fix_baddot(dunefile); //_name);
         /* s7_pointer fixed = s7_eval_c_string(s7, "'(foob)"); */
 #if defined(DEBUG_TRACE)
         if (mibl_debug) log_debug(RED "FIXED:" CRESET " %s",
@@ -164,7 +167,7 @@ void *read_dune_package(UT_string *dunefile_name)
     if (mibl_trace) log_trace("read_dune_package: %s", utstring_body(dunefile_name));
 #endif
 
-    char *dunestring = dunefile_to_string(dunefile_name);
+    char *dunestring = dunefile_to_string(utstring_body(dunefile_name));
 /* #if defined(DEBUG_TRACE) */
 /*     if (mibl_debug) log_debug("readed str: %s", dunestring); */
 /* #endif */
@@ -276,12 +279,17 @@ EXPORT UT_array *get_pkg_executables(void *_stanzas)
     iter = s7_make_iterator(s7, executables);
         //gc_loc = s7_gc_protect(s7, iter);
     if (!s7_is_iterator(iter)) {
-        log_error("not an iterator");
+        log_error("s7_make_iterator failed");
+#if defined(DEBUG_TRACE)
         LOG_S7_DEBUG("not an iterator", iter);
+#endif
     }
-    if (s7_iterator_is_at_end(s7, iter))
+    if (s7_iterator_is_at_end(s7, iter)) {
+        log_error("s7_iterator_is_at_end prematurely");
+#if defined(DEBUG_TRACE)
         LOG_S7_DEBUG("iterator prematurely done", iter);
-
+#endif
+    }
     char *f;
     while (true) {
         binfile = s7_iterate(s7, iter);
@@ -380,12 +388,17 @@ EXPORT UT_array *get_pkg_stublibs(char *pkg, void *_stanzas)
     iter = s7_make_iterator(s7, stublibs);
         //gc_loc = s7_gc_protect(s7, iter);
     if (!s7_is_iterator(iter)) {
-        log_error("not an iterator");
+        log_error("s7_is_iterator fail");
+#if defined(DEBUG_TRACE)
         LOG_S7_DEBUG("not an iterator", iter);
+#endif
     }
-    if (s7_iterator_is_at_end(s7, iter))
+    if (s7_iterator_is_at_end(s7, iter)) {
+        log_error("s7_iterator_is_at_end prematurely");
+#if defined(DEBUG_TRACE)
         LOG_S7_DEBUG("iterator prematurely done", iter);
-
+#endif
+    }
     char *f;
     while (true) {
         stublib_file = s7_iterate(s7, iter);
@@ -400,11 +413,12 @@ EXPORT UT_array *get_pkg_stublibs(char *pkg, void *_stanzas)
     return stubs;
 }
 
-char *dunefile_to_string(UT_string *dunefile_name)
+char *dunefile_to_string(const char *dunefile_name)
 {
 #if defined(DEBUG_TRACE)
     if (mibl_trace)
-        log_trace("dunefile_to_string: %s", utstring_body(dunefile_name));
+        log_trace("dunefile_to_string: %s", dunefile_name);
+                  //utstring_body(dunefile_name));
 #endif
     /* core/dune file size: 45572 */
     // 2K
@@ -416,15 +430,19 @@ char *dunefile_to_string(UT_string *dunefile_name)
 
     /* FIXME: what about e.g. unicode in string literals? */
     errno = 0;
-    FILE *instream = fopen(utstring_body(dunefile_name), "r");
+    // FILE *instream = fopen(utstring_body(dunefile_name), "r");
+    FILE *instream = fopen(dunefile_name, "r");
     if (instream == NULL) {
         printf(RED "ERROR" CRESET "fopen failure: %s\n",
-               utstring_body(dunefile_name));
+               dunefile_name);
+               /* utstring_body(dunefile_name)); */
         perror(NULL);
         exit(EXIT_FAILURE);
     } else {
 #if defined(DEBUG_TRACE)
-        if (mibl_debug) log_debug("fopened %s", utstring_body(dunefile_name));
+        if (mibl_debug) log_debug("fopened %s",
+                                  dunefile_name);
+                                  /* utstring_body(dunefile_name)); */
 #endif
     }
     fseek(instream, 0, SEEK_END);
@@ -435,7 +453,9 @@ char *dunefile_to_string(UT_string *dunefile_name)
 
     if (fileSize > DUNE_BUFSZ) {
         printf(RED "ERROR:" CRESET
-               " dune file '%s' size (%" PRIu64 " > DUNE_BUFSZ (%d)\n", utstring_body(dunefile_name), fileSize, DUNE_BUFSZ);
+               " dune file '%s' size (%" PRIu64 " > DUNE_BUFSZ (%d)\n",
+               dunefile_name, // utstring_body(dunefile_name),
+               fileSize, DUNE_BUFSZ);
         log_error("dune file size (%d) > DUNE_BUFSZ (%d)", fileSize, DUNE_BUFSZ);
         exit(EXIT_FAILURE);     /* FIXME: exit gracefully */
     }
@@ -457,9 +477,11 @@ char *dunefile_to_string(UT_string *dunefile_name)
             if (read_ct != DUNE_BUFSZ) {
                 if (ferror(instream) != 0) {
                     printf(RED "ERROR" CRESET " fread error 1 for %s\n",
-                              utstring_body(dunefile_name));
+                           dunefile_name);
+                              /* utstring_body(dunefile_name)); */
                     log_error("fread error 1 for %s\n",
-                              utstring_body(dunefile_name));
+                              dunefile_name);
+                              /* utstring_body(dunefile_name)); */
                     exit(EXIT_FAILURE); //FIXME: exit gracefully
                 } else {
                     // readed < DUNE_BUFSZ?
@@ -478,16 +500,20 @@ char *dunefile_to_string(UT_string *dunefile_name)
             if (read_ct != outFileSizeCounter) {
                 if (ferror(instream) != 0) {
                     printf(RED "ERROR" CRESET "fread error 2 for %s\n",
-                              utstring_body(dunefile_name));
+                           dunefile_name);
+                              /* utstring_body(dunefile_name)); */
                     log_error("fread error 2 for %s\n",
-                              utstring_body(dunefile_name));
+                              dunefile_name);
+                              /* utstring_body(dunefile_name)); */
                     exit(EXIT_FAILURE); //FIXME: exit gracefully
                 } else {
                     if (feof(instream) == 0) {
                         printf(RED "ERROR" CRESET "fread error 3 for %s\n",
-                              utstring_body(dunefile_name));
+                               dunefile_name);
+                              /* utstring_body(dunefile_name)); */
                         log_error("fread error 3 for %s\n",
-                                  utstring_body(dunefile_name));
+                                  dunefile_name);
+                                  /* utstring_body(dunefile_name)); */
                         exit(EXIT_FAILURE); //FIXME: exit gracefully
                     } else {
                         /* printf("bbbbbbbbbbbbbbbb\n"); */

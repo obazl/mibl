@@ -266,7 +266,7 @@ void close_error_config(void) // s7_pointer err_port)
 /*     return fixbuf; */
 /* } */
 
-s7_pointer fix_baddot(UT_string *dunefile_name)
+s7_pointer fix_baddot(const char *dunefile_name)
 {
     //FIXME: this duplicates the code in load_project:_read_dunefile
 #if defined(DEBUG_TRACE)

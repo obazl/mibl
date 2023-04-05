@@ -226,7 +226,7 @@ LOCAL s7_pointer _read_dunefile(char *path) //, char *fname)
                 /* init_error_handlers(); */
 
                 // FIXME: test case: 'include' after baddot
-                s7_pointer fixed = fix_baddot(dunefile_name);
+                s7_pointer fixed = fix_baddot(utstring_body(dunefile_name));
                 /* s7_pointer fixed = s7_eval_c_string(s7, "'(foob)"); */
 #if defined(DEBUG_TRACE)
                 if (mibl_debug_traversal)
