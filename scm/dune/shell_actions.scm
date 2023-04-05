@@ -41,8 +41,8 @@
 ;;                 tgt)
 ;;               arg)))))
 
-;; (system "...script..."), (bash "...script...")
-(define (normalize-action-shell-cmd ws pkg action action-list targets deps)
+;; (system "...script..."), (bash "...script..."), (echo ...) etc.
+(define (normalize-action-shell-cmd ws pkg action action-list tools targets deps)
   ;; FIXME: shell cmd args may include filename literals; find way to expand?
   ;; FIXME: may include ${target}
   ;; FIXME: in general: expand all '${}' in args
@@ -62,6 +62,7 @@
          )
     (if *mibl-debug-s7*
         (format #t "~A: ~A~%" (uwhite "expanded-args") expanded-args))
+    (set-cdr! tools `((:sh-tool . ,tool)))
     `((:cmd
        (:tool ,tool)
        (:args ,@expanded-args)))))

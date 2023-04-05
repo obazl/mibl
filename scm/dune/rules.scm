@@ -2,18 +2,21 @@
 
 (require 'expanders.scm)
 
-(define (normalize-action-rule ws pkg rule-alist targets deps)
+;;FIXME: better name
+(define (-normalize-rule-action ws pkg tools rule-alist targets deps)
   (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*)
       (begin
-        (format #t "~A\n" (ublue "normalize-action-rule"))
+        (format #t "~A\n" (ublue "-normalize-rule-action"))
         (format #t "~A: ~A\n" (blue "rule-alist") rule-alist)
+        (format #t "~A: ~A\n" (blue "tools") tools)
         (format #t "~A: ~A\n" (blue "deps") deps)
         (format #t "~A: ~A\n" (blue "targets") targets)
         (format #t "~A: ~A\n" (blue "ws") ws)))
-  (let* ((nzaction (actions:normalize ws pkg rule-alist targets deps))
+  (let* ((mibl-action (rule-action:normalize ws pkg rule-alist tools targets deps))
          (_ (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*)
                 (format #t "~A: ~A\n"
-                        (green "normalized action") nzaction)))
+                        (green "normalized action") mibl-action)))
+         ;; normalized action: (:cmd (:tool...) (:args...)) plus stdio (:stdout...) etc.
          ;; (_ (error 'X "STOP normalize-action"))
          (package (if-let ((p (assoc-val 'package rule-alist))) (car p)))
          (mode (if-let ((m (assoc-val 'mode rule-alist))) (car m)))
@@ -26,21 +29,29 @@
          (enabled-if (if-let ((p (assoc-val 'enabled_if rule-alist)))
                              (car p)))
 
-         ;; (rule-tag (-action->rule-tag nzaction))
+         ;; (rule-tag (-action->rule-tag mibl-action))
          ;; (_ (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*) (format #t "rule-tag: ~A\n" rule-tag)))
          ;; (_ (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*) (format #t "~A: ~A\n" (green "TARGETS") targets)))
+         (mibl-trace-let "mibl-action" mibl-action)
          (r-alist (if (null? targets)
-                      (list (if (assoc :progn nzaction)
-                                (cons :actions (cdar nzaction))
-                                (cons :actions nzaction)))
+                      (list (if (assoc :progn mibl-action)
+                                ;; (cons :actions (cdar mibl-action))
+                                (cdar mibl-action)
+                                `,@mibl-action))
+                                ;; (cons :actions mibl-action)))
                       (list targets ;;(list :outputs `,@targets)
                             ;; (cons ':deps deps)
-                            (if (assoc :progn nzaction)
-                                (cons :actions (cdar nzaction))
-                                (cons :actions nzaction)))))
-         (r-alist (if-let ((ctx (assoc :ctx nzaction)))
+                            (if (assoc :progn mibl-action)
+                                (cdar mibl-action)
+                                ;; (cons :actions (cdar mibl-action))
+                                `,@mibl-action))))
+                                ;;(cons :actions mibl-action)))))
+         (mibl-trace-let "r-alist" r-alist)
+         ;; (_  (error 'x "x"))
+         (r-alist (if-let ((ctx (assoc :ctx mibl-action)))
                           (cons ctx r-alist)
                           r-alist))
+         (r-alist (cons tools r-alist))
          (r-alist (if deps ;; (null? deps) ???
                       (cons deps r-alist)
                       ;; (cons `(:Deps ,@deps) r-alist)
@@ -162,7 +173,7 @@
           (begin
             (format #t "~A\n" (bgblue "dune-rule->mibl"))
             (format #t "~A: ~A\n" (blue "ws") ws)
-            (format #t "~A: ~A\n" (blue "pkg") pkg)
+            (format #t "~A: ~A\n" (blue "pkg") (assoc-val :pkg-path pkg))
             (format #t "~A: ~A\n" (blue "stanza") stanza)))
       ;; for other stanza types we can normalize fields in isolation. For
       ;; 'rule' stanzas, we need a higher level of analysis, so we cannot
@@ -183,9 +194,14 @@
              (targets (-handle-rule-targets ws rule-alist deps pkg))
              (_ (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*)
                     (format #t "~A: ~A\n" (green "expanded targets") targets)))
+
+             ;; all dune rule stanzas have an action, so they have a tool
+             (tools `(:tools ,(gensym))) ;; gensym is a placeholder, to be replaced by set-cdr!
+             (mibl-trace-let "tmp :tools" tools)
              )
 
         (if deps
+            ;; FIXME: this updates filegroups table; can we run it as a pipeline task?
             (begin
               (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*)
                   (format #t "~A: ~A~%" (green "iterating deps") deps))
@@ -248,7 +264,7 @@
                         (format #t "handling action rule\n" )
                         (format #t "targets: ~A~%" targets)
                         (format #t "deps: ~A~%" deps)))
-                  (normalize-action-rule ws pkg rule-alist
+                  (-normalize-rule-action ws pkg tools rule-alist
                                          (if (null? targets) (list :targets) targets)
                                          (if deps deps (list :deps))))
 
@@ -256,6 +272,7 @@
                  ;; TODO: use dispatch table dune-action-cmds-no-dsl
                  ;; if stanza contains a field in dune-dsl-cmds then dispatch
                  (else
+                  (error 'rule "rule w/o action?")
                   ;;FIXME: this finds just one action, can list have more than one?
                   ;; no - it would use progn?
                   ;; so we don't need find-if, we can just check car?
@@ -273,7 +290,7 @@
                                                rule-alist)))
                           (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*)
                               (format #t "~A: ~A~%" (green "updated alist") rule-alist))
-                          (normalize-action-rule ws pkg rule-alist targets
+                          (-normalize-rule-action ws pkg tools rule-alist targets
                                                  (if deps deps (list :deps))))
                         (error 'no-action (format #f "rule without action: ~A" rule-alist)))))))
                (mibl-rule (prune-mibl-rule mibl-rule)))

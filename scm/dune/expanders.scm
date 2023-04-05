@@ -18,8 +18,10 @@
 ;; (action (run %{bin:tezos-protocol-compiler}  ./))
 ;; (run %{<} %{targets})
 ;; (action (run %{deps} --test))
+
+;; returns kw used as key in :tool list, e.g. :tools/rewrite.exe
 (define expand-run-tool
-  (lambda (ws tool pkg targets deps)
+  (lambda (ws tool tools pkg targets deps)
     (if (or *mibl-debug-expanders* *mibl-debug-s7*)
         (begin
           (format #t "~A: ~A (~A)~%" (ublue "expand-run-tool") tool (type-of tool))
@@ -56,15 +58,12 @@
            (-expand-pct-tool!? ws tool :tool pkg deps))
 
           (else
-           (let ((tmp (-expand-literal-tool!? ws
-                       (assoc-val :pkg-path pkg)
-                       tool deps)))
-             (if (or *mibl-debug-expanders* *mibl-debug-s7*)
-                 (begin
-                   (format #t "~A: ~A~%" (ured "TMP") tmp)
-                   (format #t "~A: ~A~%" (ured "DEPS") deps)))
+           (let ((expanded-tool (-expand-literal-tool!? ws (assoc-val :pkg-path pkg)
+                                                        tool tools deps)))
+             (mibl-trace "expanded-tool" expanded-tool)
+             (mibl-trace "deps" deps)
              ;; (error 'X "STOP expand-run-tool")
-            tmp))))))))
+            expanded-tool))))))))
 
 (define (find-in-exports ws search-key)
   (if (or *mibl-debug-expanders* *mibl-debug-s7*)
@@ -373,7 +372,7 @@
                 (format #t "~A: ~A~%" (red "pct tool in deps") match))
             (set-cdr! deps
                       (append
-                       (list (list ::tools match
+                       (list (list ::toolsA match
                                    #| (list search-key ;; arg-kw
                                    (cons :pkg pkg-path)
                                    (cons :tgt arg))|# ))
@@ -392,7 +391,7 @@
                             (format #t "~A: ~A~%" (bgred "found") found)))
                       (set-cdr! deps
                                 (append
-                                 (list (cons ::tools
+                                 (list (cons ::toolsB
                                              (list
                                               (cons (symbol->keyword sym)
                                                     ::unresolved
@@ -401,7 +400,7 @@
                       ;; else set to ::unresolved
                       (set-cdr! deps
                                 (append
-                                 (list (cons ::tools
+                                 (list (cons ::toolsC
                                              (list
                                               (cons (if (equal? :dep pfx)
                                                         (symbol->keyword sfx)
@@ -468,12 +467,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; may update deps
-(define (-expand-literal-tool!? ws pkg-path tool deps)
-  (if (or *mibl-debug-expanders* *mibl-debug-s7*)
-      (begin
-        (format #t "~A: ~A (~A)~%" (ublue "-expand-literal-tool!?")
-                tool (type-of tool))
-        (format #t "deps: ~A~%" deps)))
+(define (-expand-literal-tool!? ws pkg-path tool tools deps)
+  (mibl-trace-entry"-expand-literal-tool!?" "")
+  (mibl-trace "tool" tool) ;; (type-of tool))
+  (mibl-trace "tools" tools) ;; (type-of tool))
+  (mibl-trace "deps" deps)
 
   (let ((tool (if (string-prefix? "./" tool)
                   (string-drop tool 2) tool)))
@@ -483,7 +481,7 @@
                (_ (if (or *mibl-debug-expanders* *mibl-debug-s7*) (format #t "~A: ~A~%" (white "inferring ::unresolved for tool") tool-kw)))
                )
           (set-cdr! deps
-                    (list (cons ::tools
+                    (list (cons ::toolsD
                                 (list
                                  (cons tool-kw ::unresolved
                                        ;; (list (cons :pkg pkg-path)
@@ -537,7 +535,7 @@
                 ;; move it from (:deps) to (deps ::tools)
                 (set-cdr! deps
                           (append
-                           (list (list ::tools
+                           (list (list ::toolsE
                                        (list (car t) ;; tool-kw
                                              (cons :pkg pkg-path)
                                              (cons :tgt tool))))
@@ -567,14 +565,16 @@
                              (format #t "~A: ~A~%" (blue "full-path") full-path)
                              (format #t "~A: ~A~%" (blue "canonical-path") canonical-path)))
                        ;; (error 'X "STOP expand-literal-tool")
-                       (set-cdr! deps
-                                 (append
-                                  `((::tools
-                                    (,tool-kw
-                                     (:pkg . ,pkg)
-                                     (:tgt . ,tgt)
-                                     (:lbl . ,(format #f "//~A:~A" pkg tgt)))))
-                                  (cdr deps)))
+                       (set-cdr! tools `((,tool-kw (:pkg . ,pkg) (:tgt . ,tgt))))
+                       ;; (set-cdr! deps
+                       ;;           (append
+                       ;;            `((::toolsF
+                       ;;              (,tool-kw
+                       ;;               (:pkg . ,pkg)
+                       ;;               (:tgt . ,tgt)
+                       ;;               ;;(:lbl . ,(format #f "//~A:~A" pkg tgt))
+                       ;;               )))
+                       ;;            (cdr deps)))
                        tool-kw))
                    ;; else must be in cwd, or in exports table to be resolved in separate pass
                    (begin
@@ -582,7 +582,7 @@
                          (format #t "~A: ~A~%" (yellow "tool runresolved") tool))
                      (set-cdr! deps
                                (append
-                                `((::tools
+                                `((::toolsG
                                    (,(string->keyword tool) . ::unresolved)))
                                 (cdr deps)))
                      (string->keyword tool))))))
@@ -960,7 +960,7 @@
         (begin
           (format #t "~A\n" (ublue "expand-cmd-args*"))
           (format #t "  ~A: ~A\n" (blue "args") args)
-          (format #t "  ~A: ~A\n" (blue "pkg") pkg)
+          (format #t "  ~A: ~A\n" (blue "pkg") (assoc-val :pkg-path pkg))
           (format #t "  ~A: ~A\n" (blue "targets") targets)
           (format #t "  ~A: ~A\n" (blue "deps") deps)))
 
@@ -1052,13 +1052,17 @@
 
                       ((string? arg)
                        (if (or *mibl-debug-expanders* *mibl-debug-s7*)
-                           (format #t "~A: ~A~%" (red "arg is string") arg))
-                       (if (char=? #\- (arg 0))
-                           (append (list arg)
-                                   (expand-cmd-args* ws (cdr args) pkg targets deps))
-                           (let ((sarg (expand-string-arg ws arg pkg targets deps)))
-                             (append (list sarg)
-                                     (expand-cmd-args* ws (cdr args) pkg targets deps)))))
+                           (format #t "~A: ~S~%" (red "arg is string") arg))
+                       (if (string=? arg "")
+                           (begin
+                             (append (list :null-string)
+                                     (expand-cmd-args* ws (cdr args) pkg targets deps)))
+                           (if (char=? #\- (arg 0))
+                               (append (list arg)
+                                       (expand-cmd-args* ws (cdr args) pkg targets deps))
+                               (let ((sarg (expand-string-arg ws arg pkg targets deps)))
+                                 (append (list sarg)
+                                         (expand-cmd-args* ws (cdr args) pkg targets deps))))))
                       ;; pkg-path target targets
                       ;; (cdr args) filedeps vars)))))
 
@@ -1079,7 +1083,7 @@
         (begin
           (format #t "~A\n" (ublue "expand-targets"))
           (format #t "~A: ~A\n" (blue "ws") ws)
-          (format #t "~A: ~A\n" (blue "pkg") pkg)
+          (format #t "~A: ~A\n" (blue "pkg") (assoc-val :pkg-path pkg))
           (format #t "~A: ~A\n" (blue "targets") targets)
           (format #t "~A: ~A\n" (blue "deps") deps)))
 
@@ -1094,7 +1098,7 @@
       (begin
         (format #t "~A\n" (ublue "expand-terms*"))
         (format #t "~A: ~A\n" (blue "arglist") arglist)
-        (format #t "~A: ~A\n" (blue "pkg") pkg)
+        (format #t "~A: ~A\n" (blue "pkg") (assoc-val :pkg-path pkg))
         (format #t "~A: ~A\n" (blue "expanded-deps") expanded-deps)))
   ;; (let ((pkg-path (assoc-val :pkg-path pkg))
   ;;       (ws-root (assoc-val :ws-path pkg)))
@@ -1172,13 +1176,13 @@
                                    expanded-deps)))))))
             ))))
 
-(define (expand-rule-deps ws paths stanza-alist)
+(define (expand-rule-deps ws pkg stanza-alist)
   ;; updates stanza-alist
   (if (or *mibl-debug-expanders* *mibl-debug-s7*)
       (begin
         (format #t "~A\n" (ublue "expand-rule-deps"))
         (format #t "~A: ~A\n" (blue "ws") ws)
-        (format #t "~A: ~A\n" (blue "paths") paths)
+        (format #t "~A: ~A\n" (blue "pkg") (assoc-val :pkg-path pkg))
         (format #t "~A: ~A\n" (blue "stanza-alist") stanza-alist)))
 
   ;; (let ((stanza-alist (cdr stanza)))
@@ -1192,13 +1196,13 @@
                  ;; (_ (if (or *mibl-debug-expanders* *mibl-debug-s7*) (format #t "~A: ~A~%" (green "stdout") stdout)))
                  ;; (deplist (if stdout (cons stdout deplist) deplist))
                  (_ (if (or *mibl-debug-expanders* *mibl-debug-s7*) (format #t "~A: ~A\n" (green "DEPLIST") deplist)))
-                 (result (expand-terms* ws deplist paths '())))
+                 (result (expand-terms* ws deplist pkg '())))
             (if (or *mibl-debug-expanders* *mibl-debug-s7*)
                 (format #t "~A: ~A\n" (green "DEPLIST EXPANDED") result))
             `(:deps ,@result))
           #f))
 
-(define (expand-cmd-list ws pkg -raw-cmds targets deps)
+(define (expand-cmd-list ws pkg -raw-cmds tools targets deps)
   (if (or *mibl-debug-expanders* *mibl-debug-s7*)
       (begin
         (format #t "~A\n" (ublue "expand-cmd-list"))
@@ -1246,7 +1250,7 @@
                           ;; e.g. (run ../gen_stubs/gen_stubs.exe %{jsoo} --except %{runtime})
                           (let ((tmp
                                   `((:tool
-                                     ,(expand-run-tool ws kw pkg targets deps))
+                                     ,(expand-run-tool ws kw tools pkg targets deps))
                                     (:args
                                       ,@(expand-cmd-args* ws (cdr raw-cmds)
                                                           pkg targets deps)))))

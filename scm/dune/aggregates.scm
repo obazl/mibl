@@ -68,6 +68,7 @@
             ;;   (cons :manifest (remove '()
             ;;                            (list submods subsigs)))))))
 
+;;FIXME: rename.  reconcile-pkg-files?
 ;; normalize-aggregate-manifests!: one for each aggregate, plus pkg files (:modules,
 ;; :signatures, :structures) are manifests.
 

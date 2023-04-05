@@ -29,7 +29,6 @@
 
   ;; parsetree always already produced by c code,
   ;; either by crawling the tree or by reading .mibl/PARSETREE.s7
-  ;; (-mibl-load-project root-path ws-path)
 
   ;; (format #t "RETURNING XXXXXXXXXXXXXXXX\n")
   ;; (return)
@@ -43,6 +42,9 @@
 
   (miblize :@) ;; dune->mibl
 
+  ;; (format #t "RETURNING XXXXXXXXXXXXXXXX\n")
+  ;; (return)
+
   (add-filegroups-to-pkgs :@)
 
   ;; reconcile pkg files: :modules, :structures, :signatures etc.
@@ -50,13 +52,18 @@
 
   (normalize-aggregate-manifests! :@)
 
-  ;; (format #t "RETURNING XXXXXXXXXXXXXXXX\n")
-  ;; (return)
+  (format #t "RETURNING XXXXXXXXXXXXXXXX\n")
+  (return)
 
   (normalize-rule-deps! :@)
 
-  ;;(miblarkize :@) ;; renamed:
+  ;; (format #t "RETURNING XXXXXXXXXXXXXXXX\n")
+  ;; (return)
+
   (dune-stanzas->mibl-keywords :@) ; e.g. (rule...) to (:write-file...)
+
+  ;; (format #t "RETURNING XXXXXXXXXXXXXXXX\n")
+  ;; (return)
 
   ;; (resolve-pkg-file-deps :@)  ;; OBSOLETE
 
@@ -89,14 +96,14 @@
 
   ;; (ppx-inline-tests! :@)
 
-  (if *mibl-show-mibl*
-      (begin
-        (format #t "~A~%" (bgred "MIBL"))
-        ;; (mibl-debug-print-pkgs :@)
-        (mibl-debug-print-project)
-        ;; (mibl-pretty-print *mibl-project*)
-        ;;(return)
-        ))
+  ;; (if *mibl-show-mibl*
+  ;;     (begin
+  ;;       (format #t "~A~%" (bgred "MIBL"))
+  ;;       ;; (mibl-debug-print-pkgs :@)
+  ;;       (mibl-debug-print-project)
+  ;;       ;; (mibl-pretty-print *mibl-project*)
+  ;;       ;;(return)
+  ;;       ))
 
   (if *mibl-emit-wss*
       (begin
@@ -136,7 +143,7 @@
         ;; (format #t "~A: libmibl Workspace root: ~A~%" (green "INFO") ws-path)
         (if not *mibl-dev-mode*
             (format #t "~A: libmibl Processed ~A dunefiles.~%" (green "INFO") *mibl-dunefile-count*))))
-  '())
+  (return))
 
 (define (emit-mibl-pkg pkg)
   (if (or *mibl-debug-emit* *mibl-debug-s7*)

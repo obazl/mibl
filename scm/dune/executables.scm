@@ -204,8 +204,8 @@
               (if preproc
                   (if (alist? preproc)
                       (if (assoc-in '(preprocess pps) stanza-alist)
-                          (lib-ppx->mibl stanza-alist)
-                          (lib-preproc->mibl stanza-alist))
+                          (pps->mibl stanza-alist)
+                          (lib-preproc->mibl preproc stanza-alist))
 
                       ;; (if (assoc-in '(preprocess staged-pps) stanza-alist)
                       ;;     (lib-ppx->mibl stanza-alist)
@@ -225,7 +225,11 @@
            ((modes) `(:modes ,@(cdr fld-assoc))) ;; FIXME?
 
            ((forbidden_libraries) (error 'fixme "forbidden_libraries"))
-           ((optional) (error 'fixme "fld: optional"))
+           ((optional)
+            ;; indicates that the library should only be built and
+            ;; installed if all the dependencies are available, either
+            ;; in the workspace or in the installed world.
+            `(:unhandled ,fld-assoc))
 
            ;; else ignore - handled elsewhere
            (else (values)))) ;; fld-assoc
@@ -233,7 +237,7 @@
 
 (define (-map-common-opts->mibl stanza-alist)
   (if (or *mibl-debug-executables* *mibl-debug-s7*)
-      (format #t "~A: ~A~%" (ublue "-map-common-flds->mibl") stanza-alist))
+      (format #t "~A: ~A~%" (ublue "-map-common-opts->mibl") stanza-alist))
   (map (lambda (fld-assoc)
          ;; (format #t "common fld-assoc: ~A\n" fld-assoc)
          (case (car fld-assoc)
@@ -509,10 +513,11 @@
                                           pkg-path
                                           privname ;; lib name
                                           )))))
-        (if (and privname findlib-name
-                 (not (equal? privname findlib-name)))
-            (error 'FIXME
-                   (format #f "name and public_name mismatch: ~A, ~A" privname findlib-name)))
+        ;; (if (and privname findlib-name
+        ;;          (not (equal? privname findlib-name)))
+        ;;     (error 'FIXME
+        ;;            (format #f "name and public_name mismatch: ~A, ~A" privname findlib-name)))
+
         ;; (begin
         ;;   (update-exports-table! ws
         ;;                          (if (-is-test-executable? ws pkg stanza) :test :exe)

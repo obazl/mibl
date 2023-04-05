@@ -368,8 +368,7 @@
 ;; depending on action tool
 ;; :executable by :test if deps include unit test pkg
 (define (dune-stanzas->mibl pkg)
-  (if *mibl-debug-s7*
-      (format #t "~A: ~A~%" (blue "mibl-stanzas->mibl") pkg))
+  (mibl-trace-entry "mibl-stanzas->mibl" pkg)
 
   (set! -sh-test-id 0)
 
@@ -384,9 +383,10 @@
                 ;; if multiple cmds (progn) do not miblarkize
                 (if *mibl-debug-s7*
                     (format #t "~A: ~A~%" (red "cmd ct:")
-                        (length (assoc-in* '(:actions :cmd) (cdr stanza)))))
-                (if (< (length (assoc-in* '(:actions :cmd) (cdr stanza))) 2)
-                    (let ((tool (assoc-in '(:actions :cmd :tool) (cdr stanza))))
+                        (length (assoc :cmd (cdr stanza)))))
+                ;; (assoc-in* '(:actions :cmd) (cdr stanza)))))
+                (if (< (length (assoc :cmd (cdr stanza))) 2) ;; (assoc-in* '(:actions :cmd) (cdr stanza))) 2)
+                    (let ((tool (assoc-in '(:cmd :tool) (cdr stanza)))) ;; (assoc-in '(:actions :cmd :tool) (cdr stanza))))
                       (if *mibl-debug-s7*
                           (format #t "~A: ~A~%" (green "tool") tool))
                       (if tool

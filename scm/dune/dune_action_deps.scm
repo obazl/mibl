@@ -229,7 +229,7 @@
 
          ;; (expanded-path (if local? path canonical-path))
          (expanded-path canonical-path)
-         (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "~A: ~A~%" (bgred "EXPANDED-path") expanded-path)))
+         (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "~A: ~A~%" (blue "EXPANDED-path") expanded-path)))
 
          (parent (let ((parent (dirname expanded-path)))
                    ;; (format #t "PARENT a: ~A (t ~A)~%" parent (type-of parent))
@@ -249,7 +249,7 @@
          ;;             (basename expanded-path)
          ;;             (basename expanded-path)))
                      ;;(string->keyword (format #f "fg_~A" (basename expanded-path)))))
-         (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "~A: ~A~%" (bgred "TGT") tgt)))
+         (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "~A: ~A~%" (blue "TGT") tgt)))
 
          (tgt-tag :tgt)
          ;; (if (equal? pkg-path (dirname expanded-path))
@@ -674,11 +674,12 @@
       ;;(error 'STOP "STOP handle-file-dep")
       res)))
 
-(define (handle-alias-dep paths deplist)
+(define (handle-alias-dep ws pkg arglist)
   (if (or *mibl-debug-action-deps* *mibl-debug-s7*)
-      (format #t "handle-alias-dep: ~A\n" deplist))
-  (set-car! deplist :alias)
-  deplist)
+      (format #t "handle-alias-dep: ~A\n" arglist))
+  `(:alias (:pkg ,(cadr arglist)) (:tgt 'test)))
+  ;; (set-car! deplist :alias)
+  ;; deplist)
 
 (define (handle-alias-rec-dep deplist)
   (if (or *mibl-debug-action-deps* *mibl-debug-s7*)

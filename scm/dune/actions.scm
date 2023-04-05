@@ -6,26 +6,28 @@
 (load "dune/dune_action_run.scm")
 (load "dune/shell_actions.scm")
 
-(define (normalize-action-chdir-dsl ws pkg action-alist targets deps)
-  (if *mibl-debug-action-directives*
-      (format #t "~A: ~A\n" (ublue "normalize-action-chdir-dsl") action-alist))
+(define (normalize-action-chdir-dsl ws pkg action-alist tools targets deps)
+  (mibl-trace-entry "normalize-action-chdir-dsl" action-alist)
   (let* ((action-assoc (car action-alist))
-         (_ (if *mibl-debug-action-directives* (format #t "action-assoc: ~A\n" action-assoc)))
-         (ctx (cadr action-assoc))
-         (_ (if *mibl-debug-action-directives* (format #t "ctx: ~A\n" ctx)))
+         (mibl-trace-let "action-assoc" action-assoc *mibl-debug-action-directives*)
+         (ctx (if (eq? '%{workspace_root} (cadr action-assoc))
+                  :ws-root
+                  `(:fixme ,(cadr action-assoc))))
+         (mibl-trace-let "ctx" ctx *mibl-debug-action-directives*)
          (subaction-alist (caddr action-assoc))
-         (_ (if *mibl-debug-action-directives* (format #t "subaction-alist: ~A\n" subaction-alist)))
+         (mibl-trace-let "subaction-alist" subaction-alist *mibl-debug-action-directives*)
          (subaction (car subaction-alist))
-         (_ (if *mibl-debug-action-directives* (format #t "subaction: ~A\n" subaction)))
+         (mibl-trace-let "subaction" subaction *mibl-debug-action-directives*)
          (cmd (if-let ((cmd-fn (assoc-val subaction dune-action-cmds-dsl)))
                       (let ((cmd-list (apply (car cmd-fn)
                                              (list ws pkg
                                                    (list subaction-alist)
-                                                   targets deps))))
+                                                   tools targets deps))))
                         cmd-list)
                       (begin
                         (format #t "UNHANDLED ACTION: ~A\n" action)
                         stanza))))
+    (mibl-trace "chdir cmd" cmd *mibl-debug-action-directives*)
     (append cmd
           `((:ctx ,ctx)))))
 
@@ -194,7 +196,7 @@
                                                      (list ws pkg
                                                            (list progn)
                                                            ;;(list action-alist)
-                                                           targets deps))))
+                                                           tools targets deps))))
                                 (if *mibl-debug-action-directives*
                                     (format #t "~A: ~A~%" (bggreen "progn cmd-list") cmd-list))
                                 (error 'X "STOP cmd-list 2")
@@ -273,7 +275,7 @@
 
 ;; called for (action (run ...) ...)
 ;; just remove 'run' and recur on dune-action-cmds-...
-(define (normalize-action-run-dsl ws pkg run-list targets deps)
+(define (normalize-action-run-dsl ws pkg run-list tools targets deps)
   (if *mibl-debug-action-directives*
       (format #t "~A: ~A\n" (ublue "normalize-action-run-dsl") run-list))
   ;; run-list: ((run foo.sh arg1 arg2 ...))
@@ -314,13 +316,13 @@
                 (if-let ((cmd-fn (assoc-val action dune-action-cmds-dsl)))
                         (let ((cmd-list (apply (car cmd-fn)
                                                (list ws pkg
-                                                     action-list targets deps))))
+                                                     action-list tools targets deps))))
                           (if *mibl-debug-action-directives*
                               (format #t "~A: ~A~%" (bggreen "cmd-list 1") cmd-list))
                           (error 'X "STOP cmd-list 1")
                           cmd-list)
                         (let* ((_ (if *mibl-debug-action-directives* (format #t "~A: ~A~%" (yellow "adhoc action") action)))
-                               (args (expand-cmd-list ws pkg run-dsl targets deps))
+                               (args (expand-cmd-list ws pkg run-dsl tools targets deps))
                                ;; (args (expand-cmd-args* action-args pkg targets deps))
                                (_ (if *mibl-debug-action-directives* (format #t "~A: ~A\n" (yellow "expanded args") args))))
                           ;; (error 'X "STOP xargs")
@@ -342,7 +344,7 @@
 
 ;; (define (normalize-action-with-outputs-to-dsl ws pkg action-alist targets deps)
 (define (normalize-action-with-accepted-exit-codes-dsl
-           ws pkg action-alist targets deps)
+           ws pkg action-alist tools targets deps)
            ;; item ws pkg targets deps)
   (if *mibl-debug-action-directives*
       (format #t "~A: ~A\n"
@@ -372,7 +374,7 @@
                                              (list ws pkg
                                                    subaction
                                                    subaction-alist
-                                                   targets deps))))
+                                                   tools targets deps))))
                         cmd-list)
                       (if-let ((cmd-fn (assoc-val subaction
                                                   dune-action-cmds-dsl)))
@@ -380,7 +382,7 @@
                                     (cmd-list (apply (car cmd-fn)
                                                      (list ws pkg
                                                            (list subaction-alist)
-                                                           targets deps))))
+                                                           tools targets deps))))
                                 ;; (format #t "~A: ~A~%" (bggreen "w/output cmd-list") cmd-list)
                                 ;; (error 'X "STOP cmd-list 3")
                                 cmd-list)
@@ -393,10 +395,65 @@
             `((:stdout ,(string->keyword
                          (format #f "~A" arg1)))))))
 
-(define (normalize-action-with-outputs-to-dsl ws pkg action-alist targets deps)
+;; with-stdout-to, with-stderr-to
+;; 1st arg: often %{target}, may also be a filename
+(define (normalize-action-with-outputs-to-dsl ws pkg action-alist tools targets deps)
   (if *mibl-debug-action-directives*
       (format #t "~A: ~A\n" (ublue "normalize-action-with-outputs-to-dsl")
           action-alist))
+  (let* ((action-assoc (car action-alist))
+         (_ (if *mibl-debug-action-directives* (format #t "action-assoc: ~A\n" action-assoc)))
+         (action (car action-assoc))
+         (_ (if *mibl-debug-action-directives* (format #t "action: ~A\n" action)))
+         (stdio-kw (if (eq? 'with-stdout-to action)
+                       :stdout
+                       (if (eq? 'with-stderr-to action)
+                           :stderr
+                           :stdio)))
+         (std-fd (let ((fd (cadr action-assoc)))
+                   (if (eq? '%{target} fd)
+                       :output
+                       `(:fixme ,fd))))
+         (_ (if *mibl-debug-action-directives* (format #t "std-fd: ~A\n" std-fd)))
+         (subaction-alist (caddr action-assoc))
+         (_ (if *mibl-debug-action-directives* (format #t "subaction-alist: ~A\n" subaction-alist)))
+         (subaction (car subaction-alist))
+         (_ (if *mibl-debug-action-directives* (format #t "subaction: ~A\n" subaction)))
+         (cmd (if-let ((cmd-fn (assoc-val subaction
+                                          dune-action-cmds-no-dsl)))
+                      (let ((_ (if *mibl-debug-action-directives* (format #t "found cmd-no-dsl\n")))
+                            (cmd-list (apply (car cmd-fn)
+                                             (list ws pkg
+                                                   subaction
+                                                   subaction-alist
+                                                   tools targets deps))))
+                        cmd-list)
+                      (if-let ((cmd-fn (assoc-val subaction
+                                                  dune-action-cmds-dsl)))
+                              (let ((_ (if *mibl-debug-action-directives* (format #t "found cmd-dsl\n")))
+                                    (cmd-list (apply (car cmd-fn)
+                                                     (list ws pkg
+                                                           (list subaction-alist)
+                                                           tools targets deps))))
+                                ;; (format #t "~A: ~A~%" (bggreen "w/output cmd-list") cmd-list)
+                                ;; (error 'X "STOP cmd-list 3")
+                                cmd-list)
+                              (begin
+                                (format #t "UNHANDLED WST ACTION: ~A\n"
+                                        subaction)
+                                stanza))
+                      )))
+    (append cmd
+            `((,stdio-kw ,std-fd)))))
+
+(define (normalize-action-with-stderr-to-dsl ws pkg action-alist tools targets deps)
+  (if *mibl-debug-action-directives* (format #t "NORMALIZE-ACTION-WITH-STDERR-TO-DSL ~A\n" action))_
+  '()
+  )
+
+(define (normalize-action-with-stdin-from-dsl ws pkg action-alist tools targets deps)
+  (mibl-trace-entry "normalize-action-with-stdin-from-dsl" action-alist *mibl-debug-action-directives*)
+  ;; `((:unresolved ,action-alist)))
   (let* ((action-assoc (car action-alist))
          (_ (if *mibl-debug-action-directives* (format #t "action-assoc: ~A\n" action-assoc)))
          (action (car action-assoc))
@@ -414,7 +471,7 @@
                                              (list ws pkg
                                                    subaction
                                                    subaction-alist
-                                                   targets deps))))
+                                                   tools targets deps))))
                         cmd-list)
                       (if-let ((cmd-fn (assoc-val subaction
                                                   dune-action-cmds-dsl)))
@@ -422,7 +479,7 @@
                                     (cmd-list (apply (car cmd-fn)
                                                      (list ws pkg
                                                            (list subaction-alist)
-                                                           targets deps))))
+                                                           tools targets deps))))
                                 ;; (format #t "~A: ~A~%" (bggreen "w/output cmd-list") cmd-list)
                                 ;; (error 'X "STOP cmd-list 3")
                                 cmd-list)
@@ -432,19 +489,8 @@
                                 stanza))
                       )))
     (append cmd
-            `((:stdout ,(string->keyword
+            `((:stdin ,(string->keyword
                          (format #f "~A" arg1)))))))
-
-(define (normalize-action-with-stderr-to-dsl action stanza)
-  (if *mibl-debug-action-directives* (format #t "NORMALIZE-ACTION-WITH-STDERR-TO-DSL ~A\n" action))_
-  '()
-  )
-
-(define (normalize-action-with-stdin-from-dsl action stanza)
-  (if *mibl-debug-action-directives*
-      (format #t "NORMALIZE-ACTION-WITH-STDIN-FROM-DSL ~A\n" action))
-  '()
-  )
 
 (define (-find-item-in-targets item targets)
   (if *mibl-debug-action-directives*
@@ -806,10 +852,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; called by normalize-action-rule
-(define (actions:normalize ws pkg stanza-alist targets deps) ;; rule stanza
-  (if *mibl-debug-action-directives*
+;; converts (action ...) to mibl list
+(define (rule-action:normalize ws pkg stanza-alist tools targets deps) ;; rule stanza
+  (if (or *mibl-debug-s7* *mibl-debug-action-directives*)
       (begin
-        (format #t "~A: ~A\n" (ublue "normalize-action") stanza-alist)
+        (format #t "~A: ~A\n" (ublue "rule-action:normalize") stanza-alist)
         (format #t "~A: ~A~%" (white "targets") targets)
         (format #t "~A: ~A~%" (white "deps") deps)))
   (let* ((action-assoc (assoc 'action stanza-alist))
@@ -827,14 +874,14 @@
             (let ((cmd-list (apply (car cmd-fn)
                                    (list ws pkg action
                                          action-alist
-                                         targets deps))))
+                                         tools targets deps))))
               cmd-list)
             (if-let ((cmd-fn (assoc-val action dune-action-cmds-dsl)))
                     (let ((cmd-list (apply (car cmd-fn)
                                            (list ws pkg
-                                                 action-alist targets deps))))
-                      (if *mibl-debug-action-directives*
-                          (format #t "~A: ~A~%" (bggreen "normalize cmd-list") cmd-list))
+                                                 action-alist tools targets deps))))
+                      ;; (if *mibl-debug-action-directives*
+                      ;;     (format #t "~A: ~A~%" (bggreen "normalized cmd-list") cmd-list))
                       ;; (error 'X "STOP cmd-list 4")
                       cmd-list)
                     (begin

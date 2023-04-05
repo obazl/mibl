@@ -360,7 +360,7 @@
             ppx)))))
 
 ;; pps without inline_tests
-(define (pps->mibl preproc stanza-alist)
+(define (pps->mibl stanza-alist)
   (if (or *mibl-debug-ppx* *mibl-debug-s7*)
       (format #t "~A: ~A~%" (ublue "pps->mibl") stanza-alist))
   (if-let ((pp-assoc (assoc 'preprocess stanza-alist)))
@@ -429,7 +429,7 @@
       (format #t "~A: ~A~%" (ublue "preproc->mibl") preproc))
   (if (alist? preproc)
       (if (assoc-in '(preprocess pps) stanza-alist)
-          (pps->mibl preproc stanza-alist)
+          (pps->mibl stanza-alist)
           (lib-preproc->mibl preproc stanza-alist))
 
       ;; (if (assoc-in '(preprocess staged-pps) stanza-alist)

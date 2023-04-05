@@ -72,6 +72,7 @@
                      ((name) (cons :privname (cadr fld-assoc)))
                      ((public_name) (cons :findlib-name (cadr fld-assoc)))
 
+                     ((modes) (cons :modes (cadr fld-assoc)))
                      ((flags) (normalize-stanza-fld-flags fld-assoc :compile))
                      ((library_flags) (normalize-stanza-fld-flags fld-assoc :archive))
                      ((ocamlc_flags) (normalize-stanza-fld-flags fld-assoc :ocamlc))
@@ -80,8 +81,8 @@
                      ((modules_without_implementation)
                       (cons :sigs (cdr fld-assoc)))
                      ((empty_module_interface_if_absent) (fld-error 'library fld-assoc))
-                     ((private_modules) (fld-error 'library fld-assoc))
-                     ((root_module) (fld-error 'library fld-assoc))
+                     ((private_modules) (cons :unhandled fld-assoc))
+                     ((root_module) (cons :unhandled fld-assoc))
                      ((allow_overlapping_dependencies) (fld-error 'library fld-assoc))
 
                      ((optional) (cons :optional #t))

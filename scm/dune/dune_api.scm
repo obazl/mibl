@@ -54,7 +54,7 @@
 ;; hack
 (define (-trim-pkg! pkg)
   (if (or *mibl-debug-s7* *mibl-debug-cleanup*)
-      (format #t "~A: ~A~%" (blue "-trim-pkg!") pkg)) ;; (assoc-val :pkg-path pkg))
+      (format #t "~A: ~A~%" (blue "-trim-pkg!") (assoc-val :pkg-path pkg)))
 
   ;; remove null lists from :mibl alist
   (let ((dune (assoc :mibl pkg)))
@@ -176,13 +176,17 @@
       (begin
         (format #t "~A\n" (ublue "dune-stanza->mibl"))
         (format #t "~A: ~A\n" (blue "stanza-assoc") stanza-assoc)
-        (format #t "~A: ~A\n" (blue "pkg-alist") pkg-alist)
+        (format #t "~A: ~A\n" (blue "pkg") (assoc-val :pkg-path pkg-alist))
         (format #t "~A: ~A\n" (blue "mibl-stanzas") mibl-stanzas)))
   ;; (format #t "pkg-alist: ~A\n" pkg-alist)
   ;; (format #t "  mibl-stanzas: ~A\n" mibl-stanzas)
   ;; (error 'x "X")
   (let* ((stanza-alist (cdr stanza-assoc)))
     ;; (format #t "~A: ~A~%" (green "stanza-alist") stanza-alist)
+
+    ;; stanza types: rule, library, executable(s), test(s), alias,
+    ;; install, ocamllex, ocamlyacc, menhir, env, tuareg,
+    ;; data_only_dirs, documentation, deprecated_library_name
     (case (car stanza-assoc)
       ((rule)
        ;; (format #t "~A~%" (green "RULE"))
@@ -302,12 +306,16 @@
 
       ((documentation) (values)) ;;FIXME
 
+      ((deprecated_library_name) (values))
+
+      ((generate_sites_module) (values))
+
       ((:sh-test) ;; ???
        (values))
 
       (else
        ;; (format #t "~A: ~A\n" (red "unhandled") stanza-assoc)
-       (error 'fixme (format #f "~A: ~A~%" (red "Unhandled stanza-assoc") stanza-assoc)))) ;;))
+       (error 'fixme (format #f "~A: ~A~%" (red "unhandled stanza-assoc") stanza-assoc)))) ;;))
     ;; (format #t "~A: ~A\n" (uwhite "normalized pkg-alist") pkg-alist)
     ;; (format #t "~A~%" (bgred "UPKG-MODULES"))
     ;; (for-each (lambda (m) (format #t "\t~A~%" m)) (assoc-val :modules pkg-alist))

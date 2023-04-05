@@ -41,9 +41,11 @@
                         (parsetree->mibl ;; in libmibl.scm
                          (lambda () ;; our return thunk
                            (if *mibl-show-mibl*
-                               (mibl-debug-print-project)
+                               (begin
+                                 (mibl-debug-print-project)
+                                 (flush-output-port))
                                (if *mibl-show-pkg*
-                               (mibl-debug-print-pkg)))
+                                   (mibl-debug-print-pkg)))
                            (if (not *mibl-quiet*)
                                (format #t "~A: Returning...~%" (green "INFO")))
                            (return))
