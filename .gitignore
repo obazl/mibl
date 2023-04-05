@@ -2,7 +2,7 @@
 bazel-*
 private
 *.history.txt
-
+log.*
 *.log
 obsolete
 tmp
