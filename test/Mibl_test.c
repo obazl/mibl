@@ -297,6 +297,7 @@ void _init_mibl_proj(char *test_root)
        sh_test target. Therefore BAZEL_TEST, TEST_TARGET, etc. should
        be defined. We derive the relative path for runfiles
        PARSETREE.s7 and PROJECT.s7 from TEST_TARGET.*/
+    /* TEST_TARGET is defined by bazel for test targets. */
     char *test_target = strndup(getenv("TEST_TARGET"), 1024);
     /* test_target alway has form '//foo/bar:baz' ??? */
     char *colon = strrchr(test_target, ':');

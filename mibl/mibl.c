@@ -34,6 +34,7 @@ extern struct mibl_config_s mibl_config;
 #define DEV_MODE
 
 enum OPTS {
+    OPT_HALT_AFTER,
     OPT_MAIN,
     OPT_WS,
     OPT_FLAGS, /* ad-hoc flags; if not passed, (if *mibl-foo*...) fails */
@@ -94,6 +95,17 @@ int _update_mibl_config(struct option options[])
 
     if (options[FLAG_EMIT_PARSETREE].count)
         mibl_config.emit_parsetree = true;
+
+    if (options[OPT_HALT_AFTER].count) {
+        if ((strlen(options[OPT_HALT_AFTER].argument) == 9)
+            && (strncmp("parsetree", options[OPT_HALT_AFTER].argument, 9) == 0))
+            mibl_config.halt_after_parsetree = true;
+        else {
+            log_error("Unrecognized halt-after: %s", options[OPT_HALT_AFTER].argument);
+            //FIXME: cleanup?
+            exit(EXIT_FAILURE);
+        }
+    }
 
     if (options[FLAG_REPORT_PARSETREE].count) {
         mibl_config.emit_parsetree = true;
@@ -262,11 +274,13 @@ static struct option options[] = {
                   .flags=GOPT_ARGUMENT_REQUIRED | GOPT_REPEATABLE},
     [OPT_WS] = {.long_name="workspace",.short_name='w',
                 .flags=GOPT_ARGUMENT_REQUIRED},
-    [FLAG_MENHIR] = {.long_name="menhir",
-                     .flags=GOPT_ARGUMENT_FORBIDDEN},
-
+    [OPT_HALT_AFTER] = {.long_name="halt-after",
+                   .flags=GOPT_ARGUMENT_REQUIRED},
     [OPT_FLAGS] = {.long_name="flags",
                    .flags=GOPT_ARGUMENT_REQUIRED},
+
+    [FLAG_MENHIR] = {.long_name="menhir",
+                     .flags=GOPT_ARGUMENT_FORBIDDEN},
 
     [FLAG_HELP] = {.long_name="help",.short_name='h',
                    .flags=GOPT_ARGUMENT_FORBIDDEN | GOPT_REPEATABLE},

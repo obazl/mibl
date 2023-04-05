@@ -31,6 +31,7 @@ s7_pointer deps_list;
 
 int tct = 0;
 
+char *tostr;
 
 #if defined(DEBUG_TRACE)
 bool mibl_debug_traversal = false;
@@ -579,12 +580,10 @@ LOCAL void _update_pkg_files(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 
     /* s7_pointer pkg_key = s7_make_string(s7, pkg_name); */
     s7_pointer pkg_key = make_pkg_key(pkg_name);
-    s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
-    /* if (mibl_debug_traversal) */
-    /*     LOG_S7_DEBUG("pkg_alist", pkg_alist); */
+    s7_gc_protect_via_stack(s7, pkg_key);
 
-    /* char *file_ext =  strrchr(ftsentry->fts_name, '.'); */
-    /* file_ext++; // exclude dot */
+    s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
+    s7_gc_protect_via_stack(s7, pkg_alist);
 
     if (pkg_alist == s7_f(s7)) {
         // FIXME: should not happen, we always add a pkg entry first
@@ -592,6 +591,7 @@ LOCAL void _update_pkg_files(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
         if (mibl_debug_traversal)
             log_debug("no entry for this pkg: %s", pkg_name);
 #endif
+        s7_gc_unprotect_via_stack(s7, pkg_alist);
     } else {
         s7_pointer assoc_in = _load_assoc_in();
         s7_pointer keypath = s7_list(s7, 2, files_kw, static_kw);
@@ -634,6 +634,7 @@ LOCAL void _update_pkg_files(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
             s7_pointer new_pkg = s7_append(s7,
                                            pkg_alist,
                                            file_list);
+            s7_gc_unprotect_via_stack(s7, pkg_alist);
 #if defined(DEBUG_TRACE)
             if (mibl_debug_traversal) {
                 LOG_S7_DEBUG("new pkg", file_list);
@@ -641,6 +642,7 @@ LOCAL void _update_pkg_files(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 #endif
 
             s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg);
+            s7_gc_unprotect_via_stack(s7, pkg_key);
 
         } else {
             /* assoc-in '(:files :static) returns assoc (:static ...),
@@ -728,12 +730,9 @@ LOCAL void _update_cc_src_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 
     /* s7_pointer pkg_key = s7_make_string(s7, pkg_name); */
     s7_pointer pkg_key = make_pkg_key(pkg_name);
+    s7_gc_protect_via_stack(s7, pkg_key);
     s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
-    /* if (mibl_debug_traversal) */
-    /*     LOG_S7_DEBUG("pkg_alist", pkg_alist); */
-
-    /* char *cc_ext =  strrchr(ftsentry->fts_name, '.'); */
-    /* cc_ext++; // exclude dot */
+    s7_gc_protect_via_stack(s7, pkg_alist);
 
     if (pkg_alist == s7_f(s7)) {
         // FIXME: should not happen, we always add a pkg entry first
@@ -741,6 +740,7 @@ LOCAL void _update_cc_src_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
         if (mibl_debug_traversal)
             log_debug("no entry for this pkg: %s", pkg_name);
 #endif
+        s7_gc_unprotect_via_stack(s7, pkg_alist);
     } else {
         s7_pointer assoc_in = _load_assoc_in();
         s7_pointer keypath = s7_list(s7, 2, cc_kw, cc_srcs_kw); // , static_kw);
@@ -784,6 +784,7 @@ LOCAL void _update_cc_src_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
             s7_pointer new_pkg = s7_append(s7,
                                            pkg_alist,
                                            cc_list);
+            s7_gc_unprotect_via_stack(s7, pkg_alist);
 #if defined(DEBUG_TRACE)
             if (mibl_debug_traversal) {
                 LOG_S7_DEBUG("new pkg", new_pkg);
@@ -791,6 +792,7 @@ LOCAL void _update_cc_src_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 #endif
 
             s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg);
+            s7_gc_unprotect_via_stack(s7, pkg_key);
 
         } else {
             /* assoc-in '(:cc :static) returns assoc (:static ...),
@@ -859,9 +861,12 @@ LOCAL void _update_cc_hdr_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 
     char *pkg_name = dirname(ftsentry->fts_path);
 
-    /* s7_pointer pkg_key = s7_make_string(s7, pkg_name); */
     s7_pointer pkg_key = make_pkg_key(pkg_name);
+    s7_gc_protect_via_stack(s7, pkg_key);
+
     s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
+    s7_gc_protect_via_stack(s7, pkg_alist);
+
     /* if (mibl_debug_traversal) */
     /*     LOG_S7_DEBUG("pkg_alist", pkg_alist); */
 
@@ -874,6 +879,7 @@ LOCAL void _update_cc_hdr_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
         if (mibl_debug_traversal)
             log_debug("no entry for this pkg: %s", pkg_name);
 #endif
+        s7_gc_unprotect_via_stack(s7, pkg_alist);
     } else {
         s7_pointer assoc_in = _load_assoc_in();
         s7_pointer keypath = s7_list(s7, 2, cc_kw, cc_hdrs_kw); //, static_kw);
@@ -927,6 +933,7 @@ LOCAL void _update_cc_hdr_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
                 s7_pointer new_pkg = s7_append(s7,
                                                pkg_alist,
                                                cc_list);
+                s7_gc_unprotect_via_stack(s7, pkg_alist);
 #if defined(DEBUG_TRACE)
                 if (mibl_debug_traversal) {
                     LOG_S7_DEBUG("new pkg", new_pkg);
@@ -934,6 +941,7 @@ LOCAL void _update_cc_hdr_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 #endif
 
                 s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg);
+                s7_gc_unprotect_via_stack(s7, pkg_key);
 
             } else {
                 /* (:cc ) found w/o :hdrs; add (:hdrs ) */
@@ -1025,10 +1033,11 @@ LOCAL void _update_pkg_script_files(s7_pointer pkg_tbl,
     char *pkg_name = dirname(ftsentry->fts_path);
 
     s7_pointer pkg_key = make_pkg_key(pkg_name);
+    s7_gc_protect_via_stack(s7, pkg_key);
+
     //s7_make_string(s7, pkg_name);
     s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
-    /* if (mibl_debug_traversal) */
-    /*     LOG_S7_DEBUG("pkg_alist", pkg_alist); */
+    s7_gc_unprotect_via_stack(s7, pkg_alist);
 
     if (pkg_alist == s7_f(s7)) {
         // FIXME: should not happen, we always add a pkg entry first
@@ -1036,6 +1045,7 @@ LOCAL void _update_pkg_script_files(s7_pointer pkg_tbl,
         if (mibl_debug_traversal)
             log_debug("no entry for this pkg");
 #endif
+        s7_gc_unprotect_via_stack(s7, pkg_alist);
     } else {
         s7_pointer assoc = _load_assoc();
 
@@ -1066,13 +1076,15 @@ LOCAL void _update_pkg_script_files(s7_pointer pkg_tbl,
             s7_pointer new_pkg = s7_append(s7,
                                            pkg_alist,
                                            file_list);
+            s7_gc_unprotect_via_stack(s7, pkg_alist);
+
 #if defined(DEBUG_TRACE)
             if (mibl_debug_traversal) {
                 LOG_S7_DEBUG("new pkg", new_pkg);
             }
 #endif
             s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg);
-
+            s7_gc_unprotect_via_stack(s7, pkg_key);
         } else {
 #if defined(DEBUG_TRACE)
             if (mibl_debug_traversal) {
@@ -1108,35 +1120,35 @@ LOCAL void _update_pkg_script_files(s7_pointer pkg_tbl,
     }
 }
 
-LOCAL __attribute__((unused)) void _update_pkg_deps(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
-{
-    char *pkg_name = dirname(ftsentry->fts_path);
-    /* char *fname = ftsentry->fts_name; */
-    char *mname = _module_name(ftsentry, ext);
-    if (verbose) {
-        log_info(BLU "_update_pkg_deps:" CRESET " %s; ", mname);
-        log_info("pkg name: %s; fname: %s", pkg_name, ftsentry->fts_name);
-    }
+/* LOCAL __attribute__((unused)) void _update_pkg_deps(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext) */
+/* { */
+/*     char *pkg_name = dirname(ftsentry->fts_path); */
+/*     /\* char *fname = ftsentry->fts_name; *\/ */
+/*     char *mname = _module_name(ftsentry, ext); */
+/*     if (verbose) { */
+/*         log_info(BLU "_update_pkg_deps:" CRESET " %s; ", mname); */
+/*         log_info("pkg name: %s; fname: %s", pkg_name, ftsentry->fts_name); */
+/*     } */
 
-    /* char *ml_name = strdup(ftsentry->fts_name); */
+/*     /\* char *ml_name = strdup(ftsentry->fts_name); *\/ */
 
-    s7_pointer pkg_key = make_pkg_key(pkg_name);
-    //s7_make_string(s7, pkg_name);
-#if defined(DEBUG_TRACE)
-    if (mibl_debug_traversal) {
-        log_debug("pkg_key", pkg_key);
-    }
-#endif
+/*     s7_pointer pkg_key = make_pkg_key(pkg_name); */
+/*     s7_gc_protect_via_stack(s7, pkg_key); */
+/* #if defined(DEBUG_TRACE) */
+/*     if (mibl_debug_traversal) { */
+/*         log_debug("pkg_key", pkg_key); */
+/*     } */
+/* #endif */
 
-    s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
-    (void)pkg_alist;
-#if defined(DEBUG_TRACE)
-    if (mibl_debug_traversal) {
-        log_debug("pkg_alist", pkg_alist);
-    }
-#endif
+/*     s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key); */
+/*     s7_gc_protect_via_stack(s7, pkg_alist); */
+/* #if defined(DEBUG_TRACE) */
+/*     if (mibl_debug_traversal) { */
+/*         log_debug("pkg_alist", pkg_alist); */
+/*     } */
+/* #endif */
 
-}
+/* } */
 
 LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
                                char *pkg_name, char *mname,
@@ -1157,6 +1169,7 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
 #endif
 
     s7_pointer pkg_key = make_pkg_key(pkg_name);
+    s7_gc_protect_via_stack(s7, pkg_key);
     //s7_make_string(s7, pkg_name);
 #if defined(DEBUG_TRACE)
     if (mibl_debug_traversal) {
@@ -1164,6 +1177,8 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
     }
 #endif
     s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
+    s7_gc_protect_via_stack(s7, pkg_alist);
+
 #if defined(DEBUG_TRACE)
     if (mibl_debug_traversal) {
         LOG_S7_DEBUG("pkg_alist", pkg_alist);
@@ -1175,6 +1190,7 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
         if (mibl_debug_traversal)
             log_debug("no dunefile in this directory");
 #endif
+        s7_gc_unprotect_via_stack(s7, pkg_alist);
     } else {
         s7_pointer mname_sym   = s7_make_symbol(s7, mname);
 
@@ -1297,10 +1313,13 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
             s7_pointer new_pkg_alist = s7_append(s7, pkg_alist,
                                                  s7_list(s7, 1,
                                                          modules_assoc));
+            s7_gc_unprotect_via_stack(s7, pkg_alist);
+
             /* if (mibl_debug_traversal) */
             /*     LOG_S7_DEBUG("pkg_alist", new_pkg_alist); */
 
             s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg_alist);
+            s7_gc_unprotect_via_stack(s7, pkg_key);
         } else {
 #if defined(DEBUG_TRACE)
             if (mibl_debug_traversal) {
@@ -1438,7 +1457,7 @@ LOCAL void _update_pkg_sigs(s7_pointer pkg_tbl,
 #endif
 
     s7_pointer pkg_key = make_pkg_key(pkg_name);
-    //s7_make_string(s7, pkg_name);
+    s7_gc_protect_via_stack(s7, pkg_key);
 
 #if defined(DEBUG_TRACE)
     if (mibl_debug_traversal) {
@@ -1447,22 +1466,28 @@ LOCAL void _update_pkg_sigs(s7_pointer pkg_tbl,
 #endif
 
     s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
-    /* if (mibl_debug_traversal) LOG_S7_DEBUG("pkg_alist", pkg_alist); */
+    s7_gc_protect_via_stack(s7, pkg_alist);
 
     if (pkg_alist == s7_f(s7)) {
 #if defined(DEBUG_TRACE)
         if (mibl_debug_traversal)
             log_debug("no dunefile in this directory");
 #endif
+        s7_gc_unprotect_via_stack(s7, pkg_alist);
     } else {
         s7_pointer mname_sym   = s7_make_symbol(s7, mname);
+        s7_gc_protect_via_stack(s7, mname_sym);
 
         s7_pointer assoc_in = _load_assoc_in();
         s7_pointer keypath = s7_list(s7, 2, sigs_kw, static_kw);
+        /* s7_gc_protect_via_stack(s7, pkg_keypath); */
+
         s7_pointer sigs_alist = s7_call(s7, assoc_in,
                                         s7_list(s7, 2,
                                                 keypath,
                                                 pkg_alist));
+        s7_gc_protect_via_stack(s7, sigs_alist);
+
         /* = s7_call(s7, assoc_in, */
         /*           s7_list(s7, 2, modules_kw, pkg_alist)); */
 #if defined(DEBUG_TRACE)
@@ -1488,6 +1513,8 @@ LOCAL void _update_pkg_sigs(s7_pointer pkg_tbl,
                                                mli_file,
                                                mdeps));
         s7_gc_protect_via_stack(s7, sig_assoc);
+        s7_gc_unprotect_via_stack(s7, mname_sym);
+
         /* mdeps is now protected by inclusion in sig_assoc, so unprotect it*/
         s7_gc_unprotect_at(s7, gc_module_deps);
 
@@ -1498,6 +1525,8 @@ LOCAL void _update_pkg_sigs(s7_pointer pkg_tbl,
 #endif
 
         if (sigs_alist == s7_f(s7)) {
+            s7_gc_unprotect_via_stack(s7, sigs_alist);
+
 #if defined(DEBUG_TRACE)
             if (mibl_debug_traversal)
                 log_debug("INITIALIZING :signatures field");
@@ -1520,10 +1549,10 @@ LOCAL void _update_pkg_sigs(s7_pointer pkg_tbl,
             s7_pointer new_pkg_alist = s7_append(s7, pkg_alist,
                                                  s7_list(s7, 1,
                                                          sigs_assoc));
-            /* if (mibl_debug_traversal) */
-            /*     LOG_S7_DEBUG("pkg_alist", new_pkg_alist); */
+            s7_gc_unprotect_via_stack(s7, pkg_alist);
 
             s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg_alist);
+            s7_gc_unprotect_via_stack(s7, pkg_key);
         } else {
 #if defined(DEBUG_TRACE)
             if (mibl_debug_traversal) {
@@ -1537,6 +1566,9 @@ LOCAL void _update_pkg_sigs(s7_pointer pkg_tbl,
                                          sigs_kw,
                                          static_kw,
                                          mname_sym);
+            s7_gc_protect_via_stack(s7, keypath);
+            s7_gc_unprotect_via_stack(s7, mname_sym);
+
 #if defined(DEBUG_TRACE)
             if (mibl_debug_traversal) {
                 /* LOG_S7_DEBUG("assoc-in", assoc_in); */
@@ -1549,6 +1581,8 @@ LOCAL void _update_pkg_sigs(s7_pointer pkg_tbl,
                                            s7_list(s7, 2,
                                                    keypath,
                                                    pkg_alist));
+            s7_gc_protect_via_stack(s7, sig_alist);
+            s7_gc_unprotect_via_stack(s7, keypath);
 
 #if defined(DEBUG_TRACE)
             if (mibl_debug_traversal) {
@@ -1556,6 +1590,8 @@ LOCAL void _update_pkg_sigs(s7_pointer pkg_tbl,
             }
 #endif
             if (sig_alist == s7_f(s7)) {
+                s7_gc_unprotect_via_stack(s7, sig_alist);
+
                 /* new */
 #if defined(DEBUG_TRACE)
                 if (mibl_debug_traversal) {
@@ -1566,6 +1602,7 @@ LOCAL void _update_pkg_sigs(s7_pointer pkg_tbl,
 #endif
 
                 s7_pointer sigs_alist_cdr = s7_cdr(sigs_alist);
+
 #if defined(DEBUG_TRACE)
                 if (mibl_debug_traversal) {
                     LOG_S7_DEBUG("sigs_alist_cdr", sigs_alist_cdr);
@@ -1588,6 +1625,7 @@ LOCAL void _update_pkg_sigs(s7_pointer pkg_tbl,
 
                 s7_pointer new_sigs_alist
                     = s7_set_cdr(sigs_alist, new_sigs_alist_cdr);
+                s7_gc_unprotect_via_stack(s7, sigs_alist);
                 (void)new_sigs_alist;
 #if defined(DEBUG_TRACE)
                 if (mibl_debug_traversal) {
@@ -1612,6 +1650,8 @@ LOCAL void _update_pkg_sigs(s7_pointer pkg_tbl,
                                              s7_list(s7, 1, mli_file)); //mli_assoc));
                 s7_pointer new_sigs_alist
                     = s7_set_cdr(sig_alist, msrcs);
+                s7_gc_unprotect_via_stack(s7, sig_alist);
+
                 (void)new_sigs_alist;
 #if defined(DEBUG_TRACE)
                 if (mibl_debug_traversal) {
@@ -1645,6 +1685,8 @@ LOCAL void _update_pkg_structs(s7_pointer pkg_tbl,
 #endif
 
     s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
+    s7_gc_protect_via_stack(s7, pkg_alist);
+
     /* if (mibl_debug_traversal) LOG_S7_DEBUG("pkg_alist", pkg_alist); */
 
     if (pkg_alist == s7_f(s7)) {
@@ -1693,6 +1735,8 @@ LOCAL void _update_pkg_structs(s7_pointer pkg_tbl,
                     s7_cons(s7,
                             s7_make_symbol(s7, fname),
                             mdeps));
+        s7_gc_protect_via_stack(s7, struct_assoc);
+
                     /* s7_make_symbol(s7, fname)); */
         /* mdeps is now protected by inclusion in ml_assoc, so unprotect it*/
         s7_gc_unprotect_at(s7, gc_module_deps);
@@ -1724,6 +1768,7 @@ LOCAL void _update_pkg_structs(s7_pointer pkg_tbl,
                             // static_kw,
                             (ftype == TAG_ML) ?static_kw :dynamic_kw,
                             struct_assoc);
+                s7_gc_unprotect_via_stack(s7, struct_assoc);
 
                 s7_pointer structs_assoc = s7_list(s7, 2,
                                                    structs_kw, statics_assoc);
@@ -1741,8 +1786,8 @@ LOCAL void _update_pkg_structs(s7_pointer pkg_tbl,
                     LOG_S7_DEBUG("pkg_key", pkg_key);
                 }
 #endif
-
                 s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg_alist);
+                s7_gc_unprotect_via_stack(s7, pkg_key);
             } else {
                 log_debug("OLD");
 
@@ -1944,6 +1989,9 @@ LOCAL void _update_pkg_mll_files(s7_pointer pkg_tbl,
             /* if (mibl_debug_traversal) */
             /*     LOG_S7_DEBUG("pkg_alist", new_pkg_alist); */
 
+            tostr = TO_STR(pkg_key);
+            log_debug("set ht key: %s", tostr);
+            free(tostr);
             s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg_alist);
         } else {
 #if defined(DEBUG_TRACE)
@@ -2189,6 +2237,9 @@ LOCAL void _update_pkg_mllib_files(s7_pointer pkg_tbl,
             /* if (mibl_debug_traversal) */
             /*     LOG_S7_DEBUG("pkg_alist", new_pkg_alist); */
 
+            tostr = TO_STR(pkg_key);
+            log_debug("set ht key: %s", tostr);
+            free(tostr);
             s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg_alist);
         } else {
 #if defined(DEBUG_TRACE)
@@ -2386,6 +2437,9 @@ LOCAL void _update_pkg_mly_files(s7_pointer pkg_tbl,
             /* if (mibl_debug_traversal) */
             /*     log_debug("pkg_alist", new_pkg_alist); */
 
+            tostr = TO_STR(pkg_key);
+            log_debug("set ht key: %s", tostr);
+            free(tostr);
             s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg_alist);
         } else {
 #if defined(DEBUG_TRACE)
@@ -2602,6 +2656,9 @@ LOCAL void _update_pkg_cppo_files(s7_pointer pkg_tbl,
             /* if (mibl_debug_traversal) */
             /*     LOG_S7_DEBUG("pkg_alist", new_pkg_alist); */
 
+            tostr = TO_STR(pkg_key);
+            log_debug("set ht key: %s", tostr);
+            free(tostr);
             s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg_alist);
         } else {
 #if defined(DEBUG_TRACE)
@@ -3191,6 +3248,9 @@ LOCAL void _handle_dune_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
 #endif
             /* FIXME: check result */
             /* s7_pointer result = */
+            tostr = TO_STR(pkg_key);
+            log_debug("set ht key: %s", tostr);
+            free(tostr);
             s7_hash_table_set(s7, pkg_tbl, pkg_key,
                               s7_append(s7, pkg_alist,
                                         s7_list(s7, 1, stanzas_assoc)));
@@ -3229,11 +3289,14 @@ LOCAL void _handle_dune_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
 
     /* s7_pointer pkg_key = s7_make_string(s7, dirname(ftsentry->fts_path)); */
     s7_pointer pkg_key = make_pkg_key(dirname(ftsentry->fts_path));
+    s7_gc_protect_via_stack(s7, pkg_key);
 
     /* if (mibl_debug_traversal) LOG_S7_DEBUG("pkg tbl", pkg_tbl); */
     /* if (mibl_debug_traversal) LOG_S7_DEBUG("pkg key", pkg_key); */
 
     s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
+    s7_gc_protect_via_stack(s7, pkg_alist);
+
     /* if (mibl_debug_traversal) */
     /*     LOG_S7_DEBUG("pkg_alist", pkg_alist); */
 
@@ -3243,6 +3306,7 @@ LOCAL void _handle_dune_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
         s7_call(s7, assoc, s7_list(s7, 2,
                                    dune_stanzas_sym,
                                    pkg_alist));
+    s7_gc_protect_via_stack(s7, pkg_alist);
 
     if (stanzas_alist == s7_f(s7)) {
         s7_pointer stanzas_assoc = s7_cons(s7, dune_stanzas_sym, stanzas);
@@ -3252,6 +3316,9 @@ LOCAL void _handle_dune_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
         s7_hash_table_set(s7, pkg_tbl, pkg_key,
                           s7_append(s7, pkg_alist,
                                     s7_list(s7, 1, stanzas_assoc)));
+        s7_gc_unprotect_via_stack(s7, pkg_key);
+        s7_gc_unprotect_via_stack(s7, pkg_alist);
+
     } else {
         /* if (mibl_debug_traversal) log_debug("setting cdr of "); */
         s7_set_cdr(stanzas_alist, stanzas);
@@ -3286,6 +3353,8 @@ LOCAL void _handle_dune_project_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
                                             stanzas);
 
     s7_pointer pkg_key = make_pkg_key(dirname(ftsentry->fts_path));
+    s7_gc_protect_via_stack(s7, pkg_key);
+
     // s7_make_string(s7, dirname(ftsentry->fts_path));
 #if defined(DEBUG_TRACE)
     if (mibl_debug_traversal)
@@ -3293,6 +3362,8 @@ LOCAL void _handle_dune_project_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
 #endif
 
     s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
+    s7_gc_protect_via_stack(s7, pkg_alist);
+
     /* if (mibl_debug_traversal) */
     /*     LOG_S7_DEBUG("pkg_alist", pkg_alist); */
 
@@ -3300,6 +3371,8 @@ LOCAL void _handle_dune_project_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
         // we hit a dune-project file w/o a dune file
         s7_hash_table_set(s7, pkg_tbl, pkg_key,
                           s7_list(s7, 1, dune_project_assoc));
+        s7_gc_unprotect_via_stack(s7, pkg_key);
+
     } else {
 
         /* FIXME: check result */
@@ -3309,6 +3382,8 @@ LOCAL void _handle_dune_project_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
                           s7_append(s7, pkg_alist,
                                     s7_list(s7, 1,
                                             dune_project_assoc)));
+        s7_gc_unprotect_via_stack(s7, pkg_key);
+        s7_gc_unprotect_via_stack(s7, pkg_alist);
         /* if (mibl_debug_traversal) */
         /*     LOG_S7_DEBUG("updated pkg-tbl", pkg_tbl); */
 
@@ -3337,10 +3412,11 @@ LOCAL void _update_opam_files(s7_pointer pkg_tbl, FTSENT *ftsentry) //, char *ex
     char *pkg_name = dirname(ftsentry->fts_path);
 
     s7_pointer pkg_key = make_pkg_key(pkg_name);
+    s7_gc_protect_via_stack(s7, pkg_key);
+
     //s7_make_string(s7, pkg_name);
     s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
-    /* if (mibl_debug_traversal) */
-    /*     LOG_S7_DEBUG("pkg_alist", pkg_alist); */
+    s7_gc_protect_via_stack(s7, pkg_alist);
 
     if (pkg_alist == s7_f(s7)) {
         // FIXME: should not happen, we always add a pkg entry first
@@ -3348,6 +3424,7 @@ LOCAL void _update_opam_files(s7_pointer pkg_tbl, FTSENT *ftsentry) //, char *ex
         if (mibl_debug_traversal)
             log_debug("no entry for this pkg");
 #endif
+        s7_gc_unprotect_via_stack(s7, pkg_alist);
     } else {
 
         s7_pointer assoc = _load_assoc();
@@ -3376,13 +3453,13 @@ LOCAL void _update_opam_files(s7_pointer pkg_tbl, FTSENT *ftsentry) //, char *ex
             s7_pointer new_pkg = s7_append(s7,
                                            pkg_alist,
                                            file_list);
+            s7_gc_unprotect_via_stack(s7, pkg_alist);
 #if defined(DEBUG_TRACE)
             if (mibl_debug_traversal_opam)
                 LOG_S7_DEBUG("new pkg", new_pkg);
 #endif
-
             s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg);
-
+            s7_gc_unprotect_via_stack(s7, pkg_key);
         } else {
 #if defined(DEBUG_TRACE)
             if (mibl_debug_traversal_opam) {
@@ -3613,7 +3690,7 @@ s7_pointer _merge_pkg_tbls(s7_scheme *s7, s7_pointer ht1, s7_pointer ht2)
             LOG_S7_DEBUG("val", s7_cdr(_item));
         }
 #endif
-        s7_hash_table_set(s7, ht1,
+        s7_hash_table_set(s7, ht1, /* OBAZL */
                           s7_car(_item),
                           s7_cdr(_item));
         _item = s7_iterate(s7, _iter);
