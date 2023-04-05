@@ -1,0 +1,15 @@
+((:@ (:name . "@")
+     (:path . /Users/gar/obazl/mibl/test/dune/rules/shell/bash/simple)
+     (:exports
+         (hash-table)) (:opam (hash-table)) (:shared-ppx (hash-table))
+     (:filegroups
+         (hash-table))
+     (:pkgs
+         (hash-table
+           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/rules/shell/bash/simple") (:pkg-path . "./")
+                   (:realpath . "/Users/gar/obazl/mibl/test/dune/rules/shell/bash/simple")
+                   (dune (rule (targets foo.txt) (deps a.txt)
+                               (action (bash "
+# shell script here...
+    "))))
+                   (:files (:static "dune.mibl")))))))

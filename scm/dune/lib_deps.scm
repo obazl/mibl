@@ -348,14 +348,14 @@
                                     deps
                                     #f))
                       (_ (if *mibl-debug-s7* (format #t "deps: ~A~%" deps)))
-                      (action (if-let ((action (assoc-val :actions stanza-alist)))
+                      (action (if-let ((action (assoc-val :cmd stanza-alist))) ;; (assoc-val :actions stanza-alist)))
                                       action
                                       (if-let ((action
                                                 (assoc-val :progn stanza-alist)))
                                               action
                                               (error 'bad-action "unexpected action in :rule"))))
                       (_ (if *mibl-debug-s7* (format #t "action: ~A~%" action)))
-                      (tool (assoc-in '(:actions :cmd :tool) stanza-alist)))
+                      (tool (assoc-in '(:cmd :tool) stanza-alist)))
                  (if *mibl-debug-s7*
                      (begin
                        (format #t "Tool: ~A~%" tool)
@@ -440,7 +440,7 @@
                  ;; (format #t "~A: ~A~%" (ured "reset deps") deps)
 
                  ;; :actions is always a list of cmd; for progn, more than one
-                 (if (assoc :actions stanza-alist)
+                 (if (assoc :cmd stanza-alist) ;; :actions stanza-alist)
                      (begin
                        (for-each (lambda (c)
                                    (if *mibl-debug-s7*

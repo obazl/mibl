@@ -19,6 +19,7 @@ include = test
 ;; cwd always included
 
 ;; broken:
+exclude = test/cases
 exclude = test/b
 exclude = test/c
 exclude = test/d

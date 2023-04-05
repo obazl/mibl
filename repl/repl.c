@@ -17,6 +17,8 @@
 
 extern s7_scheme *s7;
 
+extern UT_string *mibl_runfiles_root;
+
 char *history = ".ocamlark.history.txt";
 
 extern bool debug;
@@ -45,7 +47,7 @@ char *hints(const char *buf, int *color, int *bold) {
     return NULL;
 }
 
-void std_repl()
+void std_repl(void)
 {
     char *line;
     char response[1024];        /* result of evaluating input */
@@ -197,21 +199,34 @@ int main(int argc, char **argv)
     }
 
    /* initialize in this order: bazel then mibl then s7 */
-    bazel_configure(NULL);
+    /* bazel_configure(NULL); */
 
-    mibl_configure();
+    /* mibl_configure(); */
 
-    s7_configure(NULL, NULL);
+    /* s7_configure(NULL, NULL); */
 
-    s7_load(s7, "dune.scm");
+    /* s7_load(s7, "dune.scm"); */
 
-    initialize_mibl_data_model(s7);
+    /* initialize_mibl_data_model(s7); */
 
     /* chdir(launch_dir); */
     /* if (mibl_debug) */
     /*     log_debug("Set CWD to launch dir: %s", launch_dir); */
 
     /* s7_repl(s7); */
+
+    utstring_new(mibl_runfiles_root);
+    utstring_printf(mibl_runfiles_root, "%s", getcwd(NULL, 0));
+
+    mibl_s7_init();
+
+    /* _update_mibl_config(options); */
+
+    mibl_s7_init2(NULL, // options[OPT_MAIN].argument,
+                  NULL); // options[OPT_WS].argument);
+
+    /* _update_s7_globals(options); */
+
     xen_repl(argc, argv);
 
     return 0;

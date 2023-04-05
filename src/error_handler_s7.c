@@ -103,7 +103,7 @@ s7_int gc_loc = -1;
 /*     } */
 /* } */
 
-s7_pointer s7_read_thunk_catcher;
+/* s7_pointer s7_read_thunk_catcher; */
 
 s7_pointer _s7_error_handler(s7_scheme *s7, s7_pointer args)
 {

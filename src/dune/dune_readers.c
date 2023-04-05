@@ -35,6 +35,127 @@ extern bool debug;
 extern bool trace;
 #endif
 
+#define ERRSEXP "(with-let (owlet) " \
+    "(format #t \"file: ~A, line ~A\n\" error-file error-line))"
+
+s7_pointer g_s7_read_thunk_catcher(s7_scheme *s7, s7_pointer args)
+{
+    /* LOG_S7_DEBUG("s7_read_thunk_catcher args", args); */
+    /* log_info("s7_read_thunk_catcher arg0: %s", TO_STR(s7_car(args))); */
+    /* log_info("s7_read_thunk_catcher arg1: %s", TO_STR(s7_cadr(args))); */
+    /* s7_show_stack(s7); */
+
+    /* if arg0 == 'read-error and */
+    if (strstr(TO_STR(s7_cadr(args)),
+               "(\"unexpected close paren:") != NULL) {
+        /* printf("XXXXXXXXXXXXXXXX\n"); */
+        /* if (strstr(errmsg, "BADDOT") != NULL) { */
+        log_info(RED "fixing baddot in %s" CRESET,
+                 utstring_body(dunefile_name));
+        s7_close_input_port(s7, g_dunefile_port);
+
+        //FIXME FIXME
+        /* s7_gc_unprotect_at(s7, dune_gc_loc); */
+
+        /* s7_show_stack(s7); */
+        /* clear out old error */
+        /* s7_flush_output_port(s7, s7_current_error_port(s7)); */
+        /* close_error_config(); */
+        /* error_config(); */
+        /* init_error_handlers(); */
+
+        // FIXME: test case: 'include' after baddot
+        s7_pointer fixed = fix_baddot(dunefile_name);
+        /* s7_pointer fixed = s7_eval_c_string(s7, "'(foob)"); */
+#if defined(DEBUG_TRACE)
+        if (mibl_debug) log_debug(RED "FIXED:" CRESET " %s",
+                             TO_STR(fixed));
+        /* s7_show_stack(s7); */
+        /* print_backtrace(s7); */
+#endif
+        /* close_error_config(); */
+        /* error_config(); */
+        // FIXING baddot always re-reads entire dunefile
+        /* stanzas = fixed; */
+        /* if (s7_is_null(s7,stanzas)) { */
+        /*     // fixed is a list of stanzas */
+        /*     stanzas = fixed; */
+        /* } else{ */
+        /*     stanzas = s7_append(s7, stanzas, fixed); */
+        /* } */
+        /* } */
+
+        return fixed;
+    } else {
+        fprintf(stdout, RED "Read Error:" CRESET " %s\n",
+                TO_STR(s7_cadr(args)));
+
+        s7_pointer st = s7_eval_c_string(s7, "(debug-print-stacktrace)");
+        (void)st;
+        /* fprintf(stdout, "STACKTRACE:\n%s\n", "TO_STR(st)"); */
+        s7_flush_output_port(s7, s7_current_output_port(s7));
+        fflush(NULL);
+
+        fprintf(stdout, RED "[begin error context]\n");
+        s7_eval_c_string(s7, ERRSEXP);
+        char *sexp = "(do ((e (outlet (owlet)) (outlet e))) "
+            "((eq? e (rootlet))) "
+            "(format () \"~{~A ~}~%\" e)) ";
+        s7_eval_c_string(s7, sexp);
+        s7_write(s7,
+                 /* s7_make_string(s7, s7_car(args)), */
+                 // s7_string(s7_car(args)),
+                 /* TO_STR(s7_car(args)), */
+                 s7_car(args),
+                 s7_current_error_port(s7));
+        fprintf(stdout, "[end error context]" CRESET "\n");
+
+        close_error_config();
+        error_config();
+        /* init_error_handlers(); */
+        /* s7_quit(s7); */
+        /* exit(EXIT_FAILURE); */
+        return NULL;
+    }
+}
+
+s7_pointer s7_read_thunk_catcher;
+
+void init_error_handlers_dune(void)
+{
+    /* log_debug("init_error_handlers_dune"); */
+    s7_read_thunk_catcher = s7_define_function(s7, "s7-read-thunk-catcher", g_s7_read_thunk_catcher,
+                                               2, // required args
+                                               0, // optional args
+                                               false, // rest_arg
+                                               "read-thunk error handler"); // docstring
+
+    /* log_debug("s7_read_thunk_catcher: %d\n", s7_is_defined(s7, "s7-read-thunk-catcher")); */
+
+   s7_define_function(s7, "error-handler", _s7_error_handler,
+                      1, 0, false, "our error handler");
+
+    s7_eval_c_string(s7, "(set! (hook-functions *error-hook*) \n\
+                            (list (lambda (hook) \n\
+                                    (error-handler \n\
+                                      (apply format #f (hook 'data))) \n\
+                                    (set! (hook 'result) 'our-error))))");
+
+    /* read-error-hook evidently only catches problems with # names
+       and \ escapes, not general read errors. */
+    s7_define_function(s7, "read-error-handler",
+                       _s7_read_error_handler, 1, 0, false,
+                       "our read error handler");
+
+    /* s7_eval_c_string(s7, "(set! (hook-functions *read-error-hook*) \n\ */
+    /*                         (list (lambda (hook) \n\ */
+    /*                                 (read-error-handler \n\ */
+    /*                                   (apply format #f (hook 'data))) \n \ */
+    /*                                 (set! (hook 'result) 'READ-error))))"); */
+
+
+}
+
 /* s7_pointer */
 void *read_dune_package(UT_string *dunefile_name)
 {

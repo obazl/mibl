@@ -1,0 +1,14 @@
+((:@ (:name . "@")
+     (:path . /Users/gar/obazl/mibl/test/dune/executable/main_dyads/prologue2/pl)
+     (:exports
+         (hash-table)) (:opam (hash-table)) (:shared-ppx (hash-table))
+     (:filegroups
+         (hash-table))
+     (:pkgs
+         (hash-table
+           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/executable/main_dyads/prologue2/pl") (:pkg-path . "./")
+                   (:realpath . "/Users/gar/obazl/mibl/test/dune/executable/main_dyads/prologue2/pl")
+                   (:structures (:static (A a.ml) (B b.ml)))
+                   (dune (executables (names main1 main2)))
+                   (:modules (Main1 (:ml main1.ml A) (:mli main1.mli))
+                             (Main2 (:ml main2.ml) (:mli main2.mli))))))))

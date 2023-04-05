@@ -1,0 +1,12 @@
+((:@ (:name . "@")
+     (:path . /Users/gar/obazl/mibl/test/dune/rules/stdout/with/echo)
+     (:exports
+         (hash-table)) (:opam (hash-table)) (:shared-ppx (hash-table))
+     (:filegroups
+         (hash-table))
+     (:pkgs
+         (hash-table
+           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/rules/stdout/with/echo") (:pkg-path . "./")
+                   (:realpath . "/Users/gar/obazl/mibl/test/dune/rules/stdout/with/echo")
+                   (dune (rule (target config.status.in) (mode fallback)
+                               (action (with-stdout-to %{target} (echo ""))))))))))

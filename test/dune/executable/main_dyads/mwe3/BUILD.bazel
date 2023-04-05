@@ -1,0 +1,32 @@
+## GENERATED FILE ##
+
+load("@rules_ocaml//build:rules.bzl",
+     "ocaml_binary",
+     "ocaml_exec_module",
+     "ocaml_library",
+     "ocaml_module",
+     "ocaml_ns_library",
+     "ocaml_ns_resolver",
+     "ocaml_signature")
+
+##############################
+####  Executable Targets  ####
+ocaml_binary(
+    name     = "main.exe",
+    main     = ":Main",
+    visibility = ["//visibility:public"],
+)
+
+ocaml_exec_module(
+    name          = "Main",
+    struct        = "main.ml",
+    sig           = ":Main_cmi",
+)
+
+ocaml_signature(
+    name          = "Main_cmi",
+    src           = "main.mli",
+)
+
+
+######################## Modules & Signatures ########################

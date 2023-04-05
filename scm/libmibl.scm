@@ -52,8 +52,8 @@
 
   (normalize-aggregate-manifests! :@)
 
-  (format #t "RETURNING XXXXXXXXXXXXXXXX\n")
-  (return)
+  ;; (format #t "RETURNING XXXXXXXXXXXXXXXX\n")
+  ;; (return)
 
   (normalize-rule-deps! :@)
 

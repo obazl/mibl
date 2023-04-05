@@ -1,0 +1,7 @@
+(executable
+ (public_name main1)
+ (name main1))
+
+(executable
+ (public_name main2)
+ (name main2))

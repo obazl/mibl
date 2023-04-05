@@ -1,0 +1,14 @@
+((:@ (:name . "@")
+     (:path . /Users/gar/obazl/mibl/test/dune/rules/stdout/with/bash)
+     (:exports
+         (hash-table)) (:opam (hash-table)) (:shared-ppx (hash-table))
+     (:filegroups
+         (hash-table))
+     (:pkgs
+         (hash-table
+           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/rules/stdout/with/bash") (:pkg-path . "./")
+                   (:realpath . "/Users/gar/obazl/mibl/test/dune/rules/stdout/with/bash")
+                   (:files (:static "BUILD.sh.bazel" "a.txt" "b.txt" "c.txt" "d.txt" "myscript.sh"))
+                   (dune (rule (targets output.txt)
+                               (deps myscript.sh (:inputs (glob_files *.txt)))
+                               (action (with-stdout-to %{targets} (run bash myscript.sh %{inputs}))))))))))

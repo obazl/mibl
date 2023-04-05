@@ -1,0 +1,52 @@
+## GENERATED FILE ##
+
+exports_files(["BUILD.bazel"]) # for testing
+
+load("@rules_ocaml//build:rules.bzl",
+     "ocaml_binary",
+     "ocaml_exec_module",
+     "ocaml_library",
+     "ocaml_module",
+     "ocaml_ns_library",
+     "ocaml_ns_resolver",
+     "ocaml_signature")
+
+##############################
+####  Executable Targets  ####
+ocaml_binary(
+    name     = "main1.exe",
+    main     = ":Main1",
+    visibility = ["//visibility:public"],
+)
+
+ocaml_exec_module(
+    name          = "Main1",
+    struct        = "main1.ml",
+    sig           = ":Main1_cmi",
+)
+
+ocaml_signature(
+    name          = "Main1_cmi",
+    src           = "main1.mli",
+)
+
+
+ocaml_binary(
+    name     = "main2.exe",
+    main     = ":Main2",
+    visibility = ["//visibility:public"],
+)
+
+ocaml_exec_module(
+    name          = "Main2",
+    struct        = "main2.ml",
+    sig           = ":Main2_cmi",
+)
+
+ocaml_signature(
+    name          = "Main2_cmi",
+    src           = "main2.mli",
+)
+
+
+######################## Modules & Signatures ########################

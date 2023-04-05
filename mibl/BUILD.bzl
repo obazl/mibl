@@ -32,7 +32,11 @@ def mibl(name = "mibl", main = None, args = None, **kwargs):
             "//scm/meta:srcs",
             "//scm/opam:srcs",
         ],
-        srcs  = ["//mibl:mibl.c", "//mibl:mibl.h"],
+        srcs  = [
+            "//mibl:mibl.c", "//mibl:mibl.h",
+            # "//mibl:repl.c", "//mibl:repl.h",
+            "//mibl:xen_repl.c", "//mibl:xen_repl.h",
+        ],
         linkstatic = True,
         defines = select({
             "//bzl/host:debug": ["DEBUG_TRACE"],
@@ -74,6 +78,11 @@ def mibl(name = "mibl", main = None, args = None, **kwargs):
             "-Iexternal/mibl/vendored/uthash",
 
             "-Iexternal/libs7/src", # loaded by @mibl//src:mibl
+
+            ## repl
+            "-Iexternal/libs7/vendored/linenoise",
+            "-Iexternal/mibl/libs7/vendored/linenoise",
+
         ],
         linkopts = select({
             "//bzl/host:macos": [],
@@ -89,4 +98,3 @@ def mibl(name = "mibl", main = None, args = None, **kwargs):
         ],
         visibility = ["//visibility:public"]
     )
-

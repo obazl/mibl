@@ -938,7 +938,17 @@ EXPORT void mibl_s7_run(char *main_script, char *ws)
                 log_debug("loaded main_script: %s", main_script);
         }
     } else {
-        log_info(GRN "INFO: " CRESET "main_script is NULL");
+        log_info(GRN "INFO: " CRESET "main_script is NULL, defaulting to mibl_main.scm");
+        main_script = "mibl_main.scm";
+        if (!s7_load(s7, main_script)) {
+            log_error(RED "Could not load main_script '%s'; exiting\n",
+                      main_script);
+            fflush(NULL);
+            exit(EXIT_FAILURE);
+        } else {
+            if (verbose && verbosity > 1)
+                log_debug("loaded main_script: %s", main_script);
+        }
         /* exit(EXIT_FAILURE); */
         /* return; */
     }

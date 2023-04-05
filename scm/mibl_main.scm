@@ -46,8 +46,8 @@
                                  (flush-output-port))
                                (if *mibl-show-pkg*
                                    (mibl-debug-print-pkg)))
-                           (if (not *mibl-quiet*)
-                               (format #t "~A: Returning...~%" (green "INFO")))
+                           ;; (if (not *mibl-quiet*)
+                           ;;     (format #t "~A: Returning...~%" (green "INFO")))
                            (return))
                          ;; root-path ws-path
                          )))))

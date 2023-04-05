@@ -1,0 +1,5 @@
+(executable
+ (name main1))
+
+(executable
+ (name main2))

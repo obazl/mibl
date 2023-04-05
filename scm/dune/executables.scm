@@ -229,7 +229,7 @@
             ;; indicates that the library should only be built and
             ;; installed if all the dependencies are available, either
             ;; in the workspace or in the installed world.
-            `(:unhandled ,fld-assoc))
+            `(:UNHANDLED ,fld-assoc))
 
            ;; else ignore - handled elsewhere
            (else (values)))) ;; fld-assoc

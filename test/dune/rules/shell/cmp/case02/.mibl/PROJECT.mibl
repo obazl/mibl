@@ -1,0 +1,16 @@
+((:@ (:name . "@")
+     (:path . /Users/gar/obazl/mibl/test/dune/rules/shell/cmp/case02)
+     (:exports
+         (hash-table)) (:opam (hash-table)) (:shared-ppx (hash-table))
+     (:filegroups
+         (hash-table))
+     (:pkgs
+         (hash-table
+           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/rules/shell/cmp/case02") (:pkg-path . "./")
+                   (:realpath . "/Users/gar/obazl/mibl/test/dune/rules/shell/cmp/case02")
+                   (:files (:static "bar.bin" "foo.bin"))
+                   (dune (rule (action (cmp foo.bin bar.bin))))
+                   (:mibl (:rule (:deps (:bar.bin (:pkg . "./") (:tgt . "bar.bin"))
+                                        (:foo.bin (:pkg . "./") (:tgt . "foo.bin")))
+                                 (:tools (:cmp . :shell-tool))
+                                 (:cmd (:tool :cmp) (:args :foo.bin :bar.bin)))))))))

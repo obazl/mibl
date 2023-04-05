@@ -81,24 +81,24 @@
                      ((modules_without_implementation)
                       (cons :sigs (cdr fld-assoc)))
                      ((empty_module_interface_if_absent) (fld-error 'library fld-assoc))
-                     ((private_modules) (cons :unhandled fld-assoc))
-                     ((root_module) (cons :unhandled fld-assoc))
+                     ((private_modules) (cons :UNHANDLED fld-assoc))
+                     ((root_module) (cons :UNHANDLED fld-assoc))
                      ((allow_overlapping_dependencies) (fld-error 'library fld-assoc))
 
                      ((optional) (cons :optional #t))
-                     ((preprocessor_deps) `(:unhandled ,@fld-assoc))
+                     ((preprocessor_deps) `(:UNHANDLED ,@fld-assoc))
 
                      ((synopsis) (cons :docstring (cadr fld-assoc)))
 
-                     ((virtual_deps) `(:unhandled ,@fld-assoc))
+                     ((virtual_deps) `(:UNHANDLED ,@fld-assoc))
 
                      ((wrapped) (values))
 
                      ;; cc
-                     ((c_flags) `(:unhandled ,@fld-assoc))
+                     ((c_flags) `(:UNHANDLED ,@fld-assoc))
 
                      ((cxx_flags) (fld-error 'library fld-assoc))
-                     ((c_library_flags) `(:unhandled ,@fld-assoc))
+                     ((c_library_flags) `(:UNHANDLED ,@fld-assoc))
                      ((c_types) (fld-error 'library fld-assoc))
                      ((install_c_headers) (fld-error 'library fld-assoc))
                      ((foreign_archives) (foreign-archives->mibl fld-assoc))
@@ -124,7 +124,7 @@
 
                      ;; other
                      ((lint) (fld-warning 'library fld-assoc)
-                      `(:unhandled ,fld-assoc))
+                      `(:UNHANDLED ,fld-assoc))
 
                      ;; ((enabled_if) (fld-error 'library fld-assoc))
 

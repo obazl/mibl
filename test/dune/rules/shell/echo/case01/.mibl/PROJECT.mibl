@@ -1,0 +1,17 @@
+((:@ (:name . "@")
+     (:path . /Users/gar/obazl/mibl/test/dune/rules/shell/echo/case01)
+     (:exports
+         (hash-table)) (:opam (hash-table)) (:shared-ppx (hash-table))
+     (:filegroups
+         (hash-table))
+     (:pkgs
+         (hash-table
+           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/rules/shell/echo/case01") (:pkg-path . "./")
+                   (:realpath . "/Users/gar/obazl/mibl/test/dune/rules/shell/echo/case01")
+                   (dune (rule (deps a.txt) (action (echo "Hello world"))))
+                   (:mibl (:rule (:deps ((symbol ":Hello world") (:pkg . "./")
+                                          (:tgt . "Hello world"))
+                                        (:a.txt (:pkg . "./") (:tgt . "a.txt")))
+                                 (:tools (:echo . :shell-tool))
+                                 (:cmd (:tool :echo) (:args (symbol ":Hello world")))))
+                   (:files (:dynamic "Hello world")))))))

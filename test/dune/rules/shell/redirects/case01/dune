@@ -1,0 +1,13 @@
+;; using explicit > instead of with-stdout-to
+(rule
+ (target output.txt)
+ ;; tool implicitly depends on %{workspace_root}/config.txt
+ (deps (:cfg %{workspace_root}/config.txt))
+ (action (chdir %{workspace_root}
+                (cat %{cfg} > %{target}))))
+
+(rule
+ (target output.txt)
+ ;; tool implicitly depends on %{workspace_root}/config.txt
+ (action (chdir %{workspace_root}
+                (cat "foo/config.txt" > %{target}))))

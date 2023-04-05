@@ -8,6 +8,8 @@
 /* libmibl.a public header */
 #include "libmibl.h"
 
+#include "xen_repl.h"
+
 #include "mibl.h"
 
 #if defined(DEBUG_TRACE)
@@ -420,8 +422,9 @@ void _set_options(struct option options[])
 
 int main(int argc, char **argv, char **envp)
 {
-    argc = gopt(argv, options);
-    (void)argc;
+    int gopt_argc = gopt(argv, options);
+    (void)gopt_argc;
+
     gopt_errors(argv[0], options);
 
     _set_options(options);
@@ -453,7 +456,12 @@ int main(int argc, char **argv, char **envp)
     /*     exit(EXIT_SUCCESS); */
     /* } */
 
-    mibl_s7_run(options[OPT_MAIN].argument, options[OPT_WS].argument);
+    if (options[OPT_MAIN].count) {
+        mibl_s7_run(options[OPT_MAIN].argument, options[OPT_WS].argument);
+    } else {
+        mibl_s7_run("mibl_main.scm", NULL);
+        xen_repl(argc, argv);
+    }
 
     if (verbose)
         log_info("script exit...");

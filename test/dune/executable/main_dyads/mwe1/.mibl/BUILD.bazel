@@ -1,0 +1,17 @@
+load("@bazel_skylib//rules:diff_test.bzl", "diff_test")
+
+diff_test(
+    name  = "obazl_test",
+    file1 = "BUILD.bazel.expected",
+    file2 = "//test/dune/executable/main_dyads/mwe1:BUILD.bazel",
+    timeout = "short"
+)
+
+sh_test(
+    name = "mibl_test",
+    srcs = ["//test:Mibl_test.sh"],
+    deps = ["@bazel_tools//tools/bash/runfiles"],
+    data = ["//test:mibl_test", "PARSETREE.s7", "PROJECT.s7"],
+    timeout = "short"
+)
+

@@ -1,0 +1,3 @@
+(executables
+ ;; (flags "-foo")
+ (names main1 main2))

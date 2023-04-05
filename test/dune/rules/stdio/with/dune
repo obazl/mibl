@@ -1,0 +1,23 @@
+;; @bap//dune
+
+;; tools/rewrite.exe makes assumptions about cwd and inputs
+
+(rule
+ (target config.status.in)
+ (mode fallback)
+ ;; in this mode, when the targets are already present in the source
+ ;; tree, Dune will ignore the rule. It’s an error if only a subset of
+ ;; the targets are present in the tree. Fallback rules are commonly
+ ;; used to generate default configuration files that may be generated
+ ;; by a configure script.
+ (action (with-stdout-to %{target} (echo ""))))
+
+(rule
+ (alias config)
+ (target config.status)
+ (deps config.status.in)
+ (action
+  (with-stdin-from %{deps}
+   (with-stdout-to %{target}
+    (chdir %{workspace_root}
+     (run ./tools/rewrite.exe -init))))))

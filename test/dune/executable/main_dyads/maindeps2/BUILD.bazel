@@ -1,0 +1,111 @@
+
+load("@rules_ocaml//build:rules.bzl",
+     "ocaml_binary",
+     "ocaml_library",
+     "ocaml_ns_library",
+     "ocaml_exec_module",
+     "ocaml_module",
+     "ocaml_signature",
+)
+
+DEPS_1 = [
+    "@Foo//lib/Foo"
+]
+
+DEPS_2 = [
+    "@Bar//lib/Bar"
+]
+
+OPTS_1 = [
+        "-open",
+        "Foo",
+        "-linkall"
+]
+
+OPTS_2 = [
+        "-open",
+        "Bar",
+        "-linkall"
+]
+
+##############################
+####  Executable Targets  ####
+ocaml_binary(
+    name     = "main1.exe",
+    main     = ":Main1",
+    visibility = ["//visibility:public"],
+)
+
+ocaml_exec_module(
+    name          = "Main1",
+    struct        = "main1.ml",
+    sig           = ":Main1_cmi",
+    opts          = OPTS_1,
+    deps          = DEPS_1,
+)
+
+ocaml_signature(
+    name          = "Main1_cmi",
+    src           = "main1.mli",
+    opts          = OPTS_1,
+    deps          = DEPS_1,
+)
+
+
+ocaml_binary(
+    name     = "main2.exe",
+    main     = ":Main2",
+    visibility = ["//visibility:public"],
+)
+
+ocaml_exec_module(
+    name          = "Main2",
+    struct        = "main2.ml",
+    sig           = ":Main2_cmi",
+    opts          = ["-open", "Main_dyads_local_deps_execlib"] + OPTS_2,
+    deps          = [":Main_dyads_local_deps_execlib"],
+)
+
+ocaml_signature(
+    name          = "Main2_cmi",
+    src           = "main2.mli",
+    opts          = OPTS_2,
+    deps          = DEPS_2,
+)
+
+
+ocaml_binary(
+    name     = "main3.exe",
+    main     = ":Main3",
+    visibility = ["//visibility:public"],
+)
+
+ocaml_exec_module(
+    name          = "Main3",
+    struct        = "main3.ml",
+    sig           = ":Main3_cmi",
+    opts          = ["-open", "Main_dyads_local_deps_execlib"] + OPTS_2,
+    deps          = [":Main_dyads_local_deps_execlib"],
+)
+
+ocaml_signature(
+    name          = "Main3_cmi",
+    src           = "main3.mli",
+    opts          = OPTS_2,
+    deps          = DEPS_2,
+)
+
+
+######################## Modules & Signatures ########################
+ocaml_module(
+    name          = "A",
+    struct        = "a.ml",
+    deps          = "()",
+)
+ocaml_module(
+    name          = "B",
+    struct        = "b.ml",
+    opts          = OPTS_2, ## X3
+    deps          = DEPS_2,
+)
+

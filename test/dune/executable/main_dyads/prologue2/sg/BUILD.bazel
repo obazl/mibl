@@ -1,0 +1,102 @@
+## GENERATED FILE ##
+
+load("@rules_ocaml//build:rules.bzl",
+     "ocaml_binary",
+     "ocaml_exec_module",
+     "ocaml_library",
+     "ocaml_module",
+     "ocaml_ns_library",
+     "ocaml_ns_resolver",
+     "ocaml_signature")
+
+##############################
+####  Executable Targets  ####
+ocaml_binary(
+    name     = "main1.exe",
+    prologue = [":libPrologue_(B A)"],
+    main     = ":Main1",
+    visibility = ["//visibility:public"],
+)
+
+ocaml_exec_module(
+    name          = "Main1",
+    struct        = "main1.ml",
+    sig           = ":Main1_cmi",
+X1    opts          = ["-open", "Prologue"], ## Y0
+    deps          = ,
+)
+
+ocaml_signature(
+    name          = "Main1_cmi",
+    src           = "main1.mli",
+)
+
+
+ocaml_library(
+    name     = "libPrologue_1",
+    manifest = [
+        ":B",
+        ":A"
+    ]
+)
+
+ocaml_ns_resolver(
+    name     = "nsPrologue_(Main1 (:ml main1.ml) (:mli main1.mli))",
+    manifest = [
+        "B",
+        "A"
+    ]
+)
+
+ocaml_binary(
+    name     = "main2.exe",
+    prologue = [":libPrologue_(B A)"],
+    main     = ":Main2",
+    visibility = ["//visibility:public"],
+)
+
+ocaml_exec_module(
+    name          = "Main2",
+    struct        = "main2.ml",
+    sig           = ":Main2_cmi",
+X1    opts          = ["-open", "Prologue"], ## Y0
+    deps          = ,
+)
+
+ocaml_signature(
+    name          = "Main2_cmi",
+    src           = "main2.mli",
+)
+
+
+ocaml_library(
+    name     = "libPrologue_1",
+    manifest = [
+        ":B",
+        ":A"
+    ]
+)
+
+ocaml_ns_resolver(
+    name     = "nsPrologue_(Main2 (:ml main2.ml) (:mli main2.mli))",
+    manifest = [
+        "B",
+        "A"
+    ]
+)
+
+######################## Modules & Signatures ########################
+ocaml_module(
+    ns_resolver   = ":Foo",
+    name          = "A",
+    struct        = "a.ml",
+    opts          = ["-open", "Prologue2_execlib"], ## X4
+)
+
+ocaml_module(
+    ns_resolver   = ":Foo",
+    name          = "B",
+    struct        = "b.ml",
+    opts          = ["-open", "Prologue2_execlib"], ## X4
+)
+

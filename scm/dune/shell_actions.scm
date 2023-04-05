@@ -42,6 +42,7 @@
 ;;               arg)))))
 
 ;; (system "...script..."), (bash "...script..."), (echo ...) etc.
+;; ops: bash, echo, system
 (define (normalize-action-shell-cmd ws pkg action action-list tools targets deps)
   ;; FIXME: shell cmd args may include filename literals; find way to expand?
   ;; FIXME: may include ${target}
@@ -54,7 +55,8 @@
 
   ;; search deps for tool, if not found, add it to (:deps ::tool)?
 
-  (let* ((tool (if (eq? action 'system) 'sh action))
+  (let* ((tool (string->keyword (format #f "~A" action)))
+         ;; (tool (if (eq? action 'system) 'sh action))
          (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (white "tool") tool)))
          (action-args (cdr action-list))
          (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (white "action-args") action-args)))
@@ -62,7 +64,7 @@
          )
     (if *mibl-debug-s7*
         (format #t "~A: ~A~%" (uwhite "expanded-args") expanded-args))
-    (set-cdr! tools `((:sh-tool . ,tool)))
+    (set-cdr! tools `((,tool . :shell-tool)))
     `((:cmd
        (:tool ,tool)
        (:args ,@expanded-args)))))

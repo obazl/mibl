@@ -1,0 +1,8 @@
+test_suite(
+    name  = "mibl_test",
+    tests = [
+        "//test/dune/executable/main_dyads/mwe1/.mibl:mibl_test",
+        "//test/dune/executable/main_dyads/mwe2/.mibl:mibl_test",
+        "//test/dune/executable/main_dyads/mwe3/.mibl:mibl_test",
+    ]
+)

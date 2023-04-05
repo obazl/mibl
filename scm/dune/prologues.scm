@@ -177,7 +177,7 @@
                                                (mains (filter-map (lambda (stanza)
                                                                     (case (car stanza)
                                                                       ((:executable)
-                                                                       (format #t "~A: ~A\n" (green "stanza") stanza)
+                                                                       (mibl-trace "stanza" stanza)
                                                                        (assoc-val :main (cdr stanza)))
                                                                       (else #f)))
                                                                   stanzas)))
@@ -241,11 +241,11 @@
                                                                      ;; (format #t "XPL: ~A\n" (cdr prologue))
                                                                      (if (null? (cdr prologue))
                                                                          (dissoc! '(:prologue) stanza-alist))))
-                                                           (if *mibl-debug-prologues*
-                                                               (format #t "~A: ~A\n" (green "normalized")
-                                                                       (assoc :prologue stanza-alist)))
+                                                           (mibl-trace "normalized"
+                                                                       (assoc :prologue stanza-alist)
+                                                                        *mibl-debug-prologues*)
                                                            )
-                                                         (format #t "~A: ~A\n" (cyan "  after stanza") stanza))
+                                                         (mibl-trace "after stanza" stanza *mibl-debug-prologues*))
                                                         (else)))
                                                     stanzas)
                                           ;; now remove empty entries from pkg :prologues,
