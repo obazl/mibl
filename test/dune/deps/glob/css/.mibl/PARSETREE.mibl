@@ -1,0 +1,9 @@
+((:@ (:name . "@")
+     (:path . /Users/gar/obazl/mibl/test/s7/deps/glob/css) (:exports (hash-table))
+     (:opam
+         (hash-table)) (:shared-ppx (hash-table)) (:filegroups (hash-table))
+     (:pkgs
+         (hash-table
+           '"./" ((:ws-path "/Users/gar/obazl/mibl/test/s7/deps/glob/css") (:pkg-path "./")
+                   (:realpath "/Users/gar/obazl/mibl/test/s7/deps/glob/css")
+                   (:files (:static "a.css" "b.css")))))))

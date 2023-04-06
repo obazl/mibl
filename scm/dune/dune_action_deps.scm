@@ -517,31 +517,35 @@
                   (cons :_ depfiles)
                    `(:: ,@depfiles)))))))
 
-(define (handle-tagged-glob-dep ws tagged-pattern paths expanded-deps)
-  (if (or *mibl-debug-action-deps* *mibl-debug-s7*)
-      (begin
-        (format #t "~A: ~A\n" (ublue "handle-tagged-glob-dep") tagged-pattern)
-        (format #t "expanded-deps: ~A\n" expanded-deps)
-        ;; tagged-pattern form: (:css (glob_files ../css/*.css))
-        (format #t "cadr tagged-pattern: ~A\n" (cadr tagged-pattern))))
+(define (handle-tagged-glob-dep ws tagged-pattern pkg expanded-deps)
+  (mibl-trace-entry "handle-tagged-glob-dep" tagged-pattern)
+  ;; tagged-pattern form: (:css (glob_files ../css/*.css))
+  (mibl-trace "pkg-path" (assoc-val :pkg-path pkg))
+  (mibl-trace "expanded-deps" expanded-deps)
+
   ;; kw :_ is reserved for non-tagged symlist
   ;; to avoid name clash, convert user keywords to double-colon, e.g.
   ;; :foo => ::foo
   (let* ((lbl (string->keyword (format #f "~A" (keyword->symbol (car tagged-pattern)))))
-         (pattern (cadr tagged-pattern))
-         (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "~A: ~A~%" (green "pattern") pattern)))
-         (pattern (format #f "~A" (cadr pattern)))
-         (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "~A: ~A~%" (green "pattern") pattern)))
+         (glob-sexp (cadr tagged-pattern))
+         (mibl-trace-let "glob sexp" glob-sexp *mibl-debug-action-deps*)
+         (pattern (format #f "~A" (cadr glob-sexp)))
+         (mibl-trace-let "formatted pattern" pattern *mibl-debug-action-deps*)
+
+         (xpattern (->canonical-path pattern))
+         (mibl-trace-let "x pattern" xpattern *mibl-debug-action-deps*)
 
          ;; working dir is always ws root, so we prepend the pkg-path
          ;; (pattern-str (string-append pkg-path "/" pattern))
 
-         (pkg-path (assoc-val :pkg-path paths))
-         (dep-path (format #f "~A/~A" pkg-path pattern))
-         (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "dep-path: ~A~%" dep-path)))
+         (pkg-path (assoc-val :pkg-path pkg))
+         (mibl-trace-let "pkg-path" pkg-path *mibl-debug-action-deps*)
+         ;; (dep-path (format #f "~A/~A" pkg-path pattern))
+         ;; (mibl-trace-let "dep-path" dep-path *mibl-debug-action-deps*)
 
-         (canonical-path (->canonical-path dep-path))
-         (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "canonical-path: ~A~%" canonical-path)))
+         ;; (canonical-path (->canonical-path dep-path))
+         (canonical-path (->canonical-path pattern))
+         (mibl-trace-let "canonical-path" canonical-path *mibl-debug-action-deps*)
 
          ;; normalize pathed globs like ../foo/*.ml
          (canonical-pattern (basename canonical-path))
@@ -564,7 +568,7 @@
          ;;      #f))
          ;; (tagged ;(if tagged tagged
          ;;             (expand-terms* ws (cdr tagged-pattern)
-         ;;                          paths ;;stanza-alist
+         ;;                          pkg ;;stanza-alist
          ;;                          '()))
          ) ;;expanded-deps)))
     (if (or *mibl-debug-action-deps* *mibl-debug-s7*)
@@ -601,14 +605,14 @@
             (format #t "~A: ~A~%" (red "GLOB RESULT") result)))
       result)))
 
-(define (handle-untagged-glob-dep ws paths _pattern)
+(define (handle-untagged-glob-dep ws pkg _pattern)
   (if (or *mibl-debug-action-deps* *mibl-debug-s7*)
       (format #t "~A: ~A\n" (ublue "handle-untagged-glob-dep") _pattern))
   ;; kw :_ is reserved for non-tagged symlist
   ;; to avoid name clash, convert user keywords to double-colon, e.g.
   ;; :foo => ::foo
   (let* ((pattern (cadr _pattern))
-         (pkg-path (assoc-val :pkg-path paths))
+         (pkg-path (assoc-val :pkg-path pkg))
          (dep-path (format #f "~A/~A" pkg-path pattern))
          (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "~A: ~A~%" (uwhite "dep-path") dep-path)))
 
@@ -640,7 +644,7 @@
 
 ;; tagged deps: (:foo foo.sh), (:css (glob_files *.css)), what else?
 ;; called from expanders.scm::expand-terms*
-(define (handle-tagged-dep ws deplist paths expanded-deps)
+(define (handle-tagged-dep ws deplist pkg expanded-deps)
   (if (or *mibl-debug-action-deps* *mibl-debug-s7*)
       (format #t "~A: ~A\n" (ublue "handle-tagged-dep") deplist))
   ;; obsolete: kw :_ is reserved for non-tagged symlist
@@ -651,15 +655,15 @@
     (if (list? (car val))
         (if (eq? 'glob_files (caar val))
             ;; e.g. (:css (glob_files *.css)
-            (handle-tagged-glob-dep ws deplist paths expanded-deps)
+            (handle-tagged-glob-dep ws deplist pkg expanded-deps)
             ;;(error 'fixme "unhandled: non-glob tagged list var")
             )
-        (handle-tagged-literal-dep ws deplist paths expanded-deps))))
+        (handle-tagged-literal-dep ws deplist pkg expanded-deps))))
 
-(define (handle-file-dep ws paths file-fld)
+(define (handle-file-dep ws pkg file-fld)
   (if (or *mibl-debug-action-deps* *mibl-debug-s7*)
       (format #t "~A: ~A\n" (ublue "handle-file-dep") file-fld))
-  (let* ((pkg-path (assoc-val :pkg-path paths))
+  (let* ((pkg-path (assoc-val :pkg-path pkg))
          (file-path (cadr file-fld))
          (full-path (format #f "~A/~A" pkg-path file-path))
          (c-path (->canonical-path full-path)))
@@ -685,11 +689,11 @@
   (if (or *mibl-debug-action-deps* *mibl-debug-s7*)
       (format #t "handle-alias-rec-dep: ~A\n" deplist)))
 
-(define (handle-source-tree-dep ws paths file-fld)
+(define (handle-source-tree-dep ws pkg file-fld)
   ;; (format #t "handle-source-tree-dep: ~A\n" deplist)
   (error 'unsupported
          (string-append "Unimplemented: 'source_tree' fld in pkg '"
-                        (assoc-val :pkg-path paths)
+                        (assoc-val :pkg-path pkg)
                         "'.  A 'source_tree' dependency in a rule dep usually means the rule should be replaced by a cc_library rule or something from rules_foreign_cc. I can't automate that, sorry.")))
 
 (define (handle-universe-dep deplist)

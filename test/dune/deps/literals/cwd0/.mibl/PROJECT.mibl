@@ -1,0 +1,16 @@
+((:@ (:name . "@")
+     (:path . /Users/gar/obazl/mibl/test/s7/deps/literals/cwd0)
+     (:exports
+         (hash-table)) (:opam (hash-table)) (:shared-ppx (hash-table))
+     (:filegroups
+         (hash-table))
+     (:pkgs
+         (hash-table
+           '::wsroot ((:ws-path "/Users/gar/obazl/mibl/test/s7/deps/literals/cwd0") (:pkg-path ::wsroot)
+                       (:realpath "/Users/gar/obazl/mibl/test/s7/deps/literals/cwd0")
+                       (dune (rule (targets foo.txt) (deps (:< gen.sh))
+                                   (action (run %{<} %{targets}))))
+                       (:files (:static "gen.sh") (:dynamic "foo.txt"))
+                       (:mibl (:rule (:deps (::tools (:< (:pkg . ::wsroot) (:tgt . "gen.sh"))))
+                                     (:outputs (:foo.txt (:pkg . ::wsroot) (:tgt . "foo.txt")))
+                                     (:actions (:cmd (:tool :<) (:args :outputs))))))))))

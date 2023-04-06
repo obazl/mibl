@@ -217,39 +217,6 @@
 ;; (flags :standard)
 ;; (flags (:standard -open Tezos_base__TzPervasives -open Tezos_micheline))
 ;; (:standard -linkall)
-;; (define (normalize-stanza-fld-flags flags type)
-;;   (format #t "normalize-stanza-fld-flags: ~A\n" flags)
-;;   (if flags
-;;       ;; (let* ((flags (if (list? (cadr flags))
-;;       ;;                   (cadr flags)
-;;       ;;                   (list (cdr flags))))
-;;       (let* ((flags-val (cdr flags))
-;;              ;; FIXME: expand :standard
-;;              ;; e.g. src/lib_store/legacy_store:
-;;              ;;     (modules (:standard \ legacy_store_builder))
-;;              (std (any (lambda (flag) (equal? flag :standard)) flags-val))
-;;              (clean-flags (if std (remove :item :standard flags-val) flags-val)))
-;;         ;; (format #t "DIRTY: ~A\n" flags-val)
-;;         ;; (format #t "STD: ~A\n" std)
-;;         ;; (format #t "CLEAN: ~A\n" clean-flags)
-;;         (let-values (((opens opts std) (split-opens clean-flags)))
-;;           (let-values (((options bools) (split-opts (reverse opts))))
-;;             ;; (format #t "OPENS: ~A\n" (reverse opens))
-;;             ;; (format #t "OPTS: ~A\n" (reverse opts))
-;;             ;; (format #t "STD: ~A\n" std)
-;;             (format #t "OPTIONS: ~A\n" options)
-;;             (format #t "FLAGS: ~A\n" bools)
-;;             (list (if (eq? type :mod) :module-opts
-;;                       (if (eq? type :lib) :archive-opts
-;;                           :unknown-opts))
-;;                   (concatenate
-;;                    (if std '((:standard)) '()) ;; FIXME: expand :standard flags
-;;                    (if (null? opens) '() (list (cons :opens
-;;                                                      (reverse opens))))
-;;                    `((:raw ,flags))
-;;                    (list (cons :options (reverse options)))
-;;                    `((:flags ,(reverse bools))))))))
-;;       #f))
 
 ;; ;; library_flags (meaning archive_flags)
 ;; (define (normalize-stanza-fld-lib_flags lib-flags)

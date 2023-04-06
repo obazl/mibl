@@ -55,7 +55,7 @@
        (let ((tool (format #f "~A" tool)))
          (cond
           ((string-prefix? "%{" tool)
-           (-expand-pct-tool!? ws tool :tool pkg deps))
+           (-expand-pct-tool!? ws tool tools pkg deps))
 
           (else
            (let ((expanded-tool (-expand-literal-tool!? ws (assoc-val :pkg-path pkg)
@@ -335,26 +335,27 @@
   )
 
 ;; may update deps
-(define (-expand-pct-tool!? ws arg kind pkg deps)
+(define (-expand-pct-tool!?  ws tool tools pkg deps) ;; ws arg kind pkg deps tools)
+  (mibl-trace-entry "-expand-pct-tool!?" tool)
   (if (or *mibl-debug-expanders* *mibl-debug-s7*)
       (begin
         (format #t "~A: ~A (~A)~%" (ublue "-expand-pct-tool!?")
-                arg (type-of arg))
+                tool (type-of tool))
         (format #t "deps: ~A~%" deps)))
 
-  (let-values (((sym pfx sfx) (parse-pct-var arg)))
+  (let-values (((sym pfx sfx) (parse-pct-var tool)))
     (if (or *mibl-debug-expanders* *mibl-debug-s7*)
         (format #t "~A: ~A, ~A: ~A~%"
-                (uwhite "arg pfx") pfx (uwhite "sfx") sfx))
+                (uwhite "tool pfx") pfx (uwhite "sfx") sfx))
 
-    ;; find arg in deps (assumption: pfx is not :deps)
+    ;; find tool in deps (assumption: pfx is not :deps)
     (let* ((search-key (if (equal? pfx :dep)
                            (symbol->keyword sfx)
-                           (symbol->keyword sym))) ;; (pct-var->keyword arg))
+                           (symbol->keyword sym))) ;; (pct-var->keyword tool))
            (_ (if (or *mibl-debug-expanders* *mibl-debug-s7*) (format #t "~A: ~A (kw? ~A)~%" (yellow "search-key")
                       search-key (keyword? search-key))))
            ;; (_ (if (equal? pfx :dep) (error 'STOP "STOP pct-tool")))
-           (match (find-if (lambda (dep)
+           (tool (find-if (lambda (dep)
                              (if (or *mibl-debug-expanders* *mibl-debug-s7*)
                                  (format #t "~A: ~A (~A)~%"
                                      (yellow "testing dep") dep (type-of (car dep))))
@@ -362,41 +363,43 @@
                              ;;                                       (car dep)))
                              (equal? (car dep) search-key))
                            (cdr deps))))
-      (if (or *mibl-debug-expanders* *mibl-debug-s7*)
-          (format #t "~A: ~A~%" (yellow "match?") match))
-      (if match
-          ;;(let ((arg-kw (string->keyword arg)))
-          ;; move it from (:deps) to (:deps ::tools)
-          (begin
-            (if (or *mibl-debug-expanders* *mibl-debug-s7*)
-                (format #t "~A: ~A~%" (red "pct tool in deps") match))
-            (set-cdr! deps
-                      (append
-                       (list (list ::toolsA match
-                                   #| (list search-key ;; arg-kw
-                                   (cons :pkg pkg-path)
-                                   (cons :tgt arg))|# ))
-                       (alist-delete (list search-key #|arg-kw|# ) (cdr deps)))))
+      (mibl-trace "tool" tool *mibl-debug-expanders*)
+      (if tool ;; e.g. (:< (:pkg . "./") (:tgt . "concat.sh"))
+            (begin
+              (mibl-trace "pct tool in deps" tool *mibl-debug-expanders*)
+              (mibl-trace "deps" deps *mibl-debug-expanders*)
+              (set-cdr! tools `((,(car tool) ,(assoc :pkg (cdr tool)) ,(assoc :tgt (cdr tool)))))
+              (mibl-trace "cdr deps" (cdr deps) *mibl-debug-expanders*)
+              (mibl-trace "dissoc! ks" `(,(car tool)) *mibl-debug-expanders*)
+              (set-cdr! deps (alist-delete! `(,(car tool)) (cdr deps)))
+              ;; (set-cdr! deps
+              ;;           (append
+              ;;            (list (list ::toolsA tool
+              ;;                        #| (list search-key ;; tool-kw
+              ;;                        (cons :pkg pkg-path)
+              ;;                        (cons :tgt tool))|# ))
+              ;;            (alist-delete (list search-key #|tool-kw|# ) (cdr deps))))
+              )
 
-          ;; else infer it must be imported from exports tbl
-          ;; FIXME FIXME: only works after first pass adds everything to exports tbl
-          (begin
-            (if (or *mibl-debug-expanders* *mibl-debug-s7*)
-                (format #t "~A: ~A, ~A~%" (red "tool NOT in deps") sym deps))
-            (if-let ((found (find-in-exports ws (symbol->keyword sym))))
-                    (begin
-                      (if (or *mibl-debug-expanders* *mibl-debug-s7*)
-                          (begin
-                            (format #t "~A: ~A~%" (bgred "kw") (symbol->keyword sym))
-                            (format #t "~A: ~A~%" (bgred "found") found)))
-                      (set-cdr! deps
-                                (append
-                                 (list (cons ::toolsB
-                                             (list
-                                              (cons (symbol->keyword sym)
-                                                    ::unresolved
-                                                    ))))
-                                 (cdr deps))))
+            ;; else infer it must be imported from exports tbl
+            ;; FIXME FIXME: only works after first pass adds everything to exports tbl
+            (begin
+              (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                  (format #t "~A: ~A, ~A~%" (red "tool NOT in deps") sym deps))
+              (if-let ((found (find-in-exports ws (symbol->keyword sym))))
+                      (begin
+                        (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                            (begin
+                              (format #t "~A: ~A~%" (bgred "kw") (symbol->keyword sym))
+                              (format #t "~A: ~A~%" (bgred "found") found)))
+                        (set-cdr! deps
+                                  (append
+                                   (list (cons ::toolsB
+                                               (list
+                                                (cons (symbol->keyword sym)
+                                                      ::unresolved
+                                                      ))))
+                                   (cdr deps))))
                       ;; else set to ::unresolved
                       (set-cdr! deps
                                 (append
@@ -404,14 +407,14 @@
                                              (list
                                               (cons (if (equal? :dep pfx)
                                                         (symbol->keyword sfx)
-                                                        (symbol->keyword sym)) ;; search-key ;; arg-kw
+                                                        (symbol->keyword sym)) ;; search-key ;; tool-kw
                                                     ;; (list (cons :pkg pkg-path)
-                                                    ;;       (cons :tgt arg))
+                                                    ;;       (cons :tgt tool))
                                                     ::unresolved
                                                     ))))
                                  (cdr deps))))
-            ;; return kw
-            ))
+              ;; return kw
+              ))
       search-key)))
 
     ;; (if (null? (cdr deps))
@@ -514,7 +517,7 @@
                                      (lbl-pkg (assoc-val :pkg lbl-list))
                                      (lbl-tgt (if-let ((tgt (assoc-val :tgt lbl-list)))
                                                   (equal? tool tgt)
-                                                  (if-let ((tgts (assoc-val #|:tgts|# :glob lbl-list)))
+                                                  (if-let ((tgts (assoc-val :glob lbl-list)))
                                                           (equal? tool tgts)
                                                           (error 'fixme "missing :tgt and :tgts in dep")))))
                                 (if (or *mibl-debug-expanders* *mibl-debug-s7*)
@@ -533,13 +536,14 @@
                       (format #t "~A: ~A~%" (red "literal tool in deps") t)
                       (format #t "~A: ~A~%" (red "tool") tool)))
                 ;; move it from (:deps) to (deps ::tools)
-                (set-cdr! deps
-                          (append
-                           (list (list ::toolsE
-                                       (list (car t) ;; tool-kw
-                                             (cons :pkg pkg-path)
-                                             (cons :tgt tool))))
-                           (alist-delete (list tool-kw) (cdr deps))))
+                (set-cdr! tools `((,(car t) (:pkg . ,pkg-path) (:tgt . ,tool))))
+                ;; (set-cdr! deps
+                ;;           (append
+                ;;            (list (list ::toolsE
+                ;;                        (list (car t) ;; tool-kw
+                ;;                              (cons :pkg pkg-path)
+                ;;                              (cons :tgt tool))))
+                ;;            (alist-delete (list tool-kw) (cdr deps))))
                 (car t))
               ;; else did not find t in deps. try exports
               ;  ...
@@ -1199,7 +1203,7 @@
                  (result (expand-terms* ws deplist pkg '())))
             (if (or *mibl-debug-expanders* *mibl-debug-s7*)
                 (format #t "~A: ~A\n" (green "DEPLIST EXPANDED") result))
-            `(:deps ,@result))
+            `(:inputs ,@result))
           #f))
 
 (define (expand-cmd-list ws pkg -raw-cmds tools targets deps)

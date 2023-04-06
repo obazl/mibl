@@ -1,0 +1,12 @@
+((:@ (:name . "@")
+     (:path . /Users/gar/obazl/mibl/test/s7/deps/glob/cwd) (:exports (hash-table))
+     (:opam
+         (hash-table)) (:shared-ppx (hash-table)) (:filegroups (hash-table))
+     (:pkgs
+         (hash-table
+           '"./" ((:ws-path "/Users/gar/obazl/mibl/test/s7/deps/glob/cwd") (:pkg-path "./")
+                   (:realpath "/Users/gar/obazl/mibl/test/s7/deps/glob/cwd")
+                   (:files (:static "a.css" "b.css" "concat.sh"))
+                   (dune (rule (targets foo.css)
+                               (deps concat.sh (:css (glob_files *.css)))
+                               (action (run concat.sh %{css} %{targets})))))))))

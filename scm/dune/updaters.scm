@@ -55,7 +55,8 @@
                                     (list (cons fg-name
                                                 ;;tgt
                                                 (if glob?
-                                                    `((:glob . ,pattern)
+                                                    `((:pkg ,pkg-path) ;; redundant, == ht key
+                                                      (:glob . ,pattern)
                                                       (:clients ,client-path))
                                                     `((:file . ,pattern))))))))
           ;; else new fg list for pkg
@@ -63,7 +64,8 @@
                            (list (cons fg-name
                                        ;; tgt
                                        (if glob?
-                                               `((:glob . ,pattern)
+                                               `((:pkg ,pkg-path)
+                                                 (:glob . ,pattern)
                                                  (:clients ,client-path))
                                                `((:file . ,pattern)))))))
       (if (or *mibl-debug-s7* *mibl-debug-updaters*)

@@ -1,0 +1,21 @@
+((:@ (:name . "@")
+     (:path . /Users/gar/obazl/mibl/test/s7/deps/glob/super) (:exports (hash-table))
+     (:opam
+         (hash-table)) (:shared-ppx (hash-table))
+     (:filegroups
+         (hash-table
+           '"css" (("glob_STAR.css" (:glob . "*.css") (:clients "./")))))
+     (:pkgs
+         (hash-table
+           '"css" ((:ws-path /Users/gar/obazl/mibl/test/s7/deps/glob/super) (:pkg-path "css") (:realpath #f)
+                    (:filegroups ("glob_STAR.css" (:glob . "*.css") (:clients "./"))))
+           '"./" ((:ws-path "/Users/gar/obazl/mibl/test/s7/deps/glob/super") (:pkg-path "./")
+                   (:realpath "/Users/gar/obazl/mibl/test/s7/deps/glob/super")
+                   (:files (:static "concat.sh") (:dynamic "output.css"))
+                   (dune (rule (targets output.css)
+                               (deps (:< concat.sh) (:css (glob_files ../css/*.css)))
+                               (action (run %{<} %{css} %{targets}))))
+                   (:mibl (:rule (:deps (::tools (:< (:pkg . "./") (:tgt . "concat.sh")))
+                                        (:css (:pkg . "css") (:glob . "glob_STAR.css")))
+                                 (:outputs (:output.css (:pkg . "./") (:tgt . "output.css")))
+                                 (:actions (:cmd (:tool :<) (:args :css :outputs))))))))))

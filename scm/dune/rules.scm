@@ -201,7 +201,7 @@
              )
 
         (if deps
-            ;; FIXME: this updates filegroups table; can we run it as a pipeline task?
+            ;; FIXME: this updates filegroups (globs) table; can we run it as a pipeline task?
             (begin
               (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*)
                   (format #t "~A: ~A~%" (green "iterating deps") deps))
@@ -210,13 +210,12 @@
                           ;; (:foo (:pkg a/b/c)(:tgt "foo.sh"))
                           ;; (::opam-pkg foo-bar-baz)
                           ;; (tezos-protocol-demo-noops ::opam-pkg)
-                          (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*)
-                              (format #t "~A: ~A~%" (ucyan "dep") dep))
+                          (mibl-trace "dep" dep *mibl-debug-rule-stanzas*)
                           (case (cdr dep)
                             ((::opam-pkg) (cdr dep))
                             (else
-                             (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*)
-                                 (format #t "~A: ~A~%" (red "filegroup dep?") dep))
+                             (mibl-trace "filegroup dep?" dep *mibl-debug-rule-stanzas*)
+                             ;; e.g. dep == (:css (:glob . "glob_STAR.css"))
                              (let* ((lbl-tag (car dep))
                                     (lbl (cdr dep))
                                     (pkg (assoc-val :pkg lbl))

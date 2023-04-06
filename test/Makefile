@@ -13,7 +13,9 @@ deps:
 		bazel $(BAZELRC) run //emit:mibl -- -w $$tgt --emit-parsetree --no-miblrc $(QUIET) ; \
 	done
 
+################################################################
 EXEC_TESTS= \
+test/dune/executable/flags \
 test/dune/executable/main_dyad/mwe1 \
 test/dune/executable/main_dyad/mwe2
 
@@ -43,14 +45,15 @@ sh:
 	done
 
 ################################################################
-STDOUT_TESTS=\
+STDIO_TESTS=\
+test/dune/rules/stdio/with \
 test/dune/rules/stdout/ignore \
 test/dune/rules/stdout/pipe \
 test/dune/rules/stdout/with/bash \
 test/dune/rules/stdout/with/cat \
 test/dune/rules/stdout/with/echo
 
-stdout:
+stdio:
 	@cd .. && \
 	for tgt in $(STDOUT_TESTS) ; do \
 		bazel $(BAZELRC) run //emit:mibl -- -w $$tgt --emit-parsetree --no-miblrc $(QUIET) ; \

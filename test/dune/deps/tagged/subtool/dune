@@ -1,0 +1,4 @@
+(rule
+ (targets foo.txt)
+ (deps (:< sub/gen.sh))
+ (action (run %{<} %{targets})))

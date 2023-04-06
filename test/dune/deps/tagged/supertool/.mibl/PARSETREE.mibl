@@ -1,0 +1,12 @@
+((:@ (:name . "@")
+     (:path . /Users/gar/obazl/mibl/test/s7/deps/tagged/supertool)
+     (:exports
+         (hash-table)) (:opam (hash-table)) (:shared-ppx (hash-table))
+     (:filegroups
+         (hash-table))
+     (:pkgs
+         (hash-table
+           '"./" ((:ws-path "/Users/gar/obazl/mibl/test/s7/deps/tagged/supertool") (:pkg-path "./")
+                   (:realpath "/Users/gar/obazl/mibl/test/s7/deps/tagged/supertool")
+                   (dune (rule (targets foo.txt) (deps (:< ../gen.sh))
+                               (action (run %{<} %{targets})))))))))

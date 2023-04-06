@@ -600,14 +600,14 @@ void _s7_init(void)
 #if defined(DEBUG_TRACE)
     s7_pointer lp = s7_load_path(s7);
     LOG_S7_DEBUG("*load-path* 11", lp);
-    if (mibl_debug) {
+    if (mibl_debug_s7_config) {
         log_debug("mibl_runfiles_root: %s", utstring_body(mibl_runfiles_root));
     }
 #endif
     build_ws_dir= getenv("BUILD_WORKSPACE_DIRECTORY");
-    if (build_ws_dir)
+    char *test_target = getenv("TEST_TARGET");
+    if (build_ws_dir || test_target)
         bzl_mode = true;
-
     UT_string *libc_s7;
     utstring_new(libc_s7);
     char *dso_dir;
@@ -616,7 +616,7 @@ void _s7_init(void)
 
         /* add @libs7//scm to *load-path* */
         char *libs7_scmdir = realpath("../libs7/scm", NULL);
-        /* log_debug("libs7_scmdir: %s", libs7_scmdir); */
+        log_debug("libs7_scmdir: %s", libs7_scmdir);
         s7_add_to_load_path(s7, libs7_scmdir);
         free(libs7_scmdir);
 
@@ -626,9 +626,20 @@ void _s7_init(void)
         if (mibl_trace)
             log_debug("bzl mode: %s", dso_dir);
 #endif
-        utstring_printf(libc_s7, "%s/%s",
+        char *dso_subdir;
+        if (getenv("TEST_TARGET"))
+            dso_subdir = "libs7/src/libc_s7";
+        else
+            dso_subdir = "external/libs7/src/libc_s7";
+
+        utstring_printf(libc_s7, "%s/%s%s",
                         dso_dir,
-                        "external/libs7/src/libc_s7" DSO_EXT);
+                        // no 'external' when run from @//mibl under test
+                        //
+                        /* "libs7/src/libc_s7" DSO_EXT); */
+                        // "../libs7/src/libc_s7"
+                        dso_subdir,
+                        DSO_EXT);
 
     } else {
         /* running standalone, outside of bazel */
