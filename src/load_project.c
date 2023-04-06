@@ -1238,23 +1238,41 @@ LOCAL void _update_pkg_modules(s7_pointer pkg_tbl,
                                s7_make_keyword(s7, "mll"),
                                s7_make_symbol(s7, fname));
         } else {
-            ml_assoc = s7_cons(s7,
-                               s7_make_keyword(s7,
-                                               (ftype == TAG_ML)
-                                               ?"ml"
-                                               :(ftype == TAG_ML_DYN)
-                                               ?"ml_"
-                                               :(ftype == TAG_MLI)
-                                               ?"mli"
-                                               :(ftype == TAG_MLI_DYN)
-                                               ?"mli_"
-                                               :(ftype == TAG_MLL)
-                                               ?"mll"
-                                               :"UNKNOWN"
-                                               ),
-                               s7_cons(s7,
-                                       s7_make_symbol(s7, fname),
-                                       mdeps));
+            if (mdeps == s7_nil(s7)) {
+                ml_assoc = s7_cons(s7,
+                                   s7_make_keyword(s7,
+                                                   (ftype == TAG_ML)
+                                                   ?"ml"
+                                                   :(ftype == TAG_ML_DYN)
+                                                   ?"ml_"
+                                                   :(ftype == TAG_MLI)
+                                                   ?"mli"
+                                                   :(ftype == TAG_MLI_DYN)
+                                                   ?"mli_"
+                                                   :(ftype == TAG_MLL)
+                                                   ?"mll"
+                                                   :"UNKNOWN"
+                                                   ),
+                                   s7_make_symbol(s7, fname));
+            } else {
+                ml_assoc = s7_cons(s7,
+                                   s7_make_keyword(s7,
+                                                   (ftype == TAG_ML)
+                                                   ?"ml"
+                                                   :(ftype == TAG_ML_DYN)
+                                                   ?"ml_"
+                                                   :(ftype == TAG_MLI)
+                                                   ?"mli"
+                                                   :(ftype == TAG_MLI_DYN)
+                                                   ?"mli_"
+                                                   :(ftype == TAG_MLL)
+                                                   ?"mll"
+                                                   :"UNKNOWN"
+                                                   ),
+                                   s7_cons(s7,
+                                           s7_make_symbol(s7, fname),
+                                           mdeps));
+            }
         }
         /* mdeps is now protected by inclusion in ml_assoc, so unprotect it*/
         s7_gc_unprotect_at(s7, gc_module_deps);
@@ -1508,10 +1526,15 @@ LOCAL void _update_pkg_sigs(s7_pointer pkg_tbl,
         s7_pointer mdeps; /* gc protected by gc_module_deps */
         mdeps = get_deps(pkg_name, fname); // , deps_list);
 
-        s7_pointer sig_assoc = s7_cons(s7, mname_sym,
-                                       s7_cons(s7,
-                                               mli_file,
-                                               mdeps));
+        s7_pointer sig_assoc;
+        if (mdeps == s7_nil(s7))
+            sig_assoc = s7_cons(s7, mname_sym, mli_file);
+        else
+            sig_assoc = s7_cons(s7, mname_sym,
+                                           s7_cons(s7,
+                                                   mli_file,
+                                                   mdeps));
+
         s7_gc_protect_via_stack(s7, sig_assoc);
         s7_gc_unprotect_via_stack(s7, mname_sym);
 
@@ -1730,11 +1753,15 @@ LOCAL void _update_pkg_structs(s7_pointer pkg_tbl,
         /* s7_gc_unprotect_at(s7, gc_deps_list); */
     /* LOG_S7_DEBUG("pkg_key 3", pkg_key); */
 
-        s7_pointer struct_assoc =
-            s7_cons(s7, mname_sym,
-                    s7_cons(s7,
-                            s7_make_symbol(s7, fname),
-                            mdeps));
+        s7_pointer struct_assoc;
+        if (mdeps == s7_nil(s7)) {
+            struct_assoc = s7_cons(s7, mname_sym, s7_make_symbol(s7, fname));
+        } else {
+            struct_assoc = s7_cons(s7, mname_sym,
+                                   s7_cons(s7,
+                                           s7_make_symbol(s7, fname),
+                                           mdeps));
+        }
         s7_gc_protect_via_stack(s7, struct_assoc);
 
                     /* s7_make_symbol(s7, fname)); */

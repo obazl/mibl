@@ -14,8 +14,8 @@
                          (rule (target output.txt)
                                (action
                                 (chdir %{workspace_root} (cat "foo/config.txt" > %{target})))))
-                   (:mibl (:rule (:deps (:> (:pkg . "./") (:tgt . ">"))
-                                        (:cfg (:pkg . "%{workspace_root}") (:tgt . "config.txt")))
+                   (:mibl (:rule (:inputs (:> (:pkg . "./") (:tgt . ">"))
+                                          (:cfg (:pkg . "%{workspace_root}") (:tgt . "config.txt")))
                                  (:tools (:cat . :shell-tool)) (:ctx :ws-root)
                                  (:outputs (:output.txt (:pkg . "./") (:tgt . "output.txt")))
                                  (:cmd (:tool :cat) (:args :cfg :> :outputs)) (:ctx :ws-root))

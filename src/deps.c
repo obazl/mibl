@@ -347,7 +347,8 @@ s7_pointer analyze_deps_file(char *pkg, char *tgt)
     s7_pointer depgraph_port = s7_open_input_string(s7, result);
     s7_gc_protect_via_stack(s7, depgraph_port);
 #if defined(DEBUG_TRACE)
-    LOG_S7_DEBUG("depgraph_port", depgraph_port);
+    if (mibl_config.debug_deps)
+        LOG_S7_DEBUG("depgraph_port", depgraph_port);
 #endif
     s7_pointer depgraph = s7_read(s7, depgraph_port);
 

@@ -1,3 +1,5 @@
+## run this to generate PARSTREE and PROJECT files for all test/dune cases.
+
 BAZELRC=--bazelrc .config/runmibl.bazelrc
 QUIET=
 #--quiet

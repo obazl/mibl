@@ -15,17 +15,31 @@
 
 
 #if defined(DEBUG_TRACE)
-extern bool debug;
+extern bool mibl_debug;
+extern bool mibl_debug_bazel;
 extern int  mibl_debug_level;
-extern bool debug_miblrc;
-extern bool debug_mibl_crawl;
-extern bool trace;
+extern bool mibl_debug_mibl;
+extern bool mibl_debug_miblrc;
+extern bool mibl_debug_scm;
+extern bool mibl_debug_s7_config;
+extern bool mibl_debug_traversal;
+extern bool mibl_trace;
+extern bool mibl_trace_bazel;
 #endif
+
 extern bool verbose;
 
 s7_scheme *s7;
 
 s7_pointer mibl_project;
+
+extern bool emit_parsetree;
+
+extern struct mibl_config_s mibl_config;
+
+extern UT_string *mibl_runfiles_root;
+
+UT_string *setter;
 
 /* WARNING: setUp and tearDown are run once per test. */
 void setUp(void) {
@@ -36,7 +50,50 @@ void tearDown(void) {
     /* log_info("teardown"); */
 }
 
-UT_string *setter;
+int _update_mibl_config(struct option options[])
+                        /* struct mibl_config_s *mibl_config) */
+{
+    /* log_debug("_update_mibl_config"); */
+
+    /* if (options[FLAG_NO_MIBLRC].count > 0) { */
+    /*     if (verbose && verbosity > 1) */
+    /*         log_info("miblrc processing disabled"); */
+        mibl_config.load_miblrc = false;
+    /* } */
+
+    return 0;                   /* success */
+}
+
+void _update_s7_globals(struct option options[])
+{
+    /* if (options[FLAG_QUIET].count) */
+        mibl_s7_set_flag("*mibl-quiet*", true);
+
+    /* if (options[FLAG_VERBOSE].count) */
+    /*     mibl_s7_set_flag("*mibl-verbose*", true); */
+
+    /* --flags sets vars defined above, may be used to define ad-hoc
+       flags (where the scm src will not permanently refer to the
+       flag, e.g. (if *mibl-foo*)
+     */
+    /* if (options[OPT_FLAGS].count > 0) { */
+    /*     UT_string *flag; */
+    /*     utstring_new(flag); */
+
+    /*     char *token, *sep = ","; */
+    /*     log_debug("--flags arg: %s", options[OPT_FLAGS].argument); */
+    /*     token = strtok((char*)options[OPT_FLAGS].argument, sep); */
+    /*     log_debug("--flags tok 1: %s", token); */
+    /*     while( token != NULL ) { */
+    /*         log_debug("--flags token: %s", token); */
+    /*         utstring_renew(flag); */
+    /*         utstring_printf(flag, "*mibl-%s*", token); */
+    /*         mibl_s7_set_flag(utstring_body(flag), true); */
+    /*         token = strtok(NULL, sep); */
+    /*     } */
+    /*     utstring_free(flag); */
+    /* } */
+}
 
 static __attribute__((unused)) void x_pp_mibl_project(void)
 {// the hard way to do it:
@@ -270,20 +327,6 @@ static struct option options[] = {
     [LAST] = {.flags = GOPT_LAST}
 };
 
-#if defined(DEBUG_TRACE)
-extern bool debug;
-extern bool debug_bazel;
-extern bool debug_mibl;
-extern bool debug_mibl_crawl;
-extern bool debug_scm;
-extern bool debug_s7_config;
-extern bool trace;
-extern bool trace_bazel;
-extern bool trace_mibl;
-#endif
-
-extern bool emit_parsetree;
-
 /* init_mibl_proj - read initial and expected data files */
 void _init_mibl_proj(char *test_root)
 {
@@ -348,13 +391,8 @@ void _init_mibl_proj(char *test_root)
     /* free(s); */
 }
 
-int main(int argc, char **argv)
+void _set_options(struct option options[])
 {
-    /* log_debug("ARGV[0]: %s", argv[0]); */
-    argc = gopt (argv, options);
-    (void)argc;
-    gopt_errors (argv[0], options);
-
     if (options[FLAG_HELP].count) {
         _print_usage();
         exit(EXIT_SUCCESS);
@@ -370,7 +408,7 @@ int main(int argc, char **argv)
 #if defined(DEBUG_TRACE)
         if (verbose)
             log_info("debug ct: %d", options[FLAG_DEBUG].count);
-        debug = true;
+        mibl_debug = true;
         mibl_debug_level = options[FLAG_DEBUG].count;
 #endif
     }
@@ -378,10 +416,10 @@ int main(int argc, char **argv)
     if (options[FLAG_DEBUG_CONFIG].count) {
 #if defined(DEBUG_TRACE)
         if (verbose)
-           log_info("debug_config ct: %d", options[FLAG_DEBUG_CONFIG].count);
-        debug_bazel = true;
-        debug_mibl = true;
-        debug_s7_config = true;
+            log_info("debug_config ct: %d", options[FLAG_DEBUG_CONFIG].count);
+        mibl_debug_bazel = true;
+        mibl_debug_mibl = true;
+        mibl_debug_s7_config = true;
 #else
         log_error("--debug-config only valid with -c dbg");
         exit(EXIT_FAILURE);
@@ -391,14 +429,14 @@ int main(int argc, char **argv)
     if (options[FLAG_DEBUG_MIBLRC].count) {
 #if defined(DEBUG_TRACE)
         if (verbose) log_info("debug_miblrc ct: %d", options[FLAG_DEBUG_MIBLRC].count);
-        debug_miblrc = true;
+        mibl_debug_miblrc = true;
 #endif
     }
 
     if (options[FLAG_DEBUG_MIBL_CRAWL].count) {
 #if defined(DEBUG_TRACE)
         if (verbose) log_info("debug_mibl_crawl ct: %d", options[FLAG_DEBUG_MIBL_CRAWL].count);
-        debug_mibl_crawl = true;
+        mibl_debug_traversal = true;
 #else
         log_error(RED "ERROR: " CRESET
                   "--debug-mibl-crawl requires -c dbg");
@@ -408,7 +446,7 @@ int main(int argc, char **argv)
 
     if (options[FLAG_DEBUG_SCM].count) {
 #if defined(DEBUG_TRACE)
-        debug_scm = true;
+        mibl_debug_scm = true;
 #else
         log_warn("--debug-scm only takes effect for debug builds (-c dbg)");
 #endif
@@ -421,26 +459,42 @@ int main(int argc, char **argv)
 #if defined(DEBUG_TRACE)
         if (verbose)
             log_info("trace ct: %d", options[FLAG_TRACE].count);
-        trace = true;
-        trace_bazel = true;
-        trace_mibl = true;
+        mibl_trace = true;
+        mibl_trace_bazel = true;
+        mibl_trace = true;
 #endif
     }
 
-    if (options[FLAG_EMIT_PARSETREE].count) {
-        if (getenv("BAZEL_TEST")) {
-            /* log_warn("BAZEL_TEST: %s", getenv("BAZEL_TEST")); */
-            if ( !getenv("BUILD_WORKSPACE_DIRECTORY") ) {
-                fprintf(stderr,
-                        RED "ERROR: " CRESET
-                        "--emit-parsetree not supported under bazel test. Try 'bazel run'.\n");
-                exit(EXIT_FAILURE);
-            }
-        }
-        emit_parsetree = true;
-    }
+    /* if (options[FLAG_EMIT_PARSETREE].count) { */
+    /*     if (getenv("BAZEL_TEST")) { */
+    /*         /\* log_warn("BAZEL_TEST: %s", getenv("BAZEL_TEST")); *\/ */
+    /*         if ( !getenv("BUILD_WORKSPACE_DIRECTORY") ) { */
+    /*             fprintf(stderr, */
+    /*                     RED "ERROR: " CRESET */
+    /*                     "--emit-parsetree not supported under bazel test. Try 'bazel run'.\n"); */
+    /*             exit(EXIT_FAILURE); */
+    /*         } */
+    /*     } */
+    /*     emit_parsetree = true; */
+    /* } */
+}
 
-    /* **************************************************************** */
+int main(int argc, char **argv)
+{
+    /* log_debug("ARGV[0]: %s", argv[0]); */
+    /* log_debug("CWD: %s", getcwd(NULL, 0)); */
+    /* log_debug("BWSD: %s", getenv("BUILD_WORKSPACE_DIRECTORY")); */
+    /* log_debug("BWD: %s", getenv("BUILD_WORKING_DIRECTORY")); */
+    /* log_debug("TESTTGT: %s", getenv("TEST_TARGET")); */
+    /* log_debug("RUNFILES_DIR: %s", getenv("RUNFILES_DIR")); */
+
+    argc = gopt (argv, options);
+    (void)argc;
+    gopt_errors (argv[0], options);
+
+    _set_options(options);
+ 
+   /* **************************************************************** */
     /* In test env:
        BAZEL_TEST 1
        TEST_TARGET - label of this target, relative to BUILD_WS_DIRECTORY
@@ -510,9 +564,27 @@ int main(int argc, char **argv)
 
      */
 
-    struct mibl_config_s *mibl_config = mibl_s7_init(NULL, /* script dir */
-                                                     NULL); /* ws */
-    (void)mibl_config;
+    utstring_new(mibl_runfiles_root);
+    char *rfr = getenv("RUNFILES_DIR");
+    /* log_debug("RFR: %s", rfr); */
+    if (rfr)
+        utstring_printf(mibl_runfiles_root, "%s", rfr);
+    else
+        utstring_printf(mibl_runfiles_root, "%s", getcwd(NULL, 0));
+    /* log_debug("mibl_runfiles_root: %s", utstring_body(mibl_runfiles_root)); */
+
+    mibl_s7_init();
+
+    _update_mibl_config(options);
+
+    mibl_s7_init2(NULL, // options[OPT_MAIN].argument,
+                  NULL); // options[OPT_WS].argument);
+
+    _update_s7_globals(options);
+
+    /* struct mibl_config_s *mibl_config = mibl_s7_init(NULL, /\* script dir *\/ */
+    /*                                                  NULL); /\* ws *\/ */
+    /* (void)mibl_config; */
     /* we do not call mibl_s7_run - that's for running a -main script.
        here we run our script fragments in the test cases. iow we
        drive the processing from this c program instead of from a

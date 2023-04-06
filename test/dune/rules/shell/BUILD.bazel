@@ -1,0 +1,15 @@
+test_suite(
+    name = "mibl_test",
+    tests = [
+        "//test/dune/rules/shell/bash/simple/.mibl:test",
+        "//test/dune/rules/shell/cat/case01/.mibl:test",
+        "//test/dune/rules/shell/chdir/case01/.mibl:test",
+        "//test/dune/rules/shell/copy/case01/.mibl:test",
+        "//test/dune/rules/shell/cmp/case01/.mibl:test",
+        "//test/dune/rules/shell/cmp/case02/.mibl:test",
+        "//test/dune/rules/shell/diff/case01/.mibl:test",
+        "//test/dune/rules/shell/echo/case01/.mibl:test",
+        "//test/dune/rules/shell/redirects/case01/.mibl:test",
+        "//test/dune/rules/shell/system/case01/.mibl:test",
+    ]
+)

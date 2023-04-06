@@ -9,7 +9,7 @@
            '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/rules/shell/system/case01") (:pkg-path . "./")
                    (:realpath . "/Users/gar/obazl/mibl/test/dune/rules/shell/system/case01")
                    (dune (rule (targets foo.txt) (deps foo.sh) (action (system "foo.sh"))))
-                   (:mibl (:rule (:deps (:foo.sh (:pkg . "./") (:tgt . "foo.sh")))
+                   (:mibl (:rule (:inputs (:foo.sh (:pkg . "./") (:tgt . "foo.sh")))
                                  (:tools (:system . :shell-tool))
                                  (:outputs (:foo.txt (:pkg . "./") (:tgt . "foo.txt")))
                                  (:cmd (:tool :system) (:args :foo.sh))))

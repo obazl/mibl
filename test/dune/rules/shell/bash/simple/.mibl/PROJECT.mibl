@@ -16,13 +16,13 @@
                            (:dynamic "foo.txt" "
 # shell script here...
     "))
-                   (:mibl (:rule (:deps ((symbol ":
+                   (:mibl (:rule (:inputs ((symbol ":
 # shell script here...
     ") (:pkg . "./")
-                                          (:tgt . "
+                                            (:tgt . "
 # shell script here...
     "))
-                                        (:a.txt (:pkg . "./") (:tgt . "a.txt")))
+                                          (:a.txt (:pkg . "./") (:tgt . "a.txt")))
                                  (:tools (:bash . :shell-tool))
                                  (:outputs (:foo.txt (:pkg . "./") (:tgt . "foo.txt")))
                                  (:cmd (:tool :bash)

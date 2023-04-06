@@ -1,0 +1,6 @@
+test_suite(
+    name = "mibl_test",
+    tests = [
+        "//test/dune/rules/stdio/with./mibl:test"
+    ]
+)

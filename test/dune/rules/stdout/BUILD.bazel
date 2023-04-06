@@ -1,0 +1,10 @@
+test_suite(
+    name = "mibl_test",
+    tests = [
+        "//test/dune/rules/stdout/ignore/.mibl:test",
+        "//test/dune/rules/stdout/pipe/.mibl:test",
+        "//test/dune/rules/stdout/with/bash/.mibl:test",
+        # "//test/dune/rules/stdout/with/cat/.mibl:test",
+        "//test/dune/rules/stdout/with/echo/.mibl:test"
+    ]
+)

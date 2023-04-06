@@ -1,0 +1,23 @@
+((:@ (:name . "@")
+     (:path . /Users/gar/obazl/mibl/test/dune/rules/stdout/with/bash)
+     (:exports
+         (hash-table)) (:opam (hash-table)) (:shared-ppx (hash-table))
+     (:filegroups
+         (hash-table
+           '"./" (("glob_STAR.txt" (:pkg "./") (:glob . "*.txt") (:clients "./")))))
+     (:pkgs
+         (hash-table
+           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/rules/stdout/with/bash") (:pkg-path . "./")
+                   (:realpath . "/Users/gar/obazl/mibl/test/dune/rules/stdout/with/bash")
+                   (:files (:static "BUILD.sh.bazel" "a.txt" "b.txt" "c.txt" "d.txt" "myscript.sh")
+                           (:dynamic "output.txt"))
+                   (dune (rule (targets output.txt)
+                               (deps myscript.sh (:inputs (glob_files *.txt)))
+                               (action (with-stdout-to %{targets} (run bash myscript.sh %{inputs})))))
+                   (:mibl (:rule (:inputs (:myscript.sh (:pkg . "./") (:tgt . "myscript.sh"))
+                                          (:inputs (:pkg . "./") (:glob . "glob_STAR.txt")))
+                                 (:tools (:bash . :shell-tool))
+                                 (:outputs (:output.txt (:pkg . "./") (:tgt . "output.txt")))
+                                 (:cmd (:tool :bash) (:args :myscript.sh :inputs))
+                                 (:stdout (:fixme %{targets}))))
+                   (:filegroups ("glob_STAR.txt" (:pkg "./") (:glob . "*.txt") (:clients "./"))))))))

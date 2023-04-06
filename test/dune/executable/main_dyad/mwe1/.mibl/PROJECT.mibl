@@ -2,15 +2,15 @@
      (:path . /Users/gar/obazl/mibl/test/dune/executable/main_dyad/mwe1)
      (:exports
          (hash-table
+           ':bin:main ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
+           'main.exe ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
+           'main.bc ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
            ':main.bc ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
            ':bin:main.bc ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
-           ':main ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
-           ':main.exe ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
            ':bin:main.exe ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
-           'main ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
-           'main.exe ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
-           ':bin:main ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
-           'main.bc ((:exe . #t) (:pkg . ./) (:tgt . main.exe))))
+           ':main.exe ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
+           ':main ((:exe . #t) (:pkg . ./) (:tgt . main.exe))
+           'main ((:exe . #t) (:pkg . ./) (:tgt . main.exe))))
      (:opam
          (hash-table)) (:shared-ppx (hash-table)) (:filegroups (hash-table))
      (:pkgs

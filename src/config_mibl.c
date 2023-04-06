@@ -46,9 +46,10 @@ struct mibl_config_s {
     char *schema_version;
     int libct;
     bool load_miblrc; // allows --no-miblrc
-    //FIXME: remove debug flags, they're globals guarded by DEBUG_TRACE
+    //FIXME: remove debug flags, they're globals guarded by DEBUG_TRACE?
     bool debug_ppx;
     bool debug_dune_rules;
+    bool debug_deps;
     //
     bool halt_after_parsetree;
     //FIXME emits: all but parsetree are s7 global vars
@@ -75,6 +76,7 @@ struct mibl_config_s mibl_config = {
     .load_miblrc      = true,
     .debug_ppx        = false,
     .debug_dune_rules = false,
+    .debug_deps       = false,
     .halt_after_parsetree = false,
     .emit_parsetree   = false,
     .emit_mibl        = false,
@@ -119,6 +121,13 @@ LOCAL int _miblrc_handler(void* config, const char* section, const char* name, c
             token = strtok(NULL, sep);
         }
         return 1;
+    }
+
+    if (MATCH("mibl", "debug")) {
+        if (verbose && verbosity > 1) log_debug("miblrc [mibl] debug: %s", value);
+        if (strncmp(value, "deps", 4) == 0) {
+            pconfig->debug_deps = true;
+        }
     }
 
     if (MATCH("mibl", "emit")) {
@@ -327,6 +336,7 @@ EXPORT void show_mibl_config(void)
     log_info("\tload_miblrc: %d"      , mibl_config.load_miblrc);
     log_info("\tdebug_ppx: %d"        , mibl_config.debug_ppx);
     log_info("\tdebug_dune_rules: %d" , mibl_config.debug_dune_rules);
+    log_info("\tdebug_deps: %d"       , mibl_config.debug_deps);
     log_info("\temit_parsetree: %d"   , mibl_config.emit_parsetree);
     log_info("\temit_mibl: %d"        , mibl_config.emit_mibl);
     log_info("\temit_starlark: %d"    , mibl_config.emit_starlark);

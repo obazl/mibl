@@ -612,11 +612,12 @@ void _s7_init(void)
     utstring_new(libc_s7);
     char *dso_dir;
     if (bzl_mode) {
+        /* log_debug("BZL MODE"); */
         /* running under bazel run or test */
 
         /* add @libs7//scm to *load-path* */
         char *libs7_scmdir = realpath("../libs7/scm", NULL);
-        log_debug("libs7_scmdir: %s", libs7_scmdir);
+        /* log_debug("libs7_scmdir: %s", libs7_scmdir); */
         s7_add_to_load_path(s7, libs7_scmdir);
         free(libs7_scmdir);
 
