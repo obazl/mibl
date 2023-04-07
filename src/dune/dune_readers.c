@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <inttypes.h>
+#include <libgen.h>
 #include <stddef.h>
 
 #include "log.h"
@@ -38,18 +39,41 @@ extern bool trace;
 #define ERRSEXP "(with-let (owlet) " \
     "(format #t \"file: ~A, line ~A\n\" error-file error-line))"
 
-s7_pointer g_s7_read_thunk_catcher(s7_scheme *s7, s7_pointer args)
+/* TODO: validate dunefile_port */
+/* s7 defined in s7_config.c */
+s7_pointer g_dune_read_thunk(s7_scheme *s7, s7_pointer args) {
+    printf("g_dune_read_thunk: %s\n",
+           s7_port_filename(s7, g_dunefile_port));
+    return s7_read(s7, g_dunefile_port);
+}
+
+s7_pointer dune_read_thunk;
+s7_pointer mibl_read_thunk;
+
+void init_dune_readers(void)
 {
-    /* LOG_S7_DEBUG("s7_read_thunk_catcher args", args); */
+    /* log_debug("init_dune_readers"); */
+    dune_read_thunk = s7_make_function(s7, "s7-read-thunk",
+                                     g_dune_read_thunk,
+                                     0, 0, false, "");
+    mibl_read_thunk = s7_make_function(s7, "mibl-read-thunk",
+                                       g_mibl_read_thunk,
+                                       0, 0, false, "");
+}
+
+s7_pointer g_dune_read_thunk_catcher(s7_scheme *s7, s7_pointer args)
+{
+    LOG_S7_DEBUG("s7_read_thunk_catcher args", args);
     /* log_info("s7_read_thunk_catcher arg0: %s", TO_STR(s7_car(args))); */
     /* log_info("s7_read_thunk_catcher arg1: %s", TO_STR(s7_cadr(args))); */
     /* s7_show_stack(s7); */
 
+    const char *dunefile = s7_port_filename(s7, g_dunefile_port);
+    log_error("reading dunefile: %s", dunefile);
+
     /* if arg0 == 'read-error and */
     if (strstr(TO_STR(s7_cadr(args)),
                "(\"unexpected close paren:") != NULL) {
-
-        const char *dunefile = s7_port_filename(s7, g_dunefile_port);
 
         /* printf("XXXXXXXXXXXXXXXX\n"); */
         /* if (strstr(errmsg, "BADDOT") != NULL) { */
@@ -127,7 +151,7 @@ s7_pointer s7_read_thunk_catcher;
 void init_error_handlers_dune(void)
 {
     /* log_debug("init_error_handlers_dune"); */
-    s7_read_thunk_catcher = s7_define_function(s7, "s7-read-thunk-catcher", g_s7_read_thunk_catcher,
+    s7_read_thunk_catcher = s7_define_function(s7, "s7-read-thunk-catcher", g_dune_read_thunk_catcher,
                                                2, // required args
                                                0, // optional args
                                                false, // rest_arg
@@ -135,8 +159,8 @@ void init_error_handlers_dune(void)
 
     /* log_debug("s7_read_thunk_catcher: %d\n", s7_is_defined(s7, "s7-read-thunk-catcher")); */
 
-   s7_define_function(s7, "error-handler", _s7_error_handler,
-                      1, 0, false, "our error handler");
+    s7_define_function(s7, "error-handler", _s7_error_handler,
+                       1, 0, false, "our error handler");
 
     s7_eval_c_string(s7, "(set! (hook-functions *error-hook*) \n\
                             (list (lambda (hook) \n\
@@ -155,14 +179,265 @@ void init_error_handlers_dune(void)
     /*                                 (read-error-handler \n\ */
     /*                                   (apply format #f (hook 'data))) \n \ */
     /*                                 (set! (hook 'result) 'READ-error))))"); */
+}
+
+s7_pointer g_mibl_read_thunk(s7_scheme *s7, s7_pointer args) {
+    fprintf(stderr, "g_mibl_read_thunk\n");
+    /* fprintf(stderr, "s7_read_thunk_catcher: %d\n", s7_is_defined(s7, "s7-read-thunk-catcher")); */
+    /* s7_pointer body = s7_eval_c_string(s7, "(lambda () (+ #f 2))"); */
+    /* s7_pointer err = s7_eval_c_string(s7, "(lambda (type info) 'oops)"); */
+
+    /* if ( ! s7_is_defined(s7, "s7-read-thunk-catcher") ) { */
+    /*     log_error("s7-read-thunk-catcher not defined"); */
+    /*     exit(1); */
+    /* } */
+    /* char *rtc = TO_STR(s7_read_thunk_catcher); */
+    /* log_error("s7_read_thunk_catcher: %s", rtc); */
+
+    s7_pointer err_catcher = s7_name_to_value(s7, "s7-read-thunk-catcher");
+    /* s7_pointer t = s7_type_of(s7, x); */
+    /* /\* log_debug("s7-read-thunk-catcher type-of: %s", TO_STR(t)); *\/ */
+    /* s7_pointer arity = s7_arity(s7, s7_read_thunk_catcher); */
+    /* /\* log_debug("s7-read-thunk-catcher arity: %s", TO_STR(arity)); *\/ */
+
+    /* s7_flush_input_port(s7, s7_current_input_port(s7)); */
+    s7_flush_output_port(s7, s7_current_error_port(s7));
+    s7_flush_output_port(s7, s7_current_error_port(s7));
+    s7_pointer result = s7_call_with_catch(s7,
+                                           s7_t(s7),      /* tag */
+                                           dune_read_thunk, /* body */
+                                           //s7_read_thunk_catcher /* body */
+                                           err_catcher // s7_read_thunk_catcher /* err */
+                                           );
+    log_trace("RETURNED: dune_read_thunk");
+    return result;
+}
+
+/* LOCAL s7_pointer mibl_read_thunk; */
+
+s7_pointer read_dunefile(char *path) //, char *fname)
+{
+#if defined(DEBUG_TRACE)
+    if (mibl_debug_traversal) {
+        log_debug("read_dunefile %s", path); //, fname);
+        /* s7_show_stack(s7); */
+    }
+#endif
+
+    /* s7_pointer body = s7_eval_c_string(s7, "(lambda () (+ #f 2))"); */
+    /* s7_pointer err = s7_eval_c_string(s7, "(lambda (type info) 'oops)"); */
+    /* s7_pointer result = s7_call_with_catch(s7, s7_t(s7), */
+    /*                                        /\* s7_read_thunk, *\/ */
+    /*                                        //7_read_thunk_catcher */
+    /*                                        body, */
+    /*                                        err); */
+    /* char *s1; */
+    /* if (result != s7_make_symbol(s7, "oops")) */
+    /*   {fprintf(stderr, "catch (oops): %s\n", s1 = TO_STR(result)); free(s1);} */
+    /* exit(0); */
+
+    /* read dunefile */
+    utstring_renew(dunefile_name);
+    utstring_printf(dunefile_name, "%s", path); //, fname);
+    /* log_debug("reading dunefile: %s", utstring_body(dunefile_name)); */
+
+    s7_pointer dunefile_port = s7_open_input_file(s7,
+                                         utstring_body(dunefile_name),
+                                         "r");
+    if (!s7_is_input_port(s7, dunefile_port)) {
+        errmsg = s7_get_output_string(s7, s7_current_error_port(s7));
+        if ((errmsg) && (*errmsg)) {
+            log_error("[%s\n]", errmsg);
+            s7_shutdown(s7);
+            exit(EXIT_FAILURE);
+        }
+    } else {
+#if defined(DEBUG_TRACE)
+        if (mibl_trace)
+            log_trace("opened input dunefile_port for %s",
+                      utstring_body(dunefile_name));
+#endif
+    }
+    g_dunefile_port = dunefile_port;
+
+    /* dune_read_thunk = s7_make_function(s7, "s7-read-thunk", */
+    /*                                  dune_read_thunk, */
+    /*                                  0, 0, false, ""); */
+    /* mibl_read_thunk = s7_make_function(s7, "mibl-read-thunk", */
+    /*                                    _mibl_read_thunk, */
+    /*                                    0, 0, false, ""); */
+
+    dune_gc_loc = s7_gc_protect(s7, g_dunefile_port);
+
+    s7_pointer stanzas = s7_list(s7, 0); // s7_nil(s7));
+    /* s7_int stanzas_gc_loc = s7_gc_protect(s7, stanzas); */
+
+    close_error_config();
+    error_config();
+    /* init_error_handling(); */
+
+#if defined(DEBUG_TRACE)
+    if (mibl_trace)
+        log_trace("reading stanzas of %s", utstring_body(dunefile_name));
+#endif
+    /* repeat until all objects read */
+    while(true) {
+#if defined(DEBUG_TRACE)
+        if (mibl_debug_traversal) log_trace("reading stanza");
+#endif
+
+        /* s7_show_stack(s7); */
+        /* print_backtrace(s7); */
+        s7_pointer stanza = s7_call(s7, mibl_read_thunk, s7_nil(s7)); //list(s7, 0));
+        log_debug("RETURNED: mibl_read_thunk");
+        if (stanza == s7_eof_object(s7)) {
+            log_debug("EOF");
+            break;
+        }
+        /* s7_pointer stanza = s7_read(s7, dunefile_port); */
+
+#if defined(DEBUG_TRACE)
+        if (mibl_debug_traversal) {
+            LOG_S7_DEBUG("Readed stanza", stanza);
+        }
+#endif
+        /* s7_show_stack(s7); */
+        /* print_backtrace(s7); */
+        /* errmsg = s7_get_output_string(s7, s7_current_error_port(s7)); */
+        /* log_error("errmsg: %s", errmsg); */
+
+        if ((errmsg) && (*errmsg)) {
+#if defined(DEBUG_TRACE)
+            if (mibl_debug_traversal)
+                log_error(RED "[%s]" CRESET, errmsg);
+#endif
+            /* s7_close_input_port(s7, dunefile_port); */
+            /* s7_gc_unprotect_at(s7, dune_gc_loc); */
+            //if ".)", read file into buffer, convert to "\.)", then
+            // read with the scheme reader
+
+            if (strstr(errmsg,
+                       ";read-error (\"unexpected close paren:") != NULL) {
+            /* if (strstr(errmsg, "BADDOT") != NULL) { */
+                log_info(RED "fixing baddot in %s" CRESET,
+                         utstring_body(dunefile_name));
+                s7_close_input_port(s7, dunefile_port);
+                /* fprintf(stderr, "s7_gc_unprotect_at: %ld", (long)dune_gc_loc); */
+                s7_gc_unprotect_at(s7, dune_gc_loc);
+
+                s7_show_stack(s7);
+                /* clear out old error */
+                /* s7_flush_output_port(s7, s7_current_error_port(s7)); */
+                /* close_error_config(); */
+                /* error_config(); */
+                /* init_error_handlers(); */
+
+                // FIXME: test case: 'include' after baddot
+                s7_pointer fixed = fix_baddot(utstring_body(dunefile_name));
+                /* s7_pointer fixed = s7_eval_c_string(s7, "'(foob)"); */
+#if defined(DEBUG_TRACE)
+                if (mibl_debug_traversal)
+                    LOG_S7_DEBUG("FIXED", fixed);
+#endif
 
 
+                /* close_error_config(); */
+                /* error_config(); */
+                // FIXING baddot always re-reads entire dunefile
+                stanzas = fixed;
+                     /* if (s7_is_null(s7,stanzas)) { */
+                /*     // fixed is a list of stanzas */
+                /*     stanzas = fixed; */
+                /* } else{ */
+                /*     stanzas = s7_append(s7, stanzas, fixed); */
+                /* } */
+            /* } */
+            } else {
+                close_error_config();
+                error_config();
+                /* init_error_handlers(); */
+                s7_quit(s7);
+                exit(EXIT_FAILURE);
+            }
+            break;
+        }
+        /* printf("readed stanza\n"); */
+
+        /* close_error_config(); */
+        /* init_error_handling(); */
+        /* error_config(); */
+        /* s7_gc_unprotect_at(s7, dune_gc_loc); */
+
+        if (stanza == s7_eof_object(s7)) {
+#if defined(DEBUG_TRACE)
+            if (mibl_trace) log_trace("readed eof");
+#endif
+            break;
+        }
+
+        /* LOG_S7_DEBUG("SEXP", stanza); */
+        /* if (mibl_debug_traversal) */
+        /*     LOG_S7_DEBUG("stanza", stanza); */
+
+        if (s7_is_pair(stanza)) {
+            if (s7_is_equal(s7, s7_car(stanza),
+                            s7_make_symbol(s7, "include"))) {
+                /* log_debug("FOUND (include ...)"); */
+                /* we can't insert a comment, e.g. ;;(include ...)
+                   instead we would have to put the included file in an
+                   alist and add a :comment entry. but we needn't bother,
+                   we're not going for roundtrippability.
+                */
+
+                s7_pointer inc_file = s7_cadr(stanza);
+                /* LOG_S7_DEBUG("    including", inc_file); */
+                UT_string *dunepath;
+                utstring_new(dunepath);
+                char *tostr = TO_STR(inc_file);
+                utstring_printf(dunepath, "%s/%s",
+                                //FIXME: dirname may mutate its arg
+                                dirname(path), tostr);
+                free(tostr);
+                s7_pointer nested = read_dunefile(utstring_body(dunepath));
+                g_dunefile_port = dunefile_port;
+                /* LOG_S7_DEBUG("nested", nested); */
+                /* LOG_S7_DEBUG("stanzas", stanzas); */
+                stanzas = s7_append(s7,stanzas, nested);
+                /* alt: (:include "(include dune.inc)" (included ...)) */
+            } else {
+                if (s7_is_null(s7,stanzas)) {
+                    stanzas = s7_cons(s7, stanza, stanzas);
+                } else{
+                    stanzas = s7_append(s7,stanzas, s7_list(s7, 1, stanza));
+                }
+            }
+        } else {
+            /* stanza not a pair - automatically means corrupt dunefile? */
+            log_error("corrupt dune file? %s\n", utstring_body(dunefile_name));
+            /* if exit-on-error */
+            exit(EXIT_FAILURE);
+        }
+    }
+    s7_gc_unprotect_at(s7, dune_gc_loc);
+    /* fprintf(stderr, "s7_gc_unprotect_at dune_gc_loc: %ld\n", (long)dune_gc_loc); */
+    s7_close_input_port(s7, dunefile_port);
+
+#if defined(DEBUG_TRACE)
+    if (mibl_debug_traversal)
+        log_debug("finished reading dunefile: %s",
+                  utstring_body(dunefile_name));
+    if (mibl_trace) LOG_S7_DEBUG("readed stanzas", stanzas);
+#endif
+
+    return stanzas;
+    /* s7_close_input_port(s7, dunefile_port); */
+    /* s7_gc_unprotect_at(s7, gc_loc); */
 }
 
 /* s7_pointer */
 void *read_dune_package(UT_string *dunefile_name)
 {
-    //FIXME: this duplicates the code in load_project:_read_dunefile
+    //FIXME: this duplicates the code in read_dunefile
 #if defined(DEBUG_TRACE)
     if (mibl_trace) log_trace("read_dune_package: %s", utstring_body(dunefile_name));
 #endif

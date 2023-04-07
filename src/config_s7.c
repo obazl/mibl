@@ -749,6 +749,14 @@ void _define_mibl_s7_vars(void)
 
     s7_define_variable(s7, "*mibl-shared-ppx-pkg*",
                        s7_make_string(s7, "bzl"));
+
+    init_dune_readers();
+    /* s7_read_thunk = s7_make_function(s7, "s7-read-thunk", */
+    /*                                  _s7_read_thunk, */
+    /*                                  0, 0, false, ""); */
+    /* mibl_read_thunk = s7_make_function(s7, "mibl-read-thunk", */
+    /*                                    _mibl_read_thunk, */
+    /*                                    0, 0, false, ""); */
 }
 
 /* FIXME: if var does not exist, create it.

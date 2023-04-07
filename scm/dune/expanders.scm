@@ -904,9 +904,11 @@
         (-expand-pct-arg!? ws arg :arg pkg deps)))
 
      (else
-      (if (or *mibl-debug-expanders* *mibl-debug-s7*)
-          (format #t "~A: ~A~%" (white "String literal") arg))
-      ;; arg is string. check deps and targets, then pkg files
+      (mibl-trace "String literal" arg *mibl-debug-expanders*)
+      ;; arg is string.
+      ;; if contains spaces, cannot be a file (EXCEPT on windows!)
+      ;; else check deps and targets, then pkg files
+
       (if-let ((tag (deps->tag-for-file deps arg)))
               (begin
                 (if (or *mibl-debug-expanders* *mibl-debug-s7*)

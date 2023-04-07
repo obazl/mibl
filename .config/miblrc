@@ -8,6 +8,10 @@ emit = none
 
 debug = foo,bar
 
+[repl]
+;; TODO: repl flag to skip parsetree crawl?
+;; TODO: repl flag to skip parsetree->mibl step
+
 [scripts]
 
 ;;dir = /foo/bar
@@ -30,14 +34,20 @@ exclude = test/dune/tezos/lib_clic/test
 ;; non-dune dirs
 exclude = bzl
 exclude = convert
+exclude = coswitch
 exclude = deploy
 exclude = docs
 exclude = external
+exclude = man
 exclude = mibl
 exclude = obsolete
 exclude = private
 exclude = repl
+exclude = scm
 exclude = src
+exclude = test
+exclude = tmp
 exclude = tools
+exclude = vendored
 
 exclude = test/dune/stanzas/library/root_module/fail1

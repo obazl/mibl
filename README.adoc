@@ -1,28 +1,31 @@
 = mibl - tools for meta-programming OCaml builds
+:toc: auto
+:toclevels: 3
 
 Scheme tools for herding OCaml projects; in particular analyzing and
-editing link:https://dune.readthedocs.io/en/latest/[Dune],
-link:https://opam.ocaml.org/doc/Manual.html[OPAM], and
+transforming link:https://dune.readthedocs.io/en/latest/[Dune],
+link:https://opam.ocaml.org/doc/Manual.html[OPAM], and findlib
 link:http://projects.camlcity.org/projects/dl/findlib-1.9.4/doc/ref-html/r759.html[META]
 files.
 
 If you prefer acronyms: **M**eta-**ibl**
-("ibl" is Arabic for "camel"). If you prefer recursion: **M**ibl **i**ntegrates
+("ibl" is Arabic for "camel"). Or _muta'ibbil_,  متئبّل . If you prefer recursion: **M**ibl **i**ntegrates
 **b**uild **l**anguages.
 
-IMPORTANT: **STATUS**: Alpha. The code (in C) for the crawling the
-file system and parsing Dune, Meta, and OPAM and META files is written
-but the Scheme APIs are still under construction. An earlier
-version of the Dune API was sufficient for generating Bazel build
-files, but it is undergoing major revisions. What's there is
-sufficient for exploration.
+IMPORTANT: **STATUS**: Alpha
 
 `mibl` is derived from
 link:https://ccrma.stanford.edu/software/snd/snd/s7.html[s7]. See
 link:https://iainctduncan.github.io/scheme-for-max-docs/s7.html[Why S7
 Scheme?] for reasons why.
 
-== Getting Started
+== Using mibl
+
+Normally mibl would be included as a dependency of a "mibl
+application"; for example,
+link:https://github.com/obazl/tools_obazl[tools-obazl] supports a
+command, `bazel run @obazl//convert`, that uses mibl to convert Dune
+projects to OBazl projects. But mibl commands can also be run directly.
 
 [source,starlark, title="WORKSPACE.bazel"]
 ----
@@ -30,13 +33,56 @@ load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 git_repository(
     name = "mibl",
     remote = "https://github.com/obazl/mibl",
-    branch = "main"
+    branch = ... see below ...
 )
 ----
 
-NOTE: Once `mibl` is officially released this should be replaced with an `http_archive` rule.
+Branches;
 
-There are two ways to run `mibl`: with or without Bazel.
+* `main` should not be used until version 1 is released.
+* `alpha` should usually work but is unstable. I push to the alpha
+  branch when I have a set of changes in the dev branch that seem to
+  work and have been at least lightly tested on MacOS and Linux.
+* `dev` is where ongoing work happens. Very unstable.
+
+
+== Principles of Operation
+
+mibl is an engine and a language.
+
+The engine crawls the source tree and constructs a "parsetree" data
+structure (in Scheme syntax) representing the source tree but
+structured to reflect Dune and OCaml semantics. For example it
+pairs .ml and .mli files having the same stemname, and it embeds the
+content of dunefiles into the parsetree. This part of mibl is written
+in C. It passes the parsetree to the mibl application, which
+"normalizes" it by for example resolving `deps` fields in `rule`
+stanzas. The mibl application is written in s7 Scheme.
+
+The resulting normalized data structure has (or should have) all the
+information needed to generated build descriptions. The original
+purpose was to generate BUILD.bazel files from Dune files, but care
+has been taken to eliminate (or at least minimize) Bazel-dependent
+features in the mibl data schema, so that uses can write emitters for
+other build metalanguages (e.g. ninja).
+
+== mibl commands
+
+* `@mibl//mibl` - the engine. With `--main <script filename>` runs a script; otherwise launches a repl.
+
+Aliases:
+
+* `@mibl//emit:mibl` - runs `@mibl//mibl -- --main mibl_main.scm --emit-mibl`
+
+Emits `.mibl/PROJECT.mibl` and `.mibl/PROJECT.s7`.
+
+To also emit the parsetree:  `bazel run @mibl//emit:mibl -- --emit-parsetree`
+
+* `@mibl//emit:parsetree` - runs `@mibl//mibl -- --main mibl_main.scm --emit-parsetree --halt-after parsetree
+
+To print the parsetree or project mibl to the terminal, add `--show-parsetree` and `--show-mibl`, respectively.
+
+=== @mibl//
 
 == Running mibl in a Bazel environment
 

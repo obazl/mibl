@@ -1,8 +1,13 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary")
 
+alias(
+    name = "repl",
+    actual = "//mibl"
+)
+
 ##########
 cc_binary(
-    name  = "repl",
+    name  = "xrepl",
     linkstatic = True,
     srcs  = [
         "repl.c", "repl.h",

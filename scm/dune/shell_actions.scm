@@ -1,14 +1,15 @@
 (define shell-tools
-  '(cat cp copy diff)) ;; etc
+  '(cat cp copy diff echo)) ;; etc
 
 (define shell-tool-kws
-  '(::cat ::cp ::copy ::diff)) ;; etc
+  '(::cat ::cp ::copy ::diff ::echo)) ;; etc
 
 (define shell-tool-map
   '((cat ::cat)
     (cp ::cp)
     (copy ::cp)
     (diff ::diff)
+    (echo ::echo)
     ;; etc
     ))
 
@@ -43,6 +44,22 @@
 
 ;; (system "...script..."), (bash "...script..."), (echo ...) etc.
 ;; ops: bash, echo, system
+(define (normalize-action-echo-cmd ws pkg action action-list tools targets deps)
+  (mibl-trace-entry "normalize-action-echo-cmd" action)
+  (mibl-trace "action-list" action-list)
+  (let* ((tool (string->keyword (format #f "~A" action)))
+         (mibl-trace-let "tool" tool)
+         (action-args (cdr action-list))
+         (mibl-trace-let "action-args" action-args)
+         (echo-string (string-parse-pct-vars action-args))
+         )
+    (mibl-trace "echo-string" echo-string)
+    (set-cdr! tools `((,tool . :shell-tool)))
+    `((:cmd
+       (:tool ,tool)
+       (:args ,@echo-string)
+       ))))
+
 (define (normalize-action-shell-cmd ws pkg action action-list tools targets deps)
   ;; FIXME: shell cmd args may include filename literals; find way to expand?
   ;; FIXME: may include ${target}
@@ -68,4 +85,4 @@
     `((:cmd
        (:tool ,tool)
        (:args ,@expanded-args)))))
-;)
+

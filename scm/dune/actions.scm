@@ -821,7 +821,7 @@
     (copy#      ,normalize-action-file-op) ;; copy & add header line
     (diff       ,normalize-action-file-op) ;; (diff <file1> <file2>)
     (diff?      ,normalize-action-file-op) ;; (diff? <file1> <file2>)
-    (echo       ,normalize-action-shell-cmd) ;; (echo <string>)
+    (echo       ,normalize-action-echo-cmd) ;; (echo <string>)
     (system     ,normalize-action-shell-cmd) ;; (system <cmd>) uses sh
     (write-file ,normalize-action-write-file) ;; (write-file <file> <string>)
     ))

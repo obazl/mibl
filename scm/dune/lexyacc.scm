@@ -153,8 +153,12 @@
                              (mly-mli_ (assoc :mli_ (cdr mly-tlbl))))
                         (mibl-trace "mly :ml_"  mly-ml_ *mibl-debug-lexyacc*)
                         (mibl-trace "mly :mli_" mly-mli_ *mibl-debug-lexyacc*)
-                        (set-cdr! (cdr mly-ml_)  ml-deps)
-                        (set-cdr! (cdr mly-mli_) mli-deps)
+                        (if (list? (cdr mly-ml_))
+                            (set-cdr! (cdr mly-ml_)  ml-deps)
+                            (set-cdr! mly-ml_ (cons (cdr mly-ml_) ml-deps)))
+                        (if (list? (cdr mly-mli_))
+                            (set-cdr! (cdr mly-mli_) mli-deps)
+                            (set-cdr! mly-mli_ (cons (cdr mly-mli_) mli-deps)))
                         ))))))
             pkg-mly-modules))
 
@@ -206,12 +210,21 @@
 
                     ;; task: find mll module in pkg files and update its deps
                     (let* ((mll-tlbl (module-name->tagged-label mll-module pkg))
-                           (mibl-trace-let "mll tlbl" mll-tlbl *mibl-debug-lexyacc*)
-                           ;; mll-tlbl should have :ml_ not :ml e.g. (:ml_ lexer.ml)
-                           (mll-ml_ (assoc :ml_ (cdr mll-tlbl))))
-                      (mibl-trace "mll :ml_" mll-ml_ *mibl-debug-lexyacc*)
-                      (set-cdr! (cdr mll-ml_) file-deps)
-                      )))))
+                           (mibl-trace-let "mll tlbl" mll-tlbl *mibl-debug-lexyacc*))
+                      (if (list? (cdr mll-tlbl))
+                          ;; tlbl form: (Lexer (:ml_ . lexer.ml) ...)
+                          (let ((ml (cadr mll-tlbl)))
+                            (set-cdr! ml (cons (cdr ml) file-deps)))
+                          ;; else tlbl form: (Lexer . lexer.ml)
+                          (begin
+                            ;; (mibl-trace "before" mll-tlbl)
+                            (set-cdr! mll-tlbl (cons (cdr mll-tlbl) file-deps))
+                            ;; (mibl-trace "after" mll-tlbl)
+                            )))
+                          ;; (let ((mll-ml_ (assoc :ml_ (cdr mll-tlbl))))
+                          ;;   ;; mll-ml_ form: (:ml_ . lexer.ml)
+                          ;;   (set-cdr! mll-ml_ (cons (cdr mll-ml_) file-deps))))
+                            ))))
             pkg-mll-modules))
 
 ;; handle :ocamllex, :ocamlyacc, etc.

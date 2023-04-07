@@ -8,15 +8,14 @@
 
 (define* (parsetree->mibl return) ;; root-path ws-path)
   ;; (set! *mibl-debug-s7* #t)
-  (if *mibl-debug-s7*
-      (format #t "libmibl.scm::parsetree->mibl\n"))
+  (mibl-trace-entry "libmibl.scm::parsetree->mibl" "")
       ;; : ~A, ~A~%" root-path ws-path))
   ;; (format #t "*mibl-project*: ~A~%" *mibl-project*)
   ;; (format #t "BYE~%"))
 
-  (if *mibl-debug-s7*
-      (format #t "~A: ~A~%" (bgred "*mibl-emit-bazel-pkg*")
-              *mibl-emit-bazel-pkg*))
+  ;; (if *mibl-debug-s7*
+  ;;     (format #t "~A: ~A~%" (bgred "*mibl-emit-bazel-pkg*")
+  ;;             *mibl-emit-bazel-pkg*))
 
   ;; (set! *mibl-build-dyads* #t)
   ;; (set! *mibl-shared-deps* '("compiler/tests-compiler")) ;;  "toplevel/bin"))
@@ -36,7 +35,7 @@
   (lexyacc-file-deps!)
 
   (prune-pkg-file-deps!)
-
+  (format #t "DONE PRUNING XXXXXXXXXXXXXXXX\n")
   ;; (format #t "RETURNING XXXXXXXXXXXXXXXX\n")
   ;; (return)
 

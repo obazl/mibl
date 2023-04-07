@@ -3,7 +3,7 @@
       (format #t "~A: ~A\n" (ublue "-fixup-progn-cmd!") c))
   c)
 
-(define (-module->filename m pkg)
+(define (-module->filename m pkg) ;;FIXME add :signatures
   (if *mibl-debug-s7*
       (format #t "~A: ~A~%" (blue "-module->filename") m))
   (let ((pkg-modules (assoc-val :modules pkg))
@@ -647,6 +647,20 @@
          (dynamics (if-let ((deps (assoc-val :dynamic (cdr struct-spec))))
                        deps '())))
     (mibl-trace "struct statics" statics *mibl-debug-deps*)
+    (for-each (lambda (struct) ;; (Foo foo.ml ...)
+                (mibl-trace "struct" struct *mibl-debug-deps*)
+                (let* ((s-deps (cdr struct)))
+                  ;; s-deps:  (foo.ml Dep1 Dep2 ...)
+                  ;; we will set-cdr! on this
+                  (mibl-trace "sdeps" s-deps *mibl-debug-deps*)
+                  (if (list? s-deps)
+                      (let ((newdeps (map (lambda (dep)
+                                             (mibl-trace "Fixing" dep *mibl-debug-deps*)
+                                             (-fixup-dep-sym :@ dep pkg exports))
+                                           (cdr s-deps))))
+                        (mibl-trace "sstruct newdeps" newdeps *mibl-debug-deps*)
+                        (set-cdr! s-deps newdeps)))))
+              statics)
     (mibl-trace "struct dynamics" dynamics *mibl-debug-deps*)
     (for-each (lambda (struct) ;; (Foo foo.ml ...)
                 (mibl-trace "struct" struct *mibl-debug-deps*)
@@ -659,9 +673,9 @@
                                              (mibl-trace "Fixing" dep *mibl-debug-deps*)
                                              (-fixup-dep-sym :@ dep pkg exports))
                                            (cdr s-deps))))
-                        (mibl-trace "Newdeps B" newdeps *mibl-debug-deps*)
+                        (mibl-trace "dstruce newdeps" newdeps *mibl-debug-deps*)
                         (set-cdr! s-deps newdeps)))))
-              statics)
+              dynamics)
     ))
 
 (define (-fixup-sig-deps! ws pkg sig-spec)

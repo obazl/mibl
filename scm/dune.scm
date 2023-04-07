@@ -42,6 +42,7 @@
 (load "dune/libraries.scm")
 (load "dune/modules.scm")
 (load "dune/opam.scm")
+(load "dune/pct_vars.scm")
 (load "dune/pkg_api.scm")
 (load "dune/predicates.scm")
 (load "dune/preprocessing.scm")
@@ -58,6 +59,7 @@
 (load "dune/install.scm")
 (load "dune/lexyacc.scm")
 (load "dune/menhir.scm")
+(load "dune/version.scm")
 
 (load "dune/ppx_inline_tests.scm")
 
