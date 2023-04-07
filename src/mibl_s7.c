@@ -1,5 +1,6 @@
 #include <libgen.h>
 #include <stdbool.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include "ini.h"
@@ -57,7 +58,7 @@ extern UT_string *xdg_data_home;
 /* #define XDG_RUNTIME_DIR */
 
 /* in addition we define a project-local directory for scm scripts */
-#define PROJ_MIBL ".config"
+#define PROJ_MIBL ".mibl"
 
 /* preference-ordered base directories in addition to XDG_DATA_HOME */
 #define XDG_DATA_DIRS   "/usr/local/share/:/usr/share/"
@@ -74,8 +75,7 @@ extern UT_string *xdg_data_home;
    user scripts:
        ($HOME)/.config/mibl
        $XDG_DATA_HOME default: $HOME/.local/share
-           XDG_DATA_HOME/mibl
-           XDG_DATA_HOME/mibl/s7
+           XDG_DATA_HOME/mibl/user
    proj scripts:
        .mibl
 
@@ -343,10 +343,10 @@ LOCAL void _config_user_load_path(void)
 
 LOCAL void _config_s7_load_path_xdg_home(void)
 {
-#if defined(DEBUG_TRACE)
-    if (mibl_trace)
-        log_trace("_config_s7_load_path_xdg_home");
-#endif
+/* #if defined(DEBUG_TRACE) */
+/*     if (mibl_trace) */
+        /* log_trace("_config_s7_load_path_xdg_home"); */
+/* #endif */
 
     UT_string *xdg_script_dir;
 
@@ -384,19 +384,19 @@ LOCAL void _config_s7_load_path_xdg_home(void)
     /*     s7_add_to_load_path(s7, utstring_body(xdg_script_dir)); */
     /* } */
 
-    utstring_renew(xdg_script_dir);
-    utstring_printf(xdg_script_dir, "%s/mibl/s7",
-                    utstring_body(xdg_data_home));
-    rc = access(utstring_body(xdg_script_dir), R_OK);
-    if (rc) {
-        if (verbose)
-            log_info("Not found: %s.", utstring_body(xdg_script_dir));
-    } else {
-        if (verbose)
-            log_debug("adding to *load-path*: %s",
-                     utstring_body(xdg_script_dir));
-        s7_add_to_load_path(s7, utstring_body(xdg_script_dir));
-    }
+    /* utstring_renew(xdg_script_dir); */
+    /* utstring_printf(xdg_script_dir, "%s/mibl/s7", */
+    /*                 utstring_body(xdg_data_home)); */
+    /* rc = access(utstring_body(xdg_script_dir), R_OK); */
+    /* if (rc) { */
+    /*     if (verbose) */
+    /*         log_info("Not found: %s.", utstring_body(xdg_script_dir)); */
+    /* } else { */
+    /*     if (verbose) */
+    /*         log_debug("adding to *load-path*: %s", */
+    /*                  utstring_body(xdg_script_dir)); */
+    /*     s7_add_to_load_path(s7, utstring_body(xdg_script_dir)); */
+    /* } */
 
     /* utstring_renew(xdg_script_dir); */
     /* utstring_printf(xdg_script_dir, "%s/%s", */
@@ -441,18 +441,20 @@ LOCAL void _config_s7_load_path_xdg_home(void)
     /* } */
 
     utstring_renew(xdg_script_dir);
-    utstring_printf(xdg_script_dir, "%s/mibl",
+    utstring_printf(xdg_script_dir, "%s/mibl/user",
                     utstring_body(xdg_data_home));
     rc = access(utstring_body(xdg_script_dir), R_OK);
     if (rc) {
         if (verbose)
-            log_info("Not found: %s.", utstring_body(xdg_script_dir));
-    } else {
+            log_info("Not found: %s; creating.", utstring_body(xdg_script_dir));
+        mkdir(utstring_body(xdg_script_dir), S_IRWXU | S_IRWXG | S_IRGRP );
+    }
+    /* else { */
         if (verbose)
             log_debug("adding to *load-path*: %s",
                       utstring_body(xdg_script_dir));
         s7_add_to_load_path(s7, utstring_body(xdg_script_dir));
-    }
+    /* } */
 }
 
 LOCAL __attribute__((unused)) void _config_s7_load_path_xdg_sys(void)
@@ -687,22 +689,23 @@ void _mibl_s7_configure_paths(char *main_script, char *ws_root)
     set_load_path(); //callback_script_file);
 
     // we need to do this before we chdir to repo root
-    if (main_script) {
-        UT_string *tmp;
-        utstring_new(tmp);
-        utstring_printf(tmp, "../%s", main_script);
-        char *realmain = realpath(utstring_body(tmp), NULL);
-        /* log_debug("realmain %s", realmain); */
+    /* if (main_script) { */
+    /*     UT_string *tmp; */
+    /*     utstring_new(tmp); */
+    /*     utstring_printf(tmp, "../%s", main_script); */
+    /*     char *realmain = realpath(utstring_body(tmp), NULL); */
+    /*     /\* log_debug("realmain %s", realmain); *\/ */
 
-        s7_pointer result = s7_add_to_load_path(s7, realmain);
-        (void)result;
-        /* log_info("*load-path*: %s", TO_STR(s7_load_path(s7))); */
-    }
+    /*     s7_pointer result = s7_add_to_load_path(s7, realmain); */
+    /*     (void)result; */
+    /*     /\* log_info("*load-path*: %s", TO_STR(s7_load_path(s7))); *\/ */
+    /* } */
     /* init_glob(s7); */
 
     /* s7_config_repl(s7); */
     /* s7_repl(s7); */
 
+    _config_s7_load_path_xdg_home();
     _config_s7_load_path_rootws(); /* always penultimate */
     s7_add_to_load_path(s7, "."); /* always last */
 
@@ -873,6 +876,7 @@ EXPORT void mibl_s7_run(char *main_script, char *ws)
         gc_loc = s7_gc_protect(s7, old_port);
 
     result = s7_eval_c_string(s7, utstring_body(sexp));
+    utstring_free(sexp);
 
     /* look for error messages */
     errmsg = s7_get_output_string(s7, s7_current_error_port(s7));
@@ -892,8 +896,6 @@ EXPORT void mibl_s7_run(char *main_script, char *ws)
     /* log_debug("PTREE: '%s'", ptree); */
     /* free(s); */
     /* (void)ptree; */
-
-    utstring_free(sexp);
 
     /* now we have the parsetree in *mibl-project* */
 
@@ -927,6 +929,8 @@ EXPORT void mibl_s7_run(char *main_script, char *ws)
 
     /* **************************************************************** */
     /* now run the s7 script on the parsetree */
+    /* s7_pointer lp = s7_load_path(s7); */
+    /* LOG_S7_DEBUG("*load-path*", lp); */
     if (main_script) {
         if (!s7_load(s7, main_script)) {
             log_error(RED "Could not load main_script '%s'; exiting\n",

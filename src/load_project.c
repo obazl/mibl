@@ -1588,7 +1588,7 @@ LOCAL void _update_pkg_structs(s7_pointer pkg_tbl,
                 s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg_alist);
                 s7_gc_unprotect_via_stack(s7, pkg_key);
             } else {
-                log_debug("OLD");
+                /* log_debug("OLD"); */
 
                 s7_pointer structures_alist_cdr = s7_cdr(structures_alist);
 #if defined(DEBUG_TRACE)
@@ -2036,9 +2036,9 @@ LOCAL void _update_pkg_mllib_files(s7_pointer pkg_tbl,
             /* if (mibl_debug_traversal) */
             /*     LOG_S7_DEBUG("pkg_alist", new_pkg_alist); */
 
-            tostr = TO_STR(pkg_key);
-            log_debug("set ht key: %s", tostr);
-            free(tostr);
+            /* tostr = TO_STR(pkg_key); */
+            /* log_debug("set ht key: %s", tostr); */
+            /* free(tostr); */
             s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg_alist);
         } else {
 #if defined(DEBUG_TRACE)
@@ -2455,9 +2455,9 @@ LOCAL void _update_pkg_cppo_files(s7_pointer pkg_tbl,
             /* if (mibl_debug_traversal) */
             /*     LOG_S7_DEBUG("pkg_alist", new_pkg_alist); */
 
-            tostr = TO_STR(pkg_key);
-            log_debug("set ht key: %s", tostr);
-            free(tostr);
+            /* tostr = TO_STR(pkg_key); */
+            /* log_debug("set ht key: %s", tostr); */
+            /* free(tostr); */
             s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg_alist);
         } else {
 #if defined(DEBUG_TRACE)
@@ -2548,7 +2548,7 @@ LOCAL void _update_pkg_cppo_files(s7_pointer pkg_tbl,
                 s7_pointer msrcs = s7_append(s7,
                                              ocppo_alist_cdr,
                                              s7_list(s7, 1, cppo_file));
-                LOG_S7_DEBUG("msrcs", msrcs);
+                /* LOG_S7_DEBUG("msrcs", msrcs); */
 
                 s7_pointer new_ocppo_alist
                     = s7_set_cdr(cppo_alist, msrcs);
@@ -3047,9 +3047,9 @@ LOCAL void _handle_dune_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
 #endif
             /* FIXME: check result */
             /* s7_pointer result = */
-            tostr = TO_STR(pkg_key);
-            log_debug("set ht key: %s", tostr);
-            free(tostr);
+            /* tostr = TO_STR(pkg_key); */
+            /* log_debug("set ht key: %s", tostr); */
+            /* free(tostr); */
             s7_hash_table_set(s7, pkg_tbl, pkg_key,
                               s7_append(s7, pkg_alist,
                                         s7_list(s7, 1, stanzas_assoc)));

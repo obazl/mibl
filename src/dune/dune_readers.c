@@ -42,8 +42,8 @@ extern bool trace;
 /* TODO: validate dunefile_port */
 /* s7 defined in s7_config.c */
 s7_pointer g_dune_read_thunk(s7_scheme *s7, s7_pointer args) {
-    printf("g_dune_read_thunk: %s\n",
-           s7_port_filename(s7, g_dunefile_port));
+    /* printf("g_dune_read_thunk: %s\n", */
+    /*        s7_port_filename(s7, g_dunefile_port)); */
     return s7_read(s7, g_dunefile_port);
 }
 
@@ -182,7 +182,7 @@ void init_error_handlers_dune(void)
 }
 
 s7_pointer g_mibl_read_thunk(s7_scheme *s7, s7_pointer args) {
-    fprintf(stderr, "g_mibl_read_thunk\n");
+    /* fprintf(stderr, "g_mibl_read_thunk\n"); */
     /* fprintf(stderr, "s7_read_thunk_catcher: %d\n", s7_is_defined(s7, "s7-read-thunk-catcher")); */
     /* s7_pointer body = s7_eval_c_string(s7, "(lambda () (+ #f 2))"); */
     /* s7_pointer err = s7_eval_c_string(s7, "(lambda (type info) 'oops)"); */
@@ -209,7 +209,7 @@ s7_pointer g_mibl_read_thunk(s7_scheme *s7, s7_pointer args) {
                                            //s7_read_thunk_catcher /* body */
                                            err_catcher // s7_read_thunk_catcher /* err */
                                            );
-    log_trace("RETURNED: dune_read_thunk");
+    /* log_trace("RETURNED: dune_read_thunk"); */
     return result;
 }
 
@@ -289,9 +289,9 @@ s7_pointer read_dunefile(char *path) //, char *fname)
         /* s7_show_stack(s7); */
         /* print_backtrace(s7); */
         s7_pointer stanza = s7_call(s7, mibl_read_thunk, s7_nil(s7)); //list(s7, 0));
-        log_debug("RETURNED: mibl_read_thunk");
+        /* log_debug("RETURNED: mibl_read_thunk"); */
         if (stanza == s7_eof_object(s7)) {
-            log_debug("EOF");
+            /* log_debug("EOF"); */
             break;
         }
         /* s7_pointer stanza = s7_read(s7, dunefile_port); */

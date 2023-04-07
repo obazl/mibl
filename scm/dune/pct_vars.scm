@@ -15,5 +15,5 @@
   ;; 1. parse out the pct-vars
   ;; 2. resolve them if possible
   ;; 3. construct result
-  '((:string "let cppo_version = \"" (:% (:version . cppo)) "\"")))
+  '((:string "let test_var = \"" (:% (:FIXME . TEST)) "\"")))
 
