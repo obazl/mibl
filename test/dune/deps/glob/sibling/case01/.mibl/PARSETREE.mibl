@@ -1,0 +1,32 @@
+((:@ (:name . "@")
+     (:path . /Users/gar/obazl/mibl/test/dune/deps/glob/sibling/case01)
+     (:exports
+         (hash-table)) (:opam (hash-table)) (:shared-ppx (hash-table))
+     (:filegroups
+         (hash-table))
+     (:pkgs
+         (hash-table
+           '"runtime" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/deps/glob/sibling/case01") (:pkg-path . "runtime")
+                        (:realpath . "/Users/gar/obazl/mibl/test/dune/deps/glob/sibling/case01/runtime")
+                        (:files (:static "runtime.js")))
+           '"js" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/deps/glob/sibling/case01") (:pkg-path . "js")
+                   (:realpath . "/Users/gar/obazl/mibl/test/dune/deps/glob/sibling/case01/js")
+                   (:files (:static "a.js" "b.js")))
+           '"genjs/src/gen" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/deps/glob/sibling/case01") (:pkg-path . "genjs/src/gen")
+                              (:realpath . "/Users/gar/obazl/mibl/test/dune/deps/glob/sibling/case01/genjs/src/gen")
+                              (dune (executable (name gen) (libraries js_of_ocaml-compiler)))
+                              (:structures (:static (Gen gen.ml #(Stdlib Sys) #(Stdlib String)
+                                                         #(Stdlib Printf) #(Stdlib Printexc)
+                                                         #(Stdlib List) #(Stdlib Filename)
+                                                         #(Stdlib Bytes) #(Stdlib Array) StringSet
+                                                         Js_of_ocaml_compiler))))
+           '"genjs/src" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/deps/glob/sibling/case01") (:pkg-path . "genjs/src")
+                          (:realpath . "/Users/gar/obazl/mibl/test/dune/deps/glob/sibling/case01/genjs/src")
+                          (dune (rule (target files.ml)
+                                      (deps gen/gen.exe ../../runtime/runtime.js
+                                            (glob_files ../../js/*.js))
+                                      (action (with-stdout-to %{target} (run %{deps}))))))
+           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/deps/glob/sibling/case01") (:pkg-path . "./")
+                   (:realpath . "/Users/gar/obazl/mibl/test/dune/deps/glob/sibling/case01"))
+           '"genjs" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/deps/glob/sibling/case01") (:pkg-path . "genjs")
+                      (:realpath . "/Users/gar/obazl/mibl/test/dune/deps/glob/sibling/case01/genjs"))))))

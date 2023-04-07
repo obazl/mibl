@@ -1,11 +1,13 @@
 ((:@ (:name . "@")
-     (:path . /Users/gar/obazl/mibl/test/dune/rules/stdio) (:exports (hash-table))
-     (:opam
-         (hash-table)) (:shared-ppx (hash-table)) (:filegroups (hash-table))
+     (:path . /Users/gar/obazl/mibl/test/dune/rules/stdio/with)
+     (:exports
+         (hash-table)) (:opam (hash-table)) (:shared-ppx (hash-table))
+     (:filegroups
+         (hash-table))
      (:pkgs
          (hash-table
-           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/rules/stdio") (:pkg-path . "./")
-                   (:realpath . "/Users/gar/obazl/mibl/test/dune/rules/stdio")
+           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/rules/stdio/with") (:pkg-path . "./")
+                   (:realpath . "/Users/gar/obazl/mibl/test/dune/rules/stdio/with")
                    (dune (rule (target config.status.in) (mode fallback)
                                (action (with-stdout-to %{target} (echo ""))))
                          (rule (alias config) (target config.status) (deps config.status.in)

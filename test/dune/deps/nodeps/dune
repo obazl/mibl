@@ -1,3 +1,0 @@
-(rule
- (targets output.txt)
- (action (run gen.sh %{targets})))

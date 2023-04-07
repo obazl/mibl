@@ -1,0 +1,13 @@
+((:@ (:name . "@")
+     (:path . /Users/gar/obazl/mibl/test/dune/deps/glob/cwd/untagged/case01)
+     (:exports
+         (hash-table)) (:opam (hash-table)) (:shared-ppx (hash-table))
+     (:filegroups
+         (hash-table))
+     (:pkgs
+         (hash-table
+           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/deps/glob/cwd/untagged/case01") (:pkg-path . "./")
+                   (:realpath . "/Users/gar/obazl/mibl/test/dune/deps/glob/cwd/untagged/case01")
+                   (:files (:static "a.css" "b.css" "concat.sh"))
+                   (dune (rule (targets foo.css) (deps (glob_files *.css))
+                               (action (cat %{deps} %{targets})))))))))

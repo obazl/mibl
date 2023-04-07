@@ -1,0 +1,19 @@
+((:@ (:name . "@")
+     (:path . /Users/gar/obazl/mibl/test/dune/deps/dynamic/case01)
+     (:exports
+         (hash-table)) (:opam (hash-table)) (:shared-ppx (hash-table))
+     (:filegroups
+         (hash-table))
+     (:pkgs
+         (hash-table
+           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/deps/dynamic/case01") (:pkg-path . "./")
+                   (:realpath . "/Users/gar/obazl/mibl/test/dune/deps/dynamic/case01")
+                   (:files (:static "BUILD.expected" "WORKSPACE"))
+                   (dune (rule (target dynsig2.mli)
+                               (action
+                                (write-file dynsig2.mli "val dynsig2_msg: string"))))
+                   (dune-project (lang dune 3.0))
+                   (:modules (Foo (:ml . foo.ml) (:mli . foo.mli)))
+                   (:signatures (:static (Goodbye . goodbye.mli) (Staticsig . staticsig.mli)))
+                   (:structures (:static (Hello . hello.ml) (Mytest mytest.ml OUnit2 Hello)))
+                   (:opam "mwe.opam"))))))

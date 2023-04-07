@@ -1,18 +1,16 @@
 (define (prune-mibl-exec mibl-exec)
-  (if *mibl-debug-s7*
-      (format #t "~A: ~A~%" (ured "PRUNE-mibl-exec") mibl-exec))
+  (mibl-trace-entry "prune-mibl-exec" mibl-exec)
   (let ((pruned (filter (lambda (fld)
-                          ;;(format #t "~A: ~A~%" (magenta "fld") (cdr fld))
+                          ;; (format #t "~A: ~A~%" (magenta "fld") (cdr fld))
                           (not (null? (cdr fld))))
                      (cdr (car mibl-exec)))))
     ;; (format #t "~A: ~A~%" (red "pruned") pruned)
     (list (cons :rule pruned))))
 
 (define (prune-mibl-rule mibl-rule)
-  (if *mibl-debug-s7*
-      (format #t "~A: ~A~%" (ured "PRUNE-mibl-rule") mibl-rule))
+  (mibl-trace-entry "prune-mibl-rule" mibl-rule)
   (let ((pruned (filter (lambda (fld)
-                          ;;(format #t "~A: ~A~%" (magenta "fld") (cdr fld))
+                          ;; (format #t "~A: ~A~%" (magenta "fld") (cdr fld))
                           (not (null? (cdr fld))))
                      (cdr (car mibl-rule)))))
     ;; (format #t "~A: ~A~%" (red "pruned") pruned)

@@ -1,11 +1,13 @@
 ((:@ (:name . "@")
-     (:path . /Users/gar/obazl/mibl/test/dune/rules/stdio) (:exports (hash-table))
-     (:opam
-         (hash-table)) (:shared-ppx (hash-table)) (:filegroups (hash-table))
+     (:path . /Users/gar/obazl/mibl/test/dune/rules/stdio/with)
+     (:exports
+         (hash-table)) (:opam (hash-table)) (:shared-ppx (hash-table))
+     (:filegroups
+         (hash-table))
      (:pkgs
          (hash-table
-           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/rules/stdio") (:pkg-path . "./")
-                   (:realpath . "/Users/gar/obazl/mibl/test/dune/rules/stdio")
+           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/rules/stdio/with") (:pkg-path . "./")
+                   (:realpath . "/Users/gar/obazl/mibl/test/dune/rules/stdio/with")
                    (dune (rule (target config.status.in) (mode fallback)
                                (action (with-stdout-to %{target} (echo ""))))
                          (rule (alias config) (target config.status) (deps config.status.in)
@@ -14,16 +16,15 @@
                                                                         (chdir %{workspace_root}
                                                                                (run ./tools/rewrite.exe
                                                                                     -init)))))))
-                   (:mibl (:rule (:mode fallback)
+                   (:mibl (:rule (:mode fallback) (:tools (:echo . :shell-tool))
                                  (:outputs (:config.status.in (:pkg . "./")
                                              (:tgt . "config.status.in")))
-                                 (:cmd (:tool echo) (:args :null-string)) (:stdout :output))
+                                 (:cmd (:tool :echo) (:args :null-string)) (:stdout :output))
                           (:rule (:alias config)
-                                 (:deps (::tools
-                                         (:tools/rewrite.exe (:pkg . "/tools")
+                                 (:inputs (:config.status.in (:pkg . "./")
+                                            (:tgt . "config.status.in")))
+                                 (:tools (:tools/rewrite.exe (:pkg . "/tools")
                                            (:tgt . "rewrite.exe")))
-                                        (:config.status.in (:pkg . "./")
-                                          (:tgt . "config.status.in")))
                                  (:ctx :ws-root)
                                  (:outputs (:config.status (:pkg . "./") (:tgt . "config.status")))
                                  (:cmd (:tool :tools/rewrite.exe) (:args "-init")) (:ctx :ws-root)

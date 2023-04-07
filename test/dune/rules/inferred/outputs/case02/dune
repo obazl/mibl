@@ -1,0 +1,4 @@
+(rule
+ (targets out-a.txt out-b.txt)
+ (deps (:< gen.sh) (:in-a input-a.txt) (:in-b input-b.txt))
+ (action (run %{<} %{in-a} out-a.txt %{in-b} out-b.txt)))

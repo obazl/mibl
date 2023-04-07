@@ -1,0 +1,17 @@
+((:@ (:name . "@")
+     (:path . /Users/gar/obazl/mibl/test/dune/deps/literals/cwd/untagged/case01)
+     (:exports
+         (hash-table)) (:opam (hash-table)) (:shared-ppx (hash-table))
+     (:filegroups
+         (hash-table))
+     (:pkgs
+         (hash-table
+           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/deps/literals/cwd/untagged/case01") (:pkg-path . "./")
+                   (:realpath . "/Users/gar/obazl/mibl/test/dune/deps/literals/cwd/untagged/case01")
+                   (dune (rule (targets output.txt) (deps input.txt)
+                               (action (cat input.txt output.txt))))
+                   (:files (:static "input.txt") (:dynamic "output.txt"))
+                   (:mibl (:rule (:inputs (:input.txt (:pkg . "./") (:tgt . "input.txt")))
+                                 (:tools (:cat . :shell-tool))
+                                 (:outputs (:output.txt (:pkg . "./") (:tgt . "output.txt")))
+                                 (:cmd (:tool :cat) (:args :input.txt :output.txt)))))))))

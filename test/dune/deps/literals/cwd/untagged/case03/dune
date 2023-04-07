@@ -1,0 +1,6 @@
+;; ocaml file i/o
+
+(rule
+ (targets output.ml)
+ (deps a.ml b.ml)
+ (action (cat a.ml b.ml output.ml)))

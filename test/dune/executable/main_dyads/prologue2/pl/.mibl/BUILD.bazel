@@ -11,7 +11,7 @@ sh_test(
     name = "mibl_test",
     srcs = ["//test:Mibl_test.sh"],
     deps = ["@bazel_tools//tools/bash/runfiles"],
-    data = ["//test:mibl_test", "PARSETREE.s7", "PROJECT.s7"],
+    data = ["//test:mibl_test_runner", "PARSETREE.s7", "PROJECT.s7"],
     timeout = "short"
 )
 

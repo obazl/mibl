@@ -1,0 +1,21 @@
+((:@ (:name . "@")
+     (:path . /Users/gar/obazl/mibl/test/dune/rules/inferred/outputs/case02)
+     (:exports
+         (hash-table)) (:opam (hash-table)) (:shared-ppx (hash-table))
+     (:filegroups
+         (hash-table))
+     (:pkgs
+         (hash-table
+           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/rules/inferred/outputs/case02") (:pkg-path . "./")
+                   (:realpath . "/Users/gar/obazl/mibl/test/dune/rules/inferred/outputs/case02")
+                   (dune (rule (targets out-a.txt out-b.txt)
+                               (deps (:< gen.sh) (:in-a input-a.txt) (:in-b input-b.txt))
+                               (action (run %{<} %{in-a} out-a.txt %{in-b} out-b.txt))))
+                   (:files (:static "gen.sh" "input-a.txt" "input-b.txt")
+                           (:dynamic "out-b.txt" "out-a.txt"))
+                   (:mibl (:rule (:inputs (:in-a (:pkg . "./") (:tgt . "input-a.txt"))
+                                          (:in-b (:pkg . "./") (:tgt . "input-b.txt")))
+                                 (:tools (:< (:pkg . "./") (:tgt . "gen.sh")))
+                                 (:outputs (:out-a.txt (:pkg . "./") (:tgt . "out-a.txt"))
+                                           (:out-b.txt (:pkg . "./") (:tgt . "out-b.txt")))
+                                 (:cmd (:tool :<) (:args :in-a :out-a.txt :in-b :out-b.txt)))))))))

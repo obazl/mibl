@@ -1,0 +1,11 @@
+;; js_of_ocaml/compiler/lib-runtime-files/dune
+
+(rule
+ (target files.ml)
+ (deps
+  (glob_files bar/*.js)
+  (glob_files foo/*.js))
+ (action
+  (with-stdout-to
+   %{target}
+   (cat %{deps} %{target}))))

@@ -1,0 +1,19 @@
+((:@ (:name . "@")
+     (:path . /Users/gar/obazl/mibl/test/dune/deps/glob/cwd/untagged/case01)
+     (:exports
+         (hash-table)) (:opam (hash-table)) (:shared-ppx (hash-table))
+     (:filegroups
+         (hash-table
+           '"./" (("glob_STAR.css" (:pkg "./") (:glob . "*.css") (:clients "./")))))
+     (:pkgs
+         (hash-table
+           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/deps/glob/cwd/untagged/case01") (:pkg-path . "./")
+                   (:realpath . "/Users/gar/obazl/mibl/test/dune/deps/glob/cwd/untagged/case01")
+                   (:files (:static "a.css" "b.css" "concat.sh") (:dynamic "foo.css"))
+                   (dune (rule (targets foo.css) (deps (glob_files *.css))
+                               (action (cat %{deps} %{targets}))))
+                   (:mibl (:rule (:inputs (:glob_STAR.css (:pkg . "./") (:glob . "glob_STAR.css")))
+                                 (:tools (:cat . :shell-tool))
+                                 (:outputs (:foo.css (:pkg . "./") (:tgt . "foo.css")))
+                                 (:cmd (:tool :cat) (:args :deps :outputs))))
+                   (:filegroups ("glob_STAR.css" (:pkg "./") (:glob . "*.css") (:clients "./"))))))))

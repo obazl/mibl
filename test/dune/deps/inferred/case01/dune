@@ -1,0 +1,5 @@
+;; dep a.txt inferred
+
+(rule
+ (target b.txt)
+ (copy a.txt b.txt))

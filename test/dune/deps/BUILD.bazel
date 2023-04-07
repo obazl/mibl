@@ -1,0 +1,24 @@
+test_suite(
+    name = "mibl_test",
+    tests = [
+        "//test/dune/deps/dynamic/case01/.mibl:test",
+        "//test/dune/deps/glob/cwd/tagged/case01/.mibl:test",
+        "//test/dune/deps/glob/cwd/untagged/case01/.mibl:test",
+        "//test/dune/deps/glob/sub/case01/.mibl:test",
+        "//test/dune/deps/glob/sub/untagged/case01/.mibl:test",
+
+        "//test/dune/deps/literals/cwd/tagged/case01/.mibl:test",
+        "//test/dune/deps/literals/cwd/tagged/case02/.mibl:test",
+        "//test/dune/deps/literals/cwd/tagged/case03/.mibl:test",
+        "//test/dune/deps/literals/cwd/untagged/case01/.mibl:test",
+        "//test/dune/deps/literals/cwd/untagged/case02/.mibl:test",
+        "//test/dune/deps/literals/cwd/untagged/case03/.mibl:test",
+        "//test/dune/deps/literals/sibling/case01/.mibl:test",
+        "//test/dune/deps/literals/sub/case01/.mibl:test",
+        "//test/dune/deps/literals/super/case01/.mibl:test",
+
+        "//test/dune/rules/inferred/io/case01/.mibl:test",
+        "//test/dune/rules/inferred/outputs/case01/.mibl:test",
+        "//test/dune/rules/inferred/outputs/case02/.mibl:test",
+    ]
+)

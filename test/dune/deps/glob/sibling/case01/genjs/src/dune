@@ -1,0 +1,12 @@
+;; js_of_ocaml/compiler/lib-runtime-files/dune
+
+(rule
+ (target files.ml)
+ (deps
+  gen/gen.exe
+  ../../runtime/runtime.js
+  (glob_files ../../js/*.js))
+ (action
+  (with-stdout-to
+   %{target}
+   (run %{deps}))))

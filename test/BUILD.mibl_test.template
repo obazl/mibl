@@ -1,7 +1,4 @@
-sh_test(
-    name = "test",
-    srcs = ["//test:Mibl_test.sh"],
-    deps = ["@bazel_tools//tools/bash/runfiles"],
-    data = ["//test:mibl_test", "PARSETREE.s7", "PROJECT.s7"],
-    timeout = "short"
-)
+test/dune/deps/literals/super/case01/BUILD.test.bazel
+test/dune/deps/literals/sub/case01/BUILD.bazel.test
+test/dune/deps/literals/cwd/untagged/case02/BUILD.bazel
+test/dune/rules/shell/cmp/case02/BUILD.bazel

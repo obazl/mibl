@@ -1,4 +1,0 @@
-((:@ (:name . "@")
-     (:path . /Users/gar/obazl/mibl/test/s7/deps/literals/cwd) (:exports (hash-table))
-     (:opam
-         (hash-table)) (:shared-ppx (hash-table)) (:filegroups (hash-table)) (:pkgs (hash-table))))

@@ -1,0 +1,27 @@
+((:@ (:name . "@")
+     (:path . /Users/gar/obazl/mibl/test/dune/deps/literals/sibling/case01)
+     (:exports
+         (hash-table)) (:opam (hash-table)) (:shared-ppx (hash-table))
+     (:filegroups
+         (hash-table))
+     (:pkgs
+         (hash-table
+           '"src/gen" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/deps/literals/sibling/case01") (:pkg-path . "src/gen")
+                        (:realpath . "/Users/gar/obazl/mibl/test/dune/deps/literals/sibling/case01/src/gen")
+                        (:files (:static "gen.sh")))
+           '"src" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/deps/literals/sibling/case01") (:pkg-path . "src")
+                    (:realpath . "/Users/gar/obazl/mibl/test/dune/deps/literals/sibling/case01/src")
+                    (:files (:static "args.dat") (:dynamic "foo.txt"))
+                    (dune (rule (targets foo.txt)
+                                (deps (:< gen/gen.sh) (:args args.dat) (:data ../data/foo.dat))
+                                (action (run %{<} %{args} %{data} %{targets}))))
+                    (:mibl (:rule (:inputs (:args (:pkg . "src") (:tgt . "args.dat"))
+                                           (:data (:pkg . "data") (:tgt . "foo.dat")))
+                                  (:tools (:< (:pkg . "src/gen") (:tgt . "gen.sh")))
+                                  (:outputs (:foo.txt (:pkg . "src") (:tgt . "foo.txt")))
+                                  (:cmd (:tool :<) (:args :args :data :outputs)))))
+           '"data" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/deps/literals/sibling/case01") (:pkg-path . "data")
+                     (:realpath . "/Users/gar/obazl/mibl/test/dune/deps/literals/sibling/case01/data")
+                     (:files (:static "foo.dat")))
+           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/deps/literals/sibling/case01") (:pkg-path . "./")
+                   (:realpath . "/Users/gar/obazl/mibl/test/dune/deps/literals/sibling/case01"))))))

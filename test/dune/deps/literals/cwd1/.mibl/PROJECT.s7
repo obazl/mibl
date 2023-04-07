@@ -1,1 +1,0 @@
-"(list (list :@ (cons :name \"@\") (cons :path '/Users/gar/obazl/mibl/test/s7/deps/literals/cwd) (list :exports (hash-table)) (list :opam (hash-table)) (list :shared-ppx (hash-table)) (list :filegroups (hash-table)) (list :pkgs (hash-table))))"

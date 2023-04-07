@@ -1,0 +1,3 @@
+;; infer both target and dep
+
+(rule (copy a.txt b.txt))

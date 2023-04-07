@@ -1,0 +1,6 @@
+;; text file i/o
+
+(rule
+ (targets output.txt)
+ (deps input-a.txt input-b.txt)
+ (action (cat input-a.txt input-b.txt output.txt)))

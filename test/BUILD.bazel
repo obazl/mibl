@@ -1,5 +1,15 @@
 load("@rules_cc//cc:defs.bzl", "cc_library")
 
+test_suite(
+    name = "mibl_test",
+    tests = [
+        "//test/dune/deps:mibl_test",
+        "//test/dune/rules/shell:mibl_test",
+        "//test/dune/rules/stdio:mibl_test",
+        "//test/dune/rules/stdout:mibl_test"
+    ]
+)
+
 CMD_FLAGS = [
     "-std=c11",
     "-pedantic-errors",
@@ -20,7 +30,7 @@ BOOTSTRAP_INCLUDES = [
 ################
 exports_files(["Mibl_test.sh"])
 cc_binary(
-    name = "mibl_test",
+    name = "mibl_test_runner",
     srcs = ["Mibl_test.c"],
     copts = [
         "-std=c11",
@@ -73,24 +83,24 @@ cc_binary(
 )
 
 ##########
-cc_binary(
-    name  = "driver",
-    srcs  = ["driver.c",
-             "//src:bazel_config.h",
-             "@uthash//:include",
-             ],
-    data = [
-        "//scm:dune.scm",
-        "//scm/dune:srcs"
-    ],
-    # defines = select({
-    #     "//bzl/debug/trace": [], # "DEBUG_TRACE"],
-    #     "//conditions:default":   []
-    # }),
-    copts = CMD_FLAGS + BOOTSTRAP_INCLUDES + [
-    ],
-    deps = ["//src:mibl"],
-)
+# cc_binary(
+#     name  = "driver",
+#     srcs  = ["driver.c",
+#              "//src:bazel_config.h",
+#              "@uthash//:include",
+#              ],
+#     data = [
+#         "//scm:dune.scm",
+#         "//scm/dune:srcs"
+#     ],
+#     # defines = select({
+#     #     "//bzl/debug/trace": [], # "DEBUG_TRACE"],
+#     #     "//conditions:default":   []
+#     # }),
+#     copts = CMD_FLAGS + BOOTSTRAP_INCLUDES + [
+#     ],
+#     deps = ["//src:mibl"],
+# )
 
 ################################################################
 # cc_test(

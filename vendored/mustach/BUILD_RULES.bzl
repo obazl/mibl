@@ -52,11 +52,11 @@ mustache = rule(
             allow_single_file = True,
             cfg = "exec",
         ),
-        "_allowlist_function_transition": attr.label(
-            default = "@bazel_tools//tools/allowlists/function_transition_allowlist"
-        ),
+        # "_allowlist_function_transition": attr.label(
+        #     default = "@bazel_tools//tools/allowlists/function_transition_allowlist"
+        # ),
     },
-    cfg = reset_cc_config_transition,
+    # cfg = reset_cc_config_transition,
     toolchains = [
         "//toolchain/type:mustache",
         "@bazel_tools//tools/cpp:toolchain_type"

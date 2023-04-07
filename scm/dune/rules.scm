@@ -166,15 +166,13 @@
 ;;  package <pkg>
 ;;  enabled_if
 
-(define dune-rule->mibl
+(define -dune-rule-explicit->mibl
   (let ((+documentation+ "INTERNAL. Updates pkg arg, returns normalized stanza. stanza: raw dune stanza (input); nstanza: miblized (output)"))
     (lambda (ws pkg stanza)
-      (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*)
-          (begin
-            (format #t "~A\n" (bgblue "dune-rule->mibl"))
-            (format #t "~A: ~A\n" (blue "ws") ws)
-            (format #t "~A: ~A\n" (blue "pkg") (assoc-val :pkg-path pkg))
-            (format #t "~A: ~A\n" (blue "stanza") stanza)))
+      (mibl-trace-entry "-dune-rule-explicit->mibl" "")
+      (mibl-trace "ws" ws)
+      (mibl-trace "pkg" (assoc-val :pkg-path pkg))
+      (mibl-trace "stanza" stanza)
       ;; for other stanza types we can normalize fields in isolation. For
       ;; 'rule' stanzas, we need a higher level of analysis, so we cannot
       ;; 'map' over the fields. Instead we extract the fields into local
@@ -320,125 +318,153 @@
           ;;                                     pkg-path (assoc-in '(:rule :outputs) mibl-rule))
           mibl-rule)))))
 
-    ;; (let ((result (map (lambda (fld-assoc)
-    ;;                      ;; (display (format #f "fld: ~A" fld-assoc)) (newline)
-    ;;                      (let ((fld (if (pair? fld-assoc) fld-assoc (list fld-assoc))))
+;; rule stanza with implicit targets and deps
+;; https://dune.readthedocs.io/en/stable/dune-files.html#inferred-rules
+(define -dune-rule-inferred->mibl
+  (let ((+documentation+ "INTERNAL. Updates pkg arg, returns normalized stanza. stanza: raw dune stanza (input); nstanza: miblized (output)"))
+    (lambda (ws pkg stanza)
+      (mibl-trace-entry "-dune-rule-inferred->mibl" "")
+      (mibl-trace "ws" ws)
+      (mibl-trace "pkg" (assoc-val :pkg-path pkg))
+      (mibl-trace "stanza" stanza)
+      ;; for other stanza types we can normalize fields in isolation. For
+      ;; 'rule' stanzas, we need a higher level of analysis, so we cannot
+      ;; 'map' over the fields. Instead we extract the fields into local
+      ;; vars.
 
+      (let* ((pkg-path (assoc-val :pkg-path pkg))
+             (rule-alist (cdr stanza))
+             (_ (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*) (format #t "rule-alist: ~A\n" rule-alist)))
+             ;; (_ (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*) (format #t "target: ~A\n" (assoc 'target rule-alist))))
+             ;; (_ (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*) (format #t "Targets: ~A\n" (assoc-val 'targets rule-alist))))
 
-    ;;                        (case (car fld-assoc)
-    ;;                          ((action)
-    ;;                           (normalize-action action target targets deps))
+             ;; Step 1: rule deps don't depend on targets, so do first
+             (deps (expand-rule-deps ws pkg rule-alist))
+             (_ (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*)
+                    (format #t "~A: ~A\n" (green "expanded rule deps") deps)))
 
-    ;;                          (else (cons 'rule fld-assoc)))))
+             (targets (-handle-rule-targets ws rule-alist deps pkg))
+             (_ (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*)
+                    (format #t "~A: ~A\n" (green "expanded targets") targets)))
 
-    ;;                    (cdr stanza))))
-    ;;   ;; (cons 'rule
-    ;;         result
-    ;;         ;; )
-    ;;   )
-;; ))
+             ;; all dune rule stanzas have an action, so they have a tool
+             (tools `(:tools ,(gensym))) ;; gensym is a placeholder, to be replaced by set-cdr!
+             (mibl-trace-let "tmp :tools" tools)
+             )
 
-  ;; (let* ((s
-  ;;         (map (lambda (fld-assoc)
-  ;;                (let ((fld (if (pair? fld-assoc)
-  ;;                               fld-assoc
-  ;;                               (list fld-assoc))))
-  ;;                  (case (car fld-assoc)
-  ;;                    ((target)
-  ;;                     )
-  ;;                    ((targets)
-  ;;                     )
-  ;;                    ((action)
-  ;;                     ;; (action progn), (action (progn)) ???
-  ;;                     ;; used to force build of deps?
-  ;;                     )
-  ;;                    ((alias) ;; used (always?) to force tgt build and
-  ;;                     ;; thus build of deps. no other way to refer to
-  ;;                     ;; the rule, no 'name' attrib.
+        (if deps
+            ;; FIXME: this updates filegroups (globs) table; can we run it as a pipeline task?
+            (begin
+              (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*)
+                  (format #t "~A: ~A~%" (green "iterating deps") deps))
+              (for-each (lambda (dep)
+                          ;; dep forms:
+                          ;; (:foo (:pkg a/b/c)(:tgt "foo.sh"))
+                          ;; (::opam-pkg foo-bar-baz)
+                          ;; (tezos-protocol-demo-noops ::opam-pkg)
+                          (mibl-trace "dep" dep *mibl-debug-rule-stanzas*)
+                          (case (cdr dep)
+                            ((::opam-pkg) (cdr dep))
+                            (else
+                             (mibl-trace "filegroup dep?" dep *mibl-debug-rule-stanzas*)
+                             ;; e.g. dep == (:css (:glob . "glob_STAR.css"))
+                             (let* ((lbl-tag (car dep))
+                                    (lbl (cdr dep))
+                                    (pkg (assoc-val :pkg lbl))
+                                    (tgt-tag (caadr lbl))
+                                    (_ (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*) (format #t "~A: ~A~%" (red "tgt-tag") tgt-tag)))
+                                    (tgt (case tgt-tag
+                                           ((:tgt)
+                                            (assoc-val :tgt lbl))
+                                           ((:tgts)
+                                            (assoc-val :tgts lbl))
+                                           ((:glob)
+                                            (assoc-val :glob lbl))
+                                           ((:fg)
+                                            (assoc-val :fg lbl))
+                                           (else
+                                            (error 'fixme "label pair lacks :tgt and :tgts"))))
+                                    (fg-tag (if (eq? tgt-tag :fg)
+                                                (format #f "*~A*" tgt)
+                                                tgt)))
+                               ;; (format #t "~A: ~A~%" (red "pkg") pkg)
+                               ;; (format #t "~A: ~A~%" (red "lbl-tag") lbl-tag)
+                               ;; (format #t "~A: ~A~%" (red "tgt-tag") tgt-tag)
+                               ;; (format #t "~A: ~A~%" (red "tgt") tgt)
+                               ;; (format #t "~A: ~A~%" (red "pkg-path") pkg-path)
+                               (if (not (equal? (format #f "~A" pkg) pkg-path))
+                                   (if (eq? tgt-tag :fg)
+                                       (update-filegroups-table!
+                                        ws pkg-path pkg (string->keyword fg-tag) tgt)))))))
+                        (cdr deps))))
 
-  ;;                     ;;ignore - no need
-  ;;                             ;; in bazel but - should we generate a
-  ;;                             ;; Bazel alias?
-  ;;                     '())
-  ;;                    ((deps) ;; examples:
-  ;;                     ;; (deps (:exe bip39_tests.exe))
+        (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*)
+            (format #t "~A: ~A~%" (ugreen "DISPATCHING  on action") rule-alist))
 
-  ;;                     ;; (deps bench_tool.exe bench_simple.exe) ;;lib_shell/bench
+        (let* ((mibl-rule
+                ;;FIXME: this finds just one action, can list have more than one?
+                ;; no - it would use progn?
+                ;; so we don't need find-if, we can just check car?
+                (let ((action (find-if (lambda (fld)
+                                           ;; (format #t "~A: ~A~%" (red "RULE FLD") fld)
+                                           (member (car fld) dune-dsl-cmds))
+                                         rule-alist)))
+                    (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*)
+                        (format #t "~A: ~A~%" (green "FOUND dsl cmd") action))
+                    (if action
+                        (let ((rule-alist (map (lambda (fld)
+                                                 (if (equal? (car fld) (car action))
+                                                     (list 'action fld)
+                                                     fld))
+                                               rule-alist)))
+                          (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*)
+                              (format #t "~A: ~A~%" (green "updated alist") rule-alist))
+                          (-normalize-rule-action ws pkg tools rule-alist targets
+                                                 (if deps deps (list :deps))))
+                        (error 'no-action (format #f "rule without action: ~A" rule-alist)))))
+               (mibl-rule (prune-mibl-rule mibl-rule)))
+          (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*)
+              (format #t "~A: ~A~%" (green "mibl-rule") mibl-rule))
 
-  ;;                     ;; (deps (universe) (:script get-git-info.mlt))
+                ;; ((assoc 'copy rule-alist)
+                ;;  (format #t "handling copy rule\n" )
+                ;;  (normalize-copy-rule ws pkg rule-alist targets deps))
 
-  ;;                     ;; (deps (glob_files *.ml{,i}))
-  ;;                     ;; (deps (glob_files contracts/*))
-  ;;                     ;; (deps (package tezos-protocol-demo-noops))
+                ;; ((assoc 'with-stdout-to rule-alist)
+                ;;  (format #t "handling write-file rule\n" )
+                ;;  (normalize-action-with-outputs-to-dsl
+                ;;   ws pkg rule-alist targets deps))
 
-  ;;                     ;; (deps (alias runtest_requester))
-  ;;                     ;; (deps (alias runtest_proto_alpha) (alias runtest_saturation_fuzzing) (alias runtest_test_tez_repr))
+                ;; ((assoc 'write-file rule-alist)
+                ;;  (format #t "handling write-file rule\n" )
+                ;;  (normalize-action-write-file
+                ;;   ws pkg rule-alist targets deps))
 
-  ;;                     ;; pass it on, emitter must match the :exe val
-  ;;                     ;; against targets in the pkg
+                ;; (else
+                ;;  (error 'unhandled-rule
+                ;;         (format #f "unhandled rule: ~A" rule-alist))))))
+         ;; (_ (error 'X "STOP prune"))
 
-  ;;                     )
-  ;;                    ;; we'll ignore these, but pass them thru anyway
-  ;;                    ((mode)    `(:mode    ,(cadr fld-assoc)))
-  ;;                    ((locks)   `(:locks   ,(cadr fld-assoc)))
-  ;;                    ((package) `(:package ,(cadr fld-assoc)))
-  ;;                    (else
-  ;;                     ))))
-  ;;              (cdr stanza))))
-  ;;   s)
-  ;; )
+          ;; (update-exports-table-with-targets! ws
+          ;;                                     :FIXME ;; tag
+          ;;                                     (assoc-in '(:rule :outputs) mibl-rule) ;; name
+          ;;                                     pkg-path (assoc-in '(:rule :outputs) mibl-rule))
+          mibl-rule)))))
 
-;; (define (normalize-stanza-rule stanza)
-;;   ;; (display (format #f "dir: ~A" pfx)) (newline)
-;;   ;; (display (format #f "normalize-stanza-rule: ~A" stanza)) (newline)
-;;   ;; (rule
-;;   ;;  (target[s] <filenames>)
-;;   ;;  (action  <action>)
-;;   ;;  <optional-fields>)
-;;   ;; <action> produces target <filename(s)>
+(define dune-rule->mibl
+  (let ((+documentation+ "INTERNAL. Updates pkg arg, returns normalized stanza. stanza: raw dune stanza (input); nstanza: miblized (output)"))
+    (lambda (ws pkg stanza)
+      (mibl-trace-entry "dune-rule->mibl" "")
+      (mibl-trace "ws" ws)
+      (mibl-trace "pkg" (assoc-val :pkg-path pkg))
+      (mibl-trace "stanza" stanza)
+      ;; for other stanza types we can normalize fields in isolation. For
+      ;; 'rule' stanzas, we need a higher level of analysis, so we cannot
+      ;; 'map' over the fields. Instead we extract the fields into local
+      ;; vars.
 
-;;   ;; <optional-fields>:
-;;   ;; (deps <deps-conf list>)
-;;   ;; (mode <mode>): standard, fallback, various promote-*
-;;   ;; (fallback) is deprecated and is the same as (mode fallback)
-;;   ;; (locks (<lock-names>)) run action while holding locks
-;;   ;; (alias <alias-name>) Building alias = building targets of this rule.
-;;   ;; (package <package>) rule will be unavailable when installing other packages in release mode.
-;;   ;; (enabled_if <blang expression>) must be true for the rule to be considered.
-
-;;   ;; short syntax:
-;;   ;; (rule
-;;   ;;  (target b)
-;;   ;;  (deps   a)
-;;   ;;  (action (copy %{deps} %{target})))
-;;   ;;  => (rule (copy a b))
-
-;;   ;; IMPORTANT: obazl ignores 'promote' stuff. we do not write to the
-;;   ;; src tree, ever. However, dune rules may write to the source tree.
-;;   ;; example: tezos/lib_version has a rule that runs a git cmd to get
-;;   ;; version metadata and writes it to a file in the source tree.
-;;   ;; probably pretty common practice. The Bazel way: using stamping,
-;;   ;; and/or use a separate tool to maintain source files like this.
-
-;;   ;; e.g. tezos/src/lib_requester/test:
-;;   ;; (rule (alias runtest_requester) (action (run %{exe:test_requester.exe})))
-
-;;   ;; tezos/src/lib_version:
-;;   ;; (rule (targets generated_git_info.ml) (deps (universe) (:script get-git-info.mlt)) (action (with-stdout-to %{targets} (run %{ocaml} unix.cma %{script}))))
-
-;;   ;; TODO: handle %{...} syntax
-;;   (let ((result (map (lambda (fld-assoc)
-;;                        ;; (display (format #f "fld: ~A" fld-assoc)) (newline)
-;;                        (let ((fld (if (pair? fld-assoc) fld-assoc (list fld-assoc))))
-
-
-;;                          (case (car fld-assoc)
-;;                            ((name) (list :name
-;;                                          (cons (cadr fld-assoc)
-;;                                                (normalize-module-name
-;;                                                 (cadr fld-assoc)))))
-;;                            (else fld-assoc))))
-;;                      (cdr stanza))))
-;;     (cons 'rule (list result))))
+      (if (assoc 'action (cdr stanza))
+          (-dune-rule-explicit->mibl ws pkg stanza)
+          (-dune-rule-inferred->mibl ws pkg stanza)))))
 
 ;; (format #t "loaded dune/dune_stanza_rule.scm\n")

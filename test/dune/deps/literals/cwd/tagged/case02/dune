@@ -1,0 +1,4 @@
+(rule
+ (targets output.txt)
+ (deps (:< cat.sh) (:a input-a.txt) (:b input-b.txt))
+ (action (run %{<} %{deps} %{targets})))

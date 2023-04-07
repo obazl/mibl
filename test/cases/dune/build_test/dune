@@ -5,6 +5,8 @@
 ;; rules that depend on .exe files and that run (progn). In the
 ;; Makefile, target 'build-test' runs '@dune build @buildtest'.
 
+;; Or does this just add the listed deps to any buildtest target?
+
 ;; We use rule 'build_test' from the Skylib library for this. Instead
 ;; of emitting on for each such stanza we iterate over all stanzas
 ;; aliased to 'foo' and then emit one build-test target.

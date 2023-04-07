@@ -1,0 +1,4 @@
+(rule
+ (targets output.txt)
+ (deps input.txt)
+ (action (cat input.txt output.txt)))

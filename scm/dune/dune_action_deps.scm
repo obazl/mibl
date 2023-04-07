@@ -517,17 +517,17 @@
                   (cons :_ depfiles)
                    `(:: ,@depfiles)))))))
 
-(define (handle-tagged-glob-dep ws tagged-pattern pkg expanded-deps)
-  (mibl-trace-entry "handle-tagged-glob-dep" tagged-pattern)
-  ;; tagged-pattern form: (:css (glob_files ../css/*.css))
+(define (handle-tagged-glob-dep ws tagged-glob pkg expanded-deps)
+  (mibl-trace-entry "handle-tagged-glob-dep" tagged-glob)
+  ;; tagged-glob form: (:css (glob_files ../css/*.css))
   (mibl-trace "pkg-path" (assoc-val :pkg-path pkg))
   (mibl-trace "expanded-deps" expanded-deps)
 
   ;; kw :_ is reserved for non-tagged symlist
   ;; to avoid name clash, convert user keywords to double-colon, e.g.
   ;; :foo => ::foo
-  (let* ((lbl (string->keyword (format #f "~A" (keyword->symbol (car tagged-pattern)))))
-         (glob-sexp (cadr tagged-pattern))
+  (let* ((lbl (string->keyword (format #f "~A" (keyword->symbol (car tagged-glob)))))
+         (glob-sexp (cadr tagged-glob))
          (mibl-trace-let "glob sexp" glob-sexp *mibl-debug-action-deps*)
          (pattern (format #f "~A" (cadr glob-sexp)))
          (mibl-trace-let "formatted pattern" pattern *mibl-debug-action-deps*)
@@ -559,15 +559,15 @@
          (tagged canonical-path)
 
          ;; (tagged
-         ;;  (if (list? (cadr tagged-pattern))
+         ;;  (if (list? (cadr tagged-glob))
          ;;      ;; do not process globs here, just create the target kw
-         ;;      (if (eq? 'glob_files (car (cadr tagged-pattern)))
+         ;;      (if (eq? 'glob_files (car (cadr tagged-glob)))
          ;;          (string->keyword (format #f "*~A"
-         ;;                                   (keyword->symbol (car tagged-pattern))))
+         ;;                                   (keyword->symbol (car tagged-glob))))
          ;;          #f)
          ;;      #f))
          ;; (tagged ;(if tagged tagged
-         ;;             (expand-terms* ws (cdr tagged-pattern)
+         ;;             (expand-terms* ws (cdr tagged-glob)
          ;;                          pkg ;;stanza-alist
          ;;                          '()))
          ) ;;expanded-deps)))
@@ -577,8 +577,8 @@
           (format #t "tagged dep: ~A\n" tagged)))
 
     ;; if tagged val is glob_files, update pkg with filegroup
-    (if (list? (cadr tagged-pattern))
-        (if (eq? 'glob_files (car (cadr tagged-pattern)))
+    (if (list? (cadr tagged-glob))
+        (if (eq? 'glob_files (car (cadr tagged-glob)))
             (update-filegroups-table!
              ws pkg-path (dirname canonical-path)
              lbl ;; (keyword->symbol lbl)
@@ -605,19 +605,19 @@
             (format #t "~A: ~A~%" (red "GLOB RESULT") result)))
       result)))
 
-(define (handle-untagged-glob-dep ws pkg _pattern)
-  (if (or *mibl-debug-action-deps* *mibl-debug-s7*)
-      (format #t "~A: ~A\n" (ublue "handle-untagged-glob-dep") _pattern))
-  ;; kw :_ is reserved for non-tagged symlist
-  ;; to avoid name clash, convert user keywords to double-colon, e.g.
-  ;; :foo => ::foo
-  (let* ((pattern (cadr _pattern))
+(define (handle-untagged-glob-dep ws pkg untagged-glob)
+  (mibl-trace-entry "handle-untagged-glob-dep" untagged-glob)
+  ;; untagged-glob form: (glob_files ../css/*.css)
+  (mibl-trace "pkg-path" (assoc-val :pkg-path pkg))
+  (let* ((pattern (format #f "~A" (cadr untagged-glob)))
          (pkg-path (assoc-val :pkg-path pkg))
          (dep-path (format #f "~A/~A" pkg-path pattern))
          (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "~A: ~A~%" (uwhite "dep-path") dep-path)))
 
          (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "~A: ~A~%" (bgred "cwd") (pwd))))
-         (canonical-path (->canonical-path dep-path))
+
+         ;; (canonical-path (->canonical-path dep-path))
+         (canonical-path (->canonical-path pattern))
          (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "~A: ~A~%" (uwhite "canonical-path") canonical-path)))
          ;; (_ (error 'X "STOP untagged glob"))
 
@@ -626,7 +626,7 @@
          (fg-name (format #f "glob_~A" (string-replace canonical-pattern "STAR" glob? (+ 1 glob?))))
          (_ (if (or *mibl-debug-action-deps* *mibl-debug-s7*) (format #t "~A: ~A~%" (ublue "fg-name") fg-name)))
 
-         (lbl ::glob)  ;;FIXME: derive tagname
+         (lbl (string->keyword fg-name)) ;; ::glob)  ;;FIXME: derive tagname
          )
 
     (update-filegroups-table!
@@ -635,7 +635,7 @@
              (basename pattern))
 
     (let ((result
-           `((::glob
+           `((,lbl
               (:pkg . ,(dirname canonical-path))
               (:glob . ,fg-name)))))
       (if (or *mibl-debug-action-deps* *mibl-debug-s7*)

@@ -21,6 +21,6 @@ source "${RUNFILES_DIR:-/dev/null}/$f" 2>/dev/null || \
 
 # set -x
 
-"$(rlocation mibl/test/mibl_test)" "$@"
+"$(rlocation mibl/test/mibl_test_runner)" "$@"
 
 
