@@ -37,9 +37,13 @@ deps:
 
 ################################################################
 EXEC_TESTS= \
-test/dune/executable/flags \
+test/dune/executable/flags/compile/common \
 test/dune/executable/main_dyad/mwe1 \
 test/dune/executable/main_dyad/mwe2
+
+# test/dune/executable/flags/compile/ocamlc \
+# test/dune/executable/flags/compile/ocamlopt \
+# test/dune/executable/flags/link/case01 \
 
 execs:
 	@cd .. && \

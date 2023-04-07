@@ -10,10 +10,12 @@
 (normalize-stanza-fld-flags '(flags (-nopervasives :standard -nostdlib)))
 (normalize-stanza-fld-flags '(flags (-nopervasives -nostdlib :standard)))
 (normalize-stanza-fld-flags '(flags (-nopervasives -nostdlib)))
+
 ;; whitespace
 (normalize-stanza-fld-flags '(flags (  :standard -nopervasives -nostdlib)))
 (normalize-stanza-fld-flags '(flags (   -nopervasives :standard -nostdlib)))
-;; no list
+
+;; no sublist
 (normalize-stanza-fld-flags '(flags :standard -nopervasives -nostdlib))
 (normalize-stanza-fld-flags '(flags    :standard -nopervasives -nostdlib))
 (normalize-stanza-fld-flags '(flags  -nopervasives :standard -nostdlib))
@@ -21,12 +23,15 @@
 ;; options only
 (normalize-stanza-fld-flags '(flags (:standard -foo a -bar b)))
 (normalize-stanza-fld-flags '(flags (-foo a -bar b)))
+
 ;; string opts
 (normalize-stanza-fld-flags '(flags (:standard -foo "a" -bar "b")))
 (normalize-stanza-fld-flags '(flags (-foo "a" -bar "b")))
+
 ;; int opts only
 (normalize-stanza-fld-flags '(flags (:standard -foo 1 -bar 2)))
 (normalize-stanza-fld-flags '(flags (-foo 1 -bar 2)))
+
 ;; float opts only
 (normalize-stanza-fld-flags '(flags (:standard -foo 1.0 -bar 2.3)))
 (normalize-stanza-fld-flags '(flags (-foo 1.0 -bar 2.3)))

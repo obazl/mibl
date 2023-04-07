@@ -9,4 +9,4 @@
            '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/executable/main_dyad/mwe1") (:pkg-path . "./")
                    (:realpath . "/Users/gar/obazl/mibl/test/dune/executable/main_dyad/mwe1")
                    (dune (executable (public_name main)))
-                   (:modules (Main (:ml main.ml) (:mli main.mli))))))))
+                   (:modules (Main (:ml . main.ml) (:mli . main.mli))))))))
