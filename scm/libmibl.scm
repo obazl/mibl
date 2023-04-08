@@ -35,7 +35,7 @@
   (lexyacc-file-deps!)
 
   (prune-pkg-file-deps!)
-  (format #t "DONE PRUNING XXXXXXXXXXXXXXXX\n")
+  ;; (format #t "DONE PRUNING XXXXXXXXXXXXXXXX\n")
   ;; (format #t "RETURNING XXXXXXXXXXXXXXXX\n")
   ;; (return)
 
@@ -56,9 +56,6 @@
 
   (normalize-rule-deps! :@)
 
-  ;; (format #t "RETURNING XXXXXXXXXXXXXXXX\n")
-  ;; (return)
-
   (dune-stanzas->mibl-keywords :@) ; e.g. (rule...) to (:write-file...)
 
   ;; (format #t "RETURNING XXXXXXXXXXXXXXXX\n")
@@ -68,7 +65,13 @@
 
   (normalize-lib-deps! :@)
 
+  ;; (format #t "RETURNING XXXXXXXXXXXXXXXX\n")
+  ;; (return)
+
   (resolve-unresolved-file-deps!) ;; after pruning only
+
+  ;; (format #t "RETURNING XXXXXXXXXXXXXXXX\n")
+  ;; (return)
 
   (resolve-unresolved-aggregate-deps!)
 
@@ -79,10 +82,13 @@
 
   (resolve-file-exports! :@)
 
-  (handle-shared-ppx :@)
-
   ;; (format #t "RETURNING XXXXXXXXXXXXXXXX\n")
   ;; (return)
+
+  (handle-shared-ppx :@)
+
+  (format #t "RETURNING XXXXXXXXXXXXXXXX\n")
+  (return)
 
   (if *mibl-shared-deps* (handle-shared-deps :@))
 
@@ -104,12 +110,12 @@
   ;;       ;;(return)
   ;;       ))
 
-  (if *mibl-emit-wss*
-      (begin
-        (emit-mibl-wss)))
+  ;; (if *mibl-emit-wss*
+  ;;     (begin
+  ;;       (emit-mibl-wss)))
 
-  (if *mibl-emit-pkgs*
-      (emit-mibl-pkgs))
+  ;; (if *mibl-emit-pkgs*
+  ;;     (emit-mibl-pkgs))
 
   ;; (if *mibl-report-parsetree*
   ;;     (emit-mibl-project))
@@ -128,8 +134,8 @@
   ;;     (format #t "~A: ~A~%" (green "selectors"))
   ;;         (remove-duplicates *select-protases*))
 
-  (if *mibl-show-exports*
-      (mibl-debug-print-exports-table :@))
+  ;; (if *mibl-show-exports*
+  ;;     (mibl-debug-print-exports-table :@))
 
   ;; (-dump-ppx :@)
 
@@ -137,6 +143,7 @@
 
   ;; (-dump-opam :@)
   ;; )
+
   (if (not *mibl-quiet*)
       (begin
         ;; (format #t "~A: libmibl Workspace root: ~A~%" (green "INFO") ws-path)

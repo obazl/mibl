@@ -684,7 +684,7 @@ EXPORT void set_load_path(void) // char *scriptfile)
 // to run we need main_script
 // q: script runs load-project; doesn't that handle ws root?
 /* called by scripters, not coswitch */
-void _mibl_s7_configure_paths(char *main_script, char *ws_root)
+void _mibl_s7_configure_paths(char *scmdir, /*char *main_script,*/ char *ws_root)
 {
     set_load_path(); //callback_script_file);
 
@@ -704,6 +704,10 @@ void _mibl_s7_configure_paths(char *main_script, char *ws_root)
 
     /* s7_config_repl(s7); */
     /* s7_repl(s7); */
+
+    char *tmpdir = realpath(scmdir, NULL);
+    log_debug("tmpscm: %s", tmpdir);
+    s7_add_to_load_path(s7, tmpdir);
 
     _config_s7_load_path_xdg_home();
     _config_s7_load_path_rootws(); /* always penultimate */
@@ -787,9 +791,9 @@ EXPORT void mibl_s7_run(char *main_script, char *ws)
 {
 #if defined(DEBUG_TRACE)
     if (mibl_trace) {
-        log_trace(BLU "mibl_run:" CRESET
+        log_trace(BLU "mibl_s7_run:" CRESET
                   " %s, %s", main_script, ws);
-        log_trace("mibl_run cwd: %s", getcwd(NULL, 0));
+        log_trace("cwd: %s", getcwd(NULL, 0));
     }
 #endif
 

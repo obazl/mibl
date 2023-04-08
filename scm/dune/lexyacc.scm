@@ -213,7 +213,9 @@
                            (mibl-trace-let "mll tlbl" mll-tlbl *mibl-debug-lexyacc*))
                       (if (list? (cdr mll-tlbl))
                           ;; tlbl form: (Lexer (:ml_ . lexer.ml) ...)
-                          (let ((ml (cadr mll-tlbl)))
+                          ;; or (Lexer (:mll . lexer.mll) (:mli lexer.mli) (:ml_ lexer.ml))
+                          (let* ((lbl (cdr mll-tlbl))
+                                 (ml (assoc :ml_ lbl)))
                             (set-cdr! ml (cons (cdr ml) file-deps)))
                           ;; else tlbl form: (Lexer . lexer.ml)
                           (begin

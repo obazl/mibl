@@ -738,6 +738,7 @@ void _define_mibl_s7_flags(void)
     s7_eval_c_string(s7, "(set! *mibl-namespace-executables* #t)");
     s7_eval_c_string(s7, "(set! *mibl-shared-deps* #t)");
     s7_eval_c_string(s7, "(set! *mibl-shared-opts* #t)");
+    s7_eval_c_string(s7, "(set! *mibl-wrapped-libs-to-ns-archives* #t)");
 }
 
 void _define_mibl_s7_vars(void)
@@ -749,6 +750,8 @@ void _define_mibl_s7_vars(void)
 
     s7_define_variable(s7, "*mibl-shared-ppx-pkg*",
                        s7_make_string(s7, "bzl"));
+
+    s7_define_variable(s7, "*mibl-show-pkg*", s7_nil(s7));
 
     init_dune_readers();
     /* s7_read_thunk = s7_make_function(s7, "s7-read-thunk", */

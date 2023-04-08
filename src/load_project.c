@@ -31,15 +31,14 @@ s7_pointer deps_list;
 
 int tct = 0;
 
-char *tostr;
-
+/* char *tostr; */
 #if defined(DEBUG_TRACE)
 bool mibl_debug_traversal = false;
 bool mibl_debug_traversal_opam = false;
 extern bool mibl_debug_deps;
 
-/* extern char *tostr1; */
-/* extern char *tostr2; */
+extern char *tostr1;
+extern char *tostr2;
 #endif
 
 bool mibl_show_deps = false;
@@ -63,8 +62,6 @@ void _indent(int i)
 }
 
 UT_string *dunefile_name;
-
-s7_int dune_gc_loc = -1;
 
 s7_pointer g_dunefile_port;
 
@@ -4037,6 +4034,7 @@ EXPORT s7_pointer load_project(const char *home_sfx, const char *traversal_root)
         s7_eval_c_string(s7, "(cadr (assoc-in '(:@ :pkgs) *mibl-project*))");
     s7_int gc_pkg_tbl = s7_gc_protect(s7, pkg_tbl);
     if (pkg_tbl != s7_gc_protected_at(s7, gc_pkg_tbl)) {
+        char *tostr1, *tostr2;
         log_error("%d: %s is not gc protected at %" print_s7_int ": %s?",
                   __LINE__,
                   tostr1 = TO_STR(pkg_tbl), gc_pkg_tbl,

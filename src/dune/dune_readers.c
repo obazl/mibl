@@ -26,6 +26,8 @@
 
 s7_pointer g_dunefile_port;
 
+s7_int dune_gc_loc = -1;
+
 extern const UT_icd ut_str_icd;
 
 extern s7_scheme *s7;
@@ -34,6 +36,8 @@ extern bool verbose;
 #if defined(DEBUG_TRACE)
 extern bool debug;
 extern bool trace;
+extern char *tostr1;
+extern char *tostr2;
 #endif
 
 #define ERRSEXP "(with-let (owlet) " \
@@ -63,7 +67,9 @@ void init_dune_readers(void)
 
 s7_pointer g_dune_read_thunk_catcher(s7_scheme *s7, s7_pointer args)
 {
+#if defined(DEBUG_TRACE)
     LOG_S7_DEBUG("s7_read_thunk_catcher args", args);
+#endif
     /* log_info("s7_read_thunk_catcher arg0: %s", TO_STR(s7_car(args))); */
     /* log_info("s7_read_thunk_catcher arg1: %s", TO_STR(s7_cadr(args))); */
     /* s7_show_stack(s7); */
@@ -72,8 +78,10 @@ s7_pointer g_dune_read_thunk_catcher(s7_scheme *s7, s7_pointer args)
     log_error("reading dunefile: %s", dunefile);
 
     /* if arg0 == 'read-error and */
-    if (strstr(TO_STR(s7_cadr(args)),
-               "(\"unexpected close paren:") != NULL) {
+
+    char *s;
+    s = TO_STR(s7_cadr(args));
+    if (strstr(s, "(\"unexpected close paren:") != NULL) {
 
         /* printf("XXXXXXXXXXXXXXXX\n"); */
         /* if (strstr(errmsg, "BADDOT") != NULL) { */
@@ -95,8 +103,9 @@ s7_pointer g_dune_read_thunk_catcher(s7_scheme *s7, s7_pointer args)
         s7_pointer fixed = fix_baddot(dunefile); //_name);
         /* s7_pointer fixed = s7_eval_c_string(s7, "'(foob)"); */
 #if defined(DEBUG_TRACE)
-        if (mibl_debug) log_debug(RED "FIXED:" CRESET " %s",
-                             TO_STR(fixed));
+        LOG_S7_DEBUG("FIXED", fixed);
+        /* if (mibl_debug) log_debug(RED "FIXED:" CRESET " %s", */
+        /*                      TO_STR(fixed)); */
         /* s7_show_stack(s7); */
         /* print_backtrace(s7); */
 #endif
@@ -114,8 +123,9 @@ s7_pointer g_dune_read_thunk_catcher(s7_scheme *s7, s7_pointer args)
 
         return fixed;
     } else {
-        fprintf(stdout, RED "Read Error:" CRESET " %s\n",
-                TO_STR(s7_cadr(args)));
+        /* char *args = TO_STR(s7_cadr(args)); */
+        fprintf(stdout, RED "Read Error:" CRESET " %s\n", s);
+        /* free(args); */
 
         s7_pointer st = s7_eval_c_string(s7, "(debug-print-stacktrace)");
         (void)st;
@@ -144,6 +154,7 @@ s7_pointer g_dune_read_thunk_catcher(s7_scheme *s7, s7_pointer args)
         /* exit(EXIT_FAILURE); */
         return NULL;
     }
+    free(s);
 }
 
 s7_pointer s7_read_thunk_catcher;

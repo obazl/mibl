@@ -127,7 +127,7 @@ struct obzl_meta_setting *obzl_meta_setting_new(char *flags,
     return new_setting;
 }
 
-struct obzl_meta_settings *obzl_meta_settings_new()
+struct obzl_meta_settings *obzl_meta_settings_new(void)
 {
 #if DEBUG_SETTINGS
     /* log_trace("obzl_meta_settings_new()"); */

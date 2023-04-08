@@ -128,5 +128,6 @@
                        (pkg (cdr kv)))
                   (-handle-pkg-shared-ppx kv)))
               pkgs)
-    ;; (error 'STOP "STOP shd")
+    ;; at this point we have :ppx pairs in the aggregates, and :shared-ppx for the pkg.
+    ;; now iterate over the pkg :shared-ppx and move common ppxes to workspace :shared-ppx list.
     '()))
