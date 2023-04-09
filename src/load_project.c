@@ -1262,6 +1262,12 @@ LOCAL void _update_pkg_sigs(s7_pointer pkg_tbl,
 #endif
         s7_gc_unprotect_via_stack(s7, pkg_alist);
     } else {
+#if defined(DEBUG_TRACE)
+        if (mibl_debug_traversal) {
+            LOG_S7_DEBUG("pkg_alist", pkg_alist);
+        }
+#endif
+
         s7_pointer mname_sym   = s7_make_symbol(s7, mname);
         s7_gc_protect_via_stack(s7, mname_sym);
 

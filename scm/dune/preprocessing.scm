@@ -130,7 +130,7 @@
                     (recur (cdr ppx)
                            (cons (car ppx) ppx-libs)
                            (concatenate
-                            `("-XINLINE-test-lib" ,stanza-name)
+                            `("-inline-test-lib" ,stanza-name)
                             ppx-args))
                     )
                   (if (equal? '-- (car ppx))

@@ -56,6 +56,9 @@
 
   (normalize-rule-deps! :@)
 
+  ;; (format #t "RETURNING XXXXXXXXXXXXXXXX\n")
+  ;; (return)
+
   (dune-stanzas->mibl-keywords :@) ; e.g. (rule...) to (:write-file...)
 
   ;; (format #t "RETURNING XXXXXXXXXXXXXXXX\n")
@@ -75,6 +78,9 @@
 
   (resolve-unresolved-aggregate-deps!)
 
+  ;; (format #t "RETURNING XXXXXXXXXXXXXXXX\n")
+  ;; (return)
+
   (resolve-unresolved-ppx-deps!)
 
   ;; (format #t "RETURNING XXXXXXXXXXXXXXXX\n")
@@ -87,8 +93,8 @@
 
   (handle-shared-ppx :@)
 
-  (format #t "RETURNING XXXXXXXXXXXXXXXX\n")
-  (return)
+  ;; (format #t "RETURNING XXXXXXXXXXXXXXXX\n")
+  ;; (return)
 
   (if *mibl-shared-deps* (handle-shared-deps :@))
 

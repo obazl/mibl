@@ -50,6 +50,7 @@
 ;; (load "dune/actions_with_output_to.scm")
 (load "dune/user_actions.scm")
 (load "dune/aliases.scm")
+(load "dune/resolvers.scm")
 (load "dune/shared_deps.scm")
 (load "dune/shared_opts.scm")
 (load "dune/shared_ppx.scm")
