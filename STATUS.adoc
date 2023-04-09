@@ -1,0 +1,72 @@
+= status
+
+== base layer
+
+The "base layer" crawls the source tree and constructs a "parsetree"
+whose structure mirrors that of the source tree, augmented by
+OCaml-specific information. For example if a directory contains `a.ml`
+and `a.mli` then the parsetree will contain a `:modules` list
+containing `(A (:ml a.ml) (:mli a.mli))`
+
+The base layer also does dependency analysis (using codept) for `.ml`
+and `.mli` files, so if `a.ml` in the example above depends on module
+Foo, then entry will read `(A (:ml a.ml Foo) (:mli a.mli))`.
+
+Status: core functionality is complete and stable.
+
+Enhancements: add support for `.mllib` files etc. for non-dune projects.
+
+== dune conversion
+
+=== deps
+
+* globs
+* literals
+* tagged (pct vars)
+* cross-module deps
+
+== rule stanzas
+
+=== misc
+
+* dynamic-run "execute a program that was linked against dune-action-plugin library"
+* no-infer "perform an action without inference of dependencies and targets"
+* progn
+* run
+* setenv
+* with-accepted-exit-codes
+* write-file
+
+
+
+=== stdio
+
+* ignore-stderr
+* ignore-stdout
+* ignore-outputs
+* pipe-stderr
+* pipe-stdout
+* pipe-outputs
+* with-stdin-from
+* with-stderr-to
+* with-stdout-to
+* with-outputs-to
+
+=== shell cmds
+
+[cols="1,3"]
+|===
+|cmd | test case
+
+
+| bash | test/dune/rules/shell/bash/simple
+| cat | test/dune/rules/shell/cat
+| chdir | test/dune/rules/shell/chdir
+| cmp | test/dune/rules/shell/cmp
+| copy
+| copy*
+| diff
+| diff?
+| echo
+| system
+|===
