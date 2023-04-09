@@ -816,6 +816,7 @@ EXPORT void show_s7_config(void)
     fflush(NULL);
     /* log_info("mibl_runfiles_root: %s", utstring_body(mibl_runfiles_root)); */
 
+    log_info("s7 *load-path*:");
     exec_sexp =
         "(for-each (lambda (path)"
         "            (format #t \"~A~%\" path))"

@@ -107,22 +107,17 @@ extern UT_string *xdg_data_home;
 
 */
 /*
-  libs7/scm is in runfiles of libmibl because it depends on libs7
  */
 char *scm_runfiles_dirs[] = {
     /* this seems to work when pgm is run from mibl repo or as external */
-    /* minimum: mibl/libs7 */
-    "../mibl/scm/dune",
-    "../mibl/scm/meta",
+    "../mibl/scm/findlib",
     "../mibl/scm/opam",
+    "../mibl/scm/dune",
+    "../mibl/scm/mibl",
     "../mibl/scm",
-    /* "../libs7/scm", */
 
-    /* starlark */
-    /* "../obazl/obazlark", */
-    /* "../obazl/obazlark/starlark", */
-
-    "" /* do not remove terminating null */
+    // libs7/scm already in runfiles, since libmibl depends on libs7
+    NULL /* do not remove terminating null */
 };
 char **scm_dir;
 
@@ -137,7 +132,7 @@ LOCAL void _config_s7_load_path_bazel_env(void)
 #endif
     scm_dir = scm_runfiles_dirs;
     char *tmpdir;
-    while (strlen(*scm_dir) != 0) {
+    while (*scm_dir) {
         /* log_debug("scm_dir: %s", *scm_dir); */
         tmpdir = realpath(*scm_dir, NULL);
         /* log_debug("tmpscm: %s", tmpdir); */
@@ -705,13 +700,15 @@ void _mibl_s7_configure_paths(char *scmdir, /*char *main_script,*/ char *ws_root
     /* s7_config_repl(s7); */
     /* s7_repl(s7); */
 
-    char *tmpdir = realpath(scmdir, NULL);
-    log_debug("tmpscm: %s", tmpdir);
-    s7_add_to_load_path(s7, tmpdir);
+    if (scmdir) {
+        char *tmpdir = realpath(scmdir, NULL);
+        /* log_debug("tmpscm: %s", tmpdir); */
+        s7_add_to_load_path(s7, tmpdir);
+    }
 
     _config_s7_load_path_xdg_home();
     _config_s7_load_path_rootws(); /* always penultimate */
-    s7_add_to_load_path(s7, "."); /* always last */
+    /* s7_add_to_load_path(s7, "."); /\* always last *\/ */
 
     //TODO: what should be loaded by default and what left to user?
     if (!s7_load(s7, "libmibl.scm")) {

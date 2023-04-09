@@ -1,0 +1,21 @@
+(define (mibl:list-wss)
+  (map (lambda (ws-kv)
+         (car ws-kv))
+       *mibl-project*))
+
+(define (mibl:show-pkgs ws-id)
+  (let* ((ws (assoc-val ws-id *mibl-project*))
+         (pkgs (car (assoc-val :pkgs ws))))
+    (for-each (lambda (pkg-kv)
+                (format #t "~A: ~A\n" (green "PKG") (car pkg-kv))
+                (mibl-pretty-print (cdr pkg-kv))
+                (newline))
+         pkgs)))
+
+(define* (mibl:show-stanzas pkg (ws :@))
+  (let* ((workspace (assoc-val ws *mibl-project*))
+         (pkgs (car (assoc-val :pkgs workspace)))
+         (the-pkg (hash-table-ref pkgs pkg)))
+    (mibl-pretty-print (assoc-val :mibl the-pkg))
+    (newline)))
+

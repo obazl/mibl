@@ -29,7 +29,7 @@ def mibl(name = "mibl", main = None, args = None, **kwargs):
         data = [
             "//scm:srcs",
             "//scm/dune:srcs",
-            "//scm/meta:srcs",
+            "//scm/findlib:srcs",
             "//scm/opam:srcs",
         ],
         srcs  = [

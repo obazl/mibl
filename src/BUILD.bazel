@@ -163,10 +163,11 @@ cc_library(
     hdrs = ["//src/hdrs:libmibl.h"], ## "log.h"],
     data = [
         "//scm:srcs",
-        # "//scm/codept:srcs",
+        "//scm/mibl:srcs",
         "//scm/dune:srcs",
-        "//scm/meta:srcs",
+        "//scm/findlib:srcs",
         "//scm/opam:srcs"
+        # "//scm/codept:srcs",
     ],
     # data = [
     #     "//scm:dune.scm",

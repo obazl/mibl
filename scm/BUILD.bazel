@@ -4,10 +4,9 @@ filegroup(
             "mibl_main.scm",    # -main routine for mibl tools
             "mibl_pp.scm",
             "dune.scm",
-            "meta.scm",
+            "findlib.scm",
+            "mibl.scm",
             "opam.scm"],
     visibility = ["//visibility:public"]
 )
-
-# exports_files(["dune.scm", "meta.scm", "opam.scm"])
 
