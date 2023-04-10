@@ -1,10 +1,12 @@
 (if *mibl-debug-s7-loads*
     (format #t "loading dune/dune_actions.scm~%"))
 
+(set! *mibl-debug-s7* #t)
+
 (provide 'actions.scm)
 
-(load "dune/dune_action_run.scm")
-(load "dune/shell_actions.scm")
+(load "dune/action_run.scm")
+(load "dune/action_shell.scm")
 
 (define (normalize-action-chdir-dsl ws pkg action-alist tools targets deps)
   (mibl-trace-entry "normalize-action-chdir-dsl" action-alist)
@@ -826,7 +828,7 @@
     (write-file ,normalize-action-write-file) ;; (write-file <file> <string>)
     ))
 
-(define dune-action-cmds-dsl
+(define dune-action-cmds-dsl ;; i.e. cmd 'directives'
   ;; primary cmds that DO take a DSL argument
   ;; args ws pkg action-list targets deps
   `((chdir ,normalize-action-chdir-dsl) ;; (chdir <dir> <DSL>)
@@ -891,3 +893,13 @@
                     (begin
                       (format #t "~A: ~A~%" (red "UNHANDLED ACTION:") action)
                       stanza)))))
+
+(define (destructure-bash-cmd action-list)
+  (mibl-trace-entry "destructure-bash-cmd" action-list)
+  (let* ((subaction-list (cdr action-list))
+         (mibl-trace-let "subaction-list" subaction-list)
+         (subcmd (car subaction-list))
+         (subargs (cdr subaction-list)))
+    (mibl-trace "subcmd" subcmd)
+    (mibl-trace "subargs" subargs)
+    ))

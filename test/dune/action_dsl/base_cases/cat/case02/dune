@@ -1,0 +1,5 @@
+(rule
+ (targets output.txt)
+ (deps input1.txt input2.txt)
+ (action
+  (with-stdout-to %{targets} (cat "%{deps}"))))

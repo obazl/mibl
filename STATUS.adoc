@@ -1,72 +1,164 @@
 = status
+:toc: auto
+:toclevels: 4
 
 == base layer
+
+**Status**: core functionality is complete and stable.
 
 The "base layer" crawls the source tree and constructs a "parsetree"
 whose structure mirrors that of the source tree, augmented by
 OCaml-specific information. For example if a directory contains `a.ml`
 and `a.mli` then the parsetree will contain a `:modules` list
-containing `(A (:ml a.ml) (:mli a.mli))`
+containing `(A (:ml a.ml) (:mli a.mli))`.
+
+Dunefile contents are embedded in the parsetree.
 
 The base layer also does dependency analysis (using codept) for `.ml`
 and `.mli` files, so if `a.ml` in the example above depends on module
 Foo, then entry will read `(A (:ml a.ml Foo) (:mli a.mli))`.
 
-Status: core functionality is complete and stable.
+Implemented in C, using some functionality from the s7 Scheme C API.
+The parsetree can be displayed on the terminal by passing
+`--show-parsetree` to mibl commands. It may be written to
+`<projroot>/.mibl/` by running `bazel run @mibl//emit:parsetree`.
+
+WARNING: dune files are almost Scheme, but I have encountered one
+incompatibility: use of '.' to mean "current directory". The mibl
+dunefile reader contains code to convert such uses to './' but it is
+not especially robust.
+
 
 Enhancements: add support for `.mllib` files etc. for non-dune projects.
 
 == dune conversion
 
-=== deps
+**STATUS** Work-In-Progress. Details below.
 
-* globs
-* literals
-* tagged (pct vars)
-* cross-module deps
+Test cases:  see link:test/dune/README.adoc[test/dune/README.adoc]
 
-== rule stanzas
+Implemented in s7 Scheme.
 
-=== misc
-
-* dynamic-run "execute a program that was linked against dune-action-plugin library"
-* no-infer "perform an action without inference of dependencies and targets"
-* progn
-* run
-* setenv
-* with-accepted-exit-codes
-* write-file
-
-
-
-=== stdio
-
-* ignore-stderr
-* ignore-stdout
-* ignore-outputs
-* pipe-stderr
-* pipe-stdout
-* pipe-outputs
-* with-stdin-from
-* with-stderr-to
-* with-stdout-to
-* with-outputs-to
-
-=== shell cmds
-
-[cols="1,3"]
+[cols="3,3"]
 |===
-|cmd | test case
+| feature | status
+
+|dependency analysis for .mll and .mly files | complete
+
+|===
 
 
-| bash | test/dune/rules/shell/bash/simple
-| cat | test/dune/rules/shell/cat
-| chdir | test/dune/rules/shell/chdir
-| cmp | test/dune/rules/shell/cmp
-| copy
-| copy*
-| diff
-| diff?
-| echo
-| system
+=== fields
+
+[cols="2,1,5"]
+|===
+| feature | status | tests
+
+| flags | complete | test/dune/fields:flags_test
+|===
+
+=== stanzas
+
+==== library stanzas
+
+
+==== executable stanzas
+
+==== rule stanzas
+
+Schema design:
+
+[source,scheme]
+----
+(:rule (:inputs ...)  ;; from dune 'deps'
+       (:outputs ...) ;;  from dune 'target', 'targets'
+       (:tools ...)   ;; from dune action
+       (:cmd ...)
+       (:stdin ...)   ;; dune with-stdin-from
+       (:stdout ...)  ;; dune with-stdout-to
+       (:stderr ...)  ;; dune with-stderr-to
+       (:ctx ...)     ;; dune chdir
+----
+
+===== inputs (deps)
+
+[cols="2,1,5"]
+|===
+| feature | status | remarks
+
+| globs | complete |
+| literals | complete |
+| tagged (pct vars) | complete |
+| cross-module deps | complete |
+| inferred | WIP | not thoroughly tested
+|===
+
+===== outputs (targets)
+
+Complete
+
+===== actions
+
+[cols="2,1,5"]
+|===
+| cmd | coverage | remarks
+
+| dynamic-run | none | "execute a program that was linked against dune-action-plugin library"
+| no-infer | none | "perform an action without inference of dependencies and targets"
+| progn | partial |
+| run | partial |
+| setenv | none |
+| with-accepted-exit-codes | ?? |
+| write-file | complete |
+|===
+
+===== shell cmds
+
+[cols="1,1,5"]
+|===
+|cmd | coverage | remarks
+
+
+| bash | partial |
+| cat | supported |
+| chdir | partial |
+| cmp | supported |
+| copy | supported |
+| copy* | not yet |
+| diff | ?? |
+| diff? | not yet |
+| echo | supported |
+| system | ?? |
+|===
+
+===== stdio
+
+[cols="2,1,5"]
+|===
+| cmd | coverage | remarks
+
+| ignore-stderr | none |
+| ignore-stdout | none |
+| ignore-outputs | none |
+| pipe-stderr | none |
+| pipe-stdout | none |
+| pipe-outputs | none |
+| with-stdin-from | partial | untested
+| with-stderr-to | partial | untested
+| with-stdout-to | complete |
+| with-outputs-to | complete? |
+|===
+
+==== test stanzas
+
+=== ppx support
+
+[cols="2,1,5"]
+|===
+| cmd | coverage | remarks
+
+| ppx-codeps | |
+| ppx-args | |
+| ppx-rewriter | |
+
 |===

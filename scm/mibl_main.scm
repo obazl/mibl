@@ -34,10 +34,12 @@
 ;;               pkgs)))
 
 (define* (-main root-path ws-path)
+  (format #t "-main (mibl_main.scm)\n")
   (load "libmibl.scm")
   (if *mibl-clean-mibl*
       (mibl-clean-mibl)
       (call-with-exit (lambda (return)
+                        (mibl-trace "fOOO" "")
                         (parsetree->mibl ;; in libmibl.scm
                          (lambda () ;; our return thunk
                            (if *mibl-show-mibl*

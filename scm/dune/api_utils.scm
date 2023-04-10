@@ -16,39 +16,6 @@
     ;; (format #t "~A: ~A~%" (red "pruned") pruned)
     (list (cons :rule pruned))))
 
-;; returns (sym pfx sfx)
-(define (parse-pct-var arg)
-  (if *mibl-debug-s7*
-      (format #t "~A: ~A~%" (ublue "parse-pct-var") arg))
-  (let* ((v (format #f "~A" arg))
-         (len (length v))
-         (vstr (substring v 2 (- len 1)))
-         (sym (string->symbol vstr)))
-    (if *mibl-debug-s7*
-        (begin
-          (format #t "vstr ~A\n" vstr)
-          (format #t "sym ~A\n" sym)))
-    (let ((splits (string-split vstr #\:)))
-      (if *mibl-debug-s7*
-          (format #t "~A: ~A~%" (white "splits") splits))
-      (if (equal? (list vstr) splits)
-          (values sym #f sym)
-          (values sym (string->keyword (car splits))
-                  (string->symbol (string-join (cdr splits) ":")))))))
-
-(define (pct-var->keyword v)
-  (if *mibl-debug-s7*
-      (format #t "~A: ~A~%" (blue "pct-var->var") v))
-  (let* ((v (format #f "~A" v))
-         (len (length v))
-         (vstr (substring v 2 (- len 1)))
-         (kw (string->keyword vstr)))
-    (if *mibl-debug-s7*
-        (begin
-          (format #t "vstr ~A\n" vstr)
-          (format #t "kw ~A\n" kw)))
-    kw))
-
 ;;;;;;;;;;;;;;;;;;
 (define (parse-subcmd dsl subcmd cmd-list)
   (if *mibl-debug-s7*

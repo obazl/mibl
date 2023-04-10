@@ -28,8 +28,8 @@
           (format #t "~A: ~A~%" (green "deps") deps)))
 
     (case tool
-      ((%{bin:ocamlc}) ::ocamlc)
-      ((%{bin:node}) ::node)
+      ((%{bin:ocamlc}) '(% bin ocamlc))
+      ((%{bin:node}) '(% bin node))
       ((cp) ::copy) ;;FIXME: use lookup table from constants.scm
       ((node)
        (set-cdr! deps
@@ -337,13 +337,16 @@
 ;; may update deps
 (define (-expand-pct-tool!?  ws tool tools pkg deps) ;; ws arg kind pkg deps tools)
   (mibl-trace-entry "-expand-pct-tool!?" tool)
-  (if (or *mibl-debug-expanders* *mibl-debug-s7*)
-      (begin
-        (format #t "~A: ~A (~A)~%" (ublue "-expand-pct-tool!?")
-                tool (type-of tool))
-        (format #t "deps: ~A~%" deps)))
-
-  (let-values (((sym pfx sfx) (parse-pct-var tool)))
+  (mibl-trace "deps" deps)
+  (let* ((pctvar (parse-pct-var tool))
+         ;; %{foo:bar} => (% foo bar)
+         ;; %{foo} => (% . foo)
+         (sym (if (list? (cdr pctvar))
+                  (symbol
+                   (format #f "~A:~A" (cadr pctvar) (cddr pctvar)))
+                  (cdr pctvar)))
+         (pfx (if (list? (cdr pctvar)) (cadr pctvar) #f))
+         (sfx (if (list? (cdr pctvar)) (cddr pctvar) #f)))
     (if (or *mibl-debug-expanders* *mibl-debug-s7*)
         (format #t "~A: ~A, ~A: ~A~%"
                 (uwhite "tool pfx") pfx (uwhite "sfx") sfx))

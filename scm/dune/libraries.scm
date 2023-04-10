@@ -112,10 +112,19 @@
                      ((js_of_ocaml) (cons :jsoo (cdr fld-assoc)))
 
                      ;; ppx
-                     ((kind) (if (eq? 'ppx_rewriter (cadr fld-assoc))
-                                 `(:ppx-rewriter . #t)
-                                 (if (eq? 'ppx_deriver (cadr fld-assoc))
-                                     `(:ppx-deriver . #t))))
+                     ((kind)
+                      (if (list? (cadr fld-assoc))
+                          ;; e.g. (kind (ppx_rewriter (cookies (inline_tests %{inline_tests}))))
+                          (if (eq? 'ppx_rewriter (caadr fld-assoc))
+                              `(:ppx-rewriter . #t)
+                              (if (eq? 'ppx_deriver (caadr fld-assoc))
+                                  `(:ppx-deriver . #t)))
+                          ;; else e.g. (kind ppx_rewriter)
+                          (if (eq? 'ppx_rewriter (cadr fld-assoc))
+                              `(:ppx-rewriter . #t)
+                              (if (eq? 'ppx_deriver (cadr fld-assoc))
+                                  `(:ppx-deriver . #t)))
+                          ))
 
                      ((ppx_runtime_libraries) `(:ppx-codeps ,@(cdr fld-assoc)))
 
@@ -248,11 +257,8 @@
     ))
 
 (define (dune-library->mibl ws pkg stanza)
-  (if *mibl-debug-s7*
-      (begin
-        (format #t "~A: ~A\n" (bgblue "dune-library->mibl")
-                (assoc-val 'name (cdr stanza)))
-        (format #t "stanza: ~A\n" stanza)))
+  (mibl-trace-entry "dune-library->mibl" "")
+  (mibl-trace-entry "stanza" stanza)
 
   ;; FIXME: if not wrapped => :archive
   ;; else => :library
@@ -343,9 +349,10 @@
 
            ;; CONVERT THE STANZA:
            (mibl-stanza (-lib-flds->mibl ws pkg stanza-alist wrapped?))
-           (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (uwhite "mibl-stanza") mibl-stanza)))
+           (mibl-trace-let "mibl-stanza" mibl-stanza)
            (mibl-stanza (filter (lambda (fld)
                                   ;; remove empties e.g. (:deps)
+                                  (mibl-trace "fld" fld)
                                   (not (null? (cdr fld))))
                                 mibl-stanza))
 

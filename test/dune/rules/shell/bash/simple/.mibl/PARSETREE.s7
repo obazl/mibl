@@ -1,3 +1,0 @@
-"(list (list :@ (cons :name \"@\") (cons :path '/Users/gar/obazl/mibl/test/dune/rules/shell/bash/simple) (list :exports (hash-table)) (list :opam (hash-table)) (list :shared-ppx (hash-table)) (list :filegroups (hash-table)) (list :pkgs (hash-table \"./\" (list (cons :ws-path \"/Users/gar/obazl/mibl/test/dune/rules/shell/bash/simple\") (cons :pkg-path \"./\") (cons :realpath \"/Users/gar/obazl/mibl/test/dune/rules/shell/bash/simple\") (list 'dune (list 'rule (list 'targets 'foo.txt) (list 'deps 'a.txt) (list 'action (list 'bash \"
-# shell script here...
-    \")))) (list :files (list :static \"dune.mibl\")))))))"

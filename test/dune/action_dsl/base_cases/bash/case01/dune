@@ -1,0 +1,5 @@
+
+(rule
+ (targets foo.txt)
+ (deps a.txt)
+ (action (bash "# shell script here...")))

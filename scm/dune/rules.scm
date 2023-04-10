@@ -3,6 +3,7 @@
 (require 'expanders.scm)
 
 ;;FIXME: better name
+;;FIXME: this mess constructs the entire rule alist
 (define (-normalize-rule-action ws pkg tools rule-alist targets deps)
   (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*)
       (begin
@@ -152,20 +153,29 @@
          )
     targets))
 
-;; dune rule stanza:
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; dune rule stanza grammar:
 ;; (rule
 ;;  (action <action>)
-;;  <optional-fields>)
-;; optional fields:
-;;  target <filename> or targets <filenames> - can be omitted if inferrable from action
-;;  deps
-;;  mode
+;;  ;; <optional-fields>
+;;  (target ...) or (targets ...)  can be omitted if inferrable from action
+;;  (deps ...)
+;;  (package <pkg>)
+;;  (mode ...)
 ;;  (fallback) - deprecated, same as (mode fallback)
-;;  locks
-;;  alias or aliases "Building this alias means building the targets of this rule."
-;;  package <pkg>
-;;  enabled_if
+;;  (locks ...)
+;;  (alias ...) or (aliases ...) "Building this alias means building the targets of this rule."
+;;  (enabled-if ...)
+;; )
 
+;; action field grammar:
+;; (action <dsl expr>)
+;; dsl: see https://dune.readthedocs.io/en/stable/concepts.html#user-actions
+
+;; Unfortunately, the 'action' field seems to be optional in practice,
+;; so we have a separate rule, -dune-rule-inferred->mibl, below.
+
+;; rules with explicit 'action field:
 (define -dune-rule-explicit->mibl
   (let ((+documentation+ "INTERNAL. Updates pkg arg, returns normalized stanza. stanza: raw dune stanza (input); nstanza: miblized (output)"))
     (lambda (ws pkg stanza)
@@ -180,9 +190,11 @@
 
       (let* ((pkg-path (assoc-val :pkg-path pkg))
              (rule-alist (cdr stanza))
-             (_ (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*) (format #t "rule-alist: ~A\n" rule-alist)))
-             ;; (_ (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*) (format #t "target: ~A\n" (assoc 'target rule-alist))))
-             ;; (_ (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*) (format #t "Targets: ~A\n" (assoc-val 'targets rule-alist))))
+             (mibl-trace-let "rule-alist" rule-alist)
+
+             (action (destructure-rule-action (assoc-val 'action rule-alist)))
+             (mibl-trace-let "rule action" action)
+             (_ (error 'x "X"))
 
              ;; Step 1: rule deps don't depend on targets, so do first
              (deps (expand-rule-deps ws pkg rule-alist))
@@ -196,6 +208,9 @@
              ;; all dune rule stanzas have an action, so they have a tool
              (tools `(:tools ,(gensym))) ;; gensym is a placeholder, to be replaced by set-cdr!
              (mibl-trace-let "tmp :tools" tools)
+
+
+
              )
 
         (if deps
@@ -258,7 +273,7 @@
                  ((assoc 'action rule-alist)
                   (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*)
                       (begin
-                        (format #t "handling action rule\n" )
+                        (format #t "handling rule action\n" )
                         (format #t "targets: ~A~%" targets)
                         (format #t "deps: ~A~%" deps)))
                   (-normalize-rule-action ws pkg tools rule-alist
@@ -270,7 +285,7 @@
                  ;; if stanza contains a field in dune-dsl-cmds then dispatch
                  (else
                   (error 'rule "rule w/o action?")
-                  ;;FIXME: this finds just one action, can list have more than one?
+                  ;;OBSOLETE: use -dune-rule-inferred->mibl below
                   ;; no - it would use progn?
                   ;; so we don't need find-if, we can just check car?
                   (let ((action (find-if (lambda (fld)
