@@ -2,4 +2,4 @@
 (rule
  (targets foo.txt)
  (deps a.txt)
- (action (bash "# shell script here...")))
+ (action (bash diff -a %{deps})))

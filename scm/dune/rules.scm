@@ -194,9 +194,9 @@
 
              ;;FIXME: 'action optional, 'progn may also be used
              ;; e.g. menhir/src/dune
-             (action (destructure-rule-action (assoc-val 'action rule-alist)))
+             (action (dsl:action->mibl (assoc-val 'action rule-alist)))
              (mibl-trace-let "rule action" action)
-             (_ (error 'x "X"))
+             ;; (_ (error 'x "X"))
 
              ;; Step 1: rule deps don't depend on targets, so do first
              (deps (expand-rule-deps ws pkg rule-alist))
@@ -210,9 +210,6 @@
              ;; all dune rule stanzas have an action, so they have a tool
              (tools `(:tools ,(gensym))) ;; gensym is a placeholder, to be replaced by set-cdr!
              (mibl-trace-let "tmp :tools" tools)
-
-
-
              )
 
         (if deps

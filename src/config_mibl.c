@@ -374,6 +374,7 @@ LOCAL void _load_user_mibl_config(void)
     if (mibl_trace)
         log_trace(BLU "_load_user_mibl_config" CRESET);
 #endif
+    // WARNING: $HOME not accessible when BAZEL_TEST defined
     utstring_new(obazl_ini_path);
     utstring_printf(obazl_ini_path,
                     "%s/.config/mibl/miblrc",
@@ -473,14 +474,23 @@ EXPORT void mibl_configure(void)
     utarray_new(mibl_config.include_dirs, &ut_str_icd);
     utarray_new(mibl_config.watch_dirs, &ut_str_icd);
 
-    if (getenv("BAZEL_TEST")) goto summary;
+    /* if (getenv("BAZEL_TEST")) goto summary; */
 
     if (mibl_config.load_miblrc) {
-        _load_user_mibl_config();
-        _load_ws_mibl_config();
+        if ( getenv("BAZEL_TEST") ) {
+            if ( getenv("HOME") ) {
+                // bazel run test_target
+                _load_user_mibl_config();
+                _load_ws_mibl_config();
+            }
+            // else bazel test test_target
+        } else {
+            // bazel run non_test_target
+            _load_user_mibl_config();
+            _load_ws_mibl_config();
+        }
     }
 
- summary:
     if (verbose && verbosity > 1) {
         show_mibl_config();
     }

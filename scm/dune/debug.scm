@@ -1,29 +1,39 @@
-(define-expansion (mibl-trace hdr msg . test)
-  (if (truthy? test)
-      (if (eq? (symbol->value (car test)) #t)
-          `(format #t "~A: ~A~%" (blue ,hdr) ,msg)
-          (values))
-      (if (eq? (symbol->value '*mibl-debug-s7*) #t)
-          `(format #t "~A: ~A~%" (blue ,hdr) ,msg)
-          (values))))
+(define *mibl-debugging* #t)
 
-(define-expansion (mibl-trace-entry hdr msg . test)
-  (if (truthy? test)
-      (if (eq? (symbol->value (car test)) #t)
-          `(format #t "~A: ~A~%" (ublue ,hdr) ,msg)
-          (values))
-      (if (eq? (symbol->value '*mibl-debug-s7*) #t)
-          `(format #t "~A: ~A~%" (ublue ,hdr) ,msg)
-          (values))))
+(define-expansion* (mibl-trace-entry hdr msg (color ublue) (test #f))
+  (if *mibl-debugging*
+      `(if ,test
+           (format #t "~A: ~A~%" (,color ,hdr) ,msg)
+           (if ,(eq? (symbol->value '*mibl-debug-s7*) #t)
+                (format #t "~A: ~A~%" (,color ,hdr) ,msg)
+                (values)))
+      (values)))
 
-(define-expansion (mibl-trace-let hdr msg . test)
-  (if (truthy? test)
-      (if (eq? (symbol->value (car test)) #t)
-          `(_ (format #t "~A: ~A~%" (blue ,hdr) ,msg))
-          '(_ #f))
-      (if (eq? (symbol->value '*mibl-debug-s7*) #t)
-          `(_ (format #t "~A: ~A~%" (blue ,hdr) ,msg))
-          '(_ #f))))
+(define-expansion* (mibl-trace hdr msg (color blue) (test #f))
+  (if *mibl-debugging*
+      `(if ,test
+           (format #t "~A: ~A~%" (,color ,hdr) ,msg)
+           (if ,(eq? (symbol->value '*mibl-debug-s7*) #t)
+               (format #t "~A: ~A~%" (,color ,hdr) ,msg)
+               (values)))
+      (values)))
+
+(define-expansion* (mibl-trace-let hdr msg (color blue) (test #f))
+  (if *mibl-debugging*
+      `(_ (if ,test
+              (format #t "~A: ~A~%" (,color ,hdr) ,msg)
+              (if ,(eq? (symbol->value '*mibl-debug-s7*) #t)
+                  (format #t "~A: ~A~%" (,color ,hdr) ,msg)
+               '())))
+      (values)))
+
+  ;; (if (truthy? test)
+  ;;     (if (eq? (symbol->value (car test)) #t)
+  ;;         `(_ (format #t "~A: ~A~%" (blue ,hdr) ,msg))
+  ;;         '(_ #f))
+  ;;     (if (eq? (symbol->value '*mibl-debug-s7*) #t)
+  ;;         `(_ (format #t "~A: ~A~%" (blue ,hdr) ,msg))
+  ;;         '(_ #f))))
 
 (define (debug-print-stacktrace)
   (format #t "STACKTRACE:\n~A\n" (stacktrace)))

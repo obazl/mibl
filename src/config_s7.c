@@ -113,6 +113,7 @@ static char *mibl_s7_flags[] = {
     "*mibl-clean-mibl*",
     "*mibl-clean-s7*",
     "*mibl-debug-action-deps*",
+    "*mibl-debug-action-dsl*",
     "*mibl-debug-action-directives*",
     "*mibl-debug-alias*",
     "*mibl-debug-cleanup*",

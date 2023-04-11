@@ -12,8 +12,7 @@
 
 ;; split opts into boolean flags and (opt arg) pairs
 (define (split-opts opts)
-  (if (or *mibl-debug-flags* *mibl-debug-s7*)
-      (format #t "~A: ~A\n" (ublue "split-opts") opts))
+  (mibl-trace "split-opts" opts :test *mibl-debug-flags*)
   ;; assumption: :standard has been removed
   ;; cases: arg is list or not: (flags (a b ...)) v. (flags a b ...)
   ;; case: embedded list, e.g. (flags a (b c) ...)
@@ -170,8 +169,8 @@
 ;; (set! *mibl-debug-flags* #t)
 
 (define (normalize-stanza-fld-flags flags kind)
-  (mibl-trace-entry "normalize-stanza-fld-flags" flags *mibl-debug-flags*)
-  (mibl-trace "kind" kind)
+  (mibl-trace-entry "normalize-stanza-fld-flags" flags :test *mibl-debug-flags*)
+  (mibl-trace "kind" kind :test *mibl-debug-flags*)
   (if flags
       ;; (let* ((flags (if (list? (cadr flags))
       ;;                   (cadr flags)

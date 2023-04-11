@@ -348,13 +348,19 @@ LOCAL void _config_s7_load_path_xdg_home(void)
     utstring_new(xdg_script_dir);
     // note the leading _
     char *_xdg_data_home = getenv("XDG_DATA_HOME");
+    log_debug("XDG_DATA_HOME: %s", _xdg_data_home);
 
     utstring_new(xdg_data_home);
     if (_xdg_data_home == NULL) {
+        // WARNING: in bazel test env HOME is unset
+        // "Paths starting with /home may not be available. Tests should not access any such paths."
         _xdg_data_home = getenv("HOME");
+        log_debug("BAZEL_TEST: %d", getenv("BAZEL_TEST"));
+        log_debug("HOME XDG_DATA_HOME: %s", _xdg_data_home);
         utstring_printf(xdg_data_home, "%s/%s",
                         _xdg_data_home, XDG_DATA_HOME_SFX);
     } else {
+        log_debug("BBBB");
         utstring_printf(xdg_data_home, "%s", _xdg_data_home);
     }
     if (verbose)
@@ -706,7 +712,8 @@ void _mibl_s7_configure_paths(char *scmdir, /*char *main_script,*/ char *ws_root
         s7_add_to_load_path(s7, tmpdir);
     }
 
-    _config_s7_load_path_xdg_home();
+    if ( !getenv("BAZEL_TEST") )
+        _config_s7_load_path_xdg_home();
     _config_s7_load_path_rootws(); /* always penultimate */
     /* s7_add_to_load_path(s7, "."); /\* always last *\/ */
 

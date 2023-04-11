@@ -88,21 +88,21 @@
 ;;   ))
 
 (define (-ocamlyacc-deps! pkg pkg-path pkg-mly-modules)
-  (mibl-trace "-ocamlyacc-deps!" pkg-mly-modules *mibl-debug-lexyacc*)
+  (mibl-trace "-ocamlyacc-deps!" pkg-mly-modules :test *mibl-debug-lexyacc*)
   (for-each (lambda (mly-spec)
-              (mibl-trace "mly spec" mly-spec *mibl-debug-lexyacc*)
+              (mibl-trace "mly spec" mly-spec :test *mibl-debug-lexyacc*)
               (let* ((mly-module (car mly-spec))
                      (mly-src (assoc-val :mly (cdr mly-spec)))
                      (principal (format #f "~A" (bname mly-src)))
                      (cp-cmd (format #f "cp ~A/~A ~A" pkg-path mly-src *mibl-tmp-dir*)))
-                (mibl-trace "mly-src" mly-src *mibl-debug-lexyacc*)
-                (mibl-trace "cp-cmd" cp-cmd *mibl-debug-lexyacc*)
+                (mibl-trace "mly-src" mly-src :test *mibl-debug-lexyacc*)
+                (mibl-trace "cp-cmd" cp-cmd :test *mibl-debug-lexyacc*)
                 (system cp-cmd) ;;;;;;;;;;;;;;;; SYS
                 (let ((yacc-cmd
                        ;; (if *mibl-menhir*
                        ;;     (format #f "menhir ...
                        (format #f "ocamlyacc ~A/~A" *mibl-tmp-dir* mly-src)))
-                  (mibl-trace "yacc-cmd" yacc-cmd *mibl-debug-lexyacc*)
+                  (mibl-trace "yacc-cmd" yacc-cmd :test *mibl-debug-lexyacc*)
                   (system yacc-cmd)  ;;;;;;;;;;;;;;;; SYS
                   (let* ((ocamldep-cmd
                           (format
@@ -110,16 +110,16 @@
                            ;; #f "ocamldep -one-line -modules -I ~A ~A/~A.*"
                            ;; pkg-path
                            *mibl-tmp-dir* principal))
-                         (mibl-trace-let "codept cmd" ocamldep-cmd *mibl-debug-lexyacc*)
+                         (mibl-trace-let "codept cmd" ocamldep-cmd :test *mibl-debug-lexyacc*)
                          (depstring (string-trim '(#\newline) (system ocamldep-cmd #t))) ;;;;;;;;;;;;;;;; SYS
-                         (mibl-trace-let "depstring" depstring *mibl-debug-lexyacc*)
+                         (mibl-trace-let "depstring" depstring :test *mibl-debug-lexyacc*)
                          (depgraph_port (open-input-string depstring))
                          (depgraph (read depgraph_port)))
                     ;; mly yields 2 deplists, one for .ml one for .mli
                     (let-values (((ml-deps mli-deps)
                                   (let* ((deps-list (assoc-val 'dependencies depgraph))
                                          (deps-alist-list (car deps-list)))
-                                    (mibl-trace "mly deps-alist-list" deps-alist-list *mibl-debug-lexyacc*)
+                                    (mibl-trace "mly deps-alist-list" deps-alist-list :test *mibl-debug-lexyacc*)
                                     (if (truthy? deps-alist-list)
                                         ;; deps-alist-list: ( ((file ...) (deps ...)) ((file ...) (deps ...)) )
                                         (let* ((deps-alist1 (car deps-alist-list))
@@ -141,18 +141,18 @@
                                                (values deps-d1 deps-d2)
                                                (values deps-d2 deps-d1)))
                                         (values '() '())))))
-                      (mibl-trace "mly ml-deps" ml-deps *mibl-debug-lexyacc*)
-                      (mibl-trace "mly mli-deps" mli-deps *mibl-debug-lexyacc*)
-                      (mibl-trace "mly module" mly-module *mibl-debug-lexyacc*)
+                      (mibl-trace "mly ml-deps" ml-deps :test *mibl-debug-lexyacc*)
+                      (mibl-trace "mly mli-deps" mli-deps :test *mibl-debug-lexyacc*)
+                      (mibl-trace "mly module" mly-module :test *mibl-debug-lexyacc*)
 
                       ;; task: find yacc module in pkg files and update its deps
                       (let* ((mly-tlbl (module-name->tagged-label mly-module pkg))
-                             (mibl-trace-let "mly tlbl" mly-tlbl *mibl-debug-lexyacc*)
+                             (mibl-trace-let "mly tlbl" mly-tlbl :test *mibl-debug-lexyacc*)
                              ;; mly-tlbl should have :ml_ and :mli_
                              (mly-ml_  (assoc :ml_ (cdr mly-tlbl)))
                              (mly-mli_ (assoc :mli_ (cdr mly-tlbl))))
-                        (mibl-trace "mly :ml_"  mly-ml_ *mibl-debug-lexyacc*)
-                        (mibl-trace "mly :mli_" mly-mli_ *mibl-debug-lexyacc*)
+                        (mibl-trace "mly :ml_"  mly-ml_ :test *mibl-debug-lexyacc*)
+                        (mibl-trace "mly :mli_" mly-mli_ :test *mibl-debug-lexyacc*)
                         (if (list? (cdr mly-ml_))
                             (set-cdr! (cdr mly-ml_)  ml-deps)
                             (set-cdr! mly-ml_ (cons (cdr mly-ml_) ml-deps)))
@@ -163,22 +163,22 @@
             pkg-mly-modules))
 
 (define (ocamllex-deps! pkg pkg-path pkg-mll-modules)
-  (mibl-trace-entry "-ocamllex-deps!" pkg-mll-modules *mibl-debug-lexyacc*)
+  (mibl-trace-entry "-ocamllex-deps!" pkg-mll-modules :test *mibl-debug-lexyacc*)
   ;; pkg-mll-modules comes from (:lex ....)
   ;; task: discover deps, then find corresponding pkg-file and update
   (for-each (lambda (mll-spec)
-              (mibl-trace "mll module spec" mll-spec *mibl-debug-lexyacc*)
+              (mibl-trace "mll module spec" mll-spec :test *mibl-debug-lexyacc*)
               (let* ((mll-module (car mll-spec))
                      (mll-src (cdr mll-spec))
                      (ml-src (format #f "~A.ml" (bname mll-src)))
                      ;;FIXME: if verbose, add '-v' to cmd
                      (cp-cmd (format #f "cp ~A/~A ~A" pkg-path mll-src *mibl-tmp-dir*)))
-                (mibl-trace "mll-src" mll-src *mibl-debug-lexyacc*)
-                (mibl-trace "cp-cmd" cp-cmd *mibl-debug-lexyacc*)
+                (mibl-trace "mll-src" mll-src :test *mibl-debug-lexyacc*)
+                (mibl-trace "cp-cmd" cp-cmd :test *mibl-debug-lexyacc*)
                 (system cp-cmd) ;;;;;;;;;;;;;;;; SYS
                 (let ((lex-cmd
                        (format #f "ocamllex -q ~A/~A" *mibl-tmp-dir* mll-src)))
-                  (mibl-trace "lex-cmd" lex-cmd *mibl-debug-lexyacc*)
+                  (mibl-trace "lex-cmd" lex-cmd :test *mibl-debug-lexyacc*)
                   (system lex-cmd)  ;;;;;;;;;;;;;;;; SYS
                   (let* ((ocamldep-cmd
                           (format
@@ -199,18 +199,18 @@
                                            (if (> (length dep) 1)
                                               (list->vector dep) (car dep)))
                                          file-deps))
-                         (mibl-trace-let "parsed codept" file-deps *mibl-debug-lexyacc*)
+                         (mibl-trace-let "parsed codept" file-deps :test *mibl-debug-lexyacc*)
                          ;; (file-deps (cdr (string-split deps #\newline)))
                          )
-                    (mibl-trace "ocamldep-cmd" ocamldep-cmd *mibl-debug-lexyacc*)
-                    (mibl-trace "depstring" depstring *mibl-debug-lexyacc*)
-                    (mibl-trace "file-deps 2" file-deps *mibl-debug-lexyacc*)
-                    (mibl-trace "mll module" mll-module *mibl-debug-lexyacc*)
-                    (mibl-trace "pkg" pkg *mibl-debug-lexyacc*)
+                    (mibl-trace "ocamldep-cmd" ocamldep-cmd :test *mibl-debug-lexyacc*)
+                    (mibl-trace "depstring" depstring :test *mibl-debug-lexyacc*)
+                    (mibl-trace "file-deps 2" file-deps :test *mibl-debug-lexyacc*)
+                    (mibl-trace "mll module" mll-module :test *mibl-debug-lexyacc*)
+                    (mibl-trace "pkg" pkg :test *mibl-debug-lexyacc*)
 
                     ;; task: find mll module in pkg files and update its deps
                     (let* ((mll-tlbl (module-name->tagged-label mll-module pkg))
-                           (mibl-trace-let "mll tlbl" mll-tlbl *mibl-debug-lexyacc*))
+                           (mibl-trace-let "mll tlbl" mll-tlbl :test *mibl-debug-lexyacc*))
                       (if (list? (cdr mll-tlbl))
                           ;; tlbl form: (Lexer (:ml_ . lexer.ml) ...)
                           ;; or (Lexer (:mll . lexer.mll) (:mli lexer.mli) (:ml_ lexer.ml))
@@ -231,54 +231,54 @@
 
 ;; handle :ocamllex, :ocamlyacc, etc.
 (define (lexyacc-file-deps!)
-  (mibl-trace-entry "lexyacc-file-deps" "" *mibl-debug-lexyacc*)
+  (mibl-trace-entry "lexyacc-file-deps" "" :test *mibl-debug-lexyacc*)
 
   ;; for each pkg in each workspace
   (for-each (lambda (ws-kv)
-              (mibl-trace "ws" (car ws-kv) *mibl-debug-lexyacc*)
+              (mibl-trace "ws" (car ws-kv) :test *mibl-debug-lexyacc*)
               (let ((pkgs (car (assoc-val :pkgs (cdr ws-kv)))))
                 (for-each (lambda (pkg-kv)
-                            (mibl-trace "lexyacc-file-deps! pkg" (assoc-val :pkg-path (cdr pkg-kv)) *mibl-debug-lexyacc*)
-                            (mibl-trace "pkg.lex" (assoc :lex (cdr pkg-kv)) *mibl-debug-lexyacc*)
-                            (mibl-trace "pkg.yacc" (assoc :yacc (cdr pkg-kv)) *mibl-debug-lexyacc*)
+                            (mibl-trace "lexyacc-file-deps! pkg" (assoc-val :pkg-path (cdr pkg-kv)) :test *mibl-debug-lexyacc*)
+                            (mibl-trace "pkg.lex" (assoc :lex (cdr pkg-kv)) :test *mibl-debug-lexyacc*)
+                            (mibl-trace "pkg.yacc" (assoc :yacc (cdr pkg-kv)) :test *mibl-debug-lexyacc*)
                             (if (or (assoc :lex (cdr pkg-kv)) (assoc :yacc (cdr pkg-kv)))
                                 (let* ((pkg (cdr pkg-kv))
                                        (ws-path (assoc-val :ws-path pkg))
                                        (pkg-path (assoc-val :pkg-path pkg))
                                        (pkg-modules (if-let ((modules (assoc-val :modules pkg)))
                                                             modules '()))
-                                       (mibl-trace-let "pkg-modules" pkg-modules *mibl-debug-lexyacc*)
+                                       (mibl-trace-let "pkg-modules" pkg-modules :test *mibl-debug-lexyacc*)
 
                                        (pkg-static-mll (if-let ((mll-static
                                                                  (assoc-in '(:lex :static) pkg)))
                                                                (cdr mll-static) '()))
-                                       (mibl-trace-let "pkg-static-mll" pkg-static-mll *mibl-debug-lexyacc*)
+                                       (mibl-trace-let "pkg-static-mll" pkg-static-mll :test *mibl-debug-lexyacc*)
                                        ;; prolly won't have dynamic .mll files, but just in case
                                        (pkg-dynamic-mll (if-let ((mll-dyn (assoc-in '(:lex :dynamic) pkg)))
                                                                 (cdr mll-dyn) '()))
-                                       (mibl-trace-let "pkg-dynamic-mll" pkg-dynamic-mll *mibl-debug-lexyacc*)
+                                       (mibl-trace-let "pkg-dynamic-mll" pkg-dynamic-mll :test *mibl-debug-lexyacc*)
 
                                        (pkg-mll (concatenate pkg-static-mll pkg-dynamic-mll))
-                                       (mibl-trace-let "pkg-mll" pkg-mll *mibl-debug-lexyacc*)
+                                       (mibl-trace-let "pkg-mll" pkg-mll :test *mibl-debug-lexyacc*)
 
                                        (pkg-static-mly (if-let ((mly-static
                                                                  (assoc-in '(:yacc :static) pkg)))
                                                                mly-static '()))
-                                       (mibl-trace-let "pkg-static-mly" pkg-static-mly *mibl-debug-lexyacc*)
+                                       (mibl-trace-let "pkg-static-mly" pkg-static-mly :test *mibl-debug-lexyacc*)
                                        (pkg-dynamic-mly (if-let ((mly-dyn
                                                                   (assoc-in '(:yacc :dynamic) pkg)))
                                                                 mly-dyn '()))
-                                       (mibl-trace-let "pkg-dynamic-mly" pkg-dynamic-mly *mibl-debug-lexyacc*)
+                                       (mibl-trace-let "pkg-dynamic-mly" pkg-dynamic-mly :test *mibl-debug-lexyacc*)
                                        (pkg-mly (concatenate pkg-static-mly pkg-dynamic-mly))
-                                       (mibl-trace-let "pkg-mly" pkg-mly *mibl-debug-lexyacc*)
+                                       (mibl-trace-let "pkg-mly" pkg-mly :test *mibl-debug-lexyacc*)
 
                                        ;; filtered :modules
                                        (pkg-mly-modules (filter (lambda (m)
                                                                   ;; (format #t "~A: ~A~%" (blue "m") m)
                                                                   (assoc :mly (cdr m))) pkg-modules))
                                        )
-                                  (mibl-trace "filtered mly" pkg-mly-modules *mibl-debug-lexyacc*)
-                                  (mibl-trace "ws-path" ws-path *mibl-debug-lexyacc*)
+                                  (mibl-trace "filtered mly" pkg-mly-modules :test *mibl-debug-lexyacc*)
+                                  (mibl-trace "ws-path" ws-path :test *mibl-debug-lexyacc*)
 
                                   (if *mibl-debug-s7*
                                       (begin

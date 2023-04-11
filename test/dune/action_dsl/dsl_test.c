@@ -1,5 +1,5 @@
 /*
-  test destructure-rule-action, destructure-dsl-string, parse-pct-var
+  test dsl:action->mibl, destructure-dsl-string, parse-pct-var
  */
 
 #include <libgen.h>
@@ -60,18 +60,23 @@ s7_pointer expected;
     /* free(s); */
 
 /* **************************************************************** */
-/* fn: destructure-rule-action */
+/* fn: dsl:action->mibl */
 /* e.g. for (action (foo args ...))
-   arg passed to destructure-rule-action: ((foo args ...))
+   arg passed to dsl:action->mibl: ((foo args ...))
 */
 
 /* bash cases: string/sym args; embedded pctvars; */
+
+/* THE PROBLEM: we need to identify the tool(s) and may need to infer
+   i/o files. If the arg is a string, that may be impossible, since it
+   could contain an entire, possibly complex script. */
+/* So we can only rely on heuristics: the first arg is likely to be the tool. */
 void test_bash(void) {
     /* TEST_IGNORE(); */
-    char *fn = "destructure-rule-action";
+    char *fn = "dsl:action->mibl";
 
     sexp_action = "'((bash \"diff -a %{deps}\"))";
-    sexp_expected = "'((:shell . bash) (:cmd-lines (\"diff\" \"-a\" (% . deps))))";
+    sexp_expected = "'((:tool . \"diff\") (:shell . bash) (:cmd-lines (:line \"diff\" \"-a\" (% . deps))))";
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
@@ -80,7 +85,7 @@ void test_bash(void) {
 
     /* internal whitespace */
     sexp_action = "'((bash   \"diff   -a   %{deps}\"))";
-    sexp_expected = "'((:shell . bash) (:cmd-lines (\"diff\" \"-a\" (% . deps))))";
+    sexp_expected = "'((:tool . \"diff\") (:shell . bash) (:cmd-lines (:line \"diff\" \"-a\" (% . deps))))";
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
@@ -88,8 +93,8 @@ void test_bash(void) {
     TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
 
     /* split cmd into multiple lines */
-    sexp_action = "'((bash \"diff -a\" \"%{deps} foo\"))";
-    sexp_expected = "'((:shell . bash) (:cmd-lines (\"diff\" \"-a\") ((% . deps) \"foo\")))";
+    sexp_action = "'((bash \"diff -a\" \n \"%{deps} foo\"))";
+    sexp_expected = "'((:tool . \"diff\") (:shell . bash) (:cmd-lines (:line \"diff\" \"-a\") (:line (% . deps) \"foo\")))";
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
@@ -114,7 +119,7 @@ void test_bash(void) {
     TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
 
     sexp_action = "'((bash \"%{first_dep} > ffi_generated.ml\"))";
-    sexp_expected = "'((:shell . bash) (:cmd-lines ((% . first_dep) \">\" \"ffi_generated.ml\")))";
+    sexp_expected = "'((:tool (% . first_dep)) (:shell . bash) (:cmd-lines (:line (% . first_dep) \">\" \"ffi_generated.ml\")))";
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
@@ -123,7 +128,7 @@ void test_bash(void) {
 
     /* add a flag */
     sexp_action = "'((bash \"%{first_dep} -ml > ffi_generated.ml\"))";
-    sexp_expected = "'((:shell . bash) (:cmd-lines ((% . first_dep) \"-ml\" \">\" \"ffi_generated.ml\")))";
+    sexp_expected = "'((:tool (% . first_dep)) (:shell . bash) (:cmd-lines (:line (% . first_dep) \"-ml\" \">\" \"ffi_generated.ml\")))";
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
@@ -133,7 +138,7 @@ void test_bash(void) {
 
     /* pctvar w/prefix */
     sexp_action = "'((bash \"./%{first_dep} > %{targets}\"))";
-    sexp_expected = "'((:shell . bash) (:cmd-lines ((:string \"./\" (% . first_dep)) \">\" (% . targets))))";
+    sexp_expected = "'((:tool (:string \"./\" (% . first_dep))) (:shell . bash) (:cmd-lines (:line (:string \"./\" (% . first_dep)) \">\" (% . targets))))";
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
@@ -143,7 +148,7 @@ void test_bash(void) {
 
     /* asterisk */
     sexp_action = "'((bash \"%{bin:shellcheck} -x *.sh\"))";
-    sexp_expected = "'((:shell . bash) (:cmd-lines ((% bin shellcheck) \"-x\" \"*.sh\")))";
+    sexp_expected = "'((:tool (% bin shellcheck)) (:shell . bash) (:cmd-lines (:line (% bin shellcheck) \"-x\" \"*.sh\")))";
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
@@ -200,38 +205,55 @@ void test_bash_script(void) {
 }
 
 void test_progn(void) {
-    TEST_IGNORE();
+    /* TEST_IGNORE(); */
+    char *fn = "dsl:action->mibl";
 
-    char *fn = "destructure-rule-action";
-    sexp_action = "'((bash \"# shell script here...\"))";
-    sexp_expected = "'((:tool . bash) (:args (:string \"# shell script here...\")))";
+    /* (action (progn)) */
+    sexp_action = "'((progn))";
+    sexp_expected = "'(:cmds ())";
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
     expected = s7_eval_c_string(s7, sexp_expected);
     TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
 
-    sexp_action = "'((bash foo -bar baz 99))";
-    sexp_expected = "'((:tool . bash) (:args (:string \"foo\") (:string \"-bar\") (:string \"baz\") 99))";
+    /*  */
+    sexp_action = "'((progn (echo \"foo\") (diff a.txt b.txt) (diff ../c.txt d.txt) (echo \"bar\")))";
+
+    sexp_expected = "'(:cmds ((:cmd (:shell . sh) (:tool . echo) (:args \"foo\")) (:cmd (:shell . sh) (:tool . diff) (:args a.txt b.txt)) (:cmd (:shell . sh) (:tool . diff) (:args ../c.txt d.txt)) (:cmd (:shell . sh) (:tool . echo) (:args \"bar\"))))";
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
+    expected = s7_eval_c_string(s7, sexp_expected);
+    TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
 
-    /* s7_flush_output_port(s7, s7_current_output_port(s7)); */
-    /* char *s = s7_object_to_c_string(s7, actual); */
-    /* log_debug("result: %s", s); */
-    /* free(s); */
+    /* redundant embedded progn */
+    sexp_action = "'((progn \
+    (echo \"Bootstrap check: comparing the stage 2 and stage 3 parsers...\n\") \
+    (progn \
+      (diff parser.stage2.ml parser.stage3.ml) \
+      (diff ../stage2/parser.mli parser.mli) \
+    ) \
+    (echo \"Bootstrap check: done.\n\") \
+  ))";
+    sexp_expected = "'(:cmds ((:cmd (:shell . sh) (:tool . echo) (:args \"Bootstrap check: comparing the stage 2 and stage 3 parsers...\n\")) (:cmd (:shell . sh) (:tool . diff) (:args parser.stage2.ml parser.stage3.ml)) (:cmd (:shell . sh) (:tool . diff) (:args ../stage2/parser.mli parser.mli)) (:cmd (:shell . sh) (:tool . echo) (:args \"Bootstrap check: done.\n\"))))";
+    utstring_renew(sexp);
+    utstring_printf(sexp, "(%s %s)", fn, sexp_action);
+    actual = s7_eval_c_string(s7, utstring_body(sexp));
+    expected = s7_eval_c_string(s7, sexp_expected);
+    TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
 
+    /* redundant embedded progn */
+    sexp_action = "'((with-stdout-to %{targets} (progn (run ../config/gen_services.exe %{deps}) (cat uri_services_raw.ml))))";
+    sexp_expected = "'((:stdout (% . targets)) (:cmds ((:cmd (:tool ../config/gen_services.exe) (:args (% . deps))) (:cmd (:shell . sh) (:tool . cat) (:args uri_services_raw.ml)))))";
+
+    utstring_renew(sexp);
+    utstring_printf(sexp, "(%s %s)", fn, sexp_action);
+    actual = s7_eval_c_string(s7, utstring_body(sexp));
     expected = s7_eval_c_string(s7, sexp_expected);
     TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
 
     /*
-
-      (action (progn))
-
- (action  (with-stdout-to %{targets}
-             (progn (run ../config/gen_services.exe %{deps})
-                    (cat uri_services_raw.ml)))))
 
 bisect_ppx:
 (rule
@@ -279,16 +301,6 @@ menhir:
     )
   )
 )
-    (action (progn
-    (echo "Bootstrap check: comparing the stage 2 and stage 3 parsers...\n")
-    (progn
-      (diff parser.stage2.ml parser.stage3.ml)
-      (diff ../stage2/parser.mli parser.mli)
-    )
-    (echo "Bootstrap check: done.\n")
-  ))
-
-(rule (alias test) (deps (alias bootstrap)) (action (progn)))
 
 (action
   (chdir
@@ -301,8 +313,8 @@ menhir:
 }
 
 void test_base_with_stdout_to(void) {
-    TEST_IGNORE();
-    char *fn = "destructure-rule-action";
+    /* TEST_IGNORE(); */
+    char *fn = "dsl:action->mibl";
 
     /* directive arg: symbol */
     sexp_action =     "'((with-stdout-to output.txt (cat %{deps})))";
@@ -369,14 +381,13 @@ void test_base_with_stdout_to(void) {
 }
 
 void test_base_with_stderr_to(void) {
-    TEST_IGNORE();
-    char *fn = "destructure-rule-action";
+    /* TEST_IGNORE(); */
+    char *fn = "dsl:action->mibl";
 
     /* directive arg: symbol */
-    sexp_action =     "'((with-stderr-to stderr.txt (run %{exe:foo})))";
-    sexp_expected = "'((:stderr stderr.txt) (:cmd (:tool . (% exe foo)) (:args)))";
-    // NB: no (:shell) entry
-    /* sexp_expected = "'((:stderr stderr.txt) (:cmd (:tool . run) (:args (% exe foo))))"; */
+    sexp_action   = "'((with-stderr-to stderr.txt (run %{exe:foo})))";
+    sexp_expected = "'((:stderr stderr.txt) (:cmd (:tool (% exe foo)) (:args)))";
+    // NB: no (:shell) entry for 'run'
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
@@ -385,7 +396,7 @@ void test_base_with_stderr_to(void) {
 
     /* directive arg: string */
     sexp_action =     "'((with-stderr-to \"stderr.txt\" (run %{exe:foo})))";
-    sexp_expected = "'((:stderr \"stderr.txt\") (:cmd (:tool . run) (:args (% exe foo))))";
+    sexp_expected = "'((:stderr \"stderr.txt\") (:cmd (:tool (% exe foo)) (:args)))";
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
@@ -394,7 +405,7 @@ void test_base_with_stderr_to(void) {
 
     /* directive arg: pctvar sym */
     sexp_action =     "'((with-stderr-to %{stderr} (run %{exe:foo})))";
-    sexp_expected = "'((:stderr (% . stderr)) (:cmd (:tool . run) (:args (% exe foo))))";
+    sexp_expected = "'((:stderr (% . stderr)) (:cmd (:tool (% exe foo)) (:args)))";
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
@@ -403,7 +414,8 @@ void test_base_with_stderr_to(void) {
 
     /* directive arg: pctvar string - ignored, redirect is always to a file */
     sexp_action =     "'((with-stderr-to \"%{stderr}\" (run %{exe:foo})))";
-    sexp_expected = "'((:stderr (% . stderr)) (:cmd (:tool . run) (:args (% exe foo))))";
+    sexp_expected = "'((:stderr (% . stderr)) (:cmd (:tool (% exe foo)) (:args)))";
+                      /* ((:stderr (% . stderr)) (:cmd (:tool . run) (:args (% exe foo))))"; */
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
@@ -412,7 +424,7 @@ void test_base_with_stderr_to(void) {
 
     /* directive arg: pctvar embedded in string: pfx */
     sexp_action =     "'((with-stderr-to \"foo/%{stderr}\" (run %{exe:foo})))";
-    sexp_expected = "'((:stderr (:string \"foo/\" (% . stderr))) (:cmd (:tool . run) (:args (% exe foo))))";
+    sexp_expected = "'((:stderr (:string \"foo/\" (% . stderr))) (:cmd (:tool (% exe foo)) (:args)))";
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
@@ -421,7 +433,7 @@ void test_base_with_stderr_to(void) {
 
     /* directive arg: pctvar embedded in string: sfx */
     sexp_action =     "'((with-stderr-to \"%{outdir}/stderr.txt\" (run %{exe:foo})))";
-    sexp_expected = "'((:stderr (:string (% . outdir) \"/stderr.txt\")) (:cmd (:tool . run) (:args (% exe foo))))";
+    sexp_expected = "'((:stderr (:string (% . outdir) \"/stderr.txt\")) (:cmd (:tool (% exe foo)) (:args)))";
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
@@ -430,7 +442,7 @@ void test_base_with_stderr_to(void) {
 
     /* directive arg: pctvar embedded in string: pfx, sfx */
     sexp_action =     "'((with-stderr-to \"foo/%{outdir}/stderr.txt\" (run %{exe:foo})))";
-    sexp_expected = "'((:stderr (:string \"foo/\" (% . outdir) \"/stderr.txt\")) (:cmd (:tool . run) (:args (% exe foo))))";
+    sexp_expected = "'((:stderr (:string \"foo/\" (% . outdir) \"/stderr.txt\")) (:cmd (:tool  (% exe foo)) (:args)))";
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
@@ -440,9 +452,9 @@ void test_base_with_stderr_to(void) {
 
 /* more recursion: (with_stdout_to foo (run (bash bar.sh ...))) etc. */
 void test_run_with_stdout_to(void) {
-    TEST_IGNORE();
+    /* TEST_IGNORE(); */
 
-    char *fn = "destructure-rule-action";
+    char *fn = "dsl:action->mibl";
     /*
     (action (with-stdout-to %{target} (run ../src/test.exe --kind merge .)))
     (with-stdout-to %{targets} (run %{dep:gen_primitives.sh}))))
@@ -473,8 +485,8 @@ void test_run_with_stdout_to(void) {
 }
 
 void test_action_run(void) {
-    TEST_IGNORE();
-    char *fn = "destructure-rule-action";
+    /* TEST_IGNORE(); */
+    char *fn = "dsl:action->mibl";
 
     /*
 
@@ -573,17 +585,10 @@ ounit:
     */
 
     sexp_action = "'((with-stdout-to %{targets} (run bash myscript.sh %{inputs})))";
-                       /* ;; %{libexec:myscript.sh} */
-
-    sexp_expected = "'((:stdout output.txt) (:cmd (:shell . bash) (:tool . myscript.sh ) (:args (% . deps))))";
+    sexp_expected = "'((:stdout (% . targets)) (:cmd (:shell . bash) (:tool . myscript.sh) (:args (% . inputs))))";
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
-    s7_flush_output_port(s7, s7_current_output_port(s7));
-    char *s = s7_object_to_c_string(s7, actual);
-    log_debug("result: %s", s);
-    free(s);
-
     expected = s7_eval_c_string(s7, sexp_expected);
     TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
 }
@@ -591,9 +596,11 @@ ounit:
 /* **************************************************************** */
 /* fn: parse-pct-var */
 void test_pctvars(void) {
-    TEST_IGNORE();
+    /* TEST_IGNORE(); */
+    char *fn = "parse-pct-var";
+
     utstring_renew(sexp);
-    utstring_printf(sexp, "%s", "(parse-pct-var \"%{foo}\")");
+    utstring_printf(sexp, "(%s %s)", fn,  "\"%{foo}\"");
     actual = s7_eval_c_string(s7, utstring_body(sexp));
     expected = s7_eval_c_string(s7, "'(:string (% . foo))");
     TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
@@ -622,37 +629,55 @@ void test_pctvars(void) {
 /* **************************************************************** */
 /* fn: destructure-dsl-string */
 void test_embedded_pctvars(void) {
-    TEST_IGNORE();
+    /* TEST_IGNORE(); */
+    char *fn = "dsl:string->lines";
+
     utstring_renew(sexp);
-    utstring_printf(sexp, "%s", "(destructure-dsl-string \"foo/%{a} bar/%{b}/baz\")");
+    utstring_printf(sexp, "(%s %s)", fn, "\"foo/%{a} bar/%{b}/baz\"");
     /* utstring_printf(sexp, "%s", "(destructure-dsl-string \"%{a}\")"); */
     actual = s7_eval_c_string(s7, utstring_body(sexp));
-    char *s = s7_object_to_c_string(s7, actual);
-    log_debug("result: %s", s);
-    free(s);
-
-    expected = s7_eval_c_string(s7, "'()");
-    /* TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected)); */
+    expected = s7_eval_c_string(s7, "'(:line (:string \"foo/\" (% . a)) (:string \"bar/\" (% . b) \"/baz\"))");
+    TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
 }
 
 void test_dsl_string(void) {
-    TEST_IGNORE();
-    char *s = "\
-   \ndiff -u --label test.output --label test-partitions.output test.output test-partitions.output > diff-with-without-partitions || true\
-   \n" ;
+    /* TEST_IGNORE(); */
+    char *fn = "dsl:string->lines";
+
+    /* one line */
+    char *cmd = "\"diff -u --label test.output --label test-partitions.output test.output test-partitions.output > diff-with-without-partitions || true\"";
     utstring_renew(sexp);
-    utstring_printf(sexp, "(destructure-dsl-string \"%s\")", s);
+    utstring_printf(sexp, "(%s %s)", fn, cmd);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
-    s = s7_object_to_c_string(s7, actual);
-    log_debug("result:   '%s'", s);
-    free(s);
-
     expected = s7_eval_c_string(s7,
-                                "'(\"diff -u --label test.output --label test-partitions.output test.output test-partitions.output > diff-with-without-partitions || true\")") ;
-    s = s7_object_to_c_string(s7, expected);
-    log_debug("expected: '%s'", s);
-    free(s);
+          "'(:line \"diff\" \"-u\" \"--label\" \"test.output\" \"--label\" \"test-partitions.output\" \"test.output\" \"test-partitions.output\" \">\" \"diff-with-without-partitions\" \"||\" \"true\")");
 
+    TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
+
+    /* broken into two lines */
+    cmd = "\"diff -u --label test.output \n \
+ --label test-partitions.output test.output test-partitions.output > diff-with-without-partitions || true\"";
+    utstring_renew(sexp);
+    utstring_printf(sexp, "(%s %s)", fn, cmd);
+    actual = s7_eval_c_string(s7, utstring_body(sexp));
+    expected = s7_eval_c_string(s7,
+                                "'((:line \"diff\" \"-u\" \"--label\" \"test.output\") (:line \"--label\" \"test-partitions.output\" \"test.output\" \"test-partitions.output\" \">\" \"diff-with-without-partitions\" \"||\" \"true\"))");
+
+    TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
+
+    /* many lines */
+    cmd = "\"diff -u\n --label test.output\n --label test-partitions.output\n test.output test-partitions.output\n >\n diff-with-without-partitions\n || true\"";
+    utstring_renew(sexp);
+    utstring_printf(sexp, "(%s %s)", fn, cmd);
+    actual = s7_eval_c_string(s7, utstring_body(sexp));
+    expected = s7_eval_c_string(s7,
+                                "'((:line \"diff\" \"-u\")"
+                                "(:line \"--label\" \"test.output\")"
+                                "(:line \"--label\" \"test-partitions.output\")"
+                                "(:line \"test.output\" \"test-partitions.output\")"
+                                "(:line \">\")"
+                                "(:line \"diff-with-without-partitions\")"
+                                "(:line \"||\" \"true\"))");
     TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
 }
 
@@ -689,6 +714,7 @@ enum OPTS {
 
     FLAG_EMIT_PARSETREE,        /* config load_project to emit PARSETREE.mibl */
 
+    FLAG_SHOW_CONFIG,
     FLAG_TRACE,
     FLAG_VERBOSE,
 
@@ -716,6 +742,8 @@ static struct option options[] = {
                               .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_EMIT_PARSETREE] = {.long_name="emit-parsetree",
                               .flags=GOPT_ARGUMENT_FORBIDDEN},
+    [FLAG_SHOW_CONFIG] = {.long_name="show-config",
+                          .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_TRACE] = {.long_name="trace",.short_name='t',
                     .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_VERBOSE] = {.long_name="verbose",.short_name='v',
@@ -733,6 +761,9 @@ void _set_options(struct option options[])
         _print_usage();
         exit(EXIT_SUCCESS);
     }
+
+    /* if (options[FLAG_SHOW_CONFIG].count) */
+    /*     mibl_s7_set_flag("*mibl-show-config*", true); */
 
     if (options[FLAG_VERBOSE].count) {
         log_info("verbose ct: %d", options[FLAG_VERBOSE].count);
@@ -912,6 +943,16 @@ int main(int argc, char **argv)
     mibl_s7_init2(NULL, // options[OPT_MAIN].argument,
                   NULL); //options[OPT_WS].argument);
 
+    // WARNING: when run under bazel test, user miblrc (XDG_DATA_HOME/.local/share) not accessible
+
+     if (options[FLAG_SHOW_CONFIG].count) {
+         log_debug("SHOW CONFIG");
+        show_bazel_config();
+        show_mibl_config();
+        show_s7_config();
+        exit(EXIT_SUCCESS);
+     }
+
     /* struct mibl_config_s *mibl_config = mibl_s7_init(NULL, /\* script dir *\/ */
     /*                                                  NULL); /\* ws *\/ */
     /* (void)mibl_config; */
@@ -937,23 +978,14 @@ int main(int argc, char **argv)
     utstring_new(sexp);
 
     UNITY_BEGIN();
-    /* parse-pct-vars */
     RUN_TEST(test_pctvars);
     RUN_TEST(test_embedded_pctvars);
-
-    /* destructure-rule-action */
+    RUN_TEST(test_progn);
     RUN_TEST(test_bash);
-    RUN_TEST(test_bash_script);
-
-    /* stdio redirection */
     RUN_TEST(test_base_with_stdout_to);
     RUN_TEST(test_base_with_stderr_to);
-
-
-    /* action: run "to execute a program" */
-    RUN_TEST(test_run_with_stdout_to); /* more recursion */
-
-   /* destructure-dsl-string */
+    RUN_TEST(test_action_run);
+    RUN_TEST(test_run_with_stdout_to);
     RUN_TEST(test_dsl_string);
 
     utstring_free(sexp);
