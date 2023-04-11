@@ -192,6 +192,8 @@
              (rule-alist (cdr stanza))
              (mibl-trace-let "rule-alist" rule-alist)
 
+             ;;FIXME: 'action optional, 'progn may also be used
+             ;; e.g. menhir/src/dune
              (action (destructure-rule-action (assoc-val 'action rule-alist)))
              (mibl-trace-let "rule action" action)
              (_ (error 'x "X"))

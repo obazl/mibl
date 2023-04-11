@@ -894,12 +894,25 @@
                       (format #t "~A: ~A~%" (red "UNHANDLED ACTION:") action)
                       stanza)))))
 
+;; action-list: (bash foo ...) or (bash "foo ...")
+;; if arg is a string, we have a problem - no reliable way to parse
+;; out the tool, or anything other than pctvars. In some cases the string
+;; will be an entire shell script, with function definitions etc.
 (define (destructure-bash-cmd action-list)
   (mibl-trace-entry "destructure-bash-cmd" action-list)
-  (let* ((subaction-list (cdr action-list))
-         (mibl-trace-let "subaction-list" subaction-list)
-         (subcmd (car subaction-list))
-         (subargs (cdr subaction-list)))
-    (mibl-trace "subcmd" subcmd)
-    (mibl-trace "subargs" subargs)
-    ))
+  (let* ((subaction-list (cdr action-list)))
+    (mibl-trace "subaction-list" subaction-list)
+    (if (string? (car subaction-list))
+        ;; FIXME: what if subaction-list is list of strings?
+        (let* ((segs (string-split (car subaction-list) #\space))
+               (xlines (map dsl:string->lines subaction-list)))
+          (mibl-trace "segs" segs)
+          (mibl-trace "expanded lines" xlines)
+          `((:shell . bash) (:cmd-lines ,@xlines))) ;; subaction-list)))
+        (let ((subcmd (car subaction-list))
+              (subargs (cdr subaction-list)))
+          (mibl-trace "bash subcmd" subcmd)
+          (mibl-trace "bash subargs" subargs)
+          (let ((sargs (map dsl:string->lines subargs)))
+            (mibl-trace "bash sargs" sargs)
+            `((:shell . bash) (:tool . ,subcmd) (:args ,@sargs)))))))

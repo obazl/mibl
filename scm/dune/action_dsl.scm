@@ -3,6 +3,8 @@
 
 (set! *mibl-debug-s7* #t)
 
+;; variables (pct-vars) - see https://dune.readthedocs.io/en/stable/concepts.html#variables
+
 ;; string args to e.g. echo may contain percent vars.
 ;; e.g. (echo "let cppo_version = \"%{version:cppo}\"")
 
@@ -12,18 +14,27 @@
 ;; e.g. (:string "let cppo_version = \"" (% (:version . cppo)) "\"")
 ;; client can then resolve and join.
 
-(define (string-parse-pct-vars s)
+(define (string-parse-pct-vars s) ;;FIXME obsolete, use dsl:string->lines
   (mibl-trace-entry "string-parse-pct-vars" s)
   ;; 1. parse out the pct-vars
   ;; 2. resolve them if possible
   ;; 3. construct result
   '((:string "let test_var = \"" (:% (:FIXME . PCTVARS)) "\"")))
 
-;; returns (sym pfx sfx)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define pct-regex "(%{[^}]+})")
+(define rgx (regex.make))
+(define rx (regcomp rgx pct-regex REG_EXTENDED))
+(define match-ct 2)
+
+;; input: string or sym of form %{<str>}
+;; only called if string known to be a pct var
+;; if unsure call dsl:expand-word
+;; returns (% pfx sfx) or (% str)
 (define (parse-pct-var arg)
   (mibl-trace-entry "parse-pct-var" arg)
   (mibl-trace "arg type" (type-of arg))
-  (let* ((arg-str (format #f "~A" arg)))
+  (let ((arg-str (format #f "~A" arg)))
     (if (string-prefix? "%{" arg-str)
         (let* ((len (length arg-str))
                (vstr (substring arg-str 2 (- len 1)))
@@ -44,6 +55,83 @@
                 )))
         ;; else not a pct-var
         arg)))
+
+(define (dsl:expand-word arg)
+  (mibl-trace-entry "dsl:expand-word" arg)
+  (mibl-trace "arg type" (type-of arg))
+  (let* ((arg-type (type-of arg))
+         (arg-str (format #f "~A" arg)))
+    (let recur ((s arg-str)
+                (segs '()))
+      (mibl-trace "recur on string" s)
+      (mibl-trace "len string" (length s))
+      (mibl-trace "segs" segs)
+      (if (= 0 (length s))
+          (case arg-type
+            ((string?)
+             (mibl-trace "STRING arg" arg)
+             (let ((x (map (lambda (seg)
+                             (if (pair? seg)
+                                 (if (eq? :string (car seg))
+                                     (cadr seg)
+                                     seg)
+                                 seg))
+                           segs)))
+               (mibl-trace "X" x)
+               (if (= 1 (length x)) (car x) `(:string ,@x))))
+            ((symbol?)
+             (mibl-trace "SYM arg" arg)
+             `(:string ,@segs))
+            ((integer? number?)
+             (mibl-trace "NUM arg" arg)
+             (if (< (length segs) 2)
+                 (car segs) segs))
+            (else
+             (error 'Bad-pctvar-arg
+                    (format #f "Bad pctvar arg type: ~A, ~A"
+                            arg (type-of arg)))))
+
+          (let ((slen (length s))
+                (res (regexec rgx s match-ct 0)))
+            (mibl-trace "slen" slen)
+            (mibl-trace "rgx res" res)
+            (if (int-vector? res)
+                ;; so, eo: start, end offset
+                ;; rm: rgx match offsets over whole
+                ;; match: matched subexp offsets
+                (let* ((rm-so (int-vector-ref res 0))
+                       (rm-eo (int-vector-ref res 1))
+                       (match-so (int-vector-ref res 2))
+                       (match-eo (int-vector-ref res 3)))
+                  (if (and (eq? 0 rm-so) (eq? 0 match-so)
+                           (eq? slen rm-eo) (eq? slen match-eo))
+                      (let* ((match (substring s match-so match-eo))
+                             (pct (parse-pct-var match))
+                             )
+                        (mibl-trace "match" match)
+                        (mibl-trace "expanded" pct)
+                        (mibl-trace "NO PFX/SFX" pct)
+                        ;; dsl-str type is string?, so parse-pct-var
+                        ;; will return (:string (% ...)). remove :string.
+                        ;; nothing left to recur on so return directly
+                        (if (truthy? segs)
+                            (append segs (cadr pct))
+                            (cadr pct)))
+                      ;; else we have a pfx and/or sfx, so we need to recur
+                      (let* ((pfx  (substring s 0 rm-so))
+                             (sfx  (substring s rm-eo))
+                             (match (substring s match-so match-eo))
+                             (pct (parse-pct-var match)))
+                        (mibl-trace "pfx" pfx)
+                        (mibl-trace "match" match)
+                        (mibl-trace "pct" pct)
+                        (mibl-trace "sfx" sfx)
+                        ;; (error 'b "b")
+                        (recur sfx (append segs (if (> match-so 0)
+                                                    (list pfx pct)
+                                                    pct))))))
+                ;; else no match: exit directly?
+                (recur "" (append segs (list s)))))))))
 
 (define (pct-var->keyword v)
   (if *mibl-debug-s7*
@@ -68,82 +156,41 @@
 ;; =>  ((% ocaml-config c_compiler) -c -I (% ocaml-config standard_library) -o (% . targets) (% . deps))
 
 
-(define (destructure-dsl-string dsl-str)
-  (mibl-trace-entry "destructure-dsl-string" dsl-str)
+;; input: string w/o newlines
+;; output: list of words
+(define (dsl:line->words dsl-line)
+  (mibl-trace-entry "dsl:line->words" dsl-line)
+  (mibl-trace "dsl-line type" (type-of dsl-line))
+  (let* ((slen (length dsl-line))
+         (str (string-trim '(#\space #\tab) dsl-line))
+         (words (string-split str #\space)))
+    (mibl-trace "words" words)
+    ;; (let ((x (map parse-pct-var words)))
+    (let ((x (map dsl:expand-word words)))
+      (mibl-trace "expanded words" x)
+      ;;(error 'words "words")
+      x)))
+
+;; ))
+;;      (else
+;;       (error 'Bad-dsl-str-arg
+;;              (format #f "bad dsl-str arg: ~A, ~A" dsl-str (type-of dsl-str))))))
+
+;; input: string
+;; output: list; input split on newlines, pctvars expanded
+;;(define (destructure-dsl-string dsl-str)
+(define (dsl:string->lines dsl-str)
+  (mibl-trace-entry "dsl:string->lines" dsl-str)
   (mibl-trace "dsl-str type" (type-of dsl-str))
   (case (type-of dsl-str)
-    ((number?) dsl-str)
+    ((integer? number?) dsl-str)
     ((symbol?) (parse-pct-var dsl-str))
     ((string?)
-     (let* ((slen (length dsl-str))
-            (str (string-trim '(#\space #\newline) dsl-str))
-            (segs (string-split str #\newline)))
-        (mibl-trace "str type" (type-of str))
-        (let* ((pct-regex "(%{[^}]+})")
-               (rgx (regex.make))
-               (rx (regcomp rgx pct-regex REG_EXTENDED))
-               (match-ct 2))
-          (let recur ((s str)
-                      (segs '()))
-            (mibl-trace "recur on s" s)
-            (mibl-trace "len s" (length s))
-            (mibl-trace "dsl-str segs" segs)
-            (if (= 0 (length s))
-                (case (type-of dsl-str)
-                  ((string?)
-                   (mibl-trace "STRING arg" dsl-str)
-                   (let ((x (map (lambda (seg)
-                                   (if (pair? seg)
-                                       (if (eq? :string (car seg))
-                                           (cadr seg)
-                                           seg)
-                                       seg))
-                                 segs)))
-                     (mibl-trace "X" x)
-                     (if (= 1 (length x)) (car x) `(:string ,@x))))
-                  ((symbol?)
-                   (mibl-trace "SYM arg" dsl-str)
-                   `(:string ,@segs))
-                  ((number?)
-                   (mibl-trace "NUM arg" dsl-str)
-                   (if (< (length segs) 2)
-                       (car segs) segs))
-                  (else
-                   (error 'Bad-dsl-str-type "Bad dsl str type")))
-                (let ((res (regexec rgx s match-ct 0)))
-                  (format #t "rgx res: ~A\n" res)
-                  (if (int-vector? res)
-                      ;; so, eo: start, end offset
-                      ;; rm: rgx match offsets over whole
-                      ;; match: matched subexp offsets
-                      (let* ((rm-so (int-vector-ref res 0))
-                             (rm-eo (int-vector-ref res 1))
-                             (match-so (int-vector-ref res 2))
-                             (match-eo (int-vector-ref res 3)))
-                        (if (and (eq? 0 rm-so) (eq? 0 match-so)
-                                 (eq? slen rm-eo) (eq? slen match-eo))
-                            (let* ((match (substring s match-so match-eo))
-                                   (pct (parse-pct-var match)))
-                              (mibl-trace "NO PFX/SFX" pct)
-                              ;; dsl-str type is string?, so parse-pct-var
-                              ;; will return (:string (% ...)). remove :string.
-                              ;; nothing left to recur on so return directly
-                              (append segs (cadr pct)))
-                            ;; else we have a pfx and/or sfx, so we need to recur
-                            (let* ((pfx  (substring s 0 rm-so))
-                                   (sfx  (substring s rm-eo))
-                                   (match (substring s match-so match-eo))
-                                   (pct (parse-pct-var match)))
-                              (mibl-trace "pfx" pfx)
-                              (mibl-trace "match" match)
-                              (mibl-trace "pct" pct)
-                              (mibl-trace "sfx" sfx)
-                              (recur sfx (append segs (if (> match-so 0)
-                                                          (list pfx pct)
-                                                          (list pct)))))))
-                      (recur "" (append segs (list s))))))))))
-     (else
-      (error 'Bad-dsl-str-arg "bad dsl-str arg"))))
+     (let* ((lines (string-split dsl-str #\newline))
+            (expanded-words (map dsl:line->words lines)))
+       (mibl-trace "lines" lines)
+       (mibl-trace "expanded words" expanded-words)
+       (car expanded-words)))))
 
 ;; directives take string args
 (define (destructure-directive-arg dsl-arg)
@@ -153,7 +200,7 @@
     ((string?)
      (let* ((str (string-trim '(#\space #\newline) dsl-arg)))
        ;; may have embedded pctvar, e.g. "foo/%{bar}"
-       (destructure-dsl-string str)))
+       (dsl:string->lines str)))
     ((symbol?) (parse-pct-var dsl-arg))
     ((number?) dsl-arg)
     (else
@@ -197,24 +244,37 @@
                           ;; else (action tool ...) - illegal but may happen?
                           (car action-list)))
          (mibl-trace-let "primary cmd" primary-cmd))
-    (if (member primary-cmd `(cat cmp copy copy# diff diff? echo ;; etc.
-                                  bash system run dynamic-run))
+    (if (member primary-cmd `(cat cmp copy copy# diff diff? echo)) ;; etc.
+                                  ;; bash system run dynamic-run))
         (begin
           (mibl-trace "direct cmd" primary-cmd)
           (let* ((-args (cdr action-list))
-                 (args (map destructure-dsl-string -args)))
+                 (args (map dsl:string->lines -args)))
             (mibl-trace "args" args)
-            `((:tool . ,primary-cmd) (:args ,@args))))
+            `((:shell . sh) (:tool . ,primary-cmd) (:args ,@args))))
         (begin
           (mibl-trace "cmd directive" primary-cmd)
           (case primary-cmd
-            ;; ((bash)
-            ;;  (destructure-bash-cmd action-list)
-            ;;  )
-            ;; ((run)
-            ;;  )
-            ;; ((system)
-            ;;  )
+            ((bash)
+             (destructure-bash-cmd action-list)
+             )
+
+            ((run)
+             (if (eq? 'bash (car (cdr action-list)))
+                 (destructure-bash-cmd (cdr action-list))
+                 (let* ((-args (cdr action-list))
+                        (args (map dsl:string->lines -args))
+                        (secondary-cmd (list (car args)))
+                        (secondary-args (cdr args)))
+                   (mibl-trace "run args" -args)
+                   (mibl-trace "destructured run args" args)
+                   (mibl-trace "secondary cmd" secondary-cmd)
+                   (mibl-trace "secondary args" secondary-args)
+                   ;; (error 'x "X")
+                   `((:tool . ,secondary-cmd) (:args ,@secondary-args)))))
+
+            ((system)
+             )
             ((chdir) ;; (chdir <dir> <DSL>)
              ;;,normalize-action-chdir-dsl
              )
@@ -258,13 +318,24 @@
             ((with-outputs-to)
              ;; ,normalize-action-with-outputs-to-dsl
              )
+
             ((with-stderr-to)
-             ;; ,normalize-action-with-stderr-to-dsl
-             )
-            ((with-stdout-to)
-             ;; ,normalize-action-with-outputs-to-dsl
-             ;; ,normalize-action-with-stdout-to-dsl)
-             ;; e.g. (with-stdout-to "%{targets}" (cat "%{deps}"))
+             (let* ((stderr (let ((arg (cadr action-list)))
+                              (mibl-trace "arg" arg)
+                              (mibl-trace "arg t" (type-of arg))
+                              (destructure-directive-arg arg)))
+                    (mibl-trace-let "STDERR" stderr)
+                    (subaction-list (cddr action-list)))
+               (mibl-trace "Stderr" stderr)
+               (mibl-trace "subaction-list" subaction-list)
+               ;; recur
+               (let ((subber (destructure-rule-action subaction-list)))
+                 (mibl-trace "subber" subber)
+                 ;; always make stdout fname a sym
+                 `((:stderr ,stderr)
+                   (:cmd ,@subber)))))
+
+            ((with-stdout-to) ;; (with-stdout-to "%{targets}" (cat "%{deps}"))
              (let* ((stdout (let ((fd (cadr action-list)))
                               ;; fd: %{targets}
                               (mibl-trace "fd" fd)

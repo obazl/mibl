@@ -181,15 +181,15 @@ void init_error_handlers_dune(void)
 
     /* read-error-hook evidently only catches problems with # names
        and \ escapes, not general read errors. */
-    s7_define_function(s7, "read-error-handler",
-                       _s7_read_error_handler, 1, 0, false,
-                       "our read error handler");
+    s7_define_function(s7, "read-error-handler", _s7_read_error_handler,
+                       1, 0, false, "our read-error handler");
 
-    /* s7_eval_c_string(s7, "(set! (hook-functions *read-error-hook*) \n\ */
-    /*                         (list (lambda (hook) \n\ */
-    /*                                 (read-error-handler \n\ */
-    /*                                   (apply format #f (hook 'data))) \n \ */
-    /*                                 (set! (hook 'result) 'READ-error))))"); */
+    s7_eval_c_string(s7, "(set! (hook-functions *read-error-hook*) \n\
+                            (list (lambda (hook) \n\
+                                    (format #t \"HOOK data: ~A\n\" (hook 'data)) \n\
+                                    (set! (hook 'result) (hook 'data)))))");
+                                      /* (apply format #f (hook 'data))) \n \ */
+
 }
 
 s7_pointer g_mibl_read_thunk(s7_scheme *s7, s7_pointer args) {

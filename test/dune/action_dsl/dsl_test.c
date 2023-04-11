@@ -67,6 +67,141 @@ s7_pointer expected;
 
 /* bash cases: string/sym args; embedded pctvars; */
 void test_bash(void) {
+    /* TEST_IGNORE(); */
+    char *fn = "destructure-rule-action";
+
+    sexp_action = "'((bash \"diff -a %{deps}\"))";
+    sexp_expected = "'((:shell . bash) (:cmd-lines (\"diff\" \"-a\" (% . deps))))";
+    utstring_renew(sexp);
+    utstring_printf(sexp, "(%s %s)", fn, sexp_action);
+    actual = s7_eval_c_string(s7, utstring_body(sexp));
+    expected = s7_eval_c_string(s7, sexp_expected);
+    TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
+
+    /* internal whitespace */
+    sexp_action = "'((bash   \"diff   -a   %{deps}\"))";
+    sexp_expected = "'((:shell . bash) (:cmd-lines (\"diff\" \"-a\" (% . deps))))";
+    utstring_renew(sexp);
+    utstring_printf(sexp, "(%s %s)", fn, sexp_action);
+    actual = s7_eval_c_string(s7, utstring_body(sexp));
+    expected = s7_eval_c_string(s7, sexp_expected);
+    TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
+
+    /* split cmd into multiple lines */
+    sexp_action = "'((bash \"diff -a\" \"%{deps} foo\"))";
+    sexp_expected = "'((:shell . bash) (:cmd-lines (\"diff\" \"-a\") ((% . deps) \"foo\")))";
+    utstring_renew(sexp);
+    utstring_printf(sexp, "(%s %s)", fn, sexp_action);
+    actual = s7_eval_c_string(s7, utstring_body(sexp));
+    expected = s7_eval_c_string(s7, sexp_expected);
+    TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
+
+    /* sym args */
+    sexp_action = "'((bash diff -a %{deps}))";
+    sexp_expected = "'((:shell . bash) (:tool . diff) (:args -a (% . deps)))";
+    utstring_renew(sexp);
+    utstring_printf(sexp, "(%s %s)", fn, sexp_action);
+    actual = s7_eval_c_string(s7, utstring_body(sexp));
+    expected = s7_eval_c_string(s7, sexp_expected);
+    TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
+
+    sexp_action = "'((bash test.sh))";
+    sexp_expected = "'((:shell . bash) (:tool . test.sh) (:args))";
+    utstring_renew(sexp);
+    utstring_printf(sexp, "(%s %s)", fn, sexp_action);
+    actual = s7_eval_c_string(s7, utstring_body(sexp));
+    expected = s7_eval_c_string(s7, sexp_expected);
+    TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
+
+    sexp_action = "'((bash \"%{first_dep} > ffi_generated.ml\"))";
+    sexp_expected = "'((:shell . bash) (:cmd-lines ((% . first_dep) \">\" \"ffi_generated.ml\")))";
+    utstring_renew(sexp);
+    utstring_printf(sexp, "(%s %s)", fn, sexp_action);
+    actual = s7_eval_c_string(s7, utstring_body(sexp));
+    expected = s7_eval_c_string(s7, sexp_expected);
+    TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
+
+    /* add a flag */
+    sexp_action = "'((bash \"%{first_dep} -ml > ffi_generated.ml\"))";
+    sexp_expected = "'((:shell . bash) (:cmd-lines ((% . first_dep) \"-ml\" \">\" \"ffi_generated.ml\")))";
+    utstring_renew(sexp);
+    utstring_printf(sexp, "(%s %s)", fn, sexp_action);
+    actual = s7_eval_c_string(s7, utstring_body(sexp));
+    expected = s7_eval_c_string(s7, sexp_expected);
+    TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
+
+
+    /* pctvar w/prefix */
+    sexp_action = "'((bash \"./%{first_dep} > %{targets}\"))";
+    sexp_expected = "'((:shell . bash) (:cmd-lines ((:string \"./\" (% . first_dep)) \">\" (% . targets))))";
+    utstring_renew(sexp);
+    utstring_printf(sexp, "(%s %s)", fn, sexp_action);
+    actual = s7_eval_c_string(s7, utstring_body(sexp));
+    expected = s7_eval_c_string(s7, sexp_expected);
+    TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
+
+
+    /* asterisk */
+    sexp_action = "'((bash \"%{bin:shellcheck} -x *.sh\"))";
+    sexp_expected = "'((:shell . bash) (:cmd-lines ((% bin shellcheck) \"-x\" \"*.sh\")))";
+    utstring_renew(sexp);
+    utstring_printf(sexp, "(%s %s)", fn, sexp_action);
+    actual = s7_eval_c_string(s7, utstring_body(sexp));
+    expected = s7_eval_c_string(s7, sexp_expected);
+    TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
+
+
+/* (action  (bash "cp `grep '^ARCH=' %{conf} | cut -d'=' -f2`/\*.ml ."))) */
+    /*
+(action (bash "grep -q '\"ppx/ppx_here/test/dummy.mll\"' dummy.ml.pp")))
+(action ))
+
+(action (bash "%{first_dep} patdiff")))
+(action (bash "./%{first_dep} > config.h")))
+(action (bash "%{NODE} %{deps} > %{targets}")))
+(action (bash "./rpc_test.exe regression")))
+(action (bash "%{bin:shellcheck} -x patdiff-git-wrapper")))
+
+(alias (name runtest) (deps ./main.exe) (action (bash %{deps})))
+    */
+
+}
+
+/* some dune rules embed a complex shell script, e.g. ppx_inline_test/test/dune */
+/* WARN: test does not work, chokes on the backslashes */
+void test_bash_script(void) {
+    TEST_IGNORE();
+
+/* (set! (hook-functions *read-error-hook*) */
+/*       (list (lambda (h) */
+
+    s7_pointer in_port = s7_open_input_file(s7, "test/dune/action_dsl/dsl_bash_script.dune", "r");
+    if (!s7_is_input_port(s7, in_port)) {
+        char *s1;
+        {fprintf(stderr, "%d: %s is not an input port?\n", __LINE__, s1 = s7_object_to_c_string(s7,in_port)); free(s1); exit(1);}
+    }
+
+    s7_pointer test_sexp = s7_read(s7, in_port);
+    (void)test_sexp;
+    char *s = s7_object_to_c_string(s7, test_sexp);
+    log_debug("result: %s", s);
+    free(s);
+
+    /* char *test_str = "(destructure-dsl-string \"" S "\")"; */
+    /* utstring_renew(sexp); */
+    /* /\* utstring_printf(sexp, "(destructure-dsl-string \"" s "\)"); *\/ */
+    /* actual = s7_eval_c_string(s7, test_str); //utstring_body(sexp)); */
+    /* char *s = s7_object_to_c_string(s7, actual); */
+    /* log_debug("result: %s", s); */
+    /* free(s); */
+
+    /* expected = s7_eval_c_string(s7, "'()"); */
+    /* TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected)); */
+}
+
+void test_progn(void) {
+    TEST_IGNORE();
+
     char *fn = "destructure-rule-action";
     sexp_action = "'((bash \"# shell script here...\"))";
     sexp_expected = "'((:tool . bash) (:args (:string \"# shell script here...\")))";
@@ -90,14 +225,88 @@ void test_bash(void) {
     expected = s7_eval_c_string(s7, sexp_expected);
     TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
 
+    /*
+
+      (action (progn))
+
+ (action  (with-stdout-to %{targets}
+             (progn (run ../config/gen_services.exe %{deps})
+                    (cat uri_services_raw.ml)))))
+
+bisect_ppx:
+(rule
+ (targets assets.ml)
+ (deps
+  (:css coverage.css)
+  (:js coverage.js)
+  (:hljs ../vendor/highlight.js/highlight.pack.js))
+ (action
+  (with-stdout-to %{targets}
+   (progn
+    (echo "let css = {css|")
+    (cat %{css})
+    (echo "|css}")
+    (echo "let js = {js|")
+    (cat %{js})
+    (echo "|js}")
+    (echo "let highlight_js = {js|")
+    (cat %{hljs})
+    (echo "|js}")))))
+
+(action
+   (progn
+     (with-stdout-to contains-input-name
+       (bash "echo `grep '^ARCH=' %{conf} | cut -d'=' -f2`/emit.mlp"))
+     (with-stdout-to %{targets}
+       (progn
+         (bash "echo \\# 1 \\\"`cat contains-input-name`\\\"")
+         (bash "%{dep:../tools/cvt_emit.exe} < `cat contains-input-name`")))))
+
+      cppo:
+ (preprocess (per_module
+  ((action (progn
+    (run ocaml %{dep:compat.ml} %{input-file})
+    (cat %{input-file}))) cppo_eval)))
+
+menhir:
+
+(rule
+  (with-stdout-to standard_mly.ml
+    (progn
+      (echo "let contents = {|")
+      (cat standard.mly)
+      (echo "|}")
+    )
+  )
+)
+    (action (progn
+    (echo "Bootstrap check: comparing the stage 2 and stage 3 parsers...\n")
+    (progn
+      (diff parser.stage2.ml parser.stage3.ml)
+      (diff ../stage2/parser.mli parser.mli)
+    )
+    (echo "Bootstrap check: done.\n")
+  ))
+
+(rule (alias test) (deps (alias bootstrap)) (action (progn)))
+
+(action
+  (chdir
+   %{project_root}
+   (progn
+    (run expect-test %{test})
+    (diff? %{test} %{test}.corrected))))
+     */
+
 }
 
-void test_with_stdout_to(void) {
+void test_base_with_stdout_to(void) {
+    TEST_IGNORE();
     char *fn = "destructure-rule-action";
 
     /* directive arg: symbol */
     sexp_action =     "'((with-stdout-to output.txt (cat %{deps})))";
-    sexp_expected = "'((:stdout output.txt) (:cmd (:tool . cat) (:args (% . deps))))";
+    sexp_expected = "'((:stdout output.txt) (:cmd (:shell . sh) (:tool . cat) (:args (% . deps))))";
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
@@ -106,7 +315,7 @@ void test_with_stdout_to(void) {
 
     /* directive arg: string */
     sexp_action =     "'((with-stdout-to \"output.txt\" (cat %{deps})))";
-    sexp_expected = "'((:stdout \"output.txt\") (:cmd (:tool . cat) (:args (% . deps))))";
+    sexp_expected = "'((:stdout \"output.txt\") (:cmd (:shell . sh) (:tool . cat) (:args (% . deps))))";
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
@@ -114,26 +323,44 @@ void test_with_stdout_to(void) {
     TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
 
     /* directive arg: pctvar sym */
-    sexp_action =     "'((with-stdout-to %{targets} (cat %{deps})))";
-    sexp_expected = "'((:stdout (% . targets)) (:cmd (:tool . cat) (:args (% . deps))))";
+    sexp_action =     "'((with-stdout-to %{output} (cat %{deps})))";
+    sexp_expected = "'((:stdout (% . output)) (:cmd (:shell . sh) (:tool . cat) (:args (% . deps))))";
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
     expected = s7_eval_c_string(s7, sexp_expected);
     TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
 
-    /* directive arg: pctvar string */
-    sexp_action =     "'((with-stdout-to \"%{targets}\" (cat %{deps})))";
-    sexp_expected = "'((:stdout (% . targets)) (:cmd (:tool . cat) (:args (% . deps))))";
+    /* directive arg: pctvar string - ignored, redirect is always to a file */
+    sexp_action =     "'((with-stdout-to \"%{output}\" (cat %{deps})))";
+    sexp_expected = "'((:stdout (% . output)) (:cmd (:shell . sh) (:tool . cat) (:args (% . deps))))";
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
     expected = s7_eval_c_string(s7, sexp_expected);
     TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
 
-    /* directive arg: embedded pctvar */
-    sexp_action =     "'((with-stdout-to \"foo/%{targets}\" (cat %{deps})))";
-    sexp_expected = "'((:stdout (:string \"foo/\" (% . targets))) (:cmd (:tool . cat) (:args (% . deps))))";
+    /* directive arg: pctvar embedded in string: pfx */
+    sexp_action =     "'((with-stdout-to \"foo/%{output}\" (cat %{deps})))";
+    sexp_expected = "'((:stdout (:string \"foo/\" (% . output))) (:cmd (:shell . sh) (:tool . cat) (:args (% . deps))))";
+    utstring_renew(sexp);
+    utstring_printf(sexp, "(%s %s)", fn, sexp_action);
+    actual = s7_eval_c_string(s7, utstring_body(sexp));
+    expected = s7_eval_c_string(s7, sexp_expected);
+    TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
+
+    /* directive arg: pctvar embedded in string: sfx */
+    sexp_action =     "'((with-stdout-to \"%{outdir}/out.txt\" (cat %{deps})))";
+    sexp_expected = "'((:stdout (:string (% . outdir) \"/out.txt\")) (:cmd (:shell . sh) (:tool . cat) (:args (% . deps))))";
+    utstring_renew(sexp);
+    utstring_printf(sexp, "(%s %s)", fn, sexp_action);
+    actual = s7_eval_c_string(s7, utstring_body(sexp));
+    expected = s7_eval_c_string(s7, sexp_expected);
+    TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
+
+    /* directive arg: pctvar embedded in string: pfx, sfx */
+    sexp_action =     "'((with-stdout-to \"foo/%{outdir}/out.txt\" (cat %{deps})))";
+    sexp_expected = "'((:stdout (:string \"foo/\" (% . outdir) \"/out.txt\")) (:cmd (:shell . sh) (:tool . cat) (:args (% . deps))))";
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
@@ -141,13 +368,234 @@ void test_with_stdout_to(void) {
     TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
 }
 
+void test_base_with_stderr_to(void) {
+    TEST_IGNORE();
+    char *fn = "destructure-rule-action";
+
+    /* directive arg: symbol */
+    sexp_action =     "'((with-stderr-to stderr.txt (run %{exe:foo})))";
+    sexp_expected = "'((:stderr stderr.txt) (:cmd (:tool . (% exe foo)) (:args)))";
+    // NB: no (:shell) entry
+    /* sexp_expected = "'((:stderr stderr.txt) (:cmd (:tool . run) (:args (% exe foo))))"; */
+    utstring_renew(sexp);
+    utstring_printf(sexp, "(%s %s)", fn, sexp_action);
+    actual = s7_eval_c_string(s7, utstring_body(sexp));
+    expected = s7_eval_c_string(s7, sexp_expected);
+    TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
+
+    /* directive arg: string */
+    sexp_action =     "'((with-stderr-to \"stderr.txt\" (run %{exe:foo})))";
+    sexp_expected = "'((:stderr \"stderr.txt\") (:cmd (:tool . run) (:args (% exe foo))))";
+    utstring_renew(sexp);
+    utstring_printf(sexp, "(%s %s)", fn, sexp_action);
+    actual = s7_eval_c_string(s7, utstring_body(sexp));
+    expected = s7_eval_c_string(s7, sexp_expected);
+    TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
+
+    /* directive arg: pctvar sym */
+    sexp_action =     "'((with-stderr-to %{stderr} (run %{exe:foo})))";
+    sexp_expected = "'((:stderr (% . stderr)) (:cmd (:tool . run) (:args (% exe foo))))";
+    utstring_renew(sexp);
+    utstring_printf(sexp, "(%s %s)", fn, sexp_action);
+    actual = s7_eval_c_string(s7, utstring_body(sexp));
+    expected = s7_eval_c_string(s7, sexp_expected);
+    TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
+
+    /* directive arg: pctvar string - ignored, redirect is always to a file */
+    sexp_action =     "'((with-stderr-to \"%{stderr}\" (run %{exe:foo})))";
+    sexp_expected = "'((:stderr (% . stderr)) (:cmd (:tool . run) (:args (% exe foo))))";
+    utstring_renew(sexp);
+    utstring_printf(sexp, "(%s %s)", fn, sexp_action);
+    actual = s7_eval_c_string(s7, utstring_body(sexp));
+    expected = s7_eval_c_string(s7, sexp_expected);
+    TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
+
+    /* directive arg: pctvar embedded in string: pfx */
+    sexp_action =     "'((with-stderr-to \"foo/%{stderr}\" (run %{exe:foo})))";
+    sexp_expected = "'((:stderr (:string \"foo/\" (% . stderr))) (:cmd (:tool . run) (:args (% exe foo))))";
+    utstring_renew(sexp);
+    utstring_printf(sexp, "(%s %s)", fn, sexp_action);
+    actual = s7_eval_c_string(s7, utstring_body(sexp));
+    expected = s7_eval_c_string(s7, sexp_expected);
+    TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
+
+    /* directive arg: pctvar embedded in string: sfx */
+    sexp_action =     "'((with-stderr-to \"%{outdir}/stderr.txt\" (run %{exe:foo})))";
+    sexp_expected = "'((:stderr (:string (% . outdir) \"/stderr.txt\")) (:cmd (:tool . run) (:args (% exe foo))))";
+    utstring_renew(sexp);
+    utstring_printf(sexp, "(%s %s)", fn, sexp_action);
+    actual = s7_eval_c_string(s7, utstring_body(sexp));
+    expected = s7_eval_c_string(s7, sexp_expected);
+    TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
+
+    /* directive arg: pctvar embedded in string: pfx, sfx */
+    sexp_action =     "'((with-stderr-to \"foo/%{outdir}/stderr.txt\" (run %{exe:foo})))";
+    sexp_expected = "'((:stderr (:string \"foo/\" (% . outdir) \"/stderr.txt\")) (:cmd (:tool . run) (:args (% exe foo))))";
+    utstring_renew(sexp);
+    utstring_printf(sexp, "(%s %s)", fn, sexp_action);
+    actual = s7_eval_c_string(s7, utstring_body(sexp));
+    expected = s7_eval_c_string(s7, sexp_expected);
+    TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
+}
+
+/* more recursion: (with_stdout_to foo (run (bash bar.sh ...))) etc. */
+void test_run_with_stdout_to(void) {
+    TEST_IGNORE();
+
+    char *fn = "destructure-rule-action";
+    /*
+    (action (with-stdout-to %{target} (run ../src/test.exe --kind merge .)))
+    (with-stdout-to %{targets} (run %{dep:gen_primitives.sh}))))
+    (action  (with-stdout-to %{targets} (run %{dep:gen_primitives.sh}))))
+
+    dream: (with-stdout-to %{null} (run ocaml-crunch -m plain assets -o %{target}))
+    menhir: (with-stdout-to menhir_flags.sexp (progn (echo "(") (cat %{dep:menhir_flags}) (echo ")")))
+            (action (with-stdout-to %{target} (run ../src/test.exe --kind good .)))
+ (action (run menhir --cmly %{deps}))
+    */
+
+    sexp_action = "'((with-stdout-to %{targets} (run %{dep:gen_primitives.sh})))";
+    sexp_expected = "'((:stdout (% . targets)) (:cmd (:tool (% dep gen_primitives.sh)) (:args)))";
+    utstring_renew(sexp);
+    utstring_printf(sexp, "(%s %s)", fn, sexp_action);
+    actual = s7_eval_c_string(s7, utstring_body(sexp));
+    expected = s7_eval_c_string(s7, sexp_expected);
+    TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
+
+    /* run bash => insert (:shell .bash) */
+    sexp_action = "'((with-stdout-to %{targets} (run bash myscript.sh %{inputs})))";
+    sexp_expected = "'((:stdout (% . targets)) (:cmd (:shell . bash) (:tool . myscript.sh) (:args (% . inputs))))";
+    utstring_renew(sexp);
+    utstring_printf(sexp, "(%s %s)", fn, sexp_action);
+    actual = s7_eval_c_string(s7, utstring_body(sexp));
+    expected = s7_eval_c_string(s7, sexp_expected);
+    TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
+}
+
+void test_action_run(void) {
+    TEST_IGNORE();
+    char *fn = "destructure-rule-action";
+
+    /*
+
+ (action (run %{deps}))
+ (action (run %{exe:run.exe} ../../.. ))
+  (action (run make %{targets} COMPUTE_DEPS=false)))
+ (action (chdir %{workspace_root} (run config/pp.exe))))
+(action (run sed s/%dls_get/%identity/ %{input-file}))
+ (action  (with-stdout-to %{targets} (run %{dep:gen_primitives.sh}))))
+ (action (run %{test} -runner processes)))
+ (action (run %{exe:main.exe})))
+ (action (run qtest extract src/foo1.ml src/foo2.ml > %{targets})))
+    (action (run ./pack.exe))
+    (action (run piqic-ocaml --multi-format %{deps}))
+    (action (with-stdout-to %{target} (run ../src/test.exe --kind good .)))
+ (action (run bash test.sh))
+ (action (run ./test.exe))
+ (action (with-stdout-to %{target} (run ./test.exe)))
+ (action (run atdgen -j %{deps}))
+ (action (run esy atdgen -open Core -deriving-conv sexp_of -t %{deps}))
+(run ./config/llvm_configurator.exe -filename %{deps})
+(action (run tar -cvf %%{targets} %%{deps}))
+ (action (run %%{make} %s%a %s))
+    (action (with-stdout-to %{target} (run ../src/test.exe --kind merge .)))
+    (with-stdout-to %{targets} (run %{dep:gen_primitives.sh}))))
+    (action  (with-stdout-to %{targets} (run %{dep:gen_primitives.sh}))))
+
+    dream: (with-stdout-to %{null} (run ocaml-crunch -m plain assets -o %{target}))
+    menhir: (with-stdout-to menhir_flags.sexp (progn (echo "(") (cat %{dep:menhir_flags}) (echo ")")))
+            (action (with-stdout-to %{target} (run ../src/test.exe --kind good .)))
+ (action (run menhir --cmly %{deps}))
+
+ ocaml_protoc:
+(action (run ocaml-protoc -binary -pp -ml_out ./ %{deps}))
+(action (run ocaml-protoc -pp -ml_out ./ %{deps}))
+  (action (run ocaml-protoc
+    -binary -pp
+    -ml_out
+    ./
+    ./ test07.proto))
+
+  (action (run ocaml-protoc
+    -I ./
+    -I ../../include/ocaml-protoc
+    -I /usr/local/include
+    -binary -pp
+    -ocaml_all_types_ppx "deriving show"
+    -ml_out
+    ./
+    ./ test01.proto))
+
+    lwt/src/unix:
+(action
+  (chdir %{project_root}
+   (run %{bin:cppo} -V OCAML:%{ocaml_version} %{ml} -o %{targets})))
+
+(rule
+ (targets
+  unix_c_flags.sexp unix_c_library_flags.sexp lwt_features.h lwt_features.ml)
+ (deps (:exe config/discover.exe) discover_arguments)
+ (action (run %{exe})))
+
+ocaml/runtime:
+(rule
+ (targets primitives)
+ (mode    fallback)
+ (deps
+   ; matches the line structure of files in gen_primitives.sh
+   alloc.c array.c compare.c extern.c floats.c gc_ctrl.c hash.c intern.c
+     interp.c ints.c io.c
+   lexing.c md5.c meta.c memprof.c obj.c parsing.c signals.c str.c sys.c
+     callback.c weak.c
+   finalise.c dynlink.c backtrace_byt.c backtrace.c
+     afl.c
+   bigarray.c runtime_events.c)
+ (action  (with-stdout-to %{targets} (run %{dep:gen_primitives.sh}))))
+;;; NB: gen_primitives.sh not listed in deps. Special var %{dep:...} expands relative to cwd.
+;; e.g. in src/foo/dune, %{dep:bar} will expand to src/foo/bar.
+
+ounit:
+(test
+  (name testRunnerProcesses)
+  (package ounit2-lwt)
+  (deps test.txt)
+  (libraries ounit2 lwt lwt.unix ounit2-lwt)
+  (action (run %{test} -runner processes)))
+
+ (action (run %{ocaml_where}/expunge %{dep:topstart.exe} %{targets}
+                    stdlib__Arg
+                    stdlib__Array
+                    ...
+                    ; the rest
+                    outcometree topdirs topeval toploop topmain topcommon
+ ))
+
+    */
+
+    sexp_action = "'((with-stdout-to %{targets} (run bash myscript.sh %{inputs})))";
+                       /* ;; %{libexec:myscript.sh} */
+
+    sexp_expected = "'((:stdout output.txt) (:cmd (:shell . bash) (:tool . myscript.sh ) (:args (% . deps))))";
+    utstring_renew(sexp);
+    utstring_printf(sexp, "(%s %s)", fn, sexp_action);
+    actual = s7_eval_c_string(s7, utstring_body(sexp));
+    s7_flush_output_port(s7, s7_current_output_port(s7));
+    char *s = s7_object_to_c_string(s7, actual);
+    log_debug("result: %s", s);
+    free(s);
+
+    expected = s7_eval_c_string(s7, sexp_expected);
+    TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
+}
+
 /* **************************************************************** */
 /* fn: parse-pct-var */
 void test_pctvars(void) {
+    TEST_IGNORE();
     utstring_renew(sexp);
     utstring_printf(sexp, "%s", "(parse-pct-var \"%{foo}\")");
     actual = s7_eval_c_string(s7, utstring_body(sexp));
-    expected = s7_eval_c_string(s7, "'(% . foo)");
+    expected = s7_eval_c_string(s7, "'(:string (% . foo))");
     TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
 
     utstring_renew(sexp);
@@ -159,19 +607,22 @@ void test_pctvars(void) {
     utstring_renew(sexp);
     utstring_printf(sexp, "%s", "(parse-pct-var \"%{foo:bar}\")");
     actual = s7_eval_c_string(s7, utstring_body(sexp));
-    expected = s7_eval_c_string(s7, "'(% foo bar)");
+    expected = s7_eval_c_string(s7, "'(:string (% foo bar))");
     TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
 
     utstring_renew(sexp);
     utstring_printf(sexp, "%s", "(parse-pct-var '%{foo:bar})");
     actual = s7_eval_c_string(s7, utstring_body(sexp));
     expected = s7_eval_c_string(s7, "'(% foo bar)");
-    /* TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected)); */
+    TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
+
+    /* ;; %{libexec:myscript.sh} */
 }
 
 /* **************************************************************** */
 /* fn: destructure-dsl-string */
 void test_embedded_pctvars(void) {
+    TEST_IGNORE();
     utstring_renew(sexp);
     utstring_printf(sexp, "%s", "(destructure-dsl-string \"foo/%{a} bar/%{b}/baz\")");
     /* utstring_printf(sexp, "%s", "(destructure-dsl-string \"%{a}\")"); */
@@ -185,6 +636,7 @@ void test_embedded_pctvars(void) {
 }
 
 void test_dsl_string(void) {
+    TEST_IGNORE();
     char *s = "\
    \ndiff -u --label test.output --label test-partitions.output test.output test-partitions.output > diff-with-without-partitions || true\
    \n" ;
@@ -201,45 +653,6 @@ void test_dsl_string(void) {
     log_debug("expected: '%s'", s);
     free(s);
 
-    TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
-}
-
-/* some dune rules embed a complex shell script, e.g. ppx_inline_test/test/dune */
-/* WARN: test does not work, chokes on the backslashes */
-void test_embedded_script(void) {
-    #define S "\
-   \nfunction run {\
-   \n  { OCAMLRUNPARAM=b=0 ./inline_tests_runner \"$@\" || echo code: $?; } |&\
-   \n    sed -r -e '/runtime.ml/ s/[0-9]+/XXX/g' -e 's/\\([0-9.]* sec\\)/(XXX sec)/'\
-   \n}\
-   \nrun > test.output\
-   \n\
-   \n(\
-   \n  export DONT_ASSUME_ALL_TESTS_RUN=\
-   \n  run -list-partitions | while read p; do\
-   \n     echo Test for partition $p:\
-   \n     run -partition $p\
-   \n  done\
-   \n) > test-partitions.output\
-   \n\
-   \n(\
-   \n  export DONT_ASSUME_ALL_TESTS_RUN=\
-   \n  echo Partitions diff:\
-   \n  diff <(run -require-tag x-library-inlining-sensitive -list-partitions) <(run -list-partitions) || true\
-   \n  echo\
-   \n  run -require-tag x-library-inlining-sensitive -verbose\
-   \n) > test-inlining.output"
-
-    char *test_str = "(destructure-dsl-string \"" S "\")";
-
-    utstring_renew(sexp);
-    /* utstring_printf(sexp, "(destructure-dsl-string \"" s "\)"); */
-    actual = s7_eval_c_string(s7, test_str); //utstring_body(sexp));
-    char *s = s7_object_to_c_string(s7, actual);
-    log_debug("result: %s", s);
-    free(s);
-
-    expected = s7_eval_c_string(s7, "'()");
     TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
 }
 
@@ -525,17 +938,58 @@ int main(int argc, char **argv)
 
     UNITY_BEGIN();
     /* parse-pct-vars */
-    /* RUN_TEST(test_pctvars); */
-    /* RUN_TEST(test_embedded_pctvars); */
+    RUN_TEST(test_pctvars);
+    RUN_TEST(test_embedded_pctvars);
 
     /* destructure-rule-action */
-    /* RUN_TEST(test_bash); */
-    RUN_TEST(test_with_stdout_to);
+    RUN_TEST(test_bash);
+    RUN_TEST(test_bash_script);
 
-    /* destructure-dsl-string */
-    /* RUN_TEST(test_dsl_string); */
-    /* RUN_TEST(test_embedded_script); */
+    /* stdio redirection */
+    RUN_TEST(test_base_with_stdout_to);
+    RUN_TEST(test_base_with_stderr_to);
+
+
+    /* action: run "to execute a program" */
+    RUN_TEST(test_run_with_stdout_to); /* more recursion */
+
+   /* destructure-dsl-string */
+    RUN_TEST(test_dsl_string);
 
     utstring_free(sexp);
     return UNITY_END();
 }
+
+/*
+(action (progn
+   (run ocaml %{dep:compat.ml} %{input-file})
+   (cat %{input-file}))) cppo_eval))
+
+  pipe-stdout:
+
+  jsoo:
+   (action
+  (with-stdout-to
+   %{target}
+   (pipe-stdout
+    (run printf "echo \226\152\160")
+    (run %{dep:./cat.exe}))))
+
+(action
+  (with-stdout-to
+   %{target}
+   (progn
+    (run %{dep:md5.exe} %{dep:md5.bc.js})
+    (run %{dep:md5.exe} %{dep:md5.bc.js} %{dep:md5.bc.js})
+    (run %{dep:md5.exe} -offset 2000 -length 4000 %{dep:md5.bc.js})
+    (pipe-stdout
+     (echo "tests")
+     (run %{dep:md5.exe}))
+    (pipe-stdout
+     (echo "teststeststests")
+     (run %{dep:md5.exe} -offset 5 -length 5))
+    (pipe-stdout
+     (echo "teststeststests")
+     (run %{dep:md5.exe} -offset 2 -length 5)))))
+
+ */

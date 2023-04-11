@@ -54,7 +54,7 @@ s7_pointer _s7_error_handler(s7_scheme *s7, s7_pointer args)
 
         s7_pointer st = s7_eval_c_string(s7, "(stacktrace)");
         (void)st;
-        fprintf(stdout, "STACKTRACE:\n%s\n", "TO_STR(st)");
+        fprintf(stdout, "STACKTRACEx:\n%s\n", "TO_STR(st)");
         fflush(NULL);
         return s7_t(s7);
     } else {
@@ -64,8 +64,6 @@ s7_pointer _s7_error_handler(s7_scheme *s7, s7_pointer args)
         s7_pointer st = s7_eval_c_string(s7, "(debug-print-stacktrace)");
         (void)st;
         /* fprintf(stdout, "STACKTRACE:\n%s\n", "TO_STR(st)"); */
-        s7_flush_output_port(s7, s7_current_output_port(s7));
-        fflush(NULL);
 
         fprintf(stdout, RED "[begin error context]\n");
         s7_eval_c_string(s7, ERRSEXP);
@@ -92,6 +90,10 @@ s7_pointer _s7_error_handler(s7_scheme *s7, s7_pointer args)
             exit(EXIT_FAILURE);
         }
 
+        s7_flush_output_port(s7, s7_current_output_port(s7));
+        s7_flush_output_port(s7, s7_current_error_port(s7));
+        fflush(NULL);
+
         /* s7_pointer eline = s7_eval_c_string(s7, "(with-let (owlet) error-line"); */
         /* fprintf(stderr, "file: %s, line: %s\n", TO_STR(efile), TO_STR(eline)); */
 
@@ -104,10 +106,15 @@ s7_pointer _s7_error_handler(s7_scheme *s7, s7_pointer args)
 
 s7_pointer _s7_read_error_handler(s7_scheme *s7, s7_pointer args)
 {
-    fprintf(stderr, RED "READ ERROR:" CRESET " %s\n",
-            s7_string(s7_car(args)));
+    fprintf(stderr, RED "READ ERROR:" CRESET " %s, %s\n",
+            s7_string(s7_car(args)),
+            s7_string(s7_cdr(args)));
     s7_eval_c_string(s7, ERRSEXP);
-    return(s7_f(s7));
+        s7_flush_output_port(s7, s7_current_output_port(s7));
+        s7_flush_output_port(s7, s7_current_error_port(s7));
+        fflush(NULL);
+
+        return(s7_make_character(s7, 'Q'));
 }
 
 void error_config(void)

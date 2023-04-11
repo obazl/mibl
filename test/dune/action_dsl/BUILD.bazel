@@ -3,6 +3,7 @@ load("@rules_cc//cc:defs.bzl", "cc_library")
 cc_test(
     name = "test",
     srcs = ["dsl_test.c"],
+    data = ["dsl_bash_script.dune"],
     copts = [
         "-std=c11",
         "-pedantic-errors",
