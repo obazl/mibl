@@ -1,0 +1,18 @@
+((:@ (:name . "@")
+     (:path . /Users/gar/obazl/mibl/test/dune/action_dsl/inductive/stdio/with/case01)
+     (:exports
+         (hash-table)) (:opam (hash-table)) (:shared-ppx (hash-table))
+     (:filegroups
+         (hash-table))
+     (:pkgs
+         (hash-table
+           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/action_dsl/inductive/stdio/with/case01") (:pkg-path . "./")
+                   (:realpath . "/Users/gar/obazl/mibl/test/dune/action_dsl/inductive/stdio/with/case01")
+                   (dune (rule (target config.status.in) (mode fallback)
+                               (action (with-stdout-to %{target} (echo ""))))
+                         (rule (alias config) (target config.status) (deps config.status.in)
+                               (action (with-stdin-from %{deps}
+                                                        (with-stdout-to %{target}
+                                                                        (chdir %{workspace_root}
+                                                                               (run ./tools/rewrite.exe
+                                                                                    -init))))))))))))

@@ -1,15 +1,12 @@
 test_suite(
-    name = "mibl_test",
+    name = "test",
     tests = [
-        "//test/dune/rules/shell/bash/simple/.mibl:test",
-        "//test/dune/rules/shell/cat/case01/.mibl:test",
-        "//test/dune/rules/shell/chdir/case01/.mibl:test",
-        "//test/dune/rules/shell/copy/case01/.mibl:test",
-        "//test/dune/rules/shell/cmp/case01/.mibl:test",
-        "//test/dune/rules/shell/cmp/case02/.mibl:test",
-        "//test/dune/rules/shell/diff/case01/.mibl:test",
-        "//test/dune/rules/shell/echo/case01/.mibl:test",
-        "//test/dune/rules/shell/redirects/case01/.mibl:test",
-        "//test/dune/rules/shell/system/case01/.mibl:test",
+        "//test/dune/action_dsl/base_cases/bash/case01/.mibl:test",
+        "//test/dune/action_dsl/base_cases/cat:test",
+        "//test/dune/action_dsl/base_cases/copy/case01/.mibl:test",
+        "//test/dune/action_dsl/base_cases/cmp:test",
+        "//test/dune/action_dsl/base_cases/diff/case01/.mibl:test",
+        "//test/dune/action_dsl/base_cases/echo/case01/.mibl:test",
+        "//test/dune/action_dsl/base_cases/system/case01/.mibl:test",
     ]
 )

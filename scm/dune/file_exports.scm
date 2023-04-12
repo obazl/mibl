@@ -81,8 +81,8 @@
 
 ;; stanza e.g.
 ;; (:rule (:deps (::tools (:< (:pkg . "./") (:tgt . "gen.sh"))))
-;;        (:outputs (:foo.txt (:pkg . "supertool") (:tgt . "foo.txt")))
-;;        (:actions (:cmd (:tool :<) (:args :outputs))))
+;;        (::outputs (:foo.txt (:pkg . "supertool") (:tgt . "foo.txt")))
+;;        (:actions (:cmd (:tool :<) (:args ::outputs))))
 ;; ws-pkgs: hash table, key: :pkg-path (string)
 (define (-resolve-rule-file-exports! stanza this-pkg ws-pkgs)
   (if (or *mibl-debug-file-exports* *mibl-debug-s7*)
@@ -92,7 +92,7 @@
         (format #t "~A: ~A~%" (green "this pkg") this-pkg)
         (format #t "~A: ~A~%" (green "pkgs") ws-pkgs)))
   (let ((deps (assoc-val :deps (cdr stanza)))
-        (outputs (assoc-val :outputs (cdr stanza))))
+        (outputs (assoc-val ::outputs (cdr stanza))))
     (if (truthy? deps)
         (for-each (lambda (dep)
                     ;; (format #t "~A: ~A~%" (green "DEP") dep)

@@ -30,31 +30,44 @@
 ;; input: string or sym of form %{<str>}
 ;; only called if string known to be a pct var
 ;; if unsure call dsl:expand-word
-;; returns (% pfx sfx) or (% str)
+;; returns (:input  pfx sfx) or (:input  str)
 (define (parse-pct-var arg)
   (mibl-trace-entry "parse-pct-var" arg :test *mibl-debug-action-dsl*)
   (mibl-trace "arg type" (type-of arg) :test *mibl-debug-action-dsl*)
-  (let ((arg-str (format #f "~A" arg)))
-    (if (string-prefix? "%{" arg-str)
-        (let* ((len (length arg-str))
-               (vstr (substring arg-str 2 (- len 1)))
-               (sym (string->symbol vstr)))
-          (mibl-trace "vstr" vstr :test *mibl-debug-action-dsl*)
-          (mibl-trace "sym" sym :test *mibl-debug-action-dsl*)
-          (let ((splits (string-split vstr #\:)))
-            (mibl-trace "splits" splits :test *mibl-debug-action-dsl*)
-            (if (equal? (list vstr) splits)
-                (if (string? arg)
-                    `(:string (% . ,sym))
-                    `(% . ,sym))
-                (if (string? arg)
-                    `(:string (% ,(symbol (car splits))
-                                 ,(string->symbol (string-join (cdr splits) ":"))))
-                    `(% ,(symbol (car splits))
-                        ,(string->symbol (string-join (cdr splits) ":"))))
-                )))
-        ;; else not a pct-var
-        arg)))
+  (case arg
+    ((%{target} %{targets}) ::outputs)
+    ((%{deps}) ::inputs)
+    (else
+     (let ((arg-str (format #f "~A" arg)))
+       (cond
+        ((string=? "%{targets}" arg-str) ::outputs)
+        ((string=? "%{target}" arg-str) ::outputs)
+        ((string=? "%{deps}" arg-str) ::inputs)
+        (else
+         (if (string-prefix? "%{" arg-str)
+           (let* ((len (length arg-str))
+                  (vstr (substring arg-str 2 (- len 1)))
+                  (sym (string->symbol vstr)))
+             (mibl-trace "vstr" vstr :test *mibl-debug-action-dsl*)
+             (mibl-trace "sym" sym :test *mibl-debug-action-dsl*)
+             (let ((splits (string-split vstr #\:)))
+               (mibl-trace "splits" splits :test *mibl-debug-action-dsl*)
+               (if (equal? (list vstr) splits) ;; singleton e.g. %{foo}
+                   (if (string? arg)
+                       (if (member sym '(target targets))
+                           ::outputs
+                           `(:string (:input  . ,sym)))
+                       (if (member sym '(target targets))
+                           ::outputs
+                           `(:input  . ,sym)))
+                   ;; else dyad e.g. %{foo:bar}; won't every be %{target}, %{targets}
+                   (if (string? arg)
+                       `(:string (:input  ,(symbol (car splits))
+                                          ,(string->symbol (string-join (cdr splits) ":"))))
+                       `(:input  ,(symbol (car splits))
+                                 ,(string->symbol (string-join (cdr splits) ":")))))))
+           ;; else not a pct-var
+           arg)))))))
 
 (define (dsl:expand-word arg)
   (mibl-trace-entry "dsl:expand-word" arg :test *mibl-debug-action-dsl*)
@@ -114,11 +127,11 @@
                         (mibl-trace "expanded pct" pct :test *mibl-debug-action-dsl*)
                         (mibl-trace "NO PFX/SFX" pct :test *mibl-debug-action-dsl*)
                         ;; dsl-str type is string?, so parse-pct-var
-                        ;; will return (:string (% ...)). remove :string.
+                        ;; will return (:string (:input  ...)). remove :string.
                         ;; nothing left to recur on so return directly
                         (if (truthy? segs)
-                            (append segs (cadr pct))
-                            (cadr pct)))
+                            (append segs (if (list? pct) (cadr pct) pct))
+                            (if (list? pct) (cadr pct) pct)))
                       ;; else we have a pfx and/or sfx, so we need to recur
                       (let* ((pfx  (substring s 0 rm-so))
                              (sfx  (substring s rm-eo))
@@ -155,7 +168,7 @@
 ;; \n" ;
 
 ;; (action (run %{ocaml-config:c_compiler} -c -I %{ocaml-config:standard_library} -o %{targets} %{deps})))
-;; =>  ((% ocaml-config c_compiler) -c -I (% ocaml-config standard_library) -o (% . targets) (% . deps))
+;; =>  ((:input  ocaml-config c_compiler) -c -I (:input  ocaml-config standard_library) -o ::outputs (:input  . deps))
 
 
 ;; input: string w/o newlines
@@ -213,7 +226,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; FUNCTION: (dsl:action->mibl action) -> list
-;; destructures but does not expand; e.g. %{targets} -> (% . targets) w/o resolving
+;; destructures but does not expand; e.g. %{foo} -> (:input . foo) w/o resolving
 ;; action grammar: (action <dsl>)
 ;; usually (action (cmd ...)) but may be (action cmd ...)
 ;; cmds are of 2 kinds:
@@ -250,19 +263,23 @@
                           (car action-list)))
          (mibl-trace-let "primary cmd" primary-cmd :test *mibl-debug-action-dsl*))
     (case primary-cmd
+      ;; base cases - do not take a dsl arg
       ((cat cmp copy copy# diff diff?) ;; etc.
        (begin
          (mibl-trace "direct cmd" primary-cmd :test *mibl-debug-action-dsl*)
          (let* ((-args (cdr action-list))
                 (args (map dsl:string->lines -args)))
            (mibl-trace "args" args :test *mibl-debug-action-dsl*)
-           `((:shell . sh) (:tool . ,primary-cmd) (:args ,@args)))))
-      ((echo)
-       `((:shell . sh) (:tool . echo) (:args ,@(cdr action-list))))
+           `((:shell . sh) (:tool . ,(symbol->keyword primary-cmd)) (:args ,@args)))))
 
+      ((chdir) `((:shell . sh) (:tool . :chdir) (:args)))
+
+      ((echo) `((:shell . sh) (:tool . :echo) (:args ,@(cdr action-list))))
+
+      ;; inductive cases
       ((bash)
        ;; HEURISTIC: first word of cmd string is tool
-       (let* ((bash-cmd (destructure-bash-cmd action-list))
+       (let* ((bash-cmd (destructure-shell-cmd action-list :shell 'bash))
               (bash-lines (assoc-val :cmd-lines bash-cmd)))
          (if (truthy? bash-lines)
              (let* ((fst (car bash-lines))
@@ -278,9 +295,28 @@
                  ,@bash-cmd))
              bash-cmd)))
 
+      ((system)
+       ;; same as bash, but with sh
+       ;; HEURISTIC: first word of cmd string is tool
+       (let* ((system-cmd (destructure-shell-cmd action-list :shell 'sh))
+              (system-lines (assoc-val :cmd-lines system-cmd)))
+         (if (truthy? system-lines)
+             (let* ((fst (car system-lines))
+                    ;; skip over :line key
+                    (system-tool (cadr fst)))
+               (mibl-trace "system-cmd" system-cmd :test #t :color red)
+               (mibl-trace "system-lines" system-lines :test #t :color red)
+               (mibl-trace "system-fst" fst :test #t :color red)
+               (mibl-trace "system-tool" system-tool :test #t :color red)
+               `((:tool . ,(if (list? system-tool)
+                               (list system-tool)
+                               system-tool))
+                 ,@system-cmd))
+             system-cmd)))
+
       ((run)
        (if (eq? 'bash (car (cdr action-list)))
-           (destructure-bash-cmd (cdr action-list))
+           (destructure-shell-cmd (cdr action-list) :shell 'bash)
            (let* ((-args (cdr action-list))
                   (args (map dsl:string->lines -args))
                   (secondary-cmd (list (car args)))
@@ -291,9 +327,6 @@
              (mibl-trace "secondary args" secondary-args :test *mibl-debug-action-dsl*)
              ;; (error 'x "X")
              `((:tool . ,secondary-cmd) (:args ,@secondary-args)))))
-
-      ((system)
-       )
 
       ((progn)
        (let ((progn-result (fold (lambda (action accum)
@@ -309,9 +342,6 @@
                    progn-result)
          `(:cmds ,progn-result)))
 
-      ((chdir) ;; (chdir <dir> <DSL>)
-       ;;,normalize-action-chdir-dsl
-       )
       ((ignore-outputs)
        ;;,normalize-action-ignore-outputs-dsl
        )
@@ -371,7 +401,6 @@
 
       ((with-stdout-to) ;; (with-stdout-to "%{targets}" (cat "%{deps}"))
        (let* ((stdout (let ((fd (cadr action-list)))
-                        ;; fd: %{targets}
                         (mibl-trace "fd" fd :test *mibl-debug-action-dsl*)
                         (mibl-trace "fd t" (type-of fd) :test *mibl-debug-action-dsl*)
                         (destructure-directive-arg fd)))
@@ -392,8 +421,26 @@
              ,(if (eq? 'progn (caar subaction-list))
                   subber
                   `(:cmd ,@subber))))))
+
       ((with-stdin-from);; (with-stdin-from <file> <DSL>)
        ;; ,normalize-action-with-stdin-from-dsl
        )
+
+      ((write-file)
+       (let* ((output (let ((fd (cadr action-list)))
+                        (mibl-trace "fd" fd :test *mibl-debug-action-dsl*)
+                        (mibl-trace "fd t" (type-of fd) :test *mibl-debug-action-dsl*)
+                        (destructure-directive-arg fd)))
+              (output (if (list? output)
+                          (if (eq? :line (car output)) (cadr output) output)
+                          output))
+              (mibl-trace-let "OUTPUT" output :test *mibl-debug-action-dsl*)
+              (subaction-list (cddr action-list))
+              (content (car subaction-list)))
+         (mibl-trace "Output" output :test *mibl-debug-action-dsl*)
+         (mibl-trace "content" content :test *mibl-debug-action-dsl*)
+         `(:cmd (:tool :write-file)
+                (:args ,output ,content))))
+
       (else (error 'Missing-cmd-directive "Missing cmd directive")))
           ))

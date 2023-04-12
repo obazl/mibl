@@ -11,6 +11,10 @@
                    (dune (rule (targets output.txt) (deps (:< gen.sh))
                                (action (run %{<} %{targets}))))
                    (:files (:static "gen.sh") (:dynamic "output.txt"))
-                   (:mibl (:rule (:tools (:< (:pkg . "./") (:tgt . "gen.sh")))
-                                 (:outputs (:output.txt (:pkg . "./") (:tgt . "output.txt")))
-                                 (:cmd (:tool :<) (:args :outputs)))))))))
+                   (:mibl (:rule (::inputs (::toolsC
+                                            ((symbol ":(:input . <):()") . ::unresolved))
+                                           (:< (:pkg . "./") (:tgt . "gen.sh")))
+                                 (::tools {gensym}-6)
+                                 (::outputs (:output.txt (:pkg . "./") (:tgt . "output.txt")))
+                                 (:cmd (:tool (symbol ":(:input . <):()")) (:args ::outputs))
+                                 (:test-cmd (:tool (:input . <)) (:args ::outputs)))))))))

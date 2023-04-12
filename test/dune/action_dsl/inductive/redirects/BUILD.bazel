@@ -1,0 +1,6 @@
+test_suite(
+    name = "test",
+    tests = [
+        "//test/dune/action_dsl/inductive/redirects/case01/.mibl:test",
+    ]
+)

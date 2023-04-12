@@ -17,7 +17,7 @@
                  (deps (if-let ((deps (assoc :deps stanza-alist)))
                                (cdr deps) '()))
                  (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (uwhite "deps") deps)))
-                 (outputs (if-let ((outputs (assoc :outputs stanza-alist)))
+                 (outputs (if-let ((outputs (assoc ::outputs stanza-alist)))
                                (cdr outputs) '()))
                  (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (uwhite "outputs") outputs)))
 

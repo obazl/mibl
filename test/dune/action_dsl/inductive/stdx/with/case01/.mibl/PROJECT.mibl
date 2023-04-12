@@ -1,0 +1,35 @@
+((:@ (:name . "@")
+     (:path . /Users/gar/obazl/mibl/test/dune/action_dsl/inductive/stdio/with)
+     (:exports
+         (hash-table)) (:opam (hash-table)) (:shared-ppx (hash-table))
+     (:filegroups
+         (hash-table))
+     (:pkgs
+         (hash-table
+           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/action_dsl/inductive/stdio/with") (:pkg-path . "./")
+                   (:realpath . "/Users/gar/obazl/mibl/test/dune/action_dsl/inductive/stdio/with")
+                   (dune (rule (target config.status.in) (mode fallback)
+                               (action (with-stdout-to %{target} (echo ""))))
+                         (rule (alias config) (target config.status) (deps config.status.in)
+                               (action (with-stdin-from %{deps}
+                                                        (with-stdout-to %{target}
+                                                                        (chdir %{workspace_root}
+                                                                               (run ./tools/rewrite.exe
+                                                                                    -init)))))))
+                   (:mibl (:rule (:mode fallback) (:tools (:echo . :shell-tool))
+                                 (:outputs (:config.status.in (:pkg . "./")
+                                             (:tgt . "config.status.in")))
+                                 (:cmd (:tool :echo)
+                                       (:args
+                                        (:string "let test_var = \"" (:% (:FIXME . PCTVARS)) "\"")))
+                                 (:stdout :output))
+                          (:rule (:alias config)
+                                 (:inputs (:config.status.in (:pkg . "./")
+                                            (:tgt . "config.status.in")))
+                                 (:tools (:tools/rewrite.exe (:pkg . "/tools")
+                                           (:tgt . "rewrite.exe")))
+                                 (:ctx :ws-root)
+                                 (:outputs (:config.status (:pkg . "./") (:tgt . "config.status")))
+                                 (:cmd (:tool :tools/rewrite.exe) (:args "-init")) (:ctx :ws-root)
+                                 (:stdout :output) (:stdin :%{deps})))
+                   (:files (:dynamic "config.status.in" "config.status")))))))

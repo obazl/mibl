@@ -1,16 +1,17 @@
 ((:@ (:name . "@")
-     (:path . /Users/gar/obazl/mibl/test/dune/rules/shell/diff/case01)
+     (:path . /Users/gar/obazl/mibl/test/dune/action_dsl/base_cases/diff/case01)
      (:exports
          (hash-table)) (:opam (hash-table)) (:shared-ppx (hash-table))
      (:filegroups
          (hash-table))
      (:pkgs
          (hash-table
-           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/rules/shell/diff/case01") (:pkg-path . "./")
-                   (:realpath . "/Users/gar/obazl/mibl/test/dune/rules/shell/diff/case01")
+           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/action_dsl/base_cases/diff/case01") (:pkg-path . "./")
+                   (:realpath . "/Users/gar/obazl/mibl/test/dune/action_dsl/base_cases/diff/case01")
                    (:files (:static "a.txt" "b.txt"))
                    (dune (rule (action (diff a.txt b.txt))))
                    (:mibl (:rule (:deps (:b.txt (:pkg . "./") (:tgt . "b.txt"))
                                         (:a.txt (:pkg . "./") (:tgt . "a.txt")))
-                                 (:tools (:diff . :shell-tool))
-                                 (:cmd (:tool :diff) (:args :a.txt :b.txt)))))))))
+                                 (::tools (:diff . :shell-tool))
+                                 (:cmd (:tool :diff) (:args :a.txt :b.txt))
+                                 (:test-cmd (:shell . sh) (:tool . :diff) (:args a.txt b.txt)))))))))

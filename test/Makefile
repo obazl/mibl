@@ -4,7 +4,18 @@ BAZELRC=--bazelrc .config/runmibl.bazelrc
 QUIET=
 #--quiet
 
-all: execs sh
+default:
+	echo "Targets: all, deps, execs, dsl_base, dsl_inductive, stdio, rule"
+
+.PHONY: baseline
+baseline:
+	cd .. && \
+	bazel $(BAZELRC) run //emit:mibl -- -w $(w) --emit-parsetree $(QUIET) ;
+
+ # --no-miblrc $(QUIET) ;
+
+.PHONY: all deps
+all: deps execs dsl_base dsl_inductive stdio rule
 
 DEPS_TESTS= \
 test/dune/deps/dynamic/case01 \
@@ -45,6 +56,7 @@ test/dune/executable/main_dyad/mwe2
 # test/dune/executable/flags/compile/ocamlopt \
 # test/dune/executable/flags/link/case01 \
 
+.PHONY: execs
 execs:
 	@cd .. && \
 	for tgt in $(EXEC_TESTS) ; do \
@@ -52,34 +64,59 @@ execs:
 	done
 
 ################################################################
-SHELL_TESTS=\
-test/dune/rules/shell/bash/simple \
-test/dune/rules/shell/cat/case01 \
-test/dune/rules/shell/chdir/case01 \
-test/dune/rules/shell/cmp/case01 \
-test/dune/rules/shell/cmp/case02 \
-test/dune/rules/shell/copy/case01 \
-test/dune/rules/shell/diff/case01 \
-test/dune/rules/shell/echo/case01 \
-test/dune/rules/shell/redirects/case01 \
-test/dune/rules/shell/system/case01
+DSL_BASE=\
+test/dune/action_dsl/base_cases/bash/case01 \
+test/dune/action_dsl/base_cases/cat/case01 \
+test/dune/action_dsl/base_cases/cmp/case01 \
+test/dune/action_dsl/base_cases/cmp/case02 \
+test/dune/action_dsl/base_cases/copy/case01 \
+test/dune/action_dsl/base_cases/diff/case01 \
+test/dune/action_dsl/base_cases/echo/case01 \
+test/dune/action_dsl/base_cases/system/case01
 
-sh:
+dsl_base:
 	@cd .. && \
-	for tgt in $(SHELL_TESTS) ; do \
+	for tgt in $(DSL_BASE) ; do \
 		bazel $(BAZELRC) run //emit:mibl -- -w $$tgt --emit-parsetree --no-miblrc $(QUIET) ; \
 		echo ; \
 	done
 
 ################################################################
-STDIO_TESTS=\
-test/dune/rules/stdio/with \
-test/dune/rules/stdout/ignore \
-test/dune/rules/stdout/pipe \
-test/dune/rules/stdout/with/bash \
-test/dune/rules/stdout/with/cat \
-test/dune/rules/stdout/with/echo
+DSL_INDUCTIVE=\
+test/dune/action_dsl/inductive/chdir/case01 \
+test/dune/action_dsl/inductive/redirects/case01 \
+test/dune/action_dsl/inductive/run/case01 \
+test/dune/action_dsl/inductive/stdout/with/bash \
+test/dune/action_dsl/inductive/stdout/with/echo
 
+# test/dune/action_dsl/inductive/stdout/with/cat \
+# test/dune/action_dsl/inductive/stdx/with/case01 \
+
+# test/dune/action_dsl/inductive/stdin/with/case01 \
+# test/dune/action_dsl/inductive/stderr/with/case01 \
+# test/dune/action_dsl/inductive/stdio/ignore/case01 \
+# test/dune/action_dsl/inductive/stdio/pipe/case01 \
+# test/dune/action_dsl/inductive/stdout/ignore/case01 \
+# test/dune/action_dsl/inductive/stdout/pipe/case01 \
+
+dsl_inductive:
+	@cd .. && \
+	for tgt in $(DSL_INDUCTIVE) ; do \
+		bazel $(BAZELRC) run //emit:mibl -- -w $$tgt --emit-parsetree --no-miblrc $(QUIET) ; \
+		echo ; \
+	done
+
+
+################################################################
+STDIO_TESTS=\
+test/dune/action_dsl/inductive/stdio/with \
+test/dune/action_dsl/inductive/stdout/ignore \
+test/dune/action_dsl/inductive/stdout/pipe \
+test/dune/action_dsl/inductive/stdout/with/bash \
+test/dune/action_dsl/inductive/stdout/with/cat \
+test/dune/action_dsl/inductive/stdout/with/echo
+
+.PHONY: stdio
 stdio:
 	@cd .. && \
 	for tgt in $(STDIO_TESTS) ; do \
@@ -95,6 +132,7 @@ test/dune/rules/inferred/outputs/case02 \
 
 ## test/dune/rules/complex/case01 \
 
+.PHONY: rules
 rules:
 	@cd .. && \
 	for tgt in $(RULE_TESTS) ; do \

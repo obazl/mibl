@@ -18,6 +18,10 @@
                 (format #t "~A: ~A\n"
                         (green "normalized action") mibl-action)))
          ;; normalized action: (:cmd (:tool...) (:args...)) plus stdio (:stdout...) etc.
+
+         (new-action (dsl:action->mibl (assoc-val 'action rule-alist)))
+         (mibl-trace-let "new-action" new-action)
+
          ;; (_ (error 'X "STOP normalize-action"))
          (package (if-let ((p (assoc-val 'package rule-alist))) (car p)))
          (mode (if-let ((m (assoc-val 'mode rule-alist))) (car m)))
@@ -40,18 +44,19 @@
                                 (cdar mibl-action)
                                 `,@mibl-action))
                                 ;; (cons :actions mibl-action)))
-                      (list targets ;;(list :outputs `,@targets)
+                      (list targets ;;(list ::outputs `,@targets)
                             ;; (cons ':deps deps)
                             (if (assoc :progn mibl-action)
                                 (cdar mibl-action)
                                 ;; (cons :actions (cdar mibl-action))
                                 `,@mibl-action))))
                                 ;;(cons :actions mibl-action)))))
-         (mibl-trace-let "r-alist" r-alist)
+         (mibl-trace-let "r-alist 1" r-alist)
          ;; (_  (error 'x "x"))
          (r-alist (if-let ((ctx (assoc :ctx mibl-action)))
                           (cons ctx r-alist)
                           r-alist))
+         (mibl-trace-let "r-alist 2" r-alist)
          (r-alist (cons tools r-alist))
          (r-alist (if deps ;; (null? deps) ???
                       (cons deps r-alist)
@@ -72,7 +77,10 @@
                                        r-alist)
                       r-alist))
          (r-alist (if alias (cons (list ':alias alias) r-alist)
-                      r-alist)))
+                      r-alist))
+         (r-alist (append r-alist `((:test-cmd ,@new-action))))
+         (mibl-trace-let "r-alist end" r-alist)
+         )
     ;; (list (cons rule-tag r-alist)))
     (list (cons ':rule r-alist))))
 
@@ -147,7 +155,7 @@
          ;; (_ (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*) (format #t "~A: ~A\n" (yellow "updated pkg") pkg)))
 
          ;; normalize
-         (targets (cons :outputs (expand-targets ws pkg targets deps)))
+         (targets (cons ::outputs (expand-targets ws pkg targets deps)))
          (_ (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*)
                 (format #t "~A: ~A\n" (red "expanded rule targets") targets)))
          )
@@ -194,6 +202,7 @@
 
              ;;FIXME: 'action optional, 'progn may also be used
              ;; e.g. menhir/src/dune
+             ;; TESTING ONLY dsl:action->mibl
              (action (dsl:action->mibl (assoc-val 'action rule-alist)))
              (mibl-trace-let "rule action" action)
              ;; (_ (error 'x "X"))
@@ -208,8 +217,8 @@
                     (format #t "~A: ~A\n" (green "expanded targets") targets)))
 
              ;; all dune rule stanzas have an action, so they have a tool
-             (tools `(:tools ,(gensym))) ;; gensym is a placeholder, to be replaced by set-cdr!
-             (mibl-trace-let "tmp :tools" tools)
+             (tools `(::tools ,(gensym))) ;; gensym is a placeholder, to be replaced by set-cdr!
+             (mibl-trace-let "tmp ::tools" tools)
              )
 
         (if deps
@@ -222,11 +231,11 @@
                           ;; (:foo (:pkg a/b/c)(:tgt "foo.sh"))
                           ;; (::opam-pkg foo-bar-baz)
                           ;; (tezos-protocol-demo-noops ::opam-pkg)
-                          (mibl-trace "dep" dep *mibl-debug-rule-stanzas*)
+                          (mibl-trace "dep" dep test: *mibl-debug-rule-stanzas*)
                           (case (cdr dep)
                             ((::opam-pkg) (cdr dep))
                             (else
-                             (mibl-trace "filegroup dep?" dep *mibl-debug-rule-stanzas*)
+                             (mibl-trace "filegroup dep?" dep test: *mibl-debug-rule-stanzas*)
                              ;; e.g. dep == (:css (:glob . "glob_STAR.css"))
                              (let* ((lbl-tag (car dep))
                                     (lbl (cdr dep))
@@ -270,14 +279,14 @@
         (let* ((mibl-rule
                 (cond
                  ((assoc 'action rule-alist)
-                  (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*)
-                      (begin
-                        (format #t "handling rule action\n" )
-                        (format #t "targets: ~A~%" targets)
-                        (format #t "deps: ~A~%" deps)))
-                  (-normalize-rule-action ws pkg tools rule-alist
-                                         (if (null? targets) (list :targets) targets)
-                                         (if deps deps (list :deps))))
+                  (let ((nrule (-normalize-rule-action ws pkg tools rule-alist
+                                                       (if (null? targets) (list :targets) targets)
+                                                       (if deps deps (list :deps)))))
+                    (mibl-trace "NRULE" nrule)
+                    (mibl-trace "naction" action)
+                    ;; (error 'dbg "DBG")
+                    nrule))
+                    ;; (concatenate nrule `(:test-action ,action))))
 
                  ;; rules whose action is not wrapped by (run ...)
                  ;; TODO: use dispatch table dune-action-cmds-no-dsl
@@ -302,35 +311,38 @@
                           (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*)
                               (format #t "~A: ~A~%" (green "updated alist") rule-alist))
                           (-normalize-rule-action ws pkg tools rule-alist targets
-                                                 (if deps deps (list :deps))))
+                                                  (if deps deps (list :deps))))
                         (error 'no-action (format #f "rule without action: ~A" rule-alist)))))))
                (mibl-rule (prune-mibl-rule mibl-rule)))
-                ;; ((assoc 'copy rule-alist)
-                ;;  (format #t "handling copy rule\n" )
-                ;;  (normalize-copy-rule ws pkg rule-alist targets deps))
+          ;; ((assoc 'copy rule-alist)
+          ;;  (format #t "handling copy rule\n" )
+          ;;  (normalize-copy-rule ws pkg rule-alist targets deps))
 
-                ;; ((assoc 'with-stdout-to rule-alist)
-                ;;  (format #t "handling write-file rule\n" )
-                ;;  (normalize-action-with-outputs-to-dsl
-                ;;   ws pkg rule-alist targets deps))
+          ;; ((assoc 'with-stdout-to rule-alist)
+          ;;  (format #t "handling write-file rule\n" )
+          ;;  (normalize-action-with-outputs-to-dsl
+          ;;   ws pkg rule-alist targets deps))
 
-                ;; ((assoc 'write-file rule-alist)
-                ;;  (format #t "handling write-file rule\n" )
-                ;;  (normalize-action-write-file
-                ;;   ws pkg rule-alist targets deps))
+          ;; ((assoc 'write-file rule-alist)
+          ;;  (format #t "handling write-file rule\n" )
+          ;;  (normalize-action-write-file
+          ;;   ws pkg rule-alist targets deps))
 
-                ;; (else
-                ;;  (error 'unhandled-rule
-                ;;         (format #f "unhandled rule: ~A" rule-alist))))))
-               (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*)
-                   (format #t "~A: ~A~%" (green "mibl-rule") mibl-rule))
-         ;; (_ (error 'X "STOP prune"))
+          ;; (else
+          ;;  (error 'unhandled-rule
+          ;;         (format #f "unhandled rule: ~A" rule-alist))))))
+          (if (or *mibl-debug-rule-stanzas* *mibl-debug-s7*)
+              (format #t "~A: ~A~%" (green "mibl-rule") mibl-rule))
+          ;; (_ (error 'X "STOP prune"))
 
           ;; (update-exports-table-with-targets! ws
           ;;                                     :FIXME ;; tag
-          ;;                                     (assoc-in '(:rule :outputs) mibl-rule) ;; name
-          ;;                                     pkg-path (assoc-in '(:rule :outputs) mibl-rule))
-          mibl-rule)))))
+          ;;                                     (assoc-in '(:rule ::outputs) mibl-rule) ;; name
+          ;;                                     pkg-path (assoc-in '(:rule ::outputs) mibl-rule))
+
+          ;; (append mibl-rule `((:test-action ,action)))
+          mibl-rule
+          )))))
 
 ;; rule stanza with implicit targets and deps
 ;; https://dune.readthedocs.io/en/stable/dune-files.html#inferred-rules
@@ -362,8 +374,8 @@
                     (format #t "~A: ~A\n" (green "expanded targets") targets)))
 
              ;; all dune rule stanzas have an action, so they have a tool
-             (tools `(:tools ,(gensym))) ;; gensym is a placeholder, to be replaced by set-cdr!
-             (mibl-trace-let "tmp :tools" tools)
+             (tools `(::tools ,(gensym))) ;; gensym is a placeholder, to be replaced by set-cdr!
+             (mibl-trace-let "tmp ::tools" tools)
              )
 
         (if deps
@@ -376,11 +388,11 @@
                           ;; (:foo (:pkg a/b/c)(:tgt "foo.sh"))
                           ;; (::opam-pkg foo-bar-baz)
                           ;; (tezos-protocol-demo-noops ::opam-pkg)
-                          (mibl-trace "dep" dep *mibl-debug-rule-stanzas*)
+                          (mibl-trace "dep" dep test: *mibl-debug-rule-stanzas*)
                           (case (cdr dep)
                             ((::opam-pkg) (cdr dep))
                             (else
-                             (mibl-trace "filegroup dep?" dep *mibl-debug-rule-stanzas*)
+                             (mibl-trace "filegroup dep?" dep test: *mibl-debug-rule-stanzas*)
                              ;; e.g. dep == (:css (:glob . "glob_STAR.css"))
                              (let* ((lbl-tag (car dep))
                                     (lbl (cdr dep))
@@ -461,8 +473,8 @@
 
           ;; (update-exports-table-with-targets! ws
           ;;                                     :FIXME ;; tag
-          ;;                                     (assoc-in '(:rule :outputs) mibl-rule) ;; name
-          ;;                                     pkg-path (assoc-in '(:rule :outputs) mibl-rule))
+          ;;                                     (assoc-in '(:rule ::outputs) mibl-rule) ;; name
+          ;;                                     pkg-path (assoc-in '(:rule ::outputs) mibl-rule))
           mibl-rule)))))
 
 (define dune-rule->mibl

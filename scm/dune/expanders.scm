@@ -19,7 +19,7 @@
 ;; (run %{<} %{targets})
 ;; (action (run %{deps} --test))
 
-;; returns kw used as key in :tool list, e.g. :tools/rewrite.exe
+;; returns kw used as key in :tool list, e.g. ::tools/rewrite.exe
 (define expand-run-tool
   (lambda (ws tool tools pkg targets deps)
     (if (or *mibl-debug-expanders* *mibl-debug-s7*)
@@ -249,8 +249,8 @@
     ;; action directives:
     ((%{deps}) :deps) ;; ::deps?
     ((%{^}) :deps) ; expands to the list of deps, separated by spaces.
-    ((%{target}) :outputs)
-    ((%{targets}) :outputs)
+    ((%{target}) ::outputs)
+    ((%{targets}) ::outputs)
    (else (pct-var->keyword arg)))
   ;; plus prefix + parameter, see below
 
@@ -728,8 +728,8 @@
                     (format #t "~A: ~A~%" (ublue "not found in pkg files") arg))
                 #f))))))
 
-;; updates :outputs. called by normalize-action-write-file if no (targets)
-;; targets should be (:outputs)
+;; updates ::outputs. called by normalize-action-write-file if no (targets)
+;; targets should be (::outputs)
 (define (-infer-output! arg targets pkg)
   (if (or *mibl-debug-expanders* *mibl-debug-s7*)
       (begin
@@ -816,7 +816,7 @@
    ;;((eq? (fnmatch "*.mli" (format #f "~A" arg) 0) 0)
    ((string=? "%{target}" (format #f "~A" arg))
     ;; targets should be a singleton list
-    ;; e.g. (:outputs (:foo.txt (:pkg "a/b") (:tgt "foo.txt")))
+    ;; e.g. (::outputs (:foo.txt (:pkg "a/b") (:tgt "foo.txt")))
     (let ((targets (car (cdr targets))))
       (if (or *mibl-debug-expanders* *mibl-debug-s7*)
           (format #t "~A: ~A~%" (red "targets") targets))
@@ -879,17 +879,17 @@
       (expand-string-arg ws (string-left-trim "./" arg) pkg targets deps))
 
      ;; FIXME: pct-vars should already be handled by -expand-pct-arg?
-     ((string=? "%{deps}" arg)
-      (let* ((kw (substring arg 6 (- (length arg) 1)))
-             (keysym (string->keyword kw)))
-        ;; (format #t "kw ~A\n" kw)
-        ;; (format #t "keysym ~A\n" keysym)
-        deps))
+     ((string=? "%{deps}" arg) ::inputs)
+      ;; (let* ((kw (substring arg 6 (- (length arg) 1)))
+      ;;        (keysym (string->keyword kw)))
+      ;;   ;; (format #t "kw ~A\n" kw)
+      ;;   ;; (format #t "keysym ~A\n" keysym)
+      ;;   deps))
 
      ((string=? "%{targets}" arg)
       ;; (format #t "ARG TARGETS\n")
       ;; (format #t " targets val: ~A\n" targets)
-      `(:outputs ,targets))
+      `(::outputs ,targets))
 
      ((string=? "%{target}" arg)
       ;; (format #t "ARG TARGET\n")
@@ -907,7 +907,7 @@
         (-expand-pct-arg!? ws arg :arg pkg deps)))
 
      (else
-      (mibl-trace "String literal" arg *mibl-debug-expanders*)
+      (mibl-trace "String literal" arg :test *mibl-debug-expanders*)
       ;; arg is string.
       ;; if contains spaces, cannot be a file (EXCEPT on windows!)
       ;; else check deps and targets, then pkg files
@@ -1004,8 +1004,8 @@
                                (if (or *mibl-debug-expanders* *mibl-debug-s7*)
                                    (format #t "~A: ~A~%" (green "arg is pct-var") arg))
                                (if (or (eq? arg '%{target}) (eq? arg '%{targets}))
-                                   ;; %{target}, %{targets} directly translate to :outputs
-                                   (cons :outputs (expand-cmd-args* ws (cdr args) pkg targets deps))
+                                   ;; %{target}, %{targets} directly translate to ::outputs
+                                   (cons ::outputs (expand-cmd-args* ws (cdr args) pkg targets deps))
                                    ;; else expand the pct-var
                                    (let* ((pkg-path (assoc-val :pkg-path pkg))
                                           (arg (-expand-pct-arg!? ws arg :arg pkg deps)))
@@ -1042,7 +1042,7 @@
                                 ))))
                       ;; old impl:
                       ;; (if (or (eq? arg '%{target}) (eq? arg '%{targets}))
-                      ;;      (cons :outputs
+                      ;;      (cons ::outputs
                       ;;            (expand-cmd-args* ws (cdr args) pkg targets deps))
 
                       ;;      (let ((arg-str (format #f "~A" arg)))
@@ -1208,7 +1208,7 @@
                  (result (expand-terms* ws deplist pkg '())))
             (if (or *mibl-debug-expanders* *mibl-debug-s7*)
                 (format #t "~A: ~A\n" (green "DEPLIST EXPANDED") result))
-            `(:inputs ,@result))
+            `(::inputs ,@result))
           #f))
 
 (define (expand-cmd-list ws pkg -raw-cmds tools targets deps)

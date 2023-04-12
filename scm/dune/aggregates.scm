@@ -131,7 +131,7 @@
                                     ;;                (if (= (fnmatch "*.ml" tgt 0) 0)
                                     ;;                    (update-pkg-files-with-struct! pkg tgt))
                                     ;;                ))
-                                    ;;            (assoc-val :outputs (cdr stanza))))
+                                    ;;            (assoc-val ::outputs (cdr stanza))))
                                     (else)))
                                 stanzas)
                           )))

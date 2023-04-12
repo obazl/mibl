@@ -1,0 +1,6 @@
+test_suite(
+    name = "test",
+    tests = [
+        "//test/dune/action_dsl/base_cases/diff/case01/.mibl:test",
+    ]
+)

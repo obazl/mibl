@@ -76,7 +76,7 @@ void test_bash(void) {
     char *fn = "dsl:action->mibl";
 
     sexp_action = "'((bash \"diff -a %{deps}\"))";
-    sexp_expected = "'((:tool . \"diff\") (:shell . bash) (:cmd-lines (:line \"diff\" \"-a\" (% . deps))))";
+    sexp_expected = "'((:tool . \"diff\") (:shell . bash) (:cmd-lines (:line \"diff\" \"-a\" ::inputs)))";
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
@@ -85,7 +85,7 @@ void test_bash(void) {
 
     /* internal whitespace */
     sexp_action = "'((bash   \"diff   -a   %{deps}\"))";
-    sexp_expected = "'((:tool . \"diff\") (:shell . bash) (:cmd-lines (:line \"diff\" \"-a\" (% . deps))))";
+    sexp_expected = "'((:tool . \"diff\") (:shell . bash) (:cmd-lines (:line \"diff\" \"-a\" ::inputs)))";
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
@@ -94,7 +94,7 @@ void test_bash(void) {
 
     /* split cmd into multiple lines */
     sexp_action = "'((bash \"diff -a\" \n \"%{deps} foo\"))";
-    sexp_expected = "'((:tool . \"diff\") (:shell . bash) (:cmd-lines (:line \"diff\" \"-a\") (:line (% . deps) \"foo\")))";
+    sexp_expected = "'((:tool . \"diff\") (:shell . bash) (:cmd-lines (:line \"diff\" \"-a\") (:line ::inputs \"foo\")))";
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
@@ -103,7 +103,7 @@ void test_bash(void) {
 
     /* sym args */
     sexp_action = "'((bash diff -a %{deps}))";
-    sexp_expected = "'((:shell . bash) (:tool . diff) (:args -a (% . deps)))";
+    sexp_expected = "'((:shell . bash) (:tool . diff) (:args -a ::inputs))";
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
@@ -119,7 +119,7 @@ void test_bash(void) {
     TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
 
     sexp_action = "'((bash \"%{first_dep} > ffi_generated.ml\"))";
-    sexp_expected = "'((:tool (% . first_dep)) (:shell . bash) (:cmd-lines (:line (% . first_dep) \">\" \"ffi_generated.ml\")))";
+    sexp_expected = "'((:tool (:input . first_dep)) (:shell . bash) (:cmd-lines (:line (:input . first_dep) \">\" \"ffi_generated.ml\")))";
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
@@ -128,7 +128,7 @@ void test_bash(void) {
 
     /* add a flag */
     sexp_action = "'((bash \"%{first_dep} -ml > ffi_generated.ml\"))";
-    sexp_expected = "'((:tool (% . first_dep)) (:shell . bash) (:cmd-lines (:line (% . first_dep) \"-ml\" \">\" \"ffi_generated.ml\")))";
+    sexp_expected = "'((:tool (:input . first_dep)) (:shell . bash) (:cmd-lines (:line (:input . first_dep) \"-ml\" \">\" \"ffi_generated.ml\")))";
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
@@ -138,7 +138,7 @@ void test_bash(void) {
 
     /* pctvar w/prefix */
     sexp_action = "'((bash \"./%{first_dep} > %{targets}\"))";
-    sexp_expected = "'((:tool (:string \"./\" (% . first_dep))) (:shell . bash) (:cmd-lines (:line (:string \"./\" (% . first_dep)) \">\" (% . targets))))";
+    sexp_expected = "'((:tool (:string \"./\" (:input . first_dep))) (:shell . bash) (:cmd-lines (:line (:string \"./\" (:input . first_dep)) \">\" ::outputs)))";
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
@@ -148,7 +148,7 @@ void test_bash(void) {
 
     /* asterisk */
     sexp_action = "'((bash \"%{bin:shellcheck} -x *.sh\"))";
-    sexp_expected = "'((:tool (% bin shellcheck)) (:shell . bash) (:cmd-lines (:line (% bin shellcheck) \"-x\" \"*.sh\")))";
+    sexp_expected = "'((:tool (:input bin shellcheck)) (:shell . bash) (:cmd-lines (:line (:input bin shellcheck) \"-x\" \"*.sh\")))";
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
@@ -220,7 +220,7 @@ void test_progn(void) {
     /*  */
     sexp_action = "'((progn (echo \"foo\") (diff a.txt b.txt) (diff ../c.txt d.txt) (echo \"bar\")))";
 
-    sexp_expected = "'(:cmds ((:cmd (:shell . sh) (:tool . echo) (:args \"foo\")) (:cmd (:shell . sh) (:tool . diff) (:args a.txt b.txt)) (:cmd (:shell . sh) (:tool . diff) (:args ../c.txt d.txt)) (:cmd (:shell . sh) (:tool . echo) (:args \"bar\"))))";
+    sexp_expected = "'(:cmds ((:cmd (:shell . sh) (:tool . :echo) (:args \"foo\")) (:cmd (:shell . sh) (:tool . :diff) (:args a.txt b.txt)) (:cmd (:shell . sh)(:tool . :diff) (:args ../c.txt d.txt)) (:cmd (:shell . sh) (:tool . :echo) (:args \"bar\"))))";
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
@@ -236,7 +236,7 @@ void test_progn(void) {
     ) \
     (echo \"Bootstrap check: done.\n\") \
   ))";
-    sexp_expected = "'(:cmds ((:cmd (:shell . sh) (:tool . echo) (:args \"Bootstrap check: comparing the stage 2 and stage 3 parsers...\n\")) (:cmd (:shell . sh) (:tool . diff) (:args parser.stage2.ml parser.stage3.ml)) (:cmd (:shell . sh) (:tool . diff) (:args ../stage2/parser.mli parser.mli)) (:cmd (:shell . sh) (:tool . echo) (:args \"Bootstrap check: done.\n\"))))";
+    sexp_expected = "'(:cmds ((:cmd (:shell . sh) (:tool . :echo) (:args \"Bootstrap check: comparing the stage 2 and stage 3 parsers...\n\")) (:cmd (:shell . sh) (:tool . :diff) (:args parser.stage2.ml parser.stage3.ml)) (:cmd (:shell . sh) (:tool . :diff) (:args ../stage2/parser.mli parser.mli)) (:cmd (:shell . sh) (:tool . :echo) (:args \"Bootstrap check: done.\n\"))))";
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
@@ -245,7 +245,7 @@ void test_progn(void) {
 
     /* redundant embedded progn */
     sexp_action = "'((with-stdout-to %{targets} (progn (run ../config/gen_services.exe %{deps}) (cat uri_services_raw.ml))))";
-    sexp_expected = "'((:stdout (% . targets)) (:cmds ((:cmd (:tool ../config/gen_services.exe) (:args (% . deps))) (:cmd (:shell . sh) (:tool . cat) (:args uri_services_raw.ml)))))";
+    sexp_expected = "'((:stdout ::outputs) (:cmds ((:cmd (:tool ../config/gen_services.exe) (:args ::inputs)) (:cmd (:shell . sh) (:tool . :cat) (:args uri_services_raw.ml)))))";
 
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
@@ -312,13 +312,13 @@ menhir:
 
 }
 
-void test_base_with_stdout_to(void) {
+void test_stdout(void) {
     /* TEST_IGNORE(); */
     char *fn = "dsl:action->mibl";
 
     /* directive arg: symbol */
     sexp_action =     "'((with-stdout-to output.txt (cat %{deps})))";
-    sexp_expected = "'((:stdout output.txt) (:cmd (:shell . sh) (:tool . cat) (:args (% . deps))))";
+    sexp_expected = "'((:stdout output.txt) (:cmd (:shell . sh) (:tool . :cat) (:args ::inputs)))";
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
@@ -327,7 +327,7 @@ void test_base_with_stdout_to(void) {
 
     /* directive arg: string */
     sexp_action =     "'((with-stdout-to \"output.txt\" (cat %{deps})))";
-    sexp_expected = "'((:stdout \"output.txt\") (:cmd (:shell . sh) (:tool . cat) (:args (% . deps))))";
+    sexp_expected = "'((:stdout \"output.txt\") (:cmd (:shell . sh) (:tool . :cat) (:args ::inputs)))";
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
@@ -336,7 +336,7 @@ void test_base_with_stdout_to(void) {
 
     /* directive arg: pctvar sym */
     sexp_action =     "'((with-stdout-to %{output} (cat %{deps})))";
-    sexp_expected = "'((:stdout (% . output)) (:cmd (:shell . sh) (:tool . cat) (:args (% . deps))))";
+    sexp_expected = "'((:stdout (:input . output)) (:cmd (:shell . sh) (:tool . :cat) (:args ::inputs)))";
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
@@ -345,7 +345,7 @@ void test_base_with_stdout_to(void) {
 
     /* directive arg: pctvar string - ignored, redirect is always to a file */
     sexp_action =     "'((with-stdout-to \"%{output}\" (cat %{deps})))";
-    sexp_expected = "'((:stdout (% . output)) (:cmd (:shell . sh) (:tool . cat) (:args (% . deps))))";
+    sexp_expected = "'((:stdout (:input . output)) (:cmd (:shell . sh) (:tool . :cat) (:args ::inputs)))";
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
@@ -354,7 +354,7 @@ void test_base_with_stdout_to(void) {
 
     /* directive arg: pctvar embedded in string: pfx */
     sexp_action =     "'((with-stdout-to \"foo/%{output}\" (cat %{deps})))";
-    sexp_expected = "'((:stdout (:string \"foo/\" (% . output))) (:cmd (:shell . sh) (:tool . cat) (:args (% . deps))))";
+    sexp_expected = "'((:stdout (:string \"foo/\" (:input . output))) (:cmd (:shell . sh) (:tool . :cat) (:args ::inputs)))";
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
@@ -363,7 +363,7 @@ void test_base_with_stdout_to(void) {
 
     /* directive arg: pctvar embedded in string: sfx */
     sexp_action =     "'((with-stdout-to \"%{outdir}/out.txt\" (cat %{deps})))";
-    sexp_expected = "'((:stdout (:string (% . outdir) \"/out.txt\")) (:cmd (:shell . sh) (:tool . cat) (:args (% . deps))))";
+    sexp_expected = "'((:stdout (:string (:input . outdir) \"/out.txt\")) (:cmd (:shell . sh) (:tool . :cat) (:args ::inputs)))";
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
@@ -372,7 +372,7 @@ void test_base_with_stdout_to(void) {
 
     /* directive arg: pctvar embedded in string: pfx, sfx */
     sexp_action =     "'((with-stdout-to \"foo/%{outdir}/out.txt\" (cat %{deps})))";
-    sexp_expected = "'((:stdout (:string \"foo/\" (% . outdir) \"/out.txt\")) (:cmd (:shell . sh) (:tool . cat) (:args (% . deps))))";
+    sexp_expected = "'((:stdout (:string \"foo/\" (:input . outdir) \"/out.txt\")) (:cmd (:shell . sh) (:tool . :cat) (:args ::inputs)))";
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
@@ -380,13 +380,13 @@ void test_base_with_stdout_to(void) {
     TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
 }
 
-void test_base_with_stderr_to(void) {
+void test_stderr(void) {
     /* TEST_IGNORE(); */
     char *fn = "dsl:action->mibl";
 
     /* directive arg: symbol */
     sexp_action   = "'((with-stderr-to stderr.txt (run %{exe:foo})))";
-    sexp_expected = "'((:stderr stderr.txt) (:cmd (:tool (% exe foo)) (:args)))";
+    sexp_expected = "'((:stderr stderr.txt) (:cmd (:tool (:input exe foo)) (:args)))";
     // NB: no (:shell) entry for 'run'
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
@@ -396,7 +396,7 @@ void test_base_with_stderr_to(void) {
 
     /* directive arg: string */
     sexp_action =     "'((with-stderr-to \"stderr.txt\" (run %{exe:foo})))";
-    sexp_expected = "'((:stderr \"stderr.txt\") (:cmd (:tool (% exe foo)) (:args)))";
+    sexp_expected = "'((:stderr \"stderr.txt\") (:cmd (:tool (:input exe foo)) (:args)))";
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
@@ -405,7 +405,7 @@ void test_base_with_stderr_to(void) {
 
     /* directive arg: pctvar sym */
     sexp_action =     "'((with-stderr-to %{stderr} (run %{exe:foo})))";
-    sexp_expected = "'((:stderr (% . stderr)) (:cmd (:tool (% exe foo)) (:args)))";
+    sexp_expected = "'((:stderr (:input . stderr)) (:cmd (:tool (:input exe foo)) (:args)))";
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
@@ -414,8 +414,8 @@ void test_base_with_stderr_to(void) {
 
     /* directive arg: pctvar string - ignored, redirect is always to a file */
     sexp_action =     "'((with-stderr-to \"%{stderr}\" (run %{exe:foo})))";
-    sexp_expected = "'((:stderr (% . stderr)) (:cmd (:tool (% exe foo)) (:args)))";
-                      /* ((:stderr (% . stderr)) (:cmd (:tool . run) (:args (% exe foo))))"; */
+    sexp_expected = "'((:stderr (:input . stderr)) (:cmd (:tool (:input exe foo)) (:args)))";
+                      /* ((:stderr (:input . stderr)) (:cmd (:tool . run) (:args (:input exe foo))))"; */
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
@@ -424,7 +424,7 @@ void test_base_with_stderr_to(void) {
 
     /* directive arg: pctvar embedded in string: pfx */
     sexp_action =     "'((with-stderr-to \"foo/%{stderr}\" (run %{exe:foo})))";
-    sexp_expected = "'((:stderr (:string \"foo/\" (% . stderr))) (:cmd (:tool (% exe foo)) (:args)))";
+    sexp_expected = "'((:stderr (:string \"foo/\" (:input . stderr))) (:cmd (:tool (:input exe foo)) (:args)))";
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
@@ -433,7 +433,7 @@ void test_base_with_stderr_to(void) {
 
     /* directive arg: pctvar embedded in string: sfx */
     sexp_action =     "'((with-stderr-to \"%{outdir}/stderr.txt\" (run %{exe:foo})))";
-    sexp_expected = "'((:stderr (:string (% . outdir) \"/stderr.txt\")) (:cmd (:tool (% exe foo)) (:args)))";
+    sexp_expected = "'((:stderr (:string (:input . outdir) \"/stderr.txt\")) (:cmd (:tool (:input exe foo)) (:args)))";
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
@@ -442,7 +442,7 @@ void test_base_with_stderr_to(void) {
 
     /* directive arg: pctvar embedded in string: pfx, sfx */
     sexp_action =     "'((with-stderr-to \"foo/%{outdir}/stderr.txt\" (run %{exe:foo})))";
-    sexp_expected = "'((:stderr (:string \"foo/\" (% . outdir) \"/stderr.txt\")) (:cmd (:tool  (% exe foo)) (:args)))";
+    sexp_expected = "'((:stderr (:string \"foo/\" (:input . outdir) \"/stderr.txt\")) (:cmd (:tool  (:input exe foo)) (:args)))";
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
@@ -467,7 +467,7 @@ void test_run_with_stdout_to(void) {
     */
 
     sexp_action = "'((with-stdout-to %{targets} (run %{dep:gen_primitives.sh})))";
-    sexp_expected = "'((:stdout (% . targets)) (:cmd (:tool (% dep gen_primitives.sh)) (:args)))";
+    sexp_expected = "'((:stdout ::outputs) (:cmd (:tool (:input dep gen_primitives.sh)) (:args)))";
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
@@ -476,7 +476,7 @@ void test_run_with_stdout_to(void) {
 
     /* run bash => insert (:shell .bash) */
     sexp_action = "'((with-stdout-to %{targets} (run bash myscript.sh %{inputs})))";
-    sexp_expected = "'((:stdout (% . targets)) (:cmd (:shell . bash) (:tool . myscript.sh) (:args (% . inputs))))";
+    sexp_expected = "'((:stdout ::outputs) (:cmd (:shell . bash) (:tool . myscript.sh) (:args (:input . inputs))))";
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
@@ -585,7 +585,7 @@ ounit:
     */
 
     sexp_action = "'((with-stdout-to %{targets} (run bash myscript.sh %{inputs})))";
-    sexp_expected = "'((:stdout (% . targets)) (:cmd (:shell . bash) (:tool . myscript.sh) (:args (% . inputs))))";
+    sexp_expected = "'((:stdout ::outputs) (:cmd (:shell . bash) (:tool . myscript.sh) (:args (:input . inputs))))";
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
@@ -602,25 +602,25 @@ void test_pctvars(void) {
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn,  "\"%{foo}\"");
     actual = s7_eval_c_string(s7, utstring_body(sexp));
-    expected = s7_eval_c_string(s7, "'(:string (% . foo))");
+    expected = s7_eval_c_string(s7, "'(:string (:input . foo))");
     TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
 
     utstring_renew(sexp);
     utstring_printf(sexp, "%s", "(parse-pct-var '%{foo})");
     actual = s7_eval_c_string(s7, utstring_body(sexp));
-    expected = s7_eval_c_string(s7, "'(% . foo)");
+    expected = s7_eval_c_string(s7, "'(:input . foo)");
     TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
 
     utstring_renew(sexp);
     utstring_printf(sexp, "%s", "(parse-pct-var \"%{foo:bar}\")");
     actual = s7_eval_c_string(s7, utstring_body(sexp));
-    expected = s7_eval_c_string(s7, "'(:string (% foo bar))");
+    expected = s7_eval_c_string(s7, "'(:string (:input foo bar))");
     TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
 
     utstring_renew(sexp);
     utstring_printf(sexp, "%s", "(parse-pct-var '%{foo:bar})");
     actual = s7_eval_c_string(s7, utstring_body(sexp));
-    expected = s7_eval_c_string(s7, "'(% foo bar)");
+    expected = s7_eval_c_string(s7, "'(:input foo bar)");
     TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
 
     /* ;; %{libexec:myscript.sh} */
@@ -634,9 +634,8 @@ void test_embedded_pctvars(void) {
 
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, "\"foo/%{a} bar/%{b}/baz\"");
-    /* utstring_printf(sexp, "%s", "(destructure-dsl-string \"%{a}\")"); */
     actual = s7_eval_c_string(s7, utstring_body(sexp));
-    expected = s7_eval_c_string(s7, "'(:line (:string \"foo/\" (% . a)) (:string \"bar/\" (% . b) \"/baz\"))");
+    expected = s7_eval_c_string(s7, "'(:line (:string \"foo/\" (:input . a)) (:string \"bar/\" (:input . b) \"/baz\"))");
     TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
 }
 
@@ -679,6 +678,91 @@ void test_dsl_string(void) {
                                 "(:line \"diff-with-without-partitions\")"
                                 "(:line \"||\" \"true\"))");
     TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
+}
+
+void test_system(void) {
+    /* TEST_IGNORE(); */
+    char *fn = "dsl:action->mibl";
+
+    sexp_action = "'((system \"diff -a %{deps}\"))";
+    sexp_expected = "'((:tool . \"diff\") (:shell . sh) (:cmd-lines (:line \"diff\" \"-a\" ::inputs)))";
+    utstring_renew(sexp);
+    utstring_printf(sexp, "(%s %s)", fn, sexp_action);
+    actual = s7_eval_c_string(s7, utstring_body(sexp));
+    expected = s7_eval_c_string(s7, sexp_expected);
+    TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
+
+    /* internal whitespace */
+    sexp_action = "'((system   \"diff   -a   %{deps}\"))";
+    sexp_expected = "'((:tool . \"diff\") (:shell . sh) (:cmd-lines (:line \"diff\" \"-a\" ::inputs)))";
+    utstring_renew(sexp);
+    utstring_printf(sexp, "(%s %s)", fn, sexp_action);
+    actual = s7_eval_c_string(s7, utstring_body(sexp));
+    expected = s7_eval_c_string(s7, sexp_expected);
+    TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
+
+    /* split cmd into multiple lines */
+    sexp_action = "'((system \"diff -a\" \n \"%{deps} foo\"))";
+    sexp_expected = "'((:tool . \"diff\") (:shell . sh) (:cmd-lines (:line \"diff\" \"-a\") (:line ::inputs \"foo\")))";
+    utstring_renew(sexp);
+    utstring_printf(sexp, "(%s %s)", fn, sexp_action);
+    actual = s7_eval_c_string(s7, utstring_body(sexp));
+    expected = s7_eval_c_string(s7, sexp_expected);
+    TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
+
+    /* sym args */
+    sexp_action = "'((system diff -a %{deps}))";
+    sexp_expected = "'((:shell . sh) (:tool . diff) (:args -a ::inputs))";
+    utstring_renew(sexp);
+    utstring_printf(sexp, "(%s %s)", fn, sexp_action);
+    actual = s7_eval_c_string(s7, utstring_body(sexp));
+    expected = s7_eval_c_string(s7, sexp_expected);
+    TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
+
+    /* sexp_action = "'((bash test.sh))"; */
+    /* sexp_expected = "'((:shell . bash) (:tool . test.sh) (:args))"; */
+    /* utstring_renew(sexp); */
+    /* utstring_printf(sexp, "(%s %s)", fn, sexp_action); */
+    /* actual = s7_eval_c_string(s7, utstring_body(sexp)); */
+    /* expected = s7_eval_c_string(s7, sexp_expected); */
+    /* TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected)); */
+
+    /* sexp_action = "'((bash \"%{first_dep} > ffi_generated.ml\"))"; */
+    /* sexp_expected = "'((:tool (:input . first_dep)) (:shell . bash) (:cmd-lines (:line (:input . first_dep) \">\" \"ffi_generated.ml\")))"; */
+    /* utstring_renew(sexp); */
+    /* utstring_printf(sexp, "(%s %s)", fn, sexp_action); */
+    /* actual = s7_eval_c_string(s7, utstring_body(sexp)); */
+    /* expected = s7_eval_c_string(s7, sexp_expected); */
+    /* TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected)); */
+
+    /* /\* add a flag *\/ */
+    /* sexp_action = "'((bash \"%{first_dep} -ml > ffi_generated.ml\"))"; */
+    /* sexp_expected = "'((:tool (:input . first_dep)) (:shell . bash) (:cmd-lines (:line (:input . first_dep) \"-ml\" \">\" \"ffi_generated.ml\")))"; */
+    /* utstring_renew(sexp); */
+    /* utstring_printf(sexp, "(%s %s)", fn, sexp_action); */
+    /* actual = s7_eval_c_string(s7, utstring_body(sexp)); */
+    /* expected = s7_eval_c_string(s7, sexp_expected); */
+    /* TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected)); */
+
+
+    /* /\* pctvar w/prefix *\/ */
+    /* sexp_action = "'((bash \"./%{first_dep} > %{targets}\"))"; */
+    /* sexp_expected = "'((:tool (:string \"./\" (:input . first_dep))) (:shell . bash) (:cmd-lines (:line (:string \"./\" (:input . first_dep)) \">\" (:input . targets))))"; */
+    /* utstring_renew(sexp); */
+    /* utstring_printf(sexp, "(%s %s)", fn, sexp_action); */
+    /* actual = s7_eval_c_string(s7, utstring_body(sexp)); */
+    /* expected = s7_eval_c_string(s7, sexp_expected); */
+    /* TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected)); */
+
+
+    /* /\* asterisk *\/ */
+    /* sexp_action = "'((bash \"%{bin:shellcheck} -x *.sh\"))"; */
+    /* sexp_expected = "'((:tool (:input bin shellcheck)) (:shell . bash) (:cmd-lines (:line (:input bin shellcheck) \"-x\" \"*.sh\")))"; */
+    /* utstring_renew(sexp); */
+    /* utstring_printf(sexp, "(%s %s)", fn, sexp_action); */
+    /* actual = s7_eval_c_string(s7, utstring_body(sexp)); */
+    /* expected = s7_eval_c_string(s7, sexp_expected); */
+    /* TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected)); */
 }
 
 void _print_usage(void) {
@@ -980,13 +1064,18 @@ int main(int argc, char **argv)
     UNITY_BEGIN();
     RUN_TEST(test_pctvars);
     RUN_TEST(test_embedded_pctvars);
+    RUN_TEST(test_dsl_string);
+
+    /* // dsl inductive directives */
     RUN_TEST(test_progn);
     RUN_TEST(test_bash);
-    RUN_TEST(test_base_with_stdout_to);
-    RUN_TEST(test_base_with_stderr_to);
+    RUN_TEST(test_system);
+    //RUN_TEST(test_stdin);
+    //RUN_TEST(test_stderr);
+    RUN_TEST(test_stdout);
+    //RUN_TEST(test_stdx);
     RUN_TEST(test_action_run);
     RUN_TEST(test_run_with_stdout_to);
-    RUN_TEST(test_dsl_string);
 
     utstring_free(sexp);
     return UNITY_END();

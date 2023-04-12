@@ -1,0 +1,15 @@
+((:@ (:name . "@")
+     (:path . /Users/gar/obazl/mibl/test/dune/action_dsl/inductive/run/case01)
+     (:exports
+         (hash-table)) (:opam (hash-table)) (:shared-ppx (hash-table))
+     (:filegroups
+         (hash-table))
+     (:pkgs
+         (hash-table
+           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/action_dsl/inductive/run/case01") (:pkg-path . "./")
+                   (:realpath . "/Users/gar/obazl/mibl/test/dune/action_dsl/inductive/run/case01")
+                   (dune (rule (target registerer.ml)
+                               (deps a.ml b.ml (:src_dir TEZOS_PROTOCOL))
+                               (action (chdir %{workspace_root}
+                                              (run %{bin:tezos-embedded-protocol-packer}
+                                                   "%{src_dir}" "demo_counter" > %{target}))))))))))

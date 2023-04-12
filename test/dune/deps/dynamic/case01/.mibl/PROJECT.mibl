@@ -19,7 +19,10 @@
                                 (:dynamic (Dynsig2 . dynsig2.mli)))
                    (:structures (:static (Hello . hello.ml) (Mytest mytest.ml (:here . Hello))))
                    (:opam "mwe.opam")
-                   (:mibl (:rule (:tools (:write-file . :unresolved))
-                                 (:outputs (:dynsig2.mli (:pkg . "./") (:tgt . "dynsig2.mli")))
+                   (:mibl (:rule (::tools (:write-file . :unresolved))
+                                 (::outputs (:dynsig2.mli (:pkg . "./") (:tgt . "dynsig2.mli")))
                                  (:cmd (:tool :write-file)
-                                       (:args :dynsig2.mli (:content "val dynsig2_msg: string"))))))))))
+                                       (:args :dynsig2.mli (:content "val dynsig2_msg: string")))
+                                 (:test-cmd
+                                   :cmd (:tool :write-file)
+                                   (:args dynsig2.mli "val dynsig2_msg: string")))))))))

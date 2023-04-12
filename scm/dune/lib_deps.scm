@@ -228,7 +228,7 @@
             ;; (mibl-debug-print-exports-table ws-id)
 
             (-fixup-conditionals! ws-id pkg stanza)
-
+            (mibl-trace "XXXXXXXXXXXXXXXX" "X")
             (case (car stanza)
 
               ((:executable :test)
@@ -341,7 +341,7 @@
                       :write-file)
                (if *mibl-debug-s7*
                    (format #t "~A: ~A, ~A~%" (ublue "fixup") (car stanza) stanza-alist))
-               (let* ((targets (assoc-val :outputs stanza-alist))
+               (let* ((targets (assoc-val ::outputs stanza-alist))
                       (_ (if *mibl-debug-s7* (format #t "targets: ~A~%" targets)))
                       (deps (if-let ((deps (assoc :deps stanza-alist)))
                                     ;; (if (null? deps) '() (car deps))
@@ -410,7 +410,7 @@
                                                          (if *mibl-debug-s7*
                                                              (format #t "~A: ~A~%" (red "no import for tool") t))
                                                          ;; (error 'STOP "STOP no import")
-                                                         ;; assume (rashly) that form is e.g. :tools/version/gen/gen.exe
+                                                         ;; assume (rashly) that form is e.g. ::tools/version/gen/gen.exe
                                                          (let* ((kw t) ;; (caadr dep))
                                                                 (t (keyword->symbol kw))
                                                                 (path (dirname t)))
@@ -603,6 +603,10 @@
               ((:lex :yacc :menhir :env
                           :prologues :testsuite :tuareg :alias)
                (values))
+
+              ((:shell :tool :stdout :cmd :cmd-lines) (values))
+
+              ((:test-action) (values)) ;; testing
 
               (else
                (error 'fixme

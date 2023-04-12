@@ -419,8 +419,10 @@
                            :stdio)))
          (std-fd (let ((fd (cadr action-assoc)))
                    (if (eq? '%{target} fd)
-                       :output
-                       `(:fixme ,fd))))
+                       ::outputs
+                       (if (eq? '%{targets} fd)
+                           ::outputs
+                           `(:FIXME ,fd)))))
          (_ (if :test *mibl-debug-action-directives* (format #t "std-fd: ~A\n" std-fd)))
          (subaction-list (caddr action-assoc))
          (_ (if :test *mibl-debug-action-directives* (format #t "subaction-list: ~A\n" subaction-list)))
@@ -858,11 +860,9 @@
 ;; called by normalize-action-rule
 ;; converts (action ...) to mibl list
 (define (rule-action:normalize ws pkg stanza-alist tools targets deps) ;; rule stanza
-  (if (or :test *mibl-debug-s7* :test *mibl-debug-action-directives*)
-      (begin
-        (format #t "~A: ~A\n" (ublue "rule-action:normalize") stanza-alist)
-        (format #t "~A: ~A~%" (white "targets") targets)
-        (format #t "~A: ~A~%" (white "deps") deps)))
+  (mibl-trace-entry "rule-action:normalize" "" :test *mibl-debug-action-directives*)
+  (mibl-trace-entry "targets" targets)
+  (mibl-trace-entry "deps" deps)
   (let* ((action-assoc (assoc 'action stanza-alist))
          (action-alist (car (assoc-val 'action stanza-alist)))
          (_ (if :test *mibl-debug-action-directives* (format #t "  action alist: ~A\n" action-alist)))
@@ -896,8 +896,9 @@
 ;; if arg is a string, we have a problem - no reliable way to parse
 ;; out the tool, or anything other than pctvars. In some cases the string
 ;; will be an entire shell script, with function definitions etc.
-(define (destructure-bash-cmd action-list)
+(define* (destructure-shell-cmd action-list (shell 'bash))
   (mibl-trace-entry "destructure-bash-cmd" action-list :color red :test *mibl-debug-action-directives*)
+  (mibl-trace "shell" shell)
   (let* ((subaction-list (cdr action-list)))
     (mibl-trace "subaction-list" subaction-list :test *mibl-debug-action-directives*)
     (if (string? (car subaction-list))
@@ -906,14 +907,14 @@
                (xlines (map dsl:string->lines subaction-list)))
           (mibl-trace "segs" segs :test *mibl-debug-action-directives*)
           (mibl-trace "expanded lines" xlines :test *mibl-debug-action-directives*)
-          `((:shell . bash) (:cmd-lines ,@xlines))) ;; subaction-list)))
+          `((:shell . ,shell) (:cmd-lines ,@xlines))) ;; subaction-list)))
         (let ((subcmd (car subaction-list))
               (subargs (cdr subaction-list)))
-          (mibl-trace "bash subcmd" subcmd :test *mibl-debug-action-directives*)
-          (mibl-trace "bash subargs" subargs :test *mibl-debug-action-directives*)
+          (mibl-trace "shell subcmd" subcmd :test *mibl-debug-action-directives*)
+          (mibl-trace "shell subargs" subargs :test *mibl-debug-action-directives*)
           (let ((sargs (map dsl:string->lines subargs)))
-            (mibl-trace "bash sargs" sargs :test *mibl-debug-action-directives*)
-            `((:shell . bash) (:tool . ,subcmd) (:args ,@sargs)))))))
+            (mibl-trace "shell sargs" sargs :test *mibl-debug-action-directives*)
+            `((:shell . ,shell) (:tool . ,subcmd) (:args ,@sargs)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (destructure-progn-cmd action-list)

@@ -1,10 +1,10 @@
 ((:@ (:name . "@")
-     (:path . /Users/gar/obazl/mibl/test/dune/rules/stdout/ignore)
+     (:path . /Users/gar/obazl/mibl/test/dune/action_dsl/inductive/stdout/ignore)
      (:exports
          (hash-table)) (:opam (hash-table)) (:shared-ppx (hash-table))
      (:filegroups
          (hash-table))
      (:pkgs
          (hash-table
-           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/rules/stdout/ignore") (:pkg-path . "./")
-                   (:realpath . "/Users/gar/obazl/mibl/test/dune/rules/stdout/ignore"))))))
+           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/action_dsl/inductive/stdout/ignore") (:pkg-path . "./")
+                   (:realpath . "/Users/gar/obazl/mibl/test/dune/action_dsl/inductive/stdout/ignore"))))))

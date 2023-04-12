@@ -528,24 +528,24 @@
   ;; :foo => ::foo
   (let* ((lbl (string->keyword (format #f "~A" (keyword->symbol (car tagged-glob)))))
          (glob-sexp (cadr tagged-glob))
-         (mibl-trace-let "glob sexp" glob-sexp *mibl-debug-action-deps*)
+         (mibl-trace-let "glob sexp" glob-sexp :test *mibl-debug-action-deps*)
          (pattern (format #f "~A" (cadr glob-sexp)))
-         (mibl-trace-let "formatted pattern" pattern *mibl-debug-action-deps*)
+         (mibl-trace-let "formatted pattern" pattern :test *mibl-debug-action-deps*)
 
          (xpattern (->canonical-path pattern))
-         (mibl-trace-let "x pattern" xpattern *mibl-debug-action-deps*)
+         (mibl-trace-let "x pattern" xpattern :test *mibl-debug-action-deps*)
 
          ;; working dir is always ws root, so we prepend the pkg-path
          ;; (pattern-str (string-append pkg-path "/" pattern))
 
          (pkg-path (assoc-val :pkg-path pkg))
-         (mibl-trace-let "pkg-path" pkg-path *mibl-debug-action-deps*)
+         (mibl-trace-let "pkg-path" pkg-path :test *mibl-debug-action-deps*)
          ;; (dep-path (format #f "~A/~A" pkg-path pattern))
-         ;; (mibl-trace-let "dep-path" dep-path *mibl-debug-action-deps*)
+         ;; (mibl-trace-let "dep-path" dep-path :test *mibl-debug-action-deps*)
 
          ;; (canonical-path (->canonical-path dep-path))
          (canonical-path (->canonical-path pattern))
-         (mibl-trace-let "canonical-path" canonical-path *mibl-debug-action-deps*)
+         (mibl-trace-let "canonical-path" canonical-path :test *mibl-debug-action-deps*)
 
          ;; normalize pathed globs like ../foo/*.ml
          (canonical-pattern (basename canonical-path))

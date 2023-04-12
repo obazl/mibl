@@ -70,9 +70,9 @@ Schema design:
 
 [source,scheme]
 ----
-(:rule (:inputs ...)  ;; from dune 'deps'
-       (:outputs ...) ;;  from dune 'target', 'targets'
-       (:tools ...)   ;; from dune action
+(:rule (::inputs ...)  ;; from dune 'deps'
+       (::outputs ...) ;;  from dune 'target', 'targets'
+       (::tools ...)   ;; from dune action
        (:cmd ...)
        (:stdin ...)   ;; dune with-stdin-from
        (:stdout ...)  ;; dune with-stdout-to

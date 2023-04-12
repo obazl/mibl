@@ -1,0 +1,30 @@
+((:@ (:name . "@")
+     (:path . /Users/gar/obazl/mibl/test/dune/action_dsl/inductive/run/case01)
+     (:exports
+         (hash-table)) (:opam (hash-table)) (:shared-ppx (hash-table))
+     (:filegroups
+         (hash-table))
+     (:pkgs
+         (hash-table
+           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/action_dsl/inductive/run/case01") (:pkg-path . "./")
+                   (:realpath . "/Users/gar/obazl/mibl/test/dune/action_dsl/inductive/run/case01")
+                   (dune (rule (target registerer.ml)
+                               (deps a.ml b.ml (:src_dir TEZOS_PROTOCOL))
+                               (action (chdir %{workspace_root}
+                                              (run %{bin:tezos-embedded-protocol-packer}
+                                                   "%{src_dir}" "demo_counter" > %{target})))))
+                   (:mibl (:rule (::inputs (:> (:pkg . "./") (:tgt . ">"))
+                                           (:demo_counter (:pkg . "./") (:tgt . "demo_counter"))
+                                           (::toolsC ((symbol ":(:input bin tezos-embedded-protocol-packer):()") . ::unresolved))
+                                           (:a.ml (:pkg . "./") (:tgt . "a.ml"))
+                                           (:b.ml (:pkg . "./") (:tgt . "b.ml"))
+                                           (:src_dir (:pkg . "./") (:tgt . "TEZOS_PROTOCOL")))
+                                 (::tools {gensym}-6) (:ctx :ws-root)
+                                 (::outputs (:registerer.ml (:pkg . "./") (:tgt . "registerer.ml")))
+                                 (:cmd (:tool
+                                        (symbol ":(:input bin tezos-embedded-protocol-packer):()"))
+                                       (:args :src_dir :demo_counter :> ::outputs))
+                                 (:ctx :ws-root)
+                                 (:test-cmd (:shell . sh) (:tool . chdir) (:args))))
+                   (:structures (:dynamic (Registerer . registerer.ml)))
+                   (:files (:dynamic "demo_counter" ">")))))))

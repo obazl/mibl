@@ -1,0 +1,18 @@
+((:@ (:name . "@")
+     (:path . /Users/gar/obazl/mibl/test/dune/rules/stdout/with/cat)
+     (:exports
+         (hash-table)) (:opam (hash-table)) (:shared-ppx (hash-table))
+     (:filegroups
+         (hash-table))
+     (:pkgs
+         (hash-table
+           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/rules/stdout/with/cat") (:pkg-path . "./")
+                   (:realpath . "/Users/gar/obazl/mibl/test/dune/rules/stdout/with/cat")
+                   (dune (rule (targets output.txt) (deps input1.txt input2.txt)
+                               (action (with-stdout-to %{targets} (cat %{deps})))))
+                   (:files (:static "input1.txt" "input2.txt") (:dynamic "output.txt"))
+                   (:mibl (:rule (:deps (:input1.txt (:pkg . "./") (:tgt . "input1.txt"))
+                                        (:input2.txt (:pkg . "./") (:tgt . "input2.txt")))
+                                 (:tools (:cat . :shell-tool))
+                                 (:outputs (:output.txt (:pkg . "./") (:tgt . "output.txt")))
+                                 (:cmd (:tool :cat) (:args :deps)) (:stdout (:fixme %{targets})))))))))

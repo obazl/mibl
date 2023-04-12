@@ -1,16 +1,18 @@
 ((:@ (:name . "@")
-     (:path . /Users/gar/obazl/mibl/test/dune/rules/shell/system/case01)
+     (:path . /Users/gar/obazl/mibl/test/dune/action_dsl/base_cases/system/case01)
      (:exports
          (hash-table)) (:opam (hash-table)) (:shared-ppx (hash-table))
      (:filegroups
          (hash-table))
      (:pkgs
          (hash-table
-           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/rules/shell/system/case01") (:pkg-path . "./")
-                   (:realpath . "/Users/gar/obazl/mibl/test/dune/rules/shell/system/case01")
+           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/action_dsl/base_cases/system/case01") (:pkg-path . "./")
+                   (:realpath . "/Users/gar/obazl/mibl/test/dune/action_dsl/base_cases/system/case01")
                    (dune (rule (targets foo.txt) (deps foo.sh) (action (system "foo.sh"))))
-                   (:mibl (:rule (:inputs (:foo.sh (:pkg . "./") (:tgt . "foo.sh")))
-                                 (:tools (:system . :shell-tool))
-                                 (:outputs (:foo.txt (:pkg . "./") (:tgt . "foo.txt")))
-                                 (:cmd (:tool :system) (:args :foo.sh))))
+                   (:mibl (:rule (::inputs (:foo.sh (:pkg . "./") (:tgt . "foo.sh")))
+                                 (::tools (:system . :shell-tool))
+                                 (::outputs (:foo.txt (:pkg . "./") (:tgt . "foo.txt")))
+                                 (:cmd (:tool :system) (:args :foo.sh))
+                                 (:test-cmd (:tool . "foo.sh") (:shell . bash)
+                                            (:cmd-lines (:line "foo.sh")))))
                    (:files (:dynamic "foo.txt")))))))

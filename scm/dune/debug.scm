@@ -1,4 +1,4 @@
-(define *mibl-debugging* #t)
+(define *mibl-debugging* #f)
 
 (define-expansion* (mibl-trace-entry hdr msg (color ublue) (test #f))
   (if *mibl-debugging*

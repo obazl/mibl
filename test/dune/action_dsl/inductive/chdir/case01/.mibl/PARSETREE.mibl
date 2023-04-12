@@ -1,0 +1,16 @@
+((:@ (:name . "@")
+     (:path . /Users/gar/obazl/mibl/test/dune/action_dsl/inductive/chdir/case01)
+     (:exports
+         (hash-table)) (:opam (hash-table)) (:shared-ppx (hash-table))
+     (:filegroups
+         (hash-table))
+     (:pkgs
+         (hash-table
+           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/action_dsl/inductive/chdir/case01") (:pkg-path . "./")
+                   (:realpath . "/Users/gar/obazl/mibl/test/dune/action_dsl/inductive/chdir/case01")
+                   (dune (rule (target output.txt)
+                               (deps (:cfg %{workspace_root}/config.txt))
+                               (action (chdir %{workspace_root} (cat %{cfg} > %{target}))))
+                         (rule (target output.txt)
+                               (action
+                                (chdir %{workspace_root} (cat "foo/config.txt" > %{target}))))))))))

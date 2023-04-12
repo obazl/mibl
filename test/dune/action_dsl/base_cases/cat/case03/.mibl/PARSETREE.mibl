@@ -1,13 +1,13 @@
 ((:@ (:name . "@")
-     (:path . /Users/gar/obazl/mibl/test/dune/rules/shell/cat/case01)
+     (:path . /Users/gar/obazl/mibl/test/dune/action_dsl/base_cases/cat/case03)
      (:exports
          (hash-table)) (:opam (hash-table)) (:shared-ppx (hash-table))
      (:filegroups
          (hash-table))
      (:pkgs
          (hash-table
-           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/rules/shell/cat/case01") (:pkg-path . "./")
-                   (:realpath . "/Users/gar/obazl/mibl/test/dune/rules/shell/cat/case01")
+           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/action_dsl/base_cases/cat/case03") (:pkg-path . "./")
+                   (:realpath . "/Users/gar/obazl/mibl/test/dune/action_dsl/base_cases/cat/case03")
                    (dune (rule (targets output.txt) (deps input1.txt input2.txt)
                                (action (with-stdout-to %{targets} (cat %{deps})))))
                    (:files (:static "input1.txt" "input2.txt")))))))

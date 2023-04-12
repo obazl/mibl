@@ -1,0 +1,7 @@
+;; @bap//dune
+
+(rule
+ (target config.status.in)
+ (mode fallback)
+ (action (with-stdout-to %{target} (echo ""))))
+

@@ -1,0 +1,9 @@
+test_suite(
+    name = "test",
+    tests = [
+        "//test/dune/action_dsl/inductive/chdir:test",
+        "//test/dune/action_dsl/inductive/run:test",
+        "//test/dune/action_dsl/inductive/stdio:test",
+        "//test/dune/action_dsl/inductive/stdout:test",
+    ]
+)
