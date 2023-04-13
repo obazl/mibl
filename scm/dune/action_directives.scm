@@ -1,9 +1,10 @@
 (if *mibl-debug-s7-loads*
-    (format #t "loading dune/dune_actions.scm~%"))
+    (format #t "loading dune/action_directives.scm~%"))
 
-(provide 'actions.scm)
+;;(require 'dsl:action->mibl)
+;;(require 'dune/action_dsl.scm)
 
-(load "dune/action_run.scm")
+;; (load "dune/action_run.scm")
 (load "dune/action_shell.scm")
 
 (define (normalize-action-chdir-dsl ws pkg action-alist tools targets deps)
@@ -555,7 +556,7 @@
                            target)
 
     (set-cdr! tools `((:write-file . :unresolved)))
-    `(;;  (:output ,@targets)
+    `(;;  (% ,@targets)
       (:cmd
        (:tool :write-file)
        ,(cons :args (list target content))))))
@@ -943,3 +944,5 @@
             (let ((sargs (map dsl:string->lines subargs)))
               (mibl-trace "bash sargs" sargs :test *mibl-debug-action-directives*)
               `((:shell . bash) (:tool . ,subcmd) (:args ,@sargs))))))))
+
+(provide 'action_directives.scm)

@@ -728,7 +728,7 @@ void _mibl_s7_configure_paths(char *scmdir, /*char *main_script,*/ char *ws_root
     /*     exit(EXIT_FAILURE); */
     /* } */
 
-    _init_scheme_fns(s7);       /* call _after_ loading dune.scm */
+    init_scheme_fns(s7);       /* call _after_ loading dune.scm */
 
     /* chdir(rootws);            /\* always run from base ws root *\/ */
 

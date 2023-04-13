@@ -13,6 +13,6 @@
                                  (::tools (:system . :shell-tool))
                                  (::outputs (:foo.txt (:pkg . "./") (:tgt . "foo.txt")))
                                  (:cmd (:tool :system) (:args :foo.sh))
-                                 (:test-cmd (:tool . "foo.sh") (:shell . bash)
-                                            (:cmd-lines (:line "foo.sh")))))
+                                 (:cmdx (:tool . "foo.sh") (:shell . sh)
+                                        (:cmd-lines (:line "foo.sh")))))
                    (:files (:dynamic "foo.txt")))))))

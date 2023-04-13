@@ -1,6 +1,7 @@
 (if *mibl-debug-s7-loads*
     (format #t "loading libmibl.scm~%"))
 
+;;(require 'dune.scm)
 (load "dune.scm")
 (load "mibl_pp.scm")
 (load "dune/pipeline.scm")

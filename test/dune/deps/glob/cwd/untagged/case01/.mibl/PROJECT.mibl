@@ -16,5 +16,6 @@
                                  (::tools (:cat . :shell-tool))
                                  (::outputs (:foo.css (:pkg . "./") (:tgt . "foo.css")))
                                  (:cmd (:tool :cat) (:args :deps ::outputs))
-                                 (:test-cmd (:shell . sh) (:tool . :cat) (:args :::inputs ::outputs))))
+                                 (:cmdx (:tool . :cat) (:shell . #<unspecified>)
+                                        (:args ::inputs ::outputs))))
                    (:filegroups ("glob_STAR.css" (:pkg "./") (:glob . "*.css") (:clients "./"))))))))

@@ -23,6 +23,6 @@
                                  (::outputs (:dynsig2.mli (:pkg . "./") (:tgt . "dynsig2.mli")))
                                  (:cmd (:tool :write-file)
                                        (:args :dynsig2.mli (:content "val dynsig2_msg: string")))
-                                 (:test-cmd
+                                 (:cmdx
                                    :cmd (:tool :write-file)
                                    (:args dynsig2.mli "val dynsig2_msg: string")))))))))

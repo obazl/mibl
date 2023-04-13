@@ -14,4 +14,5 @@
                                  (:cmd (:tool :echo)
                                        (:args
                                         (:string "let test_var = \"" (:% (:FIXME . PCTVARS)) "\"")))
-                                 (:test-cmd (:shell . sh) (:tool . echo) (:args "Hello world")))))))))
+                                 (:cmdx (:shell . #<unspecified>) (:tool . :echo)
+                                        (:args "Hello world")))))))))

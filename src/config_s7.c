@@ -326,10 +326,10 @@ EXPORT void initialize_mibl_data_model(s7_scheme *s7)
     /* return root_ws; */
 }
 
-s7_pointer _init_scheme_fns(s7_scheme *s7)
+s7_pointer init_scheme_fns(s7_scheme *s7)
 {
 #if defined(DEBUG_TRACE)
-    if (mibl_debug_s7_config) log_debug("_init_scheme_fns");
+    if (mibl_debug_s7_config) log_debug("init_scheme_fns");
 #endif
 
     if (_s7_set_cdr == NULL) {

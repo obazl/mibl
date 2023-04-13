@@ -1,5 +1,5 @@
 ((:@ (:name . "@")
-     (:path . /Users/gar/obazl/mibl/test/dune/action_dsl/inductive/stdout/with/bash)
+     (:path . /Users/gar/obazl/mibl/test/dune/action_dsl/inductive/stdin/with/bash)
      (:exports
          (hash-table)) (:opam (hash-table)) (:shared-ppx (hash-table))
      (:filegroups
@@ -7,8 +7,8 @@
            '"./" (("glob_STAR.txt" (:pkg "./") (:glob . "*.txt") (:clients "./")))))
      (:pkgs
          (hash-table
-           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/action_dsl/inductive/stdout/with/bash") (:pkg-path . "./")
-                   (:realpath . "/Users/gar/obazl/mibl/test/dune/action_dsl/inductive/stdout/with/bash")
+           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/action_dsl/inductive/stdin/with/bash") (:pkg-path . "./")
+                   (:realpath . "/Users/gar/obazl/mibl/test/dune/action_dsl/inductive/stdin/with/bash")
                    (:files (:static "BUILD.sh.bazel" "a.txt" "b.txt" "c.txt" "d.txt" "myscript.sh")
                            (:dynamic "output.txt"))
                    (dune (rule (targets output.txt)
@@ -20,7 +20,7 @@
                                  (::outputs (:output.txt (:pkg . "./") (:tgt . "output.txt")))
                                  (:cmd (:tool :bash) (:args :myscript.sh :inputs))
                                  (:stdout ::outputs)
-                                 (:test-cmd (:stdout ::outputs)
-                                            (:cmd (:shell . bash) (:tool . myscript.sh)
-                                                  (:args (:input . inputs))))))
+                                 (:cmdx (:stdout ::outputs)
+                                        (:cmd (:shell . bash) (:tool . myscript.sh)
+                                              (:args (% . inputs))))))
                    (:filegroups ("glob_STAR.txt" (:pkg "./") (:glob . "*.txt") (:clients "./"))))))))

@@ -78,7 +78,7 @@
                       r-alist))
          (r-alist (if alias (cons (list ':alias alias) r-alist)
                       r-alist))
-         (r-alist (append r-alist `((:test-cmd ,@new-action))))
+         (r-alist (append r-alist `((:cmdx ,@new-action))))
          (mibl-trace-let "r-alist end" r-alist)
          )
     ;; (list (cons rule-tag r-alist)))

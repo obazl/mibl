@@ -18,5 +18,5 @@
                                  (::tools (:concat.sh (:pkg . "./") (:tgt . "concat.sh")))
                                  (::outputs (:foo.css (:pkg . "./") (:tgt . "foo.css")))
                                  (:cmd (:tool :concat.sh) (:args :css ::outputs))
-                                 (:test-cmd (:tool concat.sh) (:args (:input . css) ::outputs))))
+                                 (:cmdx (:cmd (:tool concat.sh) (:args (% . css) ::outputs)))))
                    (:filegroups ("glob_STAR.css" (:pkg "./") (:glob . "*.css") (:clients "./"))))))))

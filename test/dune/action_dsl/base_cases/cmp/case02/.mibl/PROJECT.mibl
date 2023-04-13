@@ -14,4 +14,5 @@
                                         (:foo.bin (:pkg . "./") (:tgt . "foo.bin")))
                                  (::tools (:cmp . :shell-tool))
                                  (:cmd (:tool :cmp) (:args :foo.bin :bar.bin))
-                                 (:test-cmd (:shell . sh) (:tool . :cmp) (:args foo.bin bar.bin)))))))))
+                                 (:cmdx (:tool . :cmp) (:shell . #<unspecified>)
+                                        (:args foo.bin bar.bin)))))))))

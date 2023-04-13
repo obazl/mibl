@@ -14,4 +14,5 @@
                                         (:a.txt (:pkg . "./") (:tgt . "a.txt")))
                                  (::tools (:diff . :shell-tool))
                                  (:cmd (:tool :diff) (:args :a.txt :b.txt))
-                                 (:test-cmd (:shell . sh) (:tool . :diff) (:args a.txt b.txt)))))))))
+                                 (:cmdx (:tool . :diff) (:shell . #<unspecified>)
+                                        (:args a.txt b.txt)))))))))

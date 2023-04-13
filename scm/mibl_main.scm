@@ -1,7 +1,12 @@
 (if *mibl-debug-s7-loads*
     (format #t "loading mibl_main.scm~%"))
 
+(load "mibl.scm")
+
+;;(require mibl.scm)
+
 (load "libmibl.scm")
+
 
 ;; (define* (-main root-path pkg-path)
 ;;   (format #t "mibl_main: -main routine\n"))

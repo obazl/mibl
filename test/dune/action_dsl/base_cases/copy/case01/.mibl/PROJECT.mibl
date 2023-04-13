@@ -19,6 +19,6 @@
                                  (::tools (:copy . :shell-tool))
                                  (::outputs (:config.mlh (:pkg . "./") (:tgt . "config.mlh")))
                                  (:cmd (:tool :copy) (:args :config/config.mlh :config.mlh))
-                                 (:test-cmd (:shell . sh) (:tool . :copy)
-                                            (:args config/config.mlh config.mlh))))
+                                 (:cmdx (:tool . :copy) (:shell . #<unspecified>)
+                                        (:args config/config.mlh config.mlh))))
                    (:files (:dynamic "config.mlh")))))))

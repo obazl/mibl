@@ -16,5 +16,5 @@
                                  (::tools (:cat . :shell-tool))
                                  (::outputs (:output.txt (:pkg . "./") (:tgt . "output.txt")))
                                  (:cmd (:tool :cat) (:args :input-a.txt :input-b.txt :output.txt))
-                                 (:test-cmd (:shell . sh) (:tool . :cat)
-                                            (:args input-a.txt input-b.txt output.txt)))))))))
+                                 (:cmdx (:tool . :cat) (:shell . #<unspecified>)
+                                        (:args input-a.txt input-b.txt output.txt)))))))))

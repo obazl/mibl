@@ -13,4 +13,4 @@
                                            (:b.ml (:pkg . "./") (:tgt . "b.ml")))
                                  (::tools (:cmp . :shell-tool))
                                  (:cmd (:tool :cmp) (:args :a.ml :b.ml))
-                                 (:test-cmd (:shell . sh) (:tool . :cmp) (:args a.ml b.ml)))))))))
+                                 (:cmdx (:tool . :cmp) (:shell . #<unspecified>) (:args a.ml b.ml)))))))))

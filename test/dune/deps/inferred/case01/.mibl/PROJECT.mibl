@@ -14,4 +14,5 @@
                                  (::tools (:copy . :shell-tool))
                                  (::outputs (:b.txt (:pkg . "./") (:tgt . "b.txt")))
                                  (:cmd (:tool :copy) (:args :a.txt :b.txt))
-                                 (:test-cmd (:shell . sh) (:tool . :copy) (:args a.txt b.txt)))))))))
+                                 (:cmdx (:tool . :copy) (:shell . #<unspecified>)
+                                        (:args a.txt b.txt)))))))))

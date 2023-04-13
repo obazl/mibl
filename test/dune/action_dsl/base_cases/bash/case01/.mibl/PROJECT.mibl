@@ -14,5 +14,5 @@
                                  (::tools (:bash . :shell-tool))
                                  (::outputs (:foo.txt (:pkg . "./") (:tgt . "foo.txt")))
                                  (:cmd (:tool :bash) (:args :diff "-a" :deps))
-                                 (:test-cmd (:shell . bash) (:tool . diff) (:args -a :::inputs))))
+                                 (:cmdx (:shell . bash) (:tool . diff) (:args -a ::inputs))))
                    (:files (:dynamic "foo.txt" "diff")))))))

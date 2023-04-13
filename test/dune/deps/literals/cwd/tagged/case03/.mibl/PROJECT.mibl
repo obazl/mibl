@@ -16,5 +16,5 @@
                                  (::tools (:cat . :shell-tool))
                                  (::outputs (:output.ml (:pkg . "./") (:tgt . "output.ml")))
                                  (:cmd (:tool :cat) (:args :a :b :output.ml))
-                                 (:test-cmd (:shell . sh) (:tool . :cat)
-                                            (:args (:input . a) (:input . b) output.ml)))))))))
+                                 (:cmdx (:tool . :cat) (:shell . #<unspecified>)
+                                        (:args (% . a) (% . b) output.ml)))))))))
