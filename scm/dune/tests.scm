@@ -1,11 +1,11 @@
 ;; (define (normalize-stanza-test pkg-path srcfiles stanza)
 
 (define (dune-test->mibl ws pkg stanza)
-  (if (or *mibl-debug-s7* *mibl-debug-tests*)
+  (if (or *mibl-debug-all* *mibl-debug-tests*)
       (format #t "~A: ~A~%" (blue "dune-test->mibl") stanza))
 
   (let* ((pkg-path (assoc-val :pkg-path pkg))
-         (_ (if (or *mibl-debug-s7* *mibl-debug-tests*) (format #t "~A: ~A~%" (white "pkg-path") pkg-path)))
+         (_ (if (or *mibl-debug-all* *mibl-debug-tests*) (format #t "~A: ~A~%" (white "pkg-path") pkg-path)))
          (stanza-alist (cdr stanza))
          (privname (assoc 'name stanza-alist)))
     (let ((t (list :test ;; (car stanza)
@@ -22,11 +22,11 @@
                               (normalize-stanza-fld-foreign_stubs (cdr fld-assoc)))
                              (else fld-assoc)))
                          (cdr stanza))))))
-      (if (or *mibl-debug-s7* *mibl-debug-tests*)
+      (if (or *mibl-debug-all* *mibl-debug-tests*)
           (format #t "~A: ~A~%" (red "mibl t stanza") t))
       t)))
 
 (define (normalize-stanza-tests pkg-path ocaml-srcs stanza)
-  (if (or *mibl-debug-executables* *mibl-debug-s7* *mibl-debug-tests*)
+  (if (or *mibl-debug-executables* *mibl-debug-all* *mibl-debug-tests*)
       (format #t "~A: ~A~%" (ublue "normalize-stanza-tests") stanza))
   (dune-executables->mibl :test pkg-path ocaml-srcs stanza))

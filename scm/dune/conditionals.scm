@@ -56,10 +56,10 @@
 ;; also:  (libraries (re_export foo))
 
 (define (update-selects-list! conditional)
-  (if *mibl-debug-s7*
+  (if *mibl-debug-all*
       (format #t "~A: ~A~%" (ublue "update-selects-list!") conditional))
   (for-each (lambda (selector)
-              (if *mibl-debug-s7*
+              (if *mibl-debug-all*
                   (format #t "~A: ~A~%" (blue "selector") selector))
               (set! *select-protases*
                     (cons (car selector) *select-protases*)))
@@ -67,7 +67,7 @@
 
 ;; FIXME: update pkg files
 (define (update-pkg-conditionals! pkg conditional)
-  (if *mibl-debug-s7*
+  (if *mibl-debug-all*
       (format #t "~A: ~A\n" (ublue "update-pkg-conditionals!") conditional))
   ;; conditional:  ((:target . a.ml) (:selectors (<lib> . a_b.ml)) (:default a_default.ml))
   (let* ((ctarget (assoc-val :target conditional))
@@ -83,7 +83,7 @@
          (sigs-dynamic (assoc-in '(:signatures :dynamic) pkg))
          (structs (assoc-in '(:structures :static) pkg))
          (structs-dynamic (assoc-in '(:structures :dynamic) pkg)))
-    (if *mibl-debug-s7*
+    (if *mibl-debug-all*
         (begin
           (format #t "~A: ~A\n" (uwhite "pkg") pkg)
           (format #t "~A: ~A\n" (uwhite "cond target") ctarget)
@@ -102,42 +102,42 @@
                       (assoc-val :default conditional)
                       (map cdr (assoc-val :selectors conditional))))
            (apodoses (remove-duplicates apodoses)))
-      (if *mibl-debug-s7*
+      (if *mibl-debug-all*
           (begin
             (format #t "~A: ~A\n" (ucyan "removing apodoses") apodoses)
             (format #t "~A: ~A~%" (ucyan "... from pkg-structs") structs)))
       ;; first structs
       (for-each (lambda (apo)
-                  (if *mibl-debug-s7*
+                  (if *mibl-debug-all*
                       (format #t "~A: ~A~%" (uwhite "testing structs") apo))
                   (let ((match (find-if (lambda (e) (eq? apo (cdr e)))
                                         (cdr structs))))
-                    (if *mibl-debug-s7*
+                    (if *mibl-debug-all*
                         (format #t "matched? ~A~%" match))
                     (if match
                         (set-cdr! structs (dissoc! (list (car match))
                                                    (cdr structs))))
                     ))
                 apodoses)
-      (if *mibl-debug-s7*
+      (if *mibl-debug-all*
           (begin
           (format #t "~A: ~A~%" (uwhite "updated pkg-structs") structs)
           (format #t "~A: ~A~%" (ucyan "... from pkg-sigs") sigs)))
 
       (if sigs
           (for-each (lambda (apo)
-                      (if *mibl-debug-s7*
+                      (if *mibl-debug-all*
                           (format #t "~A: ~A~%" (uwhite "testing sigs") apo))
                       (let ((match (find-if (lambda (e) (eq? apo (cdr e)))
                                             (cdr sigs))))
-                        (if *mibl-debug-s7*  (format #t "matched? ~A~%" match))
+                        (if *mibl-debug-all*  (format #t "matched? ~A~%" match))
                         (if match
                             ;; FIXME: also add to :ignore
                             (set-cdr! sigs (dissoc! (list (car match))
                                                     (cdr sigs))))
                         ))
                     apodoses))
-      (if *mibl-debug-s7*
+      (if *mibl-debug-all*
           (format #t "~A: ~A~%" (uwhite "updated pkg-sigs") sigs))
       )
 
@@ -146,7 +146,7 @@
     (if (eq? (fnmatch "*.ml" (format #f "~A" ctarget) 0) 0)
         (if (truthy? sigs)
             (begin
-              (if *mibl-debug-s7*
+              (if *mibl-debug-all*
                   (begin
                     (format #t "~A: ~A~%" (ucyan "maybe migrating sig to :modules for select tgt") ctarget)
                     (format #t "~A: ~A~%" (white "sigs") sigs)))
@@ -156,25 +156,25 @@
                                        ;; (format #t "e: ~A\n" e)
                                        (eq? sigtarget (cdr e)))
                                      (cdr sigs))))
-                (if *mibl-debug-s7*
+                (if *mibl-debug-all*
                     (format #t "~A: ~A~%" (white "sigmatch?") match))
                 (if match
                     (let ((newmod (cons (car match)
                                         (list (cons :ml_ ctarget)
                                               (cons :mli (cdr match))))))
-                      (if *mibl-debug-s7* (format #t "matching sig: ~A\n" newmod))
+                      (if *mibl-debug-all* (format #t "matching sig: ~A\n" newmod))
                       (set-cdr! modules (append (cdr modules) (list newmod)))
-                      (if *mibl-debug-s7*
+                      (if *mibl-debug-all*
                           (format #t "~A: ~A\n" (cyan "upated pkg modules") modules))
                       (set-cdr! sigs (dissoc! match (cdr sigs)))
-                      (if *mibl-debug-s7*
+                      (if *mibl-debug-all*
                           (format #t "~A: ~A\n" (cyan "upated pkg sigs") sigs)))
                     ;; else update :structures
                     ;;FIXME: what if conditional target already exists?
                     (if (truthy? structs)
                         (begin
                           (set-cdr! structs (dissoc! match (cdr sigs)))
-                          (if *mibl-debug-s7*
+                          (if *mibl-debug-all*
                               (format #t "~A: ~A\n" (cyan "upated pkg sigs") sigs)))
                         ;; else create new :structures fld
                         )
@@ -184,14 +184,14 @@
             ;; assumption: ctarget is NOT already in structs
             (if (truthy? structs-dynamic)
                 (begin
-                  (if *mibl-debug-s7*
+                  (if *mibl-debug-all*
                       (format #t "~A: ~A~%" (cyan "updating (:structures :dynamic)") structs-dynamic))
                   (set-cdr! structs-dynamic (append (cdr structs) `(,(cons (filename->module-name ctarget) ctarget))))
-                  (if *mibl-debug-s7*
+                  (if *mibl-debug-all*
                       (format #t "~A: ~A\n" (cyan "upated pkg structs") structs)))
                 ;; else create new :structures fld
                 (begin
-                  (if *mibl-debug-s7*
+                  (if *mibl-debug-all*
                       (format #t "~A~%" (cyan "adding (:structures :dynamic)")))
                   (alist-update-in! pkg '(:structures :dynamic)
                                     (lambda (old)
@@ -201,7 +201,7 @@
     (if (and (eq? (fnmatch "*.mli" (format #f "~A" ctarget) 0) 0)
              (truthy? structs))
         (begin
-          (if *mibl-debug-s7*
+          (if *mibl-debug-all*
               (begin
                 (format #t "~A: ~A~%" (ucyan "maybe migrating struct to :modules for select tgt") ctarget)
                 (format #t "~A: ~A~%" (red "ctarget") ctarget)
@@ -209,22 +209,22 @@
           (let* ((structtarget (string->symbol
                                 (string-drop-right (format #f "~A" ctarget)
                                                    1)))
-                 (_ (if *mibl-debug-s7* (format #t "structtarget: ~A\n" structtarget)))
+                 (_ (if *mibl-debug-all* (format #t "structtarget: ~A\n" structtarget)))
                  (match (find-if (lambda (e)
                                    (format #t "e: ~A\n" e)
                                    (eq? structtarget (cdr e)))
                                  (cdr structs))))
-            (if *mibl-debug-s7*
+            (if *mibl-debug-all*
                 (format #t "~A: ~A~%" (bgred "structmatch?") match))
             (if match
                 (let ((newmod (cons (car match)
                                     (list (cons :ml (cdr match))
                                           (cons :mli_ ctarget)))))
-                  (if *mibl-debug-s7*
+                  (if *mibl-debug-all*
                       (format #t "matching struct: ~A\n" newmod))
                   (set-cdr! modules (append (cdr modules) (list newmod)))
                   (set-cdr! structs (dissoc! match (cdr structs))))))
-          (if *mibl-debug-s7*
+          (if *mibl-debug-all*
               (format #t "~A~%" (cyan "updated pkg-modules")))
           ))
 
@@ -234,7 +234,7 @@
     pkg))
 
 (define (analyze-select select) ;; directs selects)
-  (if *mibl-debug-s7*
+  (if *mibl-debug-all*
       (format #t "~A: ~A\n" (ublue "analyze-select") select))
   ;; e.g. (select foo.ml from (bar -> baz.ml) (-> default.ml))
   ;; see normalize-lib-select in dune_stanzas.scm
@@ -243,13 +243,13 @@
          (selectors (cdddr select))
          (default (cadr (last selectors)))
          (selectors (but-last selectors)))
-    (if *mibl-debug-s7*
+    (if *mibl-debug-all*
         (begin
           (format #t "select target: ~A\n" target)
           (format #t "selectors : ~A\n" selectors)
           (format #t "default : ~A\n" default)))
     (let ((clauses (map (lambda (selector)
-                          (if *mibl-debug-s7*
+                          (if *mibl-debug-all*
                               (format #t "selector: ~A\n" selector))
                           (let ((protasis (car selector))
                                 (apodosis (caddr selector)))
@@ -257,7 +257,7 @@
                              `(:dep ,protasis)
                              `(:clause ,(cons protasis apodosis)))))
                         selectors)))
-      (if *mibl-debug-s7*
+      (if *mibl-debug-all*
           (format #t "clauses: ~A\n" clauses))
       `((:target . ,target)
         ,(cons ':deps (map (lambda (c) (cadar c)) clauses))

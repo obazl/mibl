@@ -10,4 +10,4 @@
                    (:realpath . "/Users/gar/obazl/mibl/test/dune/deps/literals/cwd/tagged/case03")
                    (:structures (:static (A . a.ml) (B . b.ml)))
                    (dune (rule (targets output.ml) (deps (:a a.ml) (:b b.ml))
-                               (action (cat %{a} %{b} output.ml)))))))))
+                               (action (cat %{a} %{b} > output.ml)))))))))

@@ -13,18 +13,18 @@
                           ;; (format #t "~A: ~A~%" (magenta "fld") (cdr fld))
                           (not (null? (cdr fld))))
                      (cdr (car mibl-rule)))))
-    ;; (format #t "~A: ~A~%" (red "pruned") pruned)
-    (list (cons :rule pruned))))
+    (format #t "~A: ~A~%" (red "pruned") pruned)
+    (list `(:rule ,@pruned))))
 
 ;;;;;;;;;;;;;;;;;;
 (define (parse-subcmd dsl subcmd cmd-list)
-  (if *mibl-debug-s7*
+  (if *mibl-debug-all*
       (format #t "parse-subcmd: ~A\n\t~A\n\t~A\n" dsl subcmd cmd-list))
   (if (null? dsl)
       subcmd
       (if (pair? (car dsl))
           (let ((subcmd (parse-subcmd (car dsl) '() '())))
-            (if *mibl-debug-s7*
+            (if *mibl-debug-all*
                 (format #t "SUBCMD: ~A\n" subcmd))
             (parse-action-dsl (cdr dsl) initial-cmd
                               (append cmd-list subcmd)))
@@ -32,11 +32,11 @@
                         cmd-list))))
 
 (define (cmd-list->cmd-alist dsl)
-  (if *mibl-debug-s7*
+  (if *mibl-debug-all*
       (format #t "CMD-LIST->CMD-ALIST: ~A\n" dsl))
   (let recur ((dsl dsl)
               (cmd-alist '()))
-    (if *mibl-debug-s7*
+    (if *mibl-debug-all*
         (begin
           (format #t "recur dsl: ~A\n" dsl)
           (format #t "recur cmds: ~A\n" cmd-alist)))
@@ -50,7 +50,7 @@
           (let-values (((subcmd trailing)
                         (let* subrecur ((subdsl dsl)
                                         (subcmd '()))
-                              (if *mibl-debug-s7*
+                              (if *mibl-debug-all*
                                   (begin
                                     (format #t "subrecur subdsl: ~A\n" subdsl)
                                     (format #t "subrecur cmds: ~A\n" subcmd)))
@@ -91,6 +91,6 @@
 ;;          ;; action may be a sequence of subactions, e.g.
 ;;          ;; (chdir %{foo} (run ${bar} ...))
 ;;          (cmd-list (parse-action-dsl dsl '() '()))
-;;          (_ (if *mibl-debug-s7* (format #t "cmd-list: ~A\n" cmd-list)))
+;;          (_ (if *mibl-debug-all* (format #t "cmd-list: ~A\n" cmd-list)))
 ;;          )
 ;;     cmd-list))

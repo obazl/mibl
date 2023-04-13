@@ -24,7 +24,7 @@
               (options '())
               (flags '())
               (orphans '()))
-    (if (or *mibl-debug-flags* *mibl-debug-s7*)
+    (if (or *mibl-debug-flags* *mibl-debug-all*)
         (begin
           (format #t "~A\n" (green "recur entry"))
           (format #t "~A: ~A\n" (green "opts") opts)
@@ -44,7 +44,7 @@
           (if (number? opt)
               (if (null? ostack)
                   (begin
-                    (if (or *mibl-debug-flags* *mibl-debug-s7*)
+                    (if (or *mibl-debug-flags* *mibl-debug-all*)
                         (format #t "WARNING: numeric opt ~A without predecing optname\n" opt))
                     (recur (cdr opts)
                            ostack options flags (cons opt orphans)))
@@ -57,7 +57,7 @@
                              (cons (symbol opt) ostack) options flags orphans)
                       ;; prev must be a flag, new goes on ostack
                       (begin
-                        (if (or *mibl-debug-flags* *mibl-debug-s7*)
+                        (if (or *mibl-debug-flags* *mibl-debug-all*)
                             (format #t "~A: current: ~A, prev: ~A~%"
                                 (bgred "hyphen") opt (car ostack)))
                         ;; special case: dashed warning nbrs following -w, e.g. -w -27
@@ -65,7 +65,7 @@
                                 (string-prefix? "-" (format #f "~A" (car ostack))))
                             ;; current is arg to prev -<opt>
                             (begin
-                              (if (or *mibl-debug-flags* *mibl-debug-s7*)
+                              (if (or *mibl-debug-flags* *mibl-debug-all*)
                                   (begin
                                     (format #t "~A~%" (red "XXXXXXXXXXXXXXXX"))
                                     (format #t "~A: ~A~%" (red "ostack") ostack)
@@ -81,7 +81,7 @@
                                        orphans)))
                             ;; else prev is flag, push current to ostack
                             (begin
-                              (if (or *mibl-debug-flags* *mibl-debug-s7*)
+                              (if (or *mibl-debug-flags* *mibl-debug-all*)
                                   (format #t "~A~%" (green "ZZZZZZZZZZZZZZZZ")))
                               (recur (cdr opts)
                                      (list (symbol opt)) ;; ostack
@@ -98,7 +98,7 @@
                             (recur '() ostack options flags
                                    (append orphans (cdr opts))))
                           (begin
-                            (if (or *mibl-debug-flags* *mibl-debug-s7*)
+                            (if (or *mibl-debug-flags* *mibl-debug-all*)
                                 (format #t
                                     "WARNING: value ~A without preceding -opt\n"
                                     opt))
@@ -189,7 +189,7 @@
         ;; (format #t "CLEAN: ~A\n" clean-flags)
         (let-values (((opens opts std) (split-opens clean-flags)))
           (let-values (((options bools orphans) (split-opts (reverse opts))))
-            (if (or *mibl-debug-flags* *mibl-debug-s7*)
+            (if (or *mibl-debug-flags* *mibl-debug-all*)
                 (begin
                   (format #t "OPENS: ~A\n" (reverse opens))
                   (format #t "OPTS: ~A\n" (reverse opts))
@@ -229,7 +229,7 @@
 
 ;; returns (values <standard> <opens> <options> <flags>)
 (define (flags->mibl flags)
-  (if (or *mibl-debug-flags* *mibl-debug-s7*)
+  (if (or *mibl-debug-flags* *mibl-debug-all*)
       (begin
         (format #t "~A: ~A\n" (ublue "flags->mibl") flags)))
   (if flags

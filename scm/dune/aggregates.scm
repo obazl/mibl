@@ -1,6 +1,6 @@
 ;; derive :manifest for aggregate from (modules) list
 (define (get-manifest pkg kind wrapped? stanza-alist) ;;  deps
-  (if (or *mibl-debug-s7* *mibl-debug-modules*)
+  (if (or *mibl-debug-all* *mibl-debug-modules*)
       (begin
         (format #t "~A: ~A\n" (ublue "get-manifest") stanza-alist)
         (if *mibl-debug-show-pkgs* (format #t "~A: ~A\n" "pkg" pkg))
@@ -27,7 +27,7 @@
                                 (cdr submods+sigs-list)
                                 ;; (cdr submods+sigs-list)
                                 submods+sigs-list)))
-    (if (or *mibl-debug-s7* *mibl-debug-modules*)
+    (if (or *mibl-debug-all* *mibl-debug-modules*)
         (format #t "~A: ~A\n" (uwhite "submods+sigs-list") submods+sigs-list))
     (if (null? submods+sigs-list)
         '()
@@ -65,7 +65,7 @@
 
 ;;FIXME: not necessary???
 (define (normalize-aggregate-manifests! ws)
-  (if (or *mibl-debug-s7* *mibl-debug-updaters*)
+  (if (or *mibl-debug-all* *mibl-debug-updaters*)
       (format #t "~A: ~A~%" (bgblue "normalize-aggregate-manifests!") ws))
   (let* ((@ws (assoc-val ws *mibl-project*))
          (pkgs (car (assoc-val :pkgs @ws))))
@@ -90,34 +90,34 @@
                   ;; for each aggregate stanza, resolve the (modules) fld
                   (if stanzas
                       (for-each (lambda (stanza)
-                                  (if (or *mibl-debug-s7* *mibl-debug-updaters*)
+                                  (if (or *mibl-debug-all* *mibl-debug-updaters*)
                                       (format #t "~A: ~A~%" (blue "stanza") stanza))
                                   (case (car stanza)
                                     ((:ns-archive
                                       :archive
                                       :ns-library
                                       :library)
-                                     (if (or *mibl-debug-s7* *mibl-debug-updaters*)
+                                     (if (or *mibl-debug-all* *mibl-debug-updaters*)
                                          (format #t "~A: ~A~%" (ured "aggregate")
                                                  (assoc-val :privname (cdr stanza))))
                                      (let* ((stanza-alist (cdr stanza))
-                                            (_ (if (or *mibl-debug-s7* *mibl-debug-updaters*) (format #t "~A: ~A~%" (ured "stanza-alist") stanza-alist)))
+                                            (_ (if (or *mibl-debug-all* *mibl-debug-updaters*) (format #t "~A: ~A~%" (ured "stanza-alist") stanza-alist)))
                                             (old-manifest (assoc ':manifest stanza-alist))
-                                            (_ (if (or *mibl-debug-s7* *mibl-debug-updaters*) (format #t "~A: ~A~%" (ured "old-manifest") old-manifest)))
+                                            (_ (if (or *mibl-debug-all* *mibl-debug-updaters*) (format #t "~A: ~A~%" (ured "old-manifest") old-manifest)))
                                             (mmods (assoc-in '(:manifest :raw) stanza-alist))
-                                            (_ (if (or *mibl-debug-s7* *mibl-debug-updaters*) (format #t "~A: ~A~%" (ured "mmods") mmods)))
+                                            (_ (if (or *mibl-debug-all* *mibl-debug-updaters*) (format #t "~A: ~A~%" (ured "mmods") mmods)))
                                             (manifest
                                              (get-manifest pkg :lib #t (cons (cadr mmods) stanza-alist)) ;; (cadr mmods))
                                              ;;(x-get-manifest pkg #t stanza-alist (cadr mmods))
                                              ))
-                                       (if (or *mibl-debug-s7* *mibl-debug-updaters*)
+                                       (if (or *mibl-debug-all* *mibl-debug-updaters*)
                                            (begin
                                              (format #t "~A: ~A~%" (ured "structures") (assoc :structures stanza-alist))
                                              (format #t "~A: ~A~%" (uyellow "mmods") mmods)
                                              (format #t "~A: ~A~%" (uyellow "old manifest") old-manifest)
                                              (format #t "~A: ~A~%" (uyellow "manifest") manifest)))
                                        (set-cdr! old-manifest (cdr manifest))
-                                       (if (or *mibl-debug-s7* *mibl-debug-updaters*)
+                                       (if (or *mibl-debug-all* *mibl-debug-updaters*)
                                            (format #t "~A: ~A~%" (uyellow "updated old manifest") old-manifest))
                                        ))
 
@@ -136,7 +136,7 @@
                                 stanzas)
                           )))
               pkgs)
-    ;; (if (or *mibl-debug-s7* *mibl-debug-updaters*)
+    ;; (if (or *mibl-debug-all* *mibl-debug-updaters*)
     ;;     (begin
     ;;       (mibl-debug-print-pkgs :@)
     ;;       (error 'x "")))

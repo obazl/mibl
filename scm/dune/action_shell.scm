@@ -24,7 +24,7 @@
 ;;       (let* ((key (string->keyword tool)))
 ;;         ;; search :deps
 ;;         (let* ((deps (assoc-val :deps stanza))
-;;                ;; (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (yellow "deps") deps)))
+;;                ;; (_ (if *mibl-debug-all* (format #t "~A: ~A~%" (yellow "deps") deps)))
 ;;                (match (find-if (lambda (dep)
 ;;                                  ;; (format #t "~A: ~A~%" (yellow "dep") dep)
 ;;                                  (eq? key (car dep)))
@@ -33,7 +33,7 @@
 ;;           (if match
 ;;               (let* ((lbl (cdr match))
 ;;                      (pkg (assoc-val :pkg lbl))
-;;                      ;; (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (yellow "pkg") pkg)))
+;;                      ;; (_ (if *mibl-debug-all* (format #t "~A: ~A~%" (yellow "pkg") pkg)))
 ;;                      (pkg (if (equal? pkg-path pkg) "" pkg))
 ;;                      (tgt (if-let ((t (assoc-val :tgt lbl)))
 ;;                                   (format #f "~A:~A" pkg t)
@@ -64,7 +64,7 @@
   ;; FIXME: shell cmd args may include filename literals; find way to expand?
   ;; FIXME: may include ${target}
   ;; FIXME: in general: expand all '${}' in args
-  (if *mibl-debug-s7*
+  (if *mibl-debug-all*
       (begin
         (format #t "~A: ~A\n" (ublue "normalize-action-shell-cmd") action)
         (format #t "~A: ~A~%" (white "action-list") action-list)

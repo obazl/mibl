@@ -157,7 +157,7 @@ void test_a(void) {
     char *sexp =
         /* "(begin " */
         "(call-with-exit (lambda (return)"
-        "(parsetree->mibl return)))"
+        "(mibl:parsetree->mibl return)))"
         /* "(miblize :@) " */
         /* "(add-filegroups-to-pkgs :@) " */
         /* "(normalize-manifests! :@) " */

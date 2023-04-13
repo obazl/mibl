@@ -13,7 +13,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (-mibl-load-project root path)
-  (if *mibl-debug-s7*
+  (if *mibl-debug-all*
       (begin
         (format #t "~A: ~A (~A)~%" (blue "-mibl-load-project") path (type-of path))
         (format #t "pwd: ~A~%" (pwd))))
@@ -44,8 +44,7 @@
   (if *mibl-clean-mibl*
       (mibl-clean-mibl)
       (call-with-exit (lambda (return)
-                        (mibl-trace "fOOO" "")
-                        (parsetree->mibl ;; in libmibl.scm
+                        (mibl:parsetree->mibl ;; in libmibl.scm
                          (lambda () ;; our return thunk
                            (if *mibl-show-mibl*
                                (begin

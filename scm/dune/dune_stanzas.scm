@@ -11,7 +11,7 @@
 ;; (alias <alias-name>), (mode <mode>), (enabled_if <blang expression>)
 ;; (copy_files <glob>) is equivalent to (copy_files (files <glob>))
 (define (normalize-stanza-copy_files pkg-path stanza)
-  (if *mibl-debug-s7*
+  (if *mibl-debug-all*
       (begin
         (format #t "NORMALIZE-STANZA-COPY_FILES, path: ~A\n" pkg-path)
         (format #t "  stanza: ~A\n" stanza)))
@@ -52,7 +52,7 @@
                    (format #f "unexpected stanza type: ~A\n" stanza))))))
 
 (define (normalize-stanza-copy pkg-path stanza)
-  (if *mibl-debug-s7*
+  (if *mibl-debug-all*
       (format #t "NORMALIZE-STANZA-COPY: ~A" stanza))
   ;; (display (format #f "dir: ~A" pfx)) (newline)
   ;; (copy_files
@@ -375,27 +375,27 @@
   (if-let ((dune-pkg (assoc :mibl pkg)))
           (for-each
            (lambda (stanza)
-             (if *mibl-debug-s7*
+             (if *mibl-debug-all*
                  (format #t "~A: ~A~%" (magenta "stanza") stanza))
              ;; first do write-file etc.
              (case (car stanza)
                ((:rule)
                 ;; if multiple cmds (progn) do not miblarkize
-                (if *mibl-debug-s7*
+                (if *mibl-debug-all*
                     (format #t "~A: ~A~%" (red "cmd ct:")
                         (length (assoc :cmd (cdr stanza)))))
                 ;; (assoc-in* '(:actions :cmd) (cdr stanza)))))
                 (if (< (length (assoc :cmd (cdr stanza))) 2) ;; (assoc-in* '(:actions :cmd) (cdr stanza))) 2)
                     (let ((tool (assoc-in '(:cmd :tool) (cdr stanza)))) ;; (assoc-in '(:actions :cmd :tool) (cdr stanza))))
-                      (if *mibl-debug-s7*
+                      (if *mibl-debug-all*
                           (format #t "~A: ~A~%" (green "tool") tool))
                       (if tool
                           (let ((tool (cadr tool)))
-                            (if *mibl-debug-s7*
+                            (if *mibl-debug-all*
                                 (format #t "~A: ~A~%" (green "tool") tool))
                             (case tool
                               ((:write-file) ;;FIXME: what if we have write-file in an alias rule?
-                               (if *mibl-debug-s7*
+                               (if *mibl-debug-all*
                                    (format #t "~A: ~A~%" (red "miblarking") stanza))
                                (set-car! stanza :write-file))
 
@@ -428,12 +428,12 @@
                             (set-cdr! stanza (dissoc '(:ns) (cdr stanza))))))))
 
                ((:executable)
-                (if *mibl-debug-s7*
+                (if *mibl-debug-all*
                     (format #t "~A: ~A~%" (uwhite "miblarkizing executable") (car stanza)))
                 (let* ((stanza-alist (cdr stanza))
                        (compile-deps (assoc-in '(:compile :deps :resolved) stanza-alist))
                        (prologue (assoc :prologue stanza-alist)))
-                  (if *mibl-debug-s7*
+                  (if *mibl-debug-all*
                       (begin
                         (format #t "~A: ~A~%" (uwhite "compile-deps") compile-deps)
                         (format #t "~A: ~A~%" (uwhite "prologue") prologue)))
@@ -463,7 +463,7 @@
          (pkgs (car (assoc-val :pkgs @ws))))
 
     (for-each (lambda (kv)
-                (if *mibl-debug-s7*
+                (if *mibl-debug-all*
                     (format #t "~A: ~A~%" (blue "dune-pkg->mibl") kv))
                 ;; dir may have dune-project but no dune file:
                 (if (not (null? (cdr kv)))

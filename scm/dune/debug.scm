@@ -1,28 +1,26 @@
-(define *mibl-debugging* #f)
-
 (define-expansion* (mibl-trace-entry hdr msg (color ublue) (test #f))
-  (if *mibl-debugging*
+  (if *mibl-debug-s7*
       `(if ,test
            (format #t "~A: ~A~%" (,color ,hdr) ,msg)
-           (if ,(eq? (symbol->value '*mibl-debug-s7*) #t)
+           (if ,(eq? (symbol->value '*mibl-debug-all*) #t)
                 (format #t "~A: ~A~%" (,color ,hdr) ,msg)
                 (values)))
       (values)))
 
 (define-expansion* (mibl-trace hdr msg (color blue) (test #f))
-  (if *mibl-debugging*
+  (if *mibl-debug-s7*
       `(if ,test
            (format #t "~A: ~A~%" (,color ,hdr) ,msg)
-           (if ,(eq? (symbol->value '*mibl-debug-s7*) #t)
+           (if ,(eq? (symbol->value '*mibl-debug-all*) #t)
                (format #t "~A: ~A~%" (,color ,hdr) ,msg)
                (values)))
       (values)))
 
 (define-expansion* (mibl-trace-let hdr msg (color blue) (test #f))
-  (if *mibl-debugging*
+  (if *mibl-debug-s7*
       `(_ (if ,test
               (format #t "~A: ~A~%" (,color ,hdr) ,msg)
-              (if ,(eq? (symbol->value '*mibl-debug-s7*) #t)
+              (if ,(eq? (symbol->value '*mibl-debug-all*) #t)
                   (format #t "~A: ~A~%" (,color ,hdr) ,msg)
                '())))
       (values)))
@@ -31,7 +29,7 @@
   ;;     (if (eq? (symbol->value (car test)) #t)
   ;;         `(_ (format #t "~A: ~A~%" (blue ,hdr) ,msg))
   ;;         '(_ #f))
-  ;;     (if (eq? (symbol->value '*mibl-debug-s7*) #t)
+  ;;     (if (eq? (symbol->value '*mibl-debug-all*) #t)
   ;;         `(_ (format #t "~A: ~A~%" (blue ,hdr) ,msg))
   ;;         '(_ #f))))
 
@@ -89,14 +87,14 @@
          )
     (format #t "WS name: ~A~%" (assoc-val :name @ws))
     (format #t "WS path: ~A~%" (assoc-val :path @ws))
-    (if *mibl-debug-s7*
+    (if *mibl-debug-all*
         (begin
           (format #t "~A: ~A ~A~%" (bggreen "workspace") (assoc :name @ws) (assoc :path @ws))
           (format #t "~A: ~A~%" (green "*mibl-dump-pkgs*") *mibl-dump-pkgs*)
           (format #t "~A: ~A~%" (green "pkg-paths") pkg-paths)))
     (for-each (lambda (k)
                 (let ((pkg (hash-table-ref pkgs k)))
-                  ;; (if *mibl-debug-s7*
+                  ;; (if *mibl-debug-all*
                   ;;     (begin
                   ;;       (format #t "~A: ~A~%" (green "k") k)
                   ;;       (format #t "~A: ~A~%" (green "pkg") pkg)))

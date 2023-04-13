@@ -9,7 +9,7 @@
 
 ;; to update pkg we must update the hash table
 (define (-update-pkg-file-exports! pkgs-ht pkg lbl-path lbl-tgt)
-  (if (or *mibl-debug-file-exports* *mibl-debug-s7*)
+  (if (or *mibl-debug-file-exports* *mibl-debug-all*)
       (format #t "~A: ~S~%" (ublue "-update-file-exports!") pkg))
 
   ;; We check for the matching static file; if we find it we add it to
@@ -49,7 +49,7 @@
 ;; tagged label fmt: (<kw> (:pkg . "path") (:tgt . "string"))
 ;; e.g.  (:< (:pkg . "subtool/sub") (:tgt . "gen.sh"))
 (define (-resolve-tagged-label tlbl this-pkg pkgs-ht)
-  (if (or *mibl-debug-file-exports* *mibl-debug-s7*)
+  (if (or *mibl-debug-file-exports* *mibl-debug-all*)
       (format #t "~A: ~A~%" (ublue "-resolve-tagged-label") tlbl))
   (let ((lbl-path (assoc-val :pkg (cdr tlbl)))
         (lbl-tgt  (assoc-val :tgt (cdr tlbl)))
@@ -85,7 +85,7 @@
 ;;        (:actions (:cmd (:tool :<) (:args ::outputs))))
 ;; ws-pkgs: hash table, key: :pkg-path (string)
 (define (-resolve-rule-file-exports! stanza this-pkg ws-pkgs)
-  (if (or *mibl-debug-file-exports* *mibl-debug-s7*)
+  (if (or *mibl-debug-file-exports* *mibl-debug-all*)
       (begin
         (format #t "~A: ~A\n"
                 (ublue "resolve-rule-file-exports!") stanza)
@@ -116,12 +116,12 @@
         (+signature+ '(resolve-filegroups! workspace-id)))
     (lambda (ws-id)
       (let ((ws (assoc-val ws-id *mibl-project*)))
-        (if (or *mibl-debug-file-exports* *mibl-debug-s7*)
+        (if (or *mibl-debug-file-exports* *mibl-debug-all*)
             (format #t "~%~A for ws: ~A\n"
                     (bgblue "resolve-file-exports!") (assoc :name ws)))
         ;; (assoc-val 'name ws))
         (let* ((pkgs (car (assoc-val :pkgs ws)))
-               ;; (_ (if (or *mibl-debug-file-exports* *mibl-debug-s7*) (format #t "PKGS: ~A\n" pkgs)))
+               ;; (_ (if (or *mibl-debug-file-exports* *mibl-debug-all*) (format #t "PKGS: ~A\n" pkgs)))
                (exports (car (assoc-val :exports ws))))
           ;; (format #t "resolving filegroups for pkgs: ~A\n" (hash-table-keys pkgs))
           ;; (format #t "exports: ~A\n" exports)
@@ -130,13 +130,13 @@
           ;; to the foo pkg exporting gen.sh.
 
           (for-each (lambda (pkg-kv)
-                      (if (or *mibl-debug-file-exports* *mibl-debug-s7*)
+                      (if (or *mibl-debug-file-exports* *mibl-debug-all*)
                           (format #t "~A: ~A~%" (green "resolving file exports for pkg") (car pkg-kv)))
                       ;; (format #t "pkg: ~A~%" (cdr pkg-kv))
                       (let ((pkg (cdr pkg-kv)))
                         (if-let ((stanzas (assoc-val :mibl (cdr pkg-kv))))
                                 (for-each (lambda (stanza)
-                                            (if (or *mibl-debug-file-exports* *mibl-debug-s7*)
+                                            (if (or *mibl-debug-file-exports* *mibl-debug-all*)
                                                 (format #t "~A: ~A~%" (green "stanza") stanza))
                                             (case (car stanza)
                                              ((:rule) (-resolve-rule-file-exports! stanza pkg pkgs))

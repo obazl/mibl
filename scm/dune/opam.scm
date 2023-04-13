@@ -1,6 +1,6 @@
 (define (update-opam-table! ws kind opam-pkg findlib-name pkg-path privname)
   ;; kind:  :lib, :bin, :man, :files, :sub
-  (if *mibl-debug-s7*
+  (if *mibl-debug-all*
       (begin
         (format #t "~A path: ~A~%" (bgmagenta "update-opam-table!") findlib-name)
         (format #t "~A: ~A~%" (green "kind") kind)
@@ -10,23 +10,23 @@
 
   (let* ((-ws (if (keyword? ws) (assoc-val ws *mibl-project*) ws))
          (ws-path (car (assoc :path -ws)))
-         (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (bggreen "wspath") ws-path)))
+         (_ (if *mibl-debug-all* (format #t "~A: ~A~%" (bggreen "wspath") ws-path)))
          (privname (if (eq? kind :bin) (format #f "~A.exe" privname) privname))
          (opam (car (assoc-val :opam -ws)))
-         (_ (if *mibl-debug-s7* (format #t "opam tbl: ~A\n" opam)))
+         (_ (if *mibl-debug-all* (format #t "opam tbl: ~A\n" opam)))
          (opam-segs (string-split (format #f "~A" opam-pkg) #\.))
          (opam-pkg (if (null? (cdr opam-segs))
                        (car opam-segs) (car opam-segs)))
          (opam-pkg (string->symbol opam-pkg))
          (opam-subpkgs (if (null? (cdr opam-segs))
                           #f (cdr opam-segs))))
-    (if *mibl-debug-s7*
+    (if *mibl-debug-all*
         (begin
           (format #t "~A: ~A~%" (uwhite "opam-pkg") opam-pkg)
           (format #t "~A: ~A~%" (uwhite "opam-subpkgs") opam-subpkgs)))
     (if-let ((opkg (hash-table-ref opam opam-pkg)))
             (begin
-              (if *mibl-debug-s7*
+              (if *mibl-debug-all*
                   (format #t "~A: ~A~%" (uwhite "old opam-pkg") opkg))
               (if opam-subpkgs
                   ;; TODO: merge with existing :sub items
@@ -49,7 +49,7 @@
                   ;;                  `((,kind ,pkg-path ,privname)))
                   ))
             (begin
-              (if *mibl-debug-s7*
+              (if *mibl-debug-all*
                   (format #t "~A: ~A~%" (uwhite "adding opam-pkg") opam-pkg))
               (if opam-subpkgs
                   ;; TODO: merge with existing :sub items
@@ -63,7 +63,7 @@
                                           `(,kind (,findlib-name
                                                   (,pkg-path . ,privname)))
                                           `(,kind (,pkg-path . ,privname))))))))
-    (if *mibl-debug-s7*
+    (if *mibl-debug-all*
         (format #t "~A: ~A\n" (ured "updated opam tbl") opam))
     ))
 

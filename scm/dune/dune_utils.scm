@@ -1,7 +1,7 @@
 ;; (display "dune/dune_utils.scm\n")
 
 (define (label-list->label-string l)
-  (if *mibl-debug-s7*
+  (if *mibl-debug-all*
       (format #t "~A: ~A~%" (ublue "label-list->label-string") l))
   (format #f "//~A:~A"
           (assoc-val :pkg l)
@@ -82,7 +82,7 @@
 ;;      stanzas))
 
 (define (handle-read-error path fname args)
-  (if *mibl-debug-s7*
+  (if *mibl-debug-all*
       (format #t "HANDLE-READ-ERROR ~A\n" path))
   (let ((msg (caadr args)))
     (display
@@ -383,7 +383,7 @@
     (string-map (lambda (ch) (if (char=? ch #\-) #\_ ch)) pn)))
 
 (define (normalize-module-name mname)
-  (if *mibl-debug-s7*
+  (if *mibl-debug-all*
       (format #t "normalize-module-name: ~A\n" mname))
   (if (equal? '(:standard) mname)
       :standard

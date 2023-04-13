@@ -43,17 +43,17 @@
     '()))
 
 (define (handle-shared-deps ws)
-  (if *mibl-debug-s7*
+  (if *mibl-debug-all*
       (format #t "~A: ~A~%" (ublue "handle-shared-deps") ws))
   (let* ((@ws (assoc-val ws *mibl-project*))
          (pkgs (car (assoc-val :pkgs @ws))))
-    (if *mibl-debug-s7*
+    (if *mibl-debug-all*
         (format #t "~A: ~A~%" (uwhite "pkgs") pkgs))
     (for-each (lambda (kv)
-                (if *mibl-debug-s7*
+                (if *mibl-debug-all*
                     (format #t "~A: ~A~%" (ugreen "dep for pkg") (car kv)))
                 (let* ((pkg-path (car kv))
-                       (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (green "pkg-path") pkg-path)))
+                       (_ (if *mibl-debug-all* (format #t "~A: ~A~%" (green "pkg-path") pkg-path)))
                        (pkg (cdr kv)))
                   ;; (format #t "~A: ~A~%" (green "pkg") pkg)
                   ;;(if (member pkg-path *mibl-shared-deps*)

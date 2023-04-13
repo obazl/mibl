@@ -1,19 +1,19 @@
 ;; test cases:  ppx_assert, ppx_bench
 
 (define (ppx-inline-tests! ws)
-  (if (or *mibl-debug-ppx* *mibl-debug-s7*)
+  (if (or *mibl-debug-ppx* *mibl-debug-all*)
       (format #t "~A~%" (ublue "ppx-inline-tests!")))
   (let* ((@ws (assoc-val ws *mibl-project*))
          (pkgs (car (assoc-val :pkgs @ws))))
     ;; (format #t "~A: ~A~%" (uwhite "pkgs") pkgs)
     (for-each (lambda (kv)
-                ;; (if (or *mibl-debug-ppx* *mibl-debug-s7*)
+                ;; (if (or *mibl-debug-ppx* *mibl-debug-all*)
                 ;;     (begin
                 ;;       (format #t "~A: ~A~%" (ugreen "ppx for pkg") (car kv))
                 ;;       ;; (format #t "~A: ~A~%" (ugreen "pkg") kv))
                 ;;     ))
                 (let* ((pkg-path (car kv))
-                       (_ (if (or *mibl-debug-ppx* *mibl-debug-s7*)
+                       (_ (if (or *mibl-debug-ppx* *mibl-debug-all*)
                               (format #t "~%~A: ~A  //~A~%" (bggreen "pkg") (car kv) pkg-path)))
                        (pkg (cdr kv))
                        (dune (assoc :mibl pkg))
@@ -23,12 +23,12 @@
                        (shared-deps (if-let ((shared (assoc-val :shared-deps stanzas)))
                                             (car shared) '()))
                        )
-                       (if (or *mibl-debug-ppx* *mibl-debug-s7*)
+                       (if (or *mibl-debug-ppx* *mibl-debug-all*)
                            (begin
                              (format #t "~A: ~A~%" (ugreen "shared-ppx") shared-ppx)
                         (format #t "~A: ~A~%" (ugreen "shared-deps") shared-deps)))
                   (for-each (lambda (stanza)
-                              ;; (if (or *mibl-debug-ppx* *mibl-debug-s7*)
+                              ;; (if (or *mibl-debug-ppx* *mibl-debug-all*)
                               ;;     (format #t "~A: ~A~%" (green "stanza")
                               ;;             stanza))
                               (case (car stanza)
@@ -97,11 +97,11 @@
 ;; see https://dune.readthedocs.io/en/stable/tests.html?highlight=generate_runner#defining-your-own-inline-test-backend
 
 (define (-inline-tests->args ws pkg inline-tests)
-  (if (or *mibl-debug-s7* *mibl-debug-tests*)
+  (if (or *mibl-debug-all* *mibl-debug-tests*)
       (format #t "~A: ~A\n" (ublue "-inline-tests->args") inline-tests))
   (let* ((result
           (map (lambda (fld)
-                 (if (or *mibl-debug-s7* *mibl-debug-tests*)
+                 (if (or *mibl-debug-all* *mibl-debug-tests*)
                      (format #t "~A: ~A~%" (uwhite "fld") fld))
                  (case (car fld)
                    ((flags)
@@ -123,21 +123,21 @@
 
 ;; handle both (preprocess) and (inline_tests) (and what else?)
 (define (inline-tests->mibl ws pkg inline-tests stanza-alist)
-  (if (or *mibl-debug-s7* *mibl-debug-tests*)
+  (if (or *mibl-debug-all* *mibl-debug-tests*)
       (begin
         (format #t "~A: ~A~%" (ublue "inline-tests->mibl") inline-tests)
         (format #t "~A: ~A~%" (ublue "stanza-alist") stanza-alist)))
   (let ((ilts (-inline-tests->args ws pkg inline-tests)))
-    (if (or *mibl-debug-s7* *mibl-debug-tests*)
+    (if (or *mibl-debug-all* *mibl-debug-tests*)
         (format #t "~A: ~A~%" (ublue "ilt args") ilts))
     `(:inline-tests ,@ilts)))
     ;; (if-let ((pp-assoc (assoc 'preprocess stanza-alist)))
     ;;         (begin
-    ;;           (if (or *mibl-debug-s7* *mibl-debug-tests*)
+    ;;           (if (or *mibl-debug-all* *mibl-debug-tests*)
     ;;               (format #t "~A: ~A~%" (blue "pp-assoc") pp-assoc))
     ;;           (if-let ((ppx (preprocess-fld->mibl pp-assoc stanza-alist)))
     ;;                   (begin
-    ;;                     (if (or *mibl-debug-s7* *mibl-debug-tests*)
+    ;;                     (if (or *mibl-debug-all* *mibl-debug-tests*)
     ;;                         (format #t "~A: ~A~%" (bgyellow "ppx") ppx))
     ;;                     `(:ppx ,@(append (cdr ppx)
     ;;                                    ilts)))

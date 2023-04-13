@@ -3,4 +3,4 @@
 (rule
  (targets output.ml)
  (deps (:a a.ml) (:b b.ml))
- (action (cat %{a} %{b} output.ml)))
+ (action (cat %{a} %{b} > output.ml)))

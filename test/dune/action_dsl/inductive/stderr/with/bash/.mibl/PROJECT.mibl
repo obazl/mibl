@@ -4,13 +4,13 @@
          (hash-table)) (:opam (hash-table)) (:shared-ppx (hash-table))
      (:filegroups
          (hash-table
-           '"./" (("glob_STAR.txt" (:pkg "./") (:glob . "*.txt") (:clients "./")))))
+           '"./" (("glob_STAR.txt" (:pkg "./") (:glob . "*.txt") (:clients "./" "./")))))
      (:pkgs
          (hash-table
            '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/action_dsl/inductive/stderr/with/bash") (:pkg-path . "./")
                    (:realpath . "/Users/gar/obazl/mibl/test/dune/action_dsl/inductive/stderr/with/bash")
                    (:files (:static "BUILD.sh.bazel" "a.txt" "b.txt" "c.txt" "d.txt" "myscript.sh")
-                           (:dynamic "output.txt"))
+                           (:dynamic "output.txt" "output.txt"))
                    (dune (rule (targets output.txt)
                                (deps myscript.sh (:inputs (glob_files *.txt)))
                                (action (with-stdout-to %{targets} (run bash myscript.sh %{inputs})))))
@@ -19,8 +19,10 @@
                                  (::tools (:bash . :shell-tool))
                                  (::outputs (:output.txt (:pkg . "./") (:tgt . "output.txt")))
                                  (:cmd (:tool :bash) (:args :myscript.sh :inputs))
-                                 (:stdout ::outputs)
-                                 (:cmdx (:stdout ::outputs)
-                                        (:cmd (:shell . bash) (:tool . myscript.sh)
-                                              (:args (% . inputs))))))
-                   (:filegroups ("glob_STAR.txt" (:pkg "./") (:glob . "*.txt") (:clients "./"))))))))
+                                 (:stdout ::outputs))
+                          (:rulex (::inputs (:myscript.sh (:pkg . "./") (:tgt . "myscript.sh"))
+                                            (:inputs (:pkg . "./") (:glob . "glob_STAR.txt")))
+                                  (::outputs (:output.txt (:pkg . "./") (:tgt . "output.txt")))
+                                  (::tools :DUMMY2) (:stdout ::outputs)
+                                  (:cmd (:tool . myscript.sh) (:shell . bash) (:args (% . inputs)))))
+                   (:filegroups ("glob_STAR.txt" (:pkg "./") (:glob . "*.txt") (:clients "./" "./"))))))))

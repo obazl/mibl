@@ -1,6 +1,8 @@
 (if *mibl-debug-s7-loads*
     (format #t "loading dune/expanders.scm\n"))
 
+(provide 'expanders.scm)
+
 (load "dune/api_utils.scm")
 
 ;; several expansions: targets, cmd tools, cmd args
@@ -20,74 +22,75 @@
 ;; (action (run %{deps} --test))
 
 ;; returns kw used as key in :tool list, e.g. ::tools/rewrite.exe
-(define expand-run-tool
-  (lambda (ws tool tools pkg targets deps)
-    (if (or *mibl-debug-expanders* *mibl-debug-s7*)
-        (begin
-          (format #t "~A: ~A (~A)~%" (ublue "expand-run-tool") tool (type-of tool))
-          (format #t "~A: ~A~%" (green "deps") deps)))
+;; OBSOLETE: replaced by dsl:action->dsl
+;; (define expand-run-tool
+;;   (lambda (ws tool tools pkg targets deps)
+;;     (if (or *mibl-debug-expanders* *mibl-debug-all*)
+;;         (begin
+;;           (format #t "~A: ~A (~A)~%" (ublue "expand-run-tool") tool (type-of tool))
+;;           (format #t "~A: ~A~%" (green "deps") deps)))
 
-    (case tool
-      ((%{bin:ocamlc}) '(% bin ocamlc))
-      ((%{bin:node}) '(% bin node))
-      ((cp) ::copy) ;;FIXME: use lookup table from constants.scm
-      ((node)
-       (set-cdr! deps
-                 (append
-                  `((::tools (::node . ::unresolved)))
-                  (cdr deps)))
-       ::node)
+;;     (case tool
+;;       ((%{bin:ocamlc}) '(% bin ocamlc))
+;;       ((%{bin:node}) '(% bin node))
+;;       ((cp) ::copy) ;;FIXME: use lookup table from constants.scm
+;;       ((node)
+;;        (set-cdr! deps
+;;                  (append
+;;                   `((::tools (::node . ::unresolved)))
+;;                   (cdr deps)))
+;;        ::node)
 
-      ((%{deps}) :deps) ;; ::deps
-       ;; (set-cdr! deps
-       ;;           (append
-       ;;            (list (cons ::tools
-       ;;                        (list
-       ;;                         (cons search-key ;; arg-kw
-       ;;                               ;; (list (cons :pkg pkg-path)
-       ;;                               ;;       (cons :tgt arg))
-       ;;                               ::unresolved
-       ;;                               ))))
-       ;;            (cdr deps)))
-       ;; :FOO)
+;;       ((%{deps}) :deps) ;; ::deps
+;;        ;; (set-cdr! deps
+;;        ;;           (append
+;;        ;;            (list (cons ::tools
+;;        ;;                        (list
+;;        ;;                         (cons search-key ;; arg-kw
+;;        ;;                               ;; (list (cons :pkg pkg-path)
+;;        ;;                               ;;       (cons :tgt arg))
+;;        ;;                               ::unresolved
+;;        ;;                               ))))
+;;        ;;            (cdr deps)))
+;;        ;; :FOO)
 
-      (else
-       (let ((tool (format #f "~A" tool)))
-         (cond
-          ((string-prefix? "%{" tool)
-           (-expand-pct-tool!? ws tool tools pkg deps))
+;;       (else
+;;        (let ((tool (format #f "~A" tool)))
+;;          (cond
+;;           ((string-prefix? "%{" tool)
+;;            (-expand-pct-tool!? ws tool tools pkg deps))
 
-          (else
-           (let ((expanded-tool (-expand-literal-tool!? ws (assoc-val :pkg-path pkg)
-                                                        tool tools deps)))
-             (mibl-trace "expanded-tool" expanded-tool)
-             (mibl-trace "deps" deps)
-             ;; (error 'X "STOP expand-run-tool")
-            expanded-tool))))))))
+;;           (else
+;;            (let ((expanded-tool (-expand-literal-tool!? ws (assoc-val :pkg-path pkg)
+;;                                                         tool tools deps)))
+;;              (mibl-trace "expanded-tool" expanded-tool)
+;;              (mibl-trace "deps" deps)
+;;              ;; (error 'X "STOP expand-run-tool")
+;;             expanded-tool))))))))
 
 (define (find-in-exports ws search-key)
-  (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+  (if (or *mibl-debug-expanders* *mibl-debug-all*)
       (format #t "~A: ~A~%" (ublue "find-in-exports") search-key))
   (let* ((exports (car (assoc-val :exports
                                   (assoc-val ws *mibl-project*)))))
-    (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+    (if (or *mibl-debug-expanders* *mibl-debug-all*)
         (format #t "~A: ~A~%" (green "exports") exports))
     (hash-table-ref exports search-key)))
 
 (define (-find-executable-for-name nm pkg)
-  (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+  (if (or *mibl-debug-expanders* *mibl-debug-all*)
       (format #t "~A: ~A pkg: ~A~%" (ublue "-find-executable-for-name") nm (assoc-val :pkg-path pkg)))
   (let ((nm (if (keyword? nm) (keyword->symbol nm)))
         (stanzas (assoc-val :mibl pkg)))
-    (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+    (if (or *mibl-debug-expanders* *mibl-debug-all*)
         (format #t "~A: ~A~%" (blue "stanzas") stanzas))
     (find-if (lambda (stanza)
-               (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+               (if (or *mibl-debug-expanders* *mibl-debug-all*)
                    (format #t "~A: ~A~%" (blue "stanza") stanza))
                (if (equal? (car stanza) :executable)
                    (let* ((stanza-alist (cdr stanza))
                           (privname (assoc-val :privname stanza-alist)))
-                     (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                     (if (or *mibl-debug-expanders* *mibl-debug-all*)
                          (format #t "~A: ~A =? ~A~%" (cyan "testing") nm privname))
                      (cond
                       ((equal? nm privname) #t)
@@ -103,23 +106,23 @@
              stanzas)))
 
 (define (-match-dep pfx key dep)
-  (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+  (if (or *mibl-debug-expanders* *mibl-debug-all*)
       (format #t "~A: ~A/~A ? ~A~%" (ublue "-match-dep") pfx key dep))
 )
 
 ;; may update :deps
 (define (-find-in-deps!? nm deps pkg)
-  (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+  (if (or *mibl-debug-expanders* *mibl-debug-all*)
       (begin
         (format #t "~A: ~A~%" (ublue "-find-in-deps") nm)
         (format #t "~A: ~A~%" (blue "deps") deps)))
   (let ((d (find-if (lambda (dep)
-                      (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                      (if (or *mibl-debug-expanders* *mibl-debug-all*)
                           (format #t "~A: ~A~%" (blue "dep") dep))
                       ;;FIXME: special tags ::tools, ::opam-pkgs, ::unresolved, etc.
                       (cond
                        ((equal? (car dep) nm)
-                        (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                        (if (or *mibl-debug-expanders* *mibl-debug-all*)
                             (format #t "~A: ~A~%" (uwhite "matched?") dep))
                         #t)
                        ((member (cdr dep) '(::unresolved ::opam-pkg)) #f)
@@ -130,7 +133,7 @@
         (if-let ((matching-exe (-find-executable-for-name nm pkg)))
                 (let ((tgt (format #f "~A.exe" (assoc-val :privname (cdr matching-exe)))))
                   ;; TODO: update :deps for stanza
-                  (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                  (if (or *mibl-debug-expanders* *mibl-debug-all*)
                       (format #t "~A: ~A~%" (bggreen "pctvar resolved") tgt))
                   (let ((newdep (list (cons nm (list `(:pkg . ,(assoc-val :pkg-path pkg)) `(:tgt . ,tgt))))))
                     (set-cdr! deps (append (cdr deps) newdep))
@@ -140,7 +143,7 @@
 
 ;; may update :deps
 (define (-expand-dep-pct-var!? ws pfx sym deps pkg)
-  (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+  (if (or *mibl-debug-expanders* *mibl-debug-all*)
       (format #t "~A: pfx: ~A; sym: ~A~%"
           (ublue "-expand-dep-pct-var!?") pfx sym))
   ;; arg form:  dep:<path>
@@ -150,9 +153,9 @@
   ;; add it to :deps
   (let* ((pkg-path (assoc-val :pkg-path pkg))
          (search-key (symbol->keyword sym))
-         (_ (if (or *mibl-debug-expanders* *mibl-debug-s7*) (format #t "~A: ~A~%" (yellow "searching deps") deps)))
+         (_ (if (or *mibl-debug-expanders* *mibl-debug-all*) (format #t "~A: ~A~%" (yellow "searching deps") deps)))
          (d (-find-in-deps!? search-key deps pkg)))
-    (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+    (if (or *mibl-debug-expanders* *mibl-debug-all*)
         (format #t "~A: ~A~%" (yellow "found?") d))
 
     (if d
@@ -164,7 +167,7 @@
         ;; 4. mark it ::unresolved and let a later pass resolve it
 
         (let ((v (format #f "~A" sym))
-              (_ (if (or *mibl-debug-expanders* *mibl-debug-s7*) (format #t "~A: ~A~%" (yellow "searching pkg files") deps)))
+              (_ (if (or *mibl-debug-expanders* *mibl-debug-all*) (format #t "~A: ~A~%" (yellow "searching pkg files") deps)))
               (expanded
                ;; FIXME: already searched :deps, no need for this:
                (if-let ((tag (deps->tag-for-file deps search-key)))
@@ -177,7 +180,7 @@
                                  (-infer-dep! ws sym #|search-key|# deps pkg)))
                                inferred-dep
                                (begin
-                                 (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                                 (if (or *mibl-debug-expanders* *mibl-debug-all*)
                                      (format #t "~A: ~A~%" (red "unresolved") search-key))
 
                                  ;; first search exports tbl
@@ -187,13 +190,13 @@
                                          (let* ((pkg (assoc-val :pkg found))
                                                 (tgt (assoc-val :tgt found))
                                                 (entry `((,search-key (:pkg . ,pkg) (:tgt . ,tgt)))))
-                                           (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                                           (if (or *mibl-debug-expanders* *mibl-debug-all*)
                                                (format #t "~A: ~A~%" (red "found") found))
                                            ;; (error 'STOP "STOP exp")
                                            (set-cdr! deps (append (cdr deps) entry))
                                            entry)
                                          (let ((x (handle-filename-literal-arg ws sym pkg)))
-                                           (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                                           (if (or *mibl-debug-expanders* *mibl-debug-all*)
                                                (begin
                                                  (format #t "~A: ~A~%" (bgred "RESOLVED") x)
                                                  (format #t "~A: ~A~%" (red "deps") deps)))
@@ -237,7 +240,7 @@
 
 ;; task: map pct-var to label or path or string
 (define (-expand-pct-arg!? ws arg kind pkg deps)
-  (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+  (if (or *mibl-debug-expanders* *mibl-debug-all*)
       (begin
         (format #t "~A~%" (ublue "-expand-pct-arg!?"))
         (format #t "~A: ~A (type: ~A)~%" (blue "arg")
@@ -270,7 +273,7 @@
     ;;          (find-if (lambda (dep)
     ;;                     (equal? (car dep) pct-var-kw))
     ;;                   (cdr deps))))
-    ;;    (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+    ;;    (if (or *mibl-debug-expanders* *mibl-debug-all*)
     ;;        (format #t "~A: ~A~%" (yellow "match?") match))
     ;;    (if match
     ;;        pct-var-kw
@@ -287,7 +290,7 @@
     ;; ;; else decompose and check pfx
     ;; (else
     ;;  (let-values (((sym pfx sfx) (parse-pct-var arg)))
-    ;;    (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+    ;;    (if (or *mibl-debug-expanders* *mibl-debug-all*)
     ;;        (format #t "~A: ~A, ~A: ~A~%"
     ;;            (green "arg pfx") pfx (green "sfx") sfx))
 
@@ -297,7 +300,7 @@
     ;;            (begin
     ;;              ;; prefixed pctvars will never be already in :deps?
     ;;              ;; e.g. lib:foo, bin:foo, etc.
-    ;;              (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+    ;;              (if (or *mibl-debug-expanders* *mibl-debug-all*)
     ;;                  (format #t "~A: ~A~%" (ured "deps before") deps))
     ;;              (set-cdr! deps
     ;;                        (append
@@ -305,7 +308,7 @@
     ;;                                     ;;(symbol->keyword pfx)
     ;;                                     ::unresolved))
     ;;                         (cdr deps)))
-    ;;              (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+    ;;              (if (or *mibl-debug-expanders* *mibl-debug-all*)
     ;;                  (format #t "~A: ~A~%" (ured "deps after") deps))
     ;;              (symbol->keyword sym)))
 
@@ -335,6 +338,7 @@
   )
 
 ;; may update deps
+;; OBSOLETE: replaced by dsl:action->mibl
 (define (-expand-pct-tool!?  ws tool tools pkg deps) ;; ws arg kind pkg deps tools)
   (mibl-trace-entry "-expand-pct-tool!?" tool)
   (mibl-trace "deps" deps)
@@ -347,7 +351,7 @@
                   (cdr pctvar)))
          (pfx (if (list? (cdr pctvar)) (cadr pctvar) #f))
          (sfx (if (list? (cdr pctvar)) (cddr pctvar) #f)))
-    (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+    (if (or *mibl-debug-expanders* *mibl-debug-all*)
         (format #t "~A: ~A, ~A: ~A~%"
                 (uwhite "tool pfx") pfx (uwhite "sfx") sfx))
 
@@ -355,25 +359,25 @@
     (let* ((search-key (if (equal? pfx :dep)
                            (symbol->keyword sfx)
                            (symbol->keyword sym))) ;; (pct-var->keyword tool))
-           (_ (if (or *mibl-debug-expanders* *mibl-debug-s7*) (format #t "~A: ~A (kw? ~A)~%" (yellow "search-key")
+           (_ (if (or *mibl-debug-expanders* *mibl-debug-all*) (format #t "~A: ~A (kw? ~A)~%" (yellow "search-key")
                       search-key (keyword? search-key))))
            ;; (_ (if (equal? pfx :dep) (error 'STOP "STOP pct-tool")))
            (tool (find-if (lambda (dep)
-                             (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                             (if (or *mibl-debug-expanders* *mibl-debug-all*)
                                  (format #t "~A: ~A (~A)~%"
                                      (yellow "testing dep") dep (type-of (car dep))))
                              ;; (format #t "~A: ~A~%" (yellow "kw?") (keyword?
                              ;;                                       (car dep)))
                              (equal? (car dep) search-key))
                            (cdr deps))))
-      (mibl-trace "tool" tool *mibl-debug-expanders*)
+      (mibl-trace "tool" tool :test *mibl-debug-expanders*)
       (if tool ;; e.g. (:< (:pkg . "./") (:tgt . "concat.sh"))
             (begin
-              (mibl-trace "pct tool in deps" tool *mibl-debug-expanders*)
-              (mibl-trace "deps" deps *mibl-debug-expanders*)
+              (mibl-trace "pct tool in deps" tool :test *mibl-debug-expanders*)
+              (mibl-trace "deps" deps :test *mibl-debug-expanders*)
               (set-cdr! tools `((,(car tool) ,(assoc :pkg (cdr tool)) ,(assoc :tgt (cdr tool)))))
-              (mibl-trace "cdr deps" (cdr deps) *mibl-debug-expanders*)
-              (mibl-trace "dissoc! ks" `(,(car tool)) *mibl-debug-expanders*)
+              (mibl-trace "cdr deps" (cdr deps) :test *mibl-debug-expanders*)
+              (mibl-trace "dissoc! ks" `(,(car tool)) :test *mibl-debug-expanders*)
               (set-cdr! deps (alist-delete! `(,(car tool)) (cdr deps)))
               ;; (set-cdr! deps
               ;;           (append
@@ -387,11 +391,11 @@
             ;; else infer it must be imported from exports tbl
             ;; FIXME FIXME: only works after first pass adds everything to exports tbl
             (begin
-              (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+              (if (or *mibl-debug-expanders* *mibl-debug-all*)
                   (format #t "~A: ~A, ~A~%" (red "tool NOT in deps") sym deps))
               (if-let ((found (find-in-exports ws (symbol->keyword sym))))
                       (begin
-                        (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                        (if (or *mibl-debug-expanders* *mibl-debug-all*)
                             (begin
                               (format #t "~A: ~A~%" (bgred "kw") (symbol->keyword sym))
                               (format #t "~A: ~A~%" (bgred "found") found)))
@@ -460,7 +464,7 @@
     ;;                        (alist-delete (list arg-kw) (cdr deps))))
     ;;             (car t))
     ;;           ;; else
-    ;;           (let ((_ (if (or *mibl-debug-expanders* *mibl-debug-s7*) (format #t "~A: ~A~%" (red "arg not in deps") arg)))
+    ;;           (let ((_ (if (or *mibl-debug-expanders* *mibl-debug-all*) (format #t "~A: ~A~%" (red "arg not in deps") arg)))
     ;;                 (arg-kw (string->keyword arg)))
     ;;             (set-cdr! deps
     ;;                       (append
@@ -484,7 +488,7 @@
     (if (null? (cdr deps)) ;; meaning?
         ;; infer dep for tool
         (let* ((tool-kw (string->keyword (format #f "~A" tool)))
-               (_ (if (or *mibl-debug-expanders* *mibl-debug-s7*) (format #t "~A: ~A~%" (white "inferring ::unresolved for tool") tool-kw)))
+               (_ (if (or *mibl-debug-expanders* *mibl-debug-all*) (format #t "~A: ~A~%" (white "inferring ::unresolved for tool") tool-kw)))
                )
           (set-cdr! deps
                     (list (cons ::toolsD
@@ -498,21 +502,21 @@
         (let ((tool (format #f "~A" tool))
               (t
                (begin
-                 (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                 (if (or *mibl-debug-expanders* *mibl-debug-all*)
                      (format #t "~A: ~A~%" (green "searching deps") (cdr deps)))
                  (find-if (lambda (dep)
-                            (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                            (if (or *mibl-debug-expanders* *mibl-debug-all*)
                                 (format #t "~A: ~A~%" (green "checking dep") dep))
                             ;; dep forms:  (:<kw> (:pkg ...) (:tgt ...))
                             ;; or (foo ::unresolved), (foo ::opam-pkg)
                             ;; or
                             (cond
                               ((member (cdr dep) '(::unresolved))
-                               (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                               (if (or *mibl-debug-expanders* *mibl-debug-all*)
                                    (format #t "~A: ~A~%" (ured "::UNRESOLVED") dep))
                                #f)
                               ((member (cdr dep) '(::opam-pkg))
-                               (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                               (if (or *mibl-debug-expanders* *mibl-debug-all*)
                                    (format #t "~A: ~A~%" (ured "::opam-pkgs") dep))
                                #f)
                              ((alist? (cdr dep))
@@ -523,7 +527,7 @@
                                                   (if-let ((tgts (assoc-val :glob lbl-list)))
                                                           (equal? tool tgts)
                                                           (error 'fixme "missing :tgt and :tgts in dep")))))
-                                (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                                (if (or *mibl-debug-expanders* *mibl-debug-all*)
                                     (begin
                                       (format #t "~A: ~A~%" (uwhite "lbl-list") lbl-list)
                                       (format #t "~A: ~A~%" (uwhite "tgt") lbl-tgt)))
@@ -534,7 +538,7 @@
                           (cdr deps)))))
           (if t
               (let ((tool-kw (string->keyword tool)))
-                (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                (if (or *mibl-debug-expanders* *mibl-debug-all*)
                     (begin
                       (format #t "~A: ~A~%" (red "literal tool in deps") t)
                       (format #t "~A: ~A~%" (red "tool") tool)))
@@ -553,7 +557,7 @@
 
                ;; else fs path to some other pkg, like ../../foo/bar
               (begin
-                (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                (if (or *mibl-debug-expanders* *mibl-debug-all*)
                     (format #t "~A: ~A~%" (blue "TOOL NOT in deps") tool))
                ;; inference: must(?) be a path ref to sth in another pkg
                ;; e.g. ../gen_stubs/gen_stubs.exe
@@ -566,7 +570,7 @@
                             (canonical-path (->canonical-path full-path))
                             (pkg (dirname canonical-path))
                             (tgt (basename canonical-path)))
-                       (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                       (if (or *mibl-debug-expanders* *mibl-debug-all*)
                            (begin
                              (format #t "~A: ~A~%" (blue "pkg-path") pkg-path)
                              (format #t "~A: ~A~%" (blue "full-path") full-path)
@@ -585,7 +589,7 @@
                        tool-kw))
                    ;; else must be in cwd, or in exports table to be resolved in separate pass
                    (begin
-                     (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                     (if (or *mibl-debug-expanders* *mibl-debug-all*)
                          (format #t "~A: ~A~%" (yellow "tool runresolved") tool))
                      (set-cdr! deps
                                (append
@@ -597,7 +601,7 @@
 
 ;; may update deps
 (define (find-sigfile-in-pkg-files!? arg deps pkg)
-  (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+  (if (or *mibl-debug-expanders* *mibl-debug-all*)
       (begin
         (format #t "~A: ~A~%" (ublue "find-sigfile-in-pkg-files") arg)
         (format #t "~A: ~A~%" (blue ":signatures") (assoc-val :signatures pkg))))
@@ -614,11 +618,11 @@
                   (if-let ((sigs (assoc-val :signatures pkg)))
                           sigs
                           '()))))
-    (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+    (if (or *mibl-debug-expanders* *mibl-debug-all*)
         (format #t "~A: ~A~%" (white "searched pkg :signatures:") sig))
     (if sig
         (let ((key (string->keyword arg)))
-          (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+          (if (or *mibl-debug-expanders* *mibl-debug-all*)
               (format #t "~A: ~A~%" (magenta "sigfile INFERRED dep") sig))
           (set-cdr! deps (cons (cons key
                                      (list (cons :pkg (assoc-val :pkg-path pkg))
@@ -628,13 +632,13 @@
         ;; else search :modules
         (let ((sig
                (find-if (lambda (m-assoc)
-                          (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                          (if (or *mibl-debug-expanders* *mibl-debug-all*)
                               (format #t "~A: ~A~%" (white "m-assoc") m-assoc))
                           (find-if (lambda (m)
-                                     (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                                     (if (or *mibl-debug-expanders* *mibl-debug-all*)
                                          (format #t "~A: ~A (~A)~%" (white "m") (cdr m) (type-of (cdr m))))
                                      (let ((ml (cdr m)))
-                                       (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                                       (if (or *mibl-debug-expanders* *mibl-debug-all*)
                                            (format #t "~A: ~A~%" (white "(cdr m)") ml))
                                        (equal? (format #f "~A" arg)
                                                (format #f "~A" ml))))
@@ -644,20 +648,20 @@
                                 '()))))
           (if sig
               (let ((key (string->keyword arg)))
-                (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                (if (or *mibl-debug-expanders* *mibl-debug-all*)
                     (format #t "~A: ~A~%" (magenta "sig INFERRED DEP") sig))
                 (set-cdr! deps (cons (cons key
                                            (list (cons :pkg (assoc-val :pkg-path pkg))
                                                  (cons :tgt arg)))
                                      (cdr deps)))
                 key)
-              (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+              (if (or *mibl-debug-expanders* *mibl-debug-all*)
                   (format #t "~A: ~A~%" (white "searched pkg :modules:") sig)))
               #f))))
 
 ;; may update deps
 (define (find-structfile-in-pkg-files!? arg deps pkg)
-  (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+  (if (or *mibl-debug-expanders* *mibl-debug-all*)
       (begin
         (format #t "~A: ~A~%" (blue "find-structfile-in-pkg-files") arg)
         (format #t "~A: ~A~%" (red ":structures") (assoc-val :structures pkg))
@@ -665,19 +669,19 @@
 
   (let* ((struct-files (if-let ((files (assoc :structures pkg)))
                                (cdr files) '()))
-         (_ (if (or *mibl-debug-expanders* *mibl-debug-s7*) (format #t "~A: ~A~%" (magenta "pkg struct-files") struct-files)))
+         (_ (if (or *mibl-debug-expanders* *mibl-debug-all*) (format #t "~A: ~A~%" (magenta "pkg struct-files") struct-files)))
          (struct-files (append
                         (if-let ((sfiles (assoc-val :static struct-files)))
                                 sfiles '())
                         (if-let ((dfiles (assoc-val :dynamic struct-files)))
                                 dfiles '())))
-         (_ (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+         (_ (if (or *mibl-debug-expanders* *mibl-debug-all*)
                 (begin
                   (format #t "~A: ~A~%" (cyan "combined struct-files") struct-files)
                   (format #t "~A~%" (uwhite "searching struct-files")))))
          (struct
           (find-if (lambda (f-assoc)
-                     (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                     (if (or *mibl-debug-expanders* *mibl-debug-all*)
                          (format #t "~A: ~A~%" (white "f-assoc") f-assoc))
                      (equal? (format #f "~A" arg) (format #f "~A" (cdr f-assoc))))
                    struct-files)))
@@ -685,11 +689,11 @@
     ;;         structs
     ;;         '()))))
 
-    (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+    (if (or *mibl-debug-expanders* *mibl-debug-all*)
         (format #t "~A: ~A~%" (white "struct") struct))
     (if struct
         (let ((key (string->keyword arg)))
-          (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+          (if (or *mibl-debug-expanders* *mibl-debug-all*)
               (format #t "~A: ~A~%" (magenta "structfile INFERRED dep") struct))
           (set-cdr! deps (cons (cons key
                                      (list (cons :pkg (assoc-val :pkg-path pkg))
@@ -697,16 +701,16 @@
                                (cdr deps)))
           key)
         ;; else search :modules
-        (let ((_ (if (or *mibl-debug-expanders* *mibl-debug-s7*) (format #t "~A~%" (uwhite "searching modules"))))
+        (let ((_ (if (or *mibl-debug-expanders* *mibl-debug-all*) (format #t "~A~%" (uwhite "searching modules"))))
               (struct
                (find-if (lambda (m-assoc)
-                          (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                          (if (or *mibl-debug-expanders* *mibl-debug-all*)
                               (format #t "~A: ~A~%" (white "m-assoc") m-assoc))
                           (find-if (lambda (m)
-                                     (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                                     (if (or *mibl-debug-expanders* *mibl-debug-all*)
                                          (format #t "~A: ~A (~A)~%" (white "m") (cdr m) (type-of (cdr m))))
                                      (let ((ml (cdr m)))
-                                       (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                                       (if (or *mibl-debug-expanders* *mibl-debug-all*)
                                            (format #t "~A: ~A~%" (white "(cdr m)") ml))
                                        (equal? (format #f "~A" arg)
                                                (format #f "~A" ml))))
@@ -716,7 +720,7 @@
                                 '()))))
           (if struct
               (let ((key (string->keyword arg)))
-                (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                (if (or *mibl-debug-expanders* *mibl-debug-all*)
                     (format #t "~A: ~A~%" (magenta "INFERRED DEP") struct))
                 (set-cdr! deps (cons (cons key
                                            (list (cons :pkg (assoc-val :pkg-path pkg))
@@ -724,14 +728,14 @@
                                      (cdr deps)))
                 key)
               (begin
-                (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                (if (or *mibl-debug-expanders* *mibl-debug-all*)
                     (format #t "~A: ~A~%" (ublue "not found in pkg files") arg))
                 #f))))))
 
 ;; updates ::outputs. called by normalize-action-write-file if no (targets)
 ;; targets should be (::outputs)
 (define (-infer-output! arg targets pkg)
-  (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+  (if (or *mibl-debug-expanders* *mibl-debug-all*)
       (begin
         (format #t "~A: ~A (~A)~%" (blue "-infer-output!") arg (type-of arg))
         (format #t "~A: ~A~%" (red "targets") targets)
@@ -749,7 +753,7 @@
 
   (cond
    ((eq? (fnmatch "*.ml" (format #f "~A" arg) 0) 0)
-    (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+    (if (or *mibl-debug-expanders* *mibl-debug-all*)
         (format #t "~A: ~A~%" (red "Matched *.ml") arg))
     (let ((struct (find-if (lambda (f-assoc)
                              ;; (format #t "~A: ~A~%" (white "f-assoc")
@@ -763,11 +767,11 @@
                                    structs
                                    '()))))
 
-      (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+      (if (or *mibl-debug-expanders* *mibl-debug-all*)
           (format #t "~A: ~A~%" (white "struct") struct))
       (if struct
           (let ((key (string->keyword arg)))
-            (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+            (if (or *mibl-debug-expanders* *mibl-debug-all*)
                 (format #t "~A: ~A~%" (magenta "INFERRED DEP") struct))
             (set-cdr! deps (cons (cons key
                                        (list (cons :pkg (assoc-val :pkg-path pkg))
@@ -776,13 +780,13 @@
             key)
           ;; else search :modules
           (let ((struct (find-if (lambda (m-assoc)
-                                   (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                                   (if (or *mibl-debug-expanders* *mibl-debug-all*)
                                        (format #t "~A: ~A~%" (white "m-assoc") m-assoc))
                                    (find-if (lambda (m)
-                                              (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                                              (if (or *mibl-debug-expanders* *mibl-debug-all*)
                                                   (format #t "~A: ~A (~A)~%" (white "m") (cdr m) (type-of (cdr m))))
                                               (let ((ml (cdr m)))
-                                                (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                                                (if (or *mibl-debug-expanders* *mibl-debug-all*)
                                                     (format #t "~A: ~A~%" (white "(cdr m)") ml))
                                                 (equal? (format #f "~A" arg)
                                                         (format #f "~A" ml))))
@@ -792,7 +796,7 @@
                                          '()))))
             (if struct
                 (let ((key (string->keyword arg)))
-                  (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                  (if (or *mibl-debug-expanders* *mibl-debug-all*)
                       (format #t "~A: ~A~%" (magenta "INFERRED DEP") struct))
                   (set-cdr! deps (cons (cons key
                                              (list (cons :pkg (assoc-val :pkg-path pkg))
@@ -803,7 +807,7 @@
                 ;; PROBLEM: distinguish between string args and labels of targets in other pkgs
                 ;; solution: assume "foo.ml" is a file name
                 (begin
-                  (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                  (if (or *mibl-debug-expanders* *mibl-debug-all*)
                       (format #t "~A: ~A~%" (red "NO MATCH in pkg files for") arg))
                   ;; 1. add to pkg files :structures or :modules
                   ;; 2. add to :targets
@@ -818,7 +822,7 @@
     ;; targets should be a singleton list
     ;; e.g. (::outputs (:foo.txt (:pkg "a/b") (:tgt "foo.txt")))
     (let ((targets (car (cdr targets))))
-      (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+      (if (or *mibl-debug-expanders* *mibl-debug-all*)
           (format #t "~A: ~A~%" (red "targets") targets))
       (car targets)))
 
@@ -829,7 +833,7 @@
 
 ;; search pkg files for arg, if found update deps
 (define (-infer-dep! ws arg deps pkg)
-  (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+  (if (or *mibl-debug-expanders* *mibl-debug-all*)
       (begin
         (format #t "~A: ~A (~A)~%" (ublue "-infer-dep!") arg (type-of arg))
         (format #t "~A: ~A~%" (blue "pkg") pkg)
@@ -849,7 +853,7 @@
 
      (else
       (let ((f (find-file-in-pkg-files!? arg deps pkg)))
-        (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+        (if (or *mibl-debug-expanders* *mibl-debug-all*)
             (format #t "~A: ~A~%" (red "found file in pkg files?") f))
         (if f
             (update-tagged-label-list! arg deps pkg)
@@ -866,7 +870,7 @@
 ;; string args may include suffixed vars, e.g. %{test}.corrected
 (define expand-string-arg
   (lambda (ws arg pkg targets deps)
-    (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+    (if (or *mibl-debug-expanders* *mibl-debug-all*)
         (begin
           (format #t "~A: ~A\n" (ublue "expand-string-arg") arg)
           (format #t "  ~A: ~A\n" (blue "targets") targets)
@@ -899,7 +903,7 @@
      ;; by looking them up in the exports table
      ((string-prefix? "%{" arg)
       ;; %{foo} or %{foo}.suffix
-      (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+      (if (or *mibl-debug-expanders* *mibl-debug-all*)
           (begin
             (format #t "VAR: ~A\n" arg)
             (format #t "deps: ~A\n" deps)))
@@ -914,7 +918,7 @@
 
       (if-let ((tag (deps->tag-for-file deps arg)))
               (begin
-                (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                (if (or *mibl-debug-expanders* *mibl-debug-all*)
                     (format #t "~A: ~A~%" (green "File tag") tag))
                 tag)
               (if-let ((tag (targets->tag-for-file targets arg)))
@@ -928,7 +932,7 @@
                                 (-infer-dep! ws arg #|search-key|# deps pkg)))
                               inferred-dep
                               (begin
-                                (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                                (if (or *mibl-debug-expanders* *mibl-debug-all*)
                                     (format #t "~A: ~A~%" (red "string dep unresolved") arg))
                                 ;; first search exports tbl
                                 ;; pointless, tbl is incomplete?
@@ -936,7 +940,7 @@
                                         (let* ((pkg (assoc-val :pkg found))
                                                (tgt (assoc-val :tgt found))
                                                (entry `((,(string->keyword arg) (:pkg . ,pkg) (:tgt . ,tgt)))))
-                                          (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                                          (if (or *mibl-debug-expanders* *mibl-debug-all*)
                                               (format #t "~A: ~A~%" (red "found") found))
                                           ;; (error 'STOP "STOP exp")
                                           entry)
@@ -944,7 +948,7 @@
                                         ;; its either an unresolved dep, or an output file, or a string arg
                                         ;; mark it unresolved and let later pass handle it?
                                         (let ((key (string->keyword arg)))
-                                          (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                                          (if (or *mibl-debug-expanders* *mibl-debug-all*)
                                               (begin
                                                 (format #t "~A: ~A~%" (bgred "unresolved string") arg)
                                                 (format #t "~A: ~A~%" (bgred " deps") deps)))
@@ -965,7 +969,7 @@
 
 (define expand-cmd-args*
   (lambda (ws args pkg targets deps)
-    (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+    (if (or *mibl-debug-expanders* *mibl-debug-all*)
         (begin
           (format #t "~A\n" (ublue "expand-cmd-args*"))
           (format #t "  ~A: ~A\n" (blue "args") args)
@@ -977,7 +981,7 @@
         (let ((result
                (if (null? args)
                    (begin
-                     (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                     (if (or *mibl-debug-expanders* *mibl-debug-all*)
                          (format #t "~A, returning: ~A~%" "bottomed out" '()))
                      '())
 
@@ -1001,7 +1005,7 @@
                        (let ((arg-str (format #f "~A" arg)))
                          (if (string-prefix? "%{" arg-str)
                              (begin
-                               (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                               (if (or *mibl-debug-expanders* *mibl-debug-all*)
                                    (format #t "~A: ~A~%" (green "arg is pct-var") arg))
                                (if (or (eq? arg '%{target}) (eq? arg '%{targets}))
                                    ;; %{target}, %{targets} directly translate to ::outputs
@@ -1009,7 +1013,7 @@
                                    ;; else expand the pct-var
                                    (let* ((pkg-path (assoc-val :pkg-path pkg))
                                           (arg (-expand-pct-arg!? ws arg :arg pkg deps)))
-                                     (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                                     (if (or *mibl-debug-expanders* *mibl-debug-all*)
                                          (format #t "~A: ~A~%" (red "expanded pct-var") arg))
                                      (cons arg
                                            (expand-cmd-args* ws (cdr args) pkg targets deps)))))
@@ -1025,7 +1029,7 @@
                              ;;   rule: if we cannot resolve qua file, and it looks like a filename
                              ;;   (e.g. due to extension), treat it as output file.
                               (begin
-                                (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                                (if (or *mibl-debug-expanders* *mibl-debug-all*)
                                     (format #t "~A: ~A~%" (green "arg is symbol") arg))
                                 ;; try to expand it as string (i.e. filename).
                                 ;; if that fails, mark it unresolved.
@@ -1051,7 +1055,7 @@
                       ;;          ;; %{foo} or %{foo}.suffix
                       ;;          (let* ((pkg-path (assoc-val :pkg-path pkg))
                       ;;                 (arg (-expand-pct-arg!? ws arg :arg pkg deps)))
-                      ;;            (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                      ;;            (if (or *mibl-debug-expanders* *mibl-debug-all*)
                       ;;                (format #t "~A: ~A~%" (uwhite "expanded arg") arg))
                       ;;            (cons arg
                       ;;                  (expand-cmd-args* ws (cdr args) pkg targets deps))))
@@ -1060,7 +1064,7 @@
                       ;;                            pkg targets deps))))))
 
                       ((string? arg)
-                       (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                       (if (or *mibl-debug-expanders* *mibl-debug-all*)
                            (format #t "~A: ~S~%" (red "arg is string") arg))
                        (if (string=? arg "")
                            (begin
@@ -1076,7 +1080,7 @@
                       ;; (cdr args) filedeps vars)))))
 
                       (else ; not number, pair, string
-                       (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                       (if (or *mibl-debug-expanders* *mibl-debug-all*)
                            (format #t
                                "WARNING: not a nbr, pair, or string: ~A\n" arg))
                        ))
@@ -1088,7 +1092,7 @@
 
 (define expand-targets
   (lambda (ws pkg targets deps)
-    (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+    (if (or *mibl-debug-expanders* *mibl-debug-all*)
         (begin
           (format #t "~A\n" (ublue "expand-targets"))
           (format #t "~A: ~A\n" (blue "ws") ws)
@@ -1097,13 +1101,13 @@
           (format #t "~A: ~A\n" (blue "deps") deps)))
 
     (let ((terms (expand-terms* ws targets pkg '())))
-      (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+      (if (or *mibl-debug-expanders* *mibl-debug-all*)
           (format #t "~A: ~A\n" (red "expanded terms") terms))
       terms)))
 
 ;; expands items, e.g. pct-vars like %{deps}
 (define (expand-terms* ws arglist pkg expanded-deps)
-  (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+  (if (or *mibl-debug-expanders* *mibl-debug-all*)
       (begin
         (format #t "~A\n" (ublue "expand-terms*"))
         (format #t "~A: ~A\n" (blue "arglist") arglist)
@@ -1115,17 +1119,17 @@
       expanded-deps
       (if (pair? (car arglist))
           (begin
-            (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+            (if (or *mibl-debug-expanders* *mibl-debug-all*)
                 (format #t "~A: ~A (t: ~A)~%" (bgred "term pair") (car arglist) (type-of (caar arglist))))
             (if (equal? 'package (caar arglist))
                 (begin
                   ;; in executables, (package p) just means its part of that pkg
                   ;; in rules, (deps (package p)) means depend on everything in p
-                  (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                  (if (or *mibl-debug-expanders* *mibl-debug-all*)
                       (format #t "~A: ~A~%" (bgred "skipping term") (car arglist)))
                   (expand-terms* ws (cdr arglist) pkg expanded-deps))
                 (let ((front (expand-terms* ws (car arglist) pkg '())))
-                  (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                  (if (or *mibl-debug-expanders* *mibl-debug-all*)
                       (begin
                         (format #t "~A: ~A~%" (ured "expanded front") front)
                         (format #t "~A: ~A~%" (ured "now expanding") (cdr arglist))))
@@ -1137,7 +1141,7 @@
                     (let ((res (apply (car depfn)
                                       (list ws pkg
                                             arglist))))
-                      (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                      (if (or *mibl-debug-expanders* *mibl-debug-all*)
                           (begin
                             (format #t "depfn res: ~A\n" res)
                             (format #t "expanded-deps: ~A\n" expanded-deps)))
@@ -1167,7 +1171,7 @@
                        (else
                         (if-let ((found (find-in-exports ws (string->keyword dep))))
                                 (begin
-                                  (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                                  (if (or *mibl-debug-expanders* *mibl-debug-all*)
                                       (format #t "~A: ~A~%" (bggreen "xxxxxxxxxxxxxxxx") found))
                                   (let* ((pkg (assoc-val :pkg found))
                                          (tgt (assoc-val :tgt found))
@@ -1177,7 +1181,7 @@
                                 ;; return (:static <path> <fname>)
                                 ;; or (:dynamic <path> <fname>)
                                 (begin
-                                  (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                                  (if (or *mibl-debug-expanders* *mibl-debug-all*)
                                       (format #t "LIT DEP : ~A\n" arglist))
                                   (handle-filename-literal-dep
                                    ws dep arglist pkg
@@ -1187,7 +1191,7 @@
 
 (define (expand-rule-deps ws pkg stanza-alist)
   ;; updates stanza-alist
-  (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+  (if (or *mibl-debug-expanders* *mibl-debug-all*)
       (begin
         (format #t "~A\n" (ublue "expand-rule-deps"))
         (format #t "~A: ~A\n" (blue "ws") ws)
@@ -1198,88 +1202,74 @@
 
   (if-let ((deps-assoc (assoc 'deps stanza-alist)))
           (let* ((deplist (assoc-val 'deps stanza-alist))
-                 (_ (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+                 (_ (if (or *mibl-debug-expanders* *mibl-debug-all*)
                         (format #t "main deplist: ~A\n" deplist)))
                  ;; (stdout (assoc-in '(action with-stdout-to) stanza-alist))
                  ;; (stdout (if stdout (cadr stdout)))
-                 ;; (_ (if (or *mibl-debug-expanders* *mibl-debug-s7*) (format #t "~A: ~A~%" (green "stdout") stdout)))
+                 ;; (_ (if (or *mibl-debug-expanders* *mibl-debug-all*) (format #t "~A: ~A~%" (green "stdout") stdout)))
                  ;; (deplist (if stdout (cons stdout deplist) deplist))
-                 (_ (if (or *mibl-debug-expanders* *mibl-debug-s7*) (format #t "~A: ~A\n" (green "DEPLIST") deplist)))
+                 (_ (if (or *mibl-debug-expanders* *mibl-debug-all*) (format #t "~A: ~A\n" (green "DEPLIST") deplist)))
                  (result (expand-terms* ws deplist pkg '())))
-            (if (or *mibl-debug-expanders* *mibl-debug-s7*)
+            (if (or *mibl-debug-expanders* *mibl-debug-all*)
                 (format #t "~A: ~A\n" (green "DEPLIST EXPANDED") result))
             `(::inputs ,@result))
           #f))
 
-(define (expand-cmd-list ws pkg -raw-cmds tools targets deps)
-  (if (or *mibl-debug-expanders* *mibl-debug-s7*)
-      (begin
-        (format #t "~A\n" (ublue "expand-cmd-list"))
-        (format #t "~A: ~A~%" (green "-raw-cmds") -raw-cmds)
-        (format #t "~A: ~A~%" (green "targets") targets)
-        (format #t "~A: ~A~%" (green "deps") deps)))
+;; OBSOLETE: replaced by dsl:action->mibl
+;; (define (expand-cmd-list ws pkg -raw-cmds tools targets deps)
+;;   (mibl-trace-entry "expand-cmd-list" -raw-cmds :test *mibl-debug-expanders*)
+;;   ;;(mibl-trace #t "~A: ~A~%" (green "-raw-cmds") -raw-cmds)
+;;   (mibl-trace "targets" targets :test *mibl-debug-expanders*)
+;;   (mibl-trace "deps" deps :test *mibl-debug-expanders*)
 
-  (let recur ((raw-cmds -raw-cmds)
-              (tool #f)
-              (expanded-cmds '())
-              (args '()))
-    ;; (format #t " cmd-list RECUR: ~A\n" raw-cmds)
-    ;; (format #t "    expanded: ~A\n" expanded-cmds)
-    ;; (format #t "    tool: ~A\n" tool)
-    (if (null? raw-cmds)
-        expanded-cmds
+;;   (let recur ((raw-cmds -raw-cmds)
+;;               (tool #f)
+;;               (expanded-cmds '())
+;;               (args '()))
+;;     ;; (mibl-trace #t " cmd-list RECUR: ~A\n" raw-cmds)
+;;     ;; (mibl-trace #t "    expanded: ~A\n" expanded-cmds)
+;;     ;; (format #t "    tool: ~A\n" tool)
+;;     (if (null? raw-cmds)
+;;         expanded-cmds
 
-        (if (pair? (car raw-cmds))
-            (let* ((initial (recur (car raw-cmds) tool expanded-cmds args)))
-              (recur (cdr raw-cmds)
-                     tool
-                     (append expanded-cmds initial) args))
+;;         (if (pair? (car raw-cmds))
+;;             (let* ((initial (recur (car raw-cmds) tool expanded-cmds args)))
+;;               (recur (cdr raw-cmds)
+;;                      tool
+;;                      (append expanded-cmds initial) args))
 
-            ;; car is atom
-            (let* ((kw (car raw-cmds)))
-              (if (member kw dune-dsl-cmds)
-                  `(((:Tool (string->symbol
-                             (format #f ":~A" ,kw)))
-                     (:args
-                      ,@(expand-cmd-args* ws (cdr raw-cmds) pkg targets deps))))
+;;             ;; car is atom
+;;             (let* ((kw (car raw-cmds)))
+;;               (if (member kw dune-dsl-cmds)
+;;                   `(((:Tool (string->symbol
+;;                              (format #f ":~A" ,kw)))
+;;                      (:args
+;;                       ,@(expand-cmd-args* ws (cdr raw-cmds) pkg targets deps))))
 
-                  (if (equal? kw 'run)
-                      ;; skip 'run'
-                      (recur (cdr raw-cmds) tool expanded-cmds
-                             (expand-cmd-args* ws args pkg targets deps))
+;;                   (if (equal? kw 'run)
+;;                       ;; skip 'run'
+;;                       (recur (cdr raw-cmds) tool expanded-cmds
+;;                              (expand-cmd-args* ws args pkg targets deps))
 
-                      ;; atom or list following 'run'
-                      (if (pair? kw)
-                          ;; e.g. (run (cmd ...))
-                          (recur kw tool expanded-cmds
-                                 (expand-cmd-args* ws args pkg targets deps))
+;;                       ;; atom or list following 'run'
+;;                       (if (pair? kw)
+;;                           ;; e.g. (run (cmd ...))
+;;                           (recur kw tool expanded-cmds
+;;                                  (expand-cmd-args* ws args pkg targets deps))
 
-                          ;; kw in in list of dune std tools, must be
-                          ;; (run %{bin:foo} ...), (run ../foo/bar.exe) etc.
-                          ;; e.g. (run ../gen_stubs/gen_stubs.exe %{jsoo} --except %{runtime})
-                          (let ((tmp
-                                  `((:tool
-                                     ,(expand-run-tool ws kw tools pkg targets deps))
-                                    (:args
-                                      ,@(expand-cmd-args* ws (cdr raw-cmds)
-                                                          pkg targets deps)))))
-                            (if (or *mibl-debug-expanders* *mibl-debug-s7*)
-                                (format #t "~A: ~A~%" (bggreen "tmp") tmp))
-                            ;; (error 'X "STOP expanded run-tool")
-                            tmp)))))))))
-                  ;; ;; else must be an arg
-                  ;; (expand-cmd-args* (cdr raw-cmds) pkg targets deps)))
-
-             ;; ((equal? 'run (car raw-cmds))
-             ;;  (format #t "RUN ~A\n" raw-cmds)
-             ;;  (recur (cdr raw-cmds)
-             ;;         (append expanded-cmds initial)
-             ;;         targets deps))
-             ;; (else ;; car not chdir, not run
-             ;;  (error 'wtf2 "WTF2? ~A" (car raw-cmds)))
-             ;; ))))
-
-(provide 'expanders.scm)
+;;                           ;; kw in in list of dune std tools, must be
+;;                           ;; (run %{bin:foo} ...), (run ../foo/bar.exe) etc.
+;;                           ;; e.g. (run ../gen_stubs/gen_stubs.exe %{jsoo} --except %{runtime})
+;;                           (let ((tmp
+;;                                   `((:tool
+;;                                      ,(expand-run-tool ws kw tools pkg targets deps))
+;;                                     (:args
+;;                                       ,@(expand-cmd-args* ws (cdr raw-cmds)
+;;                                                           pkg targets deps)))))
+;;                             (if (or *mibl-debug-expanders* *mibl-debug-all*)
+;;                                 (format #t "~A: ~A~%" (bggreen "tmp") tmp))
+;;                             ;; (error 'X "STOP expanded run-tool")
+;;                             tmp)))))))))
 
 (if *mibl-debug-s7-loads*
     (format #t "loaded dune/expanders.scm\n"))

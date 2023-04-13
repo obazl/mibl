@@ -1,6 +1,8 @@
 (if *mibl-debug-s7-loads*
     (format #t "loading dune/action_dsl.scm\n"))
 
+
+(provide 'action-dsl.scm)
 ;; (provide 'dsl:action->mibl)
 ;;(provide 'dune/action_dsl.scm)
 
@@ -153,14 +155,14 @@
                 (recur "" (append segs (list s)))))))))
 
 (define (pct-var->keyword v)
-  (if :test *mibl-debug-s7*
+  (if :test *mibl-debug-all*
       (format #t "~A: ~A~%" (blue "pct-var->var") v))
   (let* ((v (format #f "~A" v))
          (len (length v))
          ;; remove %{ and }
          (vstr (substring v 2 (- len 1)))
          (kw (string->keyword vstr)))
-    (if :test *mibl-debug-s7*
+    (if :test *mibl-debug-all*
         (begin
           (format #t "vstr ~A\n" vstr)
           (format #t "kw ~A\n" kw)))
@@ -284,13 +286,14 @@
                            args))
                 )
            (mibl-trace "base args" args :test *mibl-debug-action-dsl*)
-           `((:tool . ,(symbol->keyword primary-cmd))
-             (:shell . #<unspecified>)
-             (:args ,@args)))))
+           `((:cmd
+              (:tool . ,(symbol->keyword primary-cmd))
+              (:shell . #<unspecified>)
+              (:args ,@args))))))
 
-      ((chdir) `((:shell . #<unspecified>) (:tool . :chdir) (:args)))
+      ((chdir) `((:cmd (:tool . :chdir) (:shell . #<unspecified>) (:args))))
 
-      ((echo) `((:shell . #<unspecified>) (:tool . :echo) (:args ,@(cdr action-list))))
+      ((echo) `((:cmd (:tool . :echo) (:shell . #<unspecified>) (:args ,@(cdr action-list)))))
 
       ;; inductive cases
       ((bash)
@@ -371,9 +374,10 @@
                                          (if (eq? :cmd (caar cmds))
                                              ;; remove :cmd
                                              ;; (append accum (cons (cdar cmds) (cdr cmds)))
-                                             (append accum `((:cmd ,@cmds)))
+                                             (append accum cmds) ;; `((:cmd ,@cmds)))
                                              ;; else cmds = ((:tool ...))
-                                             (append accum `((:cmd ,@cmds)))))))
+                                             (append accum cmds ;; `((:cmd ,@cmds))
+                                                     )))))
                                  '() (cdr action-list))))
          (mibl-trace "progn-result" progn-result :test *mibl-debug-action-dsl*)
          (for-each (lambda (progn)
@@ -437,7 +441,9 @@
                                (car stderr)
                                stderr)
                            stderr))
-             (:cmd ,@subber)))))
+             ;;(:cmd ,@subber)
+             subber
+             ))))
 
       ((with-stdin-from);; (with-stdin-from <file> <DSL>)
        ;; same as with-stdout-to?
@@ -455,21 +461,23 @@
          (mibl-trace "Stdin" stdin :test *mibl-debug-action-dsl*)
          (mibl-trace "subaction-list" subaction-list :test *mibl-debug-action-dsl*)
          ;; recur
-         (let* ((subber (dsl:action->mibl subaction-list))
-                (mibl-trace-let "stdin subber" subber
+         (let* ((subcmd (dsl:action->mibl subaction-list))
+                (mibl-trace-let "stdin subcmd" subcmd
                                 :test *mibl-debug-action-dsl*)
-                (cmd (case (caar subber) ;; subaction-list)
+                (cmd (case (caar subcmd) ;; subaction-list)
                        ;; deal with subcmds
-                       ((progn) subber)
-                       ((:cmd) subber)
+                       ((progn) subcmd)
+                       ((:cmd) subcmd)
                        ((:stdout)
                         ;; move :stdout out of subcmd
-                        (cons (car subber)
-                              (cdr subber)))
+                        (cons (car subcmd)
+                              (cdr subcmd)))
                        ;; no subcmds
-                       (else `(:cmd ,@subber)))))
+                       (else
+                        ;;`(:cmd ,@subcmd)
+                        subcmd))))
            (mibl-trace "stdin cmd" cmd :test *mibl-debug-action-dsl*)
-           `((:stdin ,stdin) ,@subber))))
+           `((:stdin ,stdin) ,@subcmd))))
 
       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
       ((with-stdout-to) ;; (with-stdout-to "%{targets}" (cat "%{deps}"))
@@ -556,7 +564,10 @@
                              (cons (car subcmd)
                                    (cdr subcmd)))
                             ;; no subcmds
-                            (else `((:cmd ,@subcmd))))))
+                            (else
+                             ;;`((:cmd ,@subcmd))
+                             subcmd
+                             ))))
                     (mibl-trace "stdout cmd" cmd :test *mibl-debug-action-dsl*)
                     `((:stdout ,stdout)
                       ,@cmd))))))
@@ -574,10 +585,8 @@
               (content (car subaction-list)))
          (mibl-trace "Output" output :test *mibl-debug-action-dsl*)
          (mibl-trace "content" content :test *mibl-debug-action-dsl*)
-         `(:cmd (:tool :write-file)
-                (:args ,output ,content))))
+         `((:cmd (:tool :write-file)
+                (:args ,output ,content)))))
 
       (else (error 'Missing-cmd-directive "Missing cmd directive")))
           ))
-
-(provide 'action-dsl.scm)

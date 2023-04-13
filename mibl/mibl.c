@@ -58,6 +58,7 @@ enum OPTS {
     FLAG_DEBUG_EMIT,
     FLAG_DEBUG_PPX,
     FLAG_DEBUG_S7,
+    FLAG_DEBUG_S7_ALL,
     FLAG_DEBUG_TRAVERSAL,
 #endif
 
@@ -138,6 +139,9 @@ void _update_s7_globals(struct option options[])
 
     if (options[FLAG_DEBUG_S7].count)
         mibl_s7_set_flag("*mibl-debug-s7*", true);
+
+    if (options[FLAG_DEBUG_S7_ALL].count)
+        mibl_s7_set_flag("*mibl-debug-all*", true);
 
     if (options[FLAG_DEBUG_S7_LOADS].count)
         mibl_s7_set_flag("*mibl-debug-s7-loads*", true);
@@ -312,6 +316,8 @@ static struct option options[] = {
     [FLAG_REPORT_PARSETREE] = {.long_name="report-parsetree",
                                .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_DEBUG_S7] = {.long_name="debug-s7",
+                       .flags=GOPT_ARGUMENT_FORBIDDEN},
+    [FLAG_DEBUG_S7_ALL] = {.long_name="debug-all",
                        .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_DEBUG_S7_LOADS] = {.long_name="debug-s7-loads",
                        .flags=GOPT_ARGUMENT_FORBIDDEN},

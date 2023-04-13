@@ -5,17 +5,17 @@
     (lambda (prologue pkg stanza-alist)
       (if-let ((pkg-prologues (assoc :prologues (cdr pkg))))
               (begin
-                (if *mibl-debug-s7*
+                (if *mibl-debug-all*
                     (format #t "~A: ~A~%" (ublue "found pkg-prologues") pkg-prologues))
                 (if (number? (cdr prologue))
                     (begin) ;; won't happen?
                     (if-let ((x (member (cdr prologue) (cdr pkg-prologues)
                                         (lambda (a b)
-                                          (if *mibl-debug-s7*
+                                          (if *mibl-debug-all*
                                               (format #t "~A: a: ~A, b: ~A~%" (red "comparing") a b))
                                           (equal? a (assoc-val :modules (cdr b)))))))
                             (begin
-                              (if *mibl-debug-s7*
+                              (if *mibl-debug-all*
                                   (format #t "~A: ~A~%" (ublue "match") x))
                               (set-cdr! prologue (caar x))
                               )
@@ -33,7 +33,7 @@
                                    (new (list (cons ct
                                                     `((:modules ,@modules)
                                                       ,@opts ,@link-opts ,@ocamlc-opts ,@ocamlopt-opts)))))
-                              (if *mibl-debug-s7*
+                              (if *mibl-debug-all*
                                   (begin
                                     (format #t "~A: ~A~%" (ublue "mismatch; adding") prologue)
                                     (format #t "~A: ~A~%" (ublue "ct") ct)
@@ -54,7 +54,7 @@
                      (modules (sort! (cdr prologue) sym<?))
                      (new `((:prologues (1 (:modules ,@modules)
                                            ,@opts ,@link-opts ,@ocamlc-opts ,@ocamlopt-opts)))))
-                (if *mibl-debug-s7*
+                (if *mibl-debug-all*
                     (format #t "~A: ~A~%" (ublue "adding :prologues to stanzas") prologue))
                 (set-cdr! pkg (append (cdr pkg) new))
                 (set-cdr! prologue 1))
@@ -62,7 +62,7 @@
 
 
 (define (shared-prologue->ns prologues module)
-  (if (or *mibl-debug-prologues* *mibl-debug-s7*)
+  (if (or *mibl-debug-prologues* *mibl-debug-all*)
       (format #t "~A: ~A\n" (ublue "shared-prologue->ns for module") module))
   (let ((plog (find-if (lambda (prologue)
                          (format #t "testing plog: ~A\n" prologue)
@@ -91,7 +91,7 @@
 ;; if found, find executable for prologue
 ;; derive ns from executable
 (define (derive-exe-ns pkg module)
-  (if (or *mibl-debug-prologues* *mibl-debug-s7*)
+  (if (or *mibl-debug-prologues* *mibl-debug-all*)
       (format #t "~A: ~A\n" (ublue "-derive-exe-ns for module") module))
   (if (alist? (cdr module))
       ;; (A (:ml a.ml Dep1 Dep2) (:mli a.mli Dep1 Dep2))
@@ -108,7 +108,7 @@
                 ))))
 
 (define (shared-prologue-contains-module? prologue-key modname pkg)
-  (if (or *mibl-debug-executables* *mibl-debug-s7*)
+  (if (or *mibl-debug-executables* *mibl-debug-all*)
       (begin
         (format #t "~A: ~A ~A\n"
                 (ublue "prologue-contains-module?") prologue-key modname)
@@ -129,7 +129,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;FIXME: obsolete
 (define (-normalize-main-deps prologue  main-deps)
-  (if (or *mibl-debug-s7* *mibl-debug-prologues*)
+  (if (or *mibl-debug-all* *mibl-debug-prologues*)
       (begin
         (format #t "~A: ~A~%" (bgblue "-normalize-main-deps") main-deps)
         (format #t "~A: ~A~%" (bgblue "prologue") prologue)))
@@ -163,7 +163,7 @@
   (let ((+documentation+ "Remove modules in :main's depgraph from prologue.")
         (+signature+ '(normalize-prologues!)))
     (lambda ()
-      (if (or *mibl-debug-s7* *mibl-debug-prologues*)
+      (if (or *mibl-debug-all* *mibl-debug-prologues*)
           (format #t "~A~%" (bgblue "normalize-prologues!")))
       (flush-output-port)
       (for-each (lambda (ws-kv)
@@ -262,7 +262,7 @@
   (let ((+documentation+ "Construct :shared-prologues pkg fld.")
         (+signature+ '(normalize-prologues!)))
     (lambda ()
-      (if (or *mibl-debug-s7* *mibl-debug-prologues*)
+      (if (or *mibl-debug-all* *mibl-debug-prologues*)
           (format #t "~A~%" (bgblue "normalize-prologues!")))
       (flush-output-port)
       (for-each (lambda (ws-kv)
@@ -324,23 +324,23 @@
   (let ((+documentation+ "Update stanza :prologue")
         (+signature+ '(update-prologues! prologue pkg stanza-alist)))
     (lambda (prologue pkg stanza-alist)
-      (if (or *mibl-debug-s7* *mibl-debug-updaters*)
+      (if (or *mibl-debug-all* *mibl-debug-updaters*)
           (format #t "~A: ~A~%" (bgblue "update-shared-prologues!") prologue))
 
       (if-let ((pkg-prologues (assoc :prologues (cdr pkg))))
               (begin
-                (if *mibl-debug-s7*
+                (if *mibl-debug-all*
                     (format #t "~A: ~A~%" (ublue "found pkg-prologues") pkg-prologues))
                 ;; (error 'x "X")
                 (if (number? (cdr prologue))
                     (begin) ;; won't happen?
                     (if-let ((x (member (cdr prologue) (cdr pkg-prologues)
                                         (lambda (a b)
-                                          (if *mibl-debug-s7*
+                                          (if *mibl-debug-all*
                                               (format #t "~A: a: ~A, b: ~A~%" (red "comparing") a b))
                                           (equal? a (assoc-val :modules (cdr b)))))))
                             (begin
-                              (if *mibl-debug-s7*
+                              (if *mibl-debug-all*
                                   (format #t "~A: ~A~%" (ublue "match") x))
                               (set-cdr! prologue (caar x))
                               )
@@ -358,7 +358,7 @@
                                    (new (list (cons ct
                                                     `((:modules ,@modules)
                                                       ,@opts ,@link-opts ,@ocamlc-opts ,@ocamlopt-opts)))))
-                              (if *mibl-debug-s7*
+                              (if *mibl-debug-all*
                                   (begin
                                     (format #t "~A: ~A~%" (ublue "mismatch; adding") prologue)
                                     (format #t "~A: ~A~%" (ublue "ct") ct)
@@ -379,7 +379,7 @@
                      (modules (sort! (cdr prologue) sym<?))
                      (new `((:prologues (1 (:modules ,@modules)
                                            ,@opts ,@link-opts ,@ocamlc-opts ,@ocamlopt-opts)))))
-                (if *mibl-debug-s7*
+                (if *mibl-debug-all*
                     (format #t "~A: ~A~%" (ublue "adding :prologues to stanzas") prologue))
                 (set-cdr! pkg (append (cdr pkg) new))
                 (set-cdr! prologue 1))

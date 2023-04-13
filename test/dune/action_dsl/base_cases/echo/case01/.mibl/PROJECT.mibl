@@ -13,6 +13,8 @@
                                  (::tools (:echo . :shell-tool))
                                  (:cmd (:tool :echo)
                                        (:args
-                                        (:string "let test_var = \"" (:% (:FIXME . PCTVARS)) "\"")))
-                                 (:cmdx (:shell . #<unspecified>) (:tool . :echo)
+                                        (:string "let test_var = \"" (:% (:FIXME . PCTVARS)) "\""))))
+                          (:rulex (::inputs (:a.txt (:pkg . "./") (:tgt . "a.txt"))) (::outputs)
+                                  (::tools :DUMMY2)
+                                  (:cmd (:tool . :echo) (:shell . #<unspecified>)
                                         (:args "Hello world")))))))))

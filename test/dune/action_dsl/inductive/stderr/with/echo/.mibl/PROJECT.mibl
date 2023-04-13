@@ -16,7 +16,9 @@
                                  (:cmd (:tool :echo)
                                        (:args
                                         (:string "let test_var = \"" (:% (:FIXME . PCTVARS)) "\"")))
-                                 (:stdout ::outputs)
-                                 (:cmdx (:stdout ::outputs)
-                                        (:cmd (:shell . #<unspecified>) (:tool . :echo) (:args "")))))
-                   (:files (:dynamic "config.status.in")))))))
+                                 (:stdout ::outputs))
+                          (:rulex (::outputs (:config.status.in (:pkg . "./")
+                                               (:tgt . "config.status.in")))
+                                  (::tools :DUMMY2) (:stdout ::outputs)
+                                  (:cmd (:tool . :echo) (:shell . #<unspecified>) (:args ""))))
+                   (:files (:dynamic "config.status.in" "config.status.in")))))))

@@ -332,7 +332,8 @@
                           (error 'X "STOP cmd-list 1")
                           cmd-list)
                         (let* ((_ (if :test *mibl-debug-action-directives* (format #t "~A: ~A~%" (yellow "adhoc action") action)))
-                               (args (expand-cmd-list ws pkg run-dsl tools targets deps))
+                               ;;(args (expand-cmd-list ws pkg run-dsl tools targets deps))
+                               (args (dsl:action->mibl (list run-dsl)))
                                ;; (args (expand-cmd-args* action-args pkg targets deps))
                                (_ (if :test *mibl-debug-action-directives* (format #t "~A: ~A\n" (yellow "expanded args") args))))
                           ;; (error 'X "STOP xargs")
@@ -898,24 +899,59 @@
 ;; out the tool, or anything other than pctvars. In some cases the string
 ;; will be an entire shell script, with function definitions etc.
 (define* (destructure-shell-cmd action-list (shell 'bash))
-  (mibl-trace-entry "destructure-bash-cmd" action-list :color red :test *mibl-debug-action-directives*)
+  (mibl-trace-entry "destructure-shell-cmd" action-list :color red :test *mibl-debug-action-directives*)
   (mibl-trace "shell" shell)
   (let* ((subaction-list (cdr action-list)))
     (mibl-trace "subaction-list" subaction-list :test *mibl-debug-action-directives*)
     (if (string? (car subaction-list))
+        ;; e.g. (system "foo bar baz")
         ;; FIXME: what if subaction-list is list of strings?
         (let* ((segs (string-split (car subaction-list) #\space))
-               (xlines (map dsl:string->lines subaction-list)))
+               (subcmd (segs 0)) ;; FIXME: wrong
+               (xlines (map dsl:string->lines subaction-list))
+               (first-line (car xlines))
+               ;; first-line is string, so (:line ...)
+               ;; e.g. (:line "diff"), (:line (% . foo))
+               (subcmd (let ((cmd (cadr first-line)))
+                         (mibl-trace "CMD" cmd)
+                         (mibl-trace "type-of" (type-of cmd))
+                         (case (type-of cmd)
+                               ((string?) cmd)
+                               ((symbol?) cmd)
+                               ((pair?)
+                                (mibl-trace "PAIR" cmd)
+                                (if (eq? :string (car cmd))
+                                    (begin
+                                      (mibl-trace ":STRING" cmd)
+                                      (mibl-trace "length cdr" (length (cdr cmd)))
+                                      (if (> (length (cdr cmd)) 1)
+                                          ;; do not remove :string
+                                          ;; wrap so (:tool . ,subcmd) will work
+                                          (list cmd)
+                                          (cdr cmd)))
+                                    cmd))
+                               (else (error 'FIXME "FIXME: shell cmd"))))))
           (mibl-trace "segs" segs :test *mibl-debug-action-directives*)
           (mibl-trace "expanded lines" xlines :test *mibl-debug-action-directives*)
-          `((:shell . ,shell) (:cmd-lines ,@xlines))) ;; subaction-list)))
+          (mibl-trace "first-line" first-line :test *mibl-debug-action-directives*)
+          (mibl-trace "subcmd" subcmd :test *mibl-debug-action-directives*)
+          ;; (error 'dbg "DBG")
+          ;; (bash \"%{bin:shellcheck} -x *.sh\") =>
+          ;;     segs: ("%{bin:shellcheck}" "-x" "*.sh")
+          ;;     expanded lines: ((:line (:string (% bin shellcheck)) "-x" "*.sh"))
+
+          ;;FIXME: obtain :tool == subcmd
+          (let ((c `((:cmd (:tool . ,subcmd) (:shell . ,shell) (:cmd-lines ,@xlines)))))
+            (mibl-trace "C" c)
+            c))
+        ;; else e.g. (system foo bar baz)
         (let ((subcmd (car subaction-list))
               (subargs (cdr subaction-list)))
           (mibl-trace "shell subcmd" subcmd :test *mibl-debug-action-directives*)
           (mibl-trace "shell subargs" subargs :test *mibl-debug-action-directives*)
           (let ((sargs (map dsl:string->lines subargs)))
             (mibl-trace "shell sargs" sargs :test *mibl-debug-action-directives*)
-            `((:shell . ,shell) (:tool . ,subcmd) (:args ,@sargs)))))))
+            `((:cmd (:tool . ,subcmd) (:shell . ,shell) (:args ,@sargs))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (destructure-progn-cmd action-list)

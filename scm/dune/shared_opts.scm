@@ -16,14 +16,14 @@
 ;;  ocamlopt_flags -> :ocamlopt_opts
 
 (define (-handle-shared-opts pkg-kv opt-type)
-  (if (or *mibl-debug-shared* *mibl-debug-s7*)
+  (if (or *mibl-debug-shared* *mibl-debug-all*)
       (format #t "~A: ~A - ~A~%" (ublue "-handle-shared-opts") opt-type pkg-kv))
   (let* ((pkg (cdr pkg-kv))
          (pkg-shared-opts '())) ;; we will set! this as we iterate over stanzas
     (if-let ((dune (assoc :mibl pkg)))
             (begin
               (for-each (lambda (stanza)
-                          (if *mibl-debug-s7*
+                          (if *mibl-debug-all*
                               (format #t "~A: ~A~%" (bgblue "stanza") stanza))
                           (case (car stanza)
                             ((:archive :library :ns-archive :ns-library :executable)
@@ -33,17 +33,17 @@
                                (if opts-fld
                                    (if (not (number? (cdr opts-fld)))
                                        (begin
-                                         (if *mibl-debug-s7*
+                                         (if *mibl-debug-all*
                                              (begin
                                                (format #t "~A: ~A~%" (green "pkg-shared-opts") pkg-shared-opts)
                                                (format #t "~A: ~A~%" (green "opts-fld") opts-fld)))
                                          (let* ((opts (cdr opts-fld))
                                                 (shared (rassoc opts pkg-shared-opts)))
-                                           (if *mibl-debug-s7*
+                                           (if *mibl-debug-all*
                                                (format #t "~A: ~A~%" (green "rassoc") shared))
                                            (if (null? shared)
                                                (begin
-                                                 (if *mibl-debug-s7*
+                                                 (if *mibl-debug-all*
                                                      (format #t "~A: ~A~%" (green "adding") opts))
                                                  (set! pkg-shared-opts
                                                        (append pkg-shared-opts
@@ -53,7 +53,7 @@
                                                  ;; update stanza :opts with key
                                                  ;; (format #t "~A: ~A => ~A~%" (ugreen "updating stanza") resolved (car shared))
                                                  (set-cdr! opts-fld (car shared))
-                                                 (if *mibl-debug-s7*
+                                                 (if *mibl-debug-all*
                                                      (format #t "~A: ~A~%" (ugreen "updated stanza") stanza))
                                                  ))))))))))
                         (cdr dune))
@@ -69,7 +69,7 @@
     '()))
 
 (define (-handle-shared-opts-for-prologues pkg-kv opt-type)
-  (if (or *mibl-debug-shared* *mibl-debug-s7*)
+  (if (or *mibl-debug-shared* *mibl-debug-all*)
       (format #t "~A: ~A - ~A~%" (ublue "-handle-shared-opts-for-prologues") opt-type pkg-kv))
   (let* ((pkg (cdr pkg-kv)))
          ;; (pkg-shared-opts '())) ;; we will set! this as we iterate over stanzas
@@ -80,7 +80,7 @@
                    (shared-ocamlopt-opts (assoc :shared-ocamlopt-opts (cdr dune))))
               (begin
                 (for-each (lambda (stanza)
-                            (if *mibl-debug-s7*
+                            (if *mibl-debug-all*
                                 (format #t "~A: ~A~%" (bgblue "stanza") stanza))
                             (case (car stanza)
                               ((:prologues)
@@ -122,20 +122,20 @@
     '()))
 
 (define (handle-shared-opts ws)
-  (if *mibl-debug-s7*
+  (if *mibl-debug-all*
       (format #t "~A: ~A~%" (ublue "handle-shared-opts") ws))
 
   (let* ((@ws (assoc-val ws *mibl-project*))
          (pkgs (car (assoc-val :pkgs @ws))))
     ;; (format #t "~A: ~A~%" (uwhite "pkgs") pkgs)
     (for-each (lambda (pkg-kv)
-                (if *mibl-debug-s7*
+                (if *mibl-debug-all*
                     (format #t "~A: ~A~%" (ugreen "opt for pkg") (car pkg-kv)))
                 (let* ((pkg-path (car pkg-kv))
-                       (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (green "pkg-path") pkg-path)))
+                       (_ (if *mibl-debug-all* (format #t "~A: ~A~%" (green "pkg-path") pkg-path)))
                        (pkg (cdr pkg-kv)))
                   ;; (format #t "~A: ~A~%" (green "pkg") pkg)
-                  (if *mibl-debug-s7*
+                  (if *mibl-debug-all*
                       (format #t "~A: ~A~%" (green "*mibl-shared-deps*") *mibl-shared-deps*))
                   ;; (if (member pkg-path *mibl-shared-deps*)
                   (-handle-shared-opts pkg-kv :opts)

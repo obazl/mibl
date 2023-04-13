@@ -23,11 +23,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; e.g. mina/src/lib/with_hash: (instrumentation (backend bisect_ppx))
 (define (normalize-instrumentation fld-assoc)
-  (if *mibl-debug-s7*
+  (if *mibl-debug-all*
       (format #t "normalize-instrumentation: ~A\n" fld-assoc)))
 
 (define (fld-warning stanza-sym fld-assoc)
-  (if *mibl-debug-s7*
+  (if *mibl-debug-all*
       (format #t "~A - ~A ~A ~A: ~A~%"
           (ured "WARNING")
           (red "unhandled fld in")
@@ -41,12 +41,12 @@
                         (ured "unhandled stanza fld") stanza-sym fld-assoc)))
 
 (define (-map-lib-flds->mibl ws pkg stanza-alist)
-  (if *mibl-debug-s7*
+  (if *mibl-debug-all*
       (format #t "~A: ~A~%" (blue "-map-lib-flds->mibl") stanza-alist))
   (let* ((stanza-name (car (assoc-val 'name stanza-alist)))
          (result (map
                  (lambda (fld-assoc)
-                   (if *mibl-debug-s7*
+                   (if *mibl-debug-all*
                        (format #t "lib fld-assoc: ~A\n" fld-assoc))
                    (case (car fld-assoc)
 
@@ -141,12 +141,12 @@
                      ) ;; end case
                    ) ;; end lamda
                  stanza-alist)))
-    (if *mibl-debug-s7*
+    (if *mibl-debug-all*
         (format #t "~A: ~A~%" (red "REsult") result))
     result))
 
 (define (-lib-flds->mibl ws pkg stanza-alist wrapped?)
-  (if *mibl-debug-s7*
+  (if *mibl-debug-all*
       (begin
         (format #t "~A: ~A\n" (ublue "-lib-flds->mibl") stanza-alist)
         (format #t "~A: ~A\n" (blue "pkg") pkg)
@@ -162,32 +162,32 @@
   (let* ((deps (if-let ((libdeps (assoc-val 'libraries stanza-alist)))
                        (dune-libraries-fld->mibl libdeps pkg)
                        '()))
-         (_ (if *mibl-debug-s7* (format #t "lib MIBLDEPS: ~A\n" deps)))
+         (_ (if *mibl-debug-all* (format #t "lib MIBLDEPS: ~A\n" deps)))
          ;; (_ (error 'tmp "tmp"))
 
          ;; FIXME: deal with private_modules too
          (modules (get-manifest pkg :lib wrapped? stanza-alist)) ;;  deps
-         (_ (if *mibl-debug-s7* (format #t "~A: ~A\n" (red "lib get-manifest result") modules)))
+         (_ (if *mibl-debug-all* (format #t "~A: ~A\n" (red "lib get-manifest result") modules)))
 
          ;; FIXME: separate handling of (inline_tests) toplevel fld and ppx
          (ilts (if-let ((ilts (assoc-val 'inline_tests stanza-alist)))
                       (inline-tests->mibl ws pkg ilts stanza-alist)))
-         (_ (if *mibl-debug-s7* (format #t "~A: ~A\n" (red "lib inline-tests->mibl result") ilts)))
+         (_ (if *mibl-debug-all* (format #t "~A: ~A\n" (red "lib inline-tests->mibl result") ilts)))
 
          ;; (ppx (if ppx
          ;;          ppx
          (ppx (if-let ((preproc (assoc-val 'preprocess stanza-alist)))
                           (begin
-                            (if *mibl-debug-s7* (format #t "~A: ~A~%" (red "lib preproc") preproc))
+                            (if *mibl-debug-all* (format #t "~A: ~A~%" (red "lib preproc") preproc))
                             (preproc->mibl preproc stanza-alist))
                         #f))
 
          ;; (ppx (lib-ppx->mibl stanza-alist))
          ;;(preprocess-fld->mibl fld-assoc stanza-alist))
-         (_ (if (or *mibl-debug-ppx* *mibl-debug-s7*) (format #t "~A: ~A~%" (bgyellow ":PPX") ppx)))
+         (_ (if (or *mibl-debug-ppx* *mibl-debug-all*) (format #t "~A: ~A~%" (bgyellow ":PPX") ppx)))
 
          (lib-flds (-map-lib-flds->mibl ws pkg stanza-alist))
-         (_ (if *mibl-debug-s7* (format #t "lib-flds (mibl): ~A~%" lib-flds)))
+         (_ (if *mibl-debug-all* (format #t "lib-flds (mibl): ~A~%" lib-flds)))
 
          (lib-flds (if wrapped?
                        (append (list (cons :ns ;;(assoc-val :privname lib-flds)))
@@ -198,8 +198,8 @@
                                            ))
                                lib-flds)
                        lib-flds))
-         (_ (if *mibl-debug-s7* (format #t "lib-flds (2): ~A~%" lib-flds)))
-         (_ (if (or *mibl-debug-ppx* *mibl-debug-s7*) (format #t "lib-flds ppx: ~A~%" ppx)))
+         (_ (if *mibl-debug-all* (format #t "lib-flds (2): ~A~%" lib-flds)))
+         (_ (if (or *mibl-debug-ppx* *mibl-debug-all*) (format #t "lib-flds ppx: ~A~%" ppx)))
          (lib-flds (if ppx
                        (append lib-flds
                                (if (alist? ppx)
@@ -213,7 +213,7 @@
                                    (list ilts)))
                        lib-flds))
 
-         (_ (if *mibl-debug-s7* (format #t "lib-flds (3): ~A~%" lib-flds)))
+         (_ (if *mibl-debug-all* (format #t "lib-flds (3): ~A~%" lib-flds)))
          ) ;; end let bindings
 
     ;; now handle modules (modules fld) and submodules (deps fld)
@@ -228,7 +228,7 @@
                                    (if-let ((seldeps (assoc :seldeps deps)))
                                            seldeps '())))
                 '()))
-           ;; (_ (if *mibl-debug-s7* (format #t "libModules: ~A\n" modules))
+           ;; (_ (if *mibl-debug-all* (format #t "libModules: ~A\n" modules))
            ;; (submods
            ;;  (if modules
            ;;      (if-let ((submods-assoc (assoc :submodules modules)))
@@ -268,10 +268,10 @@
         (exports (car (assoc-val :exports (assoc-val ws *mibl-project*))))
         (privname (if-let ((privname (assoc-val 'name (cdr stanza))))
                           (car privname) #f))
-        (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (uwhite "privname") privname)))
+        (_ (if *mibl-debug-all* (format #t "~A: ~A~%" (uwhite "privname") privname)))
         (findlib-name (if-let ((findlib-name (assoc-val 'public_name (cdr stanza))))
                          (car findlib-name) #f))
-        (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (uwhite "findlib-name") findlib-name)))
+        (_ (if *mibl-debug-all* (format #t "~A: ~A~%" (uwhite "findlib-name") findlib-name)))
         )
     ;; libs may be referenced w/o ns, e.g. mylib,
     ;; or (in rule actions) w/ns, e.g. lib:mylib
@@ -280,7 +280,7 @@
 
     (if privname
         (begin
-          (if *mibl-debug-s7*
+          (if *mibl-debug-all*
               (format #t "~A: ~A~%" (ucyan "lib:adding privname to exports") privname))
           (update-exports-table! ws #f
                                  (assoc-val 'modes (cdr stanza))
@@ -293,7 +293,7 @@
 
     (if findlib-name
         (begin
-          (if *mibl-debug-s7*
+          (if *mibl-debug-all*
               (format #t "~A: ~A~%" (ucyan "lib:adding findlib-name to exports") findlib-name))
           (update-exports-table! ws #f
                                  (assoc-val 'modes (cdr stanza))
@@ -335,7 +335,7 @@
                                  stanza-alist
                                  (append stanza-alist
                                          (list '(modules :standard)))))
-           (_ (if *mibl-debug-s7* (format #t "lib stanza alist: ~A\n" stanza-alist)))
+           (_ (if *mibl-debug-all* (format #t "lib stanza alist: ~A\n" stanza-alist)))
 
            ;; (privname (assoc-val 'name stanza-alist))
            (wrapped? (if-let ((wrapped (assoc-val 'wrapped stanza-alist)))
@@ -345,7 +345,7 @@
                              #t))
            ;; (submods (lib-stanza-submodules stanza-alist))
            ;; (stanza-alist (cons submods stanza-alist))
-           ;; (_ (if *mibl-debug-s7* (format #t "STANZA ALIST + SUBMODS: ~A\n" stanza-alist)))
+           ;; (_ (if *mibl-debug-all* (format #t "STANZA ALIST + SUBMODS: ~A\n" stanza-alist)))
 
            ;; CONVERT THE STANZA:
            (mibl-stanza (-lib-flds->mibl ws pkg stanza-alist wrapped?))

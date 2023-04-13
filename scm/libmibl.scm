@@ -1,20 +1,22 @@
 (if *mibl-debug-s7-loads*
     (format #t "loading libmibl.scm~%"))
 
+(provide 'libmibl.scm)
+
 ;;(require 'dune.scm)
 (load "dune.scm")
 (load "mibl_pp.scm")
 (load "dune/pipeline.scm")
 ;; (load "codept/codept_reader.scm")
 
-(define* (parsetree->mibl return) ;; root-path ws-path)
-  ;; (set! *mibl-debug-s7* #t)
+(define* (mibl:parsetree->mibl return) ;; root-path ws-path)
+  ;; (set! *mibl-debug-all* #t)
   (mibl-trace-entry "libmibl.scm::parsetree->mibl" "")
       ;; : ~A, ~A~%" root-path ws-path))
   ;; (format #t "*mibl-project*: ~A~%" *mibl-project*)
   ;; (format #t "BYE~%"))
 
-  ;; (if *mibl-debug-s7*
+  ;; (if *mibl-debug-all*
   ;;     (format #t "~A: ~A~%" (bgred "*mibl-emit-bazel-pkg*")
   ;;             *mibl-emit-bazel-pkg*))
 
@@ -25,7 +27,7 @@
   ;; (set! *mibl-unwrapped-libs-to-archives* #f)
 
   ;; NB: :@ is key of the root workspace in *mibl-project*
-  ;; (set! *mibl-debug-s7* #t)
+  ;; (set! *mibl-debug-all* #t)
 
   ;; parsetree always already produced by c code,
   ;; either by crawling the tree or by reading .mibl/PARSETREE.s7
@@ -137,7 +139,7 @@
 
   ;; ;; (ws->opam-bundles :@)
 
-  ;; (if *mibl-debug-s7*
+  ;; (if *mibl-debug-all*
   ;;     (format #t "~A: ~A~%" (green "selectors"))
   ;;         (remove-duplicates *select-protases*))
 
@@ -159,7 +161,7 @@
   (return))
 
 (define (emit-mibl-pkg pkg)
-  (if (or *mibl-debug-emit* *mibl-debug-s7*)
+  (if (or *mibl-debug-emit* *mibl-debug-all*)
       (format #t "~A: ~A~%" (yellow "emit-mibl-pkg") pkg))
   (let* ((pkg-path (assoc-val :pkg-path pkg))
          (mibl-file (string-append pkg-path "/PKG.mibl"))
@@ -176,7 +178,7 @@
     (close-output-port outp)))
 
 (define (emit-s7-pkg pkg)
-  (if (or *mibl-debug-emit* *mibl-debug-s7*)
+  (if (or *mibl-debug-emit* *mibl-debug-all*)
       (format #t "~A: ~A~%" (yellow "emit-s7-pkg") pkg))
   (let* ((pkg-path (assoc-val :pkg-path pkg))
          (mibl-file (string-append pkg-path "/PKG.s7"))
@@ -193,22 +195,22 @@
     (close-output-port outp)))
 
 (define (emit-mibl-pkgs)
-  (if (or *mibl-debug-emit* *mibl-debug-s7*)
+  (if (or *mibl-debug-emit* *mibl-debug-all*)
       (format #t "~%~A~%" (yellow "emit-mibl")))
   (if (not (or *mibl-emit-mibl* *mibl-emit-s7*))
       (format #t "~A: ~A~%" (red "WARNING") "To emit-wss, one or both of *mibl-emit-mibl* and *mibl-emit-s7* must be set.")
       (if (or *mibl-emit-mibl* *mibl-emit-s7*)
           (for-each (lambda (ws)
-                      (if (or *mibl-debug-emit* *mibl-debug-s7*)
+                      (if (or *mibl-debug-emit* *mibl-debug-all*)
                           (format #t "~A: ~A~%" (yellow "ws") ws))
                       (let ((pkgs (assoc-val :pkgs (cdr ws))))
-                        (if (or *mibl-debug-emit* *mibl-debug-s7*)
+                        (if (or *mibl-debug-emit* *mibl-debug-all*)
                             (begin
                               (format #t "~A: ~A~%" (yellow "pkgs") pkgs)
                               (format #t "~A: ~A~%" (yellow "pkgs keys")
                                       (hash-table-keys pkgs))))
                         (for-each (lambda (kv)
-                                    (if (or *mibl-debug-emit* *mibl-debug-s7*)
+                                    (if (or *mibl-debug-emit* *mibl-debug-all*)
                                         (format #t "~%~A: ~A~%" (yellow "emitting mibl pkg") kv))
                                     (if *mibl-emit-mibl*
                                         (emit-mibl-pkg (cdr kv)))
@@ -220,7 +222,7 @@
                     *mibl-project*))))
 
 (define (emit-parsetree-pkg pkg)
-  (if (or *mibl-debug-emit* *mibl-debug-s7*)
+  (if (or *mibl-debug-emit* *mibl-debug-all*)
       (format #t "~A: ~A~%" (yellow "emit-parsetree-pkg") pkg))
   (let* ((pkg-path (assoc-val :pkg-path pkg))
          (mibl-file (string-append pkg-path "/PARSETREE.s7"))
@@ -237,7 +239,7 @@
     (close-output-port outp)))
 
 (define (emit-mibl-ws ws)
-  (if (or *mibl-debug-emit* *mibl-debug-s7*)
+  (if (or *mibl-debug-emit* *mibl-debug-all*)
       (format #t "~A: ~A~%" (yellow "emit-mibl-ws") ws))
   (let* ((ws-path (assoc-val :path (cdr ws)))
          (mibl-file (format #f "~A/.mibl/WORKSPACE.mibl"  ws-path))
@@ -254,7 +256,7 @@
     (close-output-port outp)))
 
 (define (emit-s7-ws ws)
-  (if (or *mibl-debug-emit* *mibl-debug-s7*)
+  (if (or *mibl-debug-emit* *mibl-debug-all*)
       (format #t "~A: ~A~%" (yellow "emit-s7-ws") ws))
   (let* ((ws-path (assoc-val :path (cdr ws)))
          (mibl-file (format #f "~A/.mibl/WORKSPACE.s7"  ws-path))
@@ -277,26 +279,26 @@
 ;; emits WORKSPACE.{mibl,s7} for each ws in project.
 ;; WARNING: contains ws assoc, not the whole project alist
 (define (emit-mibl-wss)
-  (if (or *mibl-debug-emit* *mibl-debug-s7*)
+  (if (or *mibl-debug-emit* *mibl-debug-all*)
       (format #t "~%~A~%" (yellow "emit-mibl-wss")))
   ;; (if (not (or *mibl-emit-mibl* *mibl-emit-s7*))
   ;;     (format #t "~A: ~A~%" (red "WARNING") "To emit-wss, one or both of *mibl-emit-mibl* and *mibl-emit-s7* must be set.")
   ;;     (begin
   ;; (if *mibl-emit-mibl*
   (for-each (lambda (ws)
-              (if (or *mibl-debug-emit* *mibl-debug-s7*)
+              (if (or *mibl-debug-emit* *mibl-debug-all*)
                   (format #t "~A: ~A~%" (yellow "ws") ws))
               (emit-mibl-ws ws))
             *mibl-project*) ;;)
   ;; (if *mibl-emit-s7*
   (for-each (lambda (ws)
-              (if (or *mibl-debug-emit* *mibl-debug-s7*)
+              (if (or *mibl-debug-emit* *mibl-debug-all*)
                   (format #t "~A: ~A~%" (yellow "ws") ws))
               (emit-s7-ws ws))
             *mibl-project*)) ;;)))
 
 (define (emit-parsetree-ws ws)
-  (if (or *mibl-debug-emit* *mibl-debug-s7*)
+  (if (or *mibl-debug-emit* *mibl-debug-all*)
       (format #t "~A: ~A~%" (yellow "emit-parsetree-ws") ws))
   (let* ((ws-path (assoc-val :path (cdr ws))))
     (if *mibl-emit-mibl*
@@ -327,7 +329,7 @@
           (close-output-port outp)))))
 
 (define (emit-parsetree-project stem)
-  (if (or *mibl-debug-emit* *mibl-debug-s7*)
+  (if (or *mibl-debug-emit* *mibl-debug-all*)
       (format #t "~A: ~A~%" (yellow "emit-parsetree-project") *mibl-project*))
   (let* ((@ws (assoc-val :@ *mibl-project*))
          (ws-path (assoc-val :path (cdr @ws))))
@@ -360,7 +362,7 @@
           (close-output-port outp)))) ;)
 
 (define (emit-parsetrees)
-  (if (or *mibl-debug-emit* *mibl-debug-s7*)
+  (if (or *mibl-debug-emit* *mibl-debug-all*)
       (format #t "~%~A~%" (yellow "emit-parsetree")))
   (if (not (or *mibl-emit-mibl* *mibl-emit-s7*))
       (format #t "~A: ~A~%" (red "WARNING") "To emit-parsetrees, one or both of *mibl-emit-mibl* and *mibl-emit-s7* must be set.")

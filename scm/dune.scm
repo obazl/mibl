@@ -12,6 +12,8 @@
 (load "string.scm")
 ;; (load "utils.scm")
 
+(autoload 'mibl:parsetree->mibl "libmibl.scm")
+
 (load "dune/conditionals.scm")
 (load "dune/aggregates.scm")
 (load "dune/constants.scm")

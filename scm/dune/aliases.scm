@@ -24,7 +24,7 @@
 ;;   (diff test.expected test.output)))
 
 (define (dune-alias->mibl ws pkg stanza)
-  (if (or *mibl-debug-alias* *mibl-debug-s7*)
+  (if (or *mibl-debug-alias* *mibl-debug-all*)
       (format #t "~A: ~A\n" (blue "dune-alias->mibl") stanza))
   ;; (if-let ((alias-assoc (assoc :alias (cdr stanza))))
   (if (assoc-in '(:actions :cmd) (cdr stanza))
@@ -32,17 +32,17 @@
             (cmd-ct (length (assoc-in* '(:actions :cmd) (cdr stanza))))
             ;;FIXME assuming one cmd
             (args (assoc-in '(:actions :cmd :args) (cdr stanza))))
-        (if (or *mibl-debug-alias* *mibl-debug-s7*)
+        (if (or *mibl-debug-alias* *mibl-debug-all*)
             (begin
               (format #t "~A: ~A~%" (ured "ALIAS") alias)
               (format #t "~A: ~A~%" (ured "cmd ct") cmd-ct)
               (format #t "~A: ~A~%" (ured "args") args)))
         ;; if :args contains executable, mark as :test
         (let ((tool-args (fold (lambda (arg accum)
-                                 (if (or *mibl-debug-alias* *mibl-debug-s7*)
+                                 (if (or *mibl-debug-alias* *mibl-debug-all*)
                                      (format #t "~A: ~A~%" (ured "arg") arg))
                                  (let ((argstr (format #f "~A" arg)))
-                                   (if (or *mibl-debug-alias* *mibl-debug-s7*)
+                                   (if (or *mibl-debug-alias* *mibl-debug-all*)
                                        (format #t "~A: ~A~%" (ured "argstr") argstr))
                                    ;; FIXME what about local sh scripts?
                                    (cond
@@ -60,16 +60,16 @@
                                '() (cdr args))))
           (if tool-args
               (begin
-                (if (or *mibl-debug-alias* *mibl-debug-s7*)
+                (if (or *mibl-debug-alias* *mibl-debug-all*)
                     (format #t "~A: ~A~%" (ured "found executable tool args") tool-args))
                 (if-let ((deps (assoc :deps (cdr stanza))))
                         (let ((tool-deps (assoc ::tools (cdr deps))))
                           (if tool-deps
                               ;; append tools
-                              (if (or *mibl-debug-alias* *mibl-debug-s7*)
+                              (if (or *mibl-debug-alias* *mibl-debug-all*)
                                   (format #t "~A: ~A~%" (ured "tool-deps") tool-deps))
                               ;; add ::tools to (:deps ...)
-                              (let ((_ (if (or *mibl-debug-alias* *mibl-debug-s7*) (format #t "~A: ~A~%" (ured "deps") deps)))
+                              (let ((_ (if (or *mibl-debug-alias* *mibl-debug-all*) (format #t "~A: ~A~%" (ured "deps") deps)))
                                     (deps-list (cdr deps))
                                     (tools (list (cons ::tools tool-args))))
                                 (set-cdr! deps (append tools deps-list)))
@@ -84,7 +84,7 @@
                 (set! -sh-test-id (+ 1 -sh-test-id))
                 )
               (begin
-                (if (or *mibl-debug-alias* *mibl-debug-s7*)
+                (if (or *mibl-debug-alias* *mibl-debug-all*)
                     (format #t "~A: ~A~%" (ured "NO executable tools") tools))
                 (error 'FIXME "alias without run tool")))
           ))
