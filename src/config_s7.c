@@ -508,8 +508,6 @@ s7_pointer _load_string_lt(void)
     return string_lt;
 }
 
-void libc_s7_init(s7_scheme *sc);
-
 /* FIXME: call into libs7 for this */
 LOCAL __attribute__((unused)) void s7_config_repl(s7_scheme *sc)
 {

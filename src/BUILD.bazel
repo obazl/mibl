@@ -227,6 +227,8 @@ cc_library(
         "//vendored/uthash",
         "@libs7//src:s7",
         "@libs7//lib:c_s7",
+        "@libs7//lib:dl_s7",
+        "@libs7//lib:m_s7",
         # "@libs7//vendored/linenoise",
     ],
     # ] + select({
