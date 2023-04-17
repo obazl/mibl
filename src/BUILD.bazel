@@ -226,7 +226,8 @@ cc_library(
         "//vendored/logc",
         "//vendored/uthash",
         "@libs7//src:s7",
-        "@libs7//vendored/linenoise",
+        "@libs7//lib:c_s7",
+        # "@libs7//vendored/linenoise",
     ],
     # ] + select({
     #     # sigh. fixme: s7 v. non-s7 :debug target

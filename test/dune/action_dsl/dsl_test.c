@@ -80,6 +80,10 @@ void test_bash(void) {
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
+/* s7_flush_output_port(s7, s7_current_output_port(s7)); */
+/* char *s = s7_object_to_c_string(s7, actual); */
+/* log_debug("result: %s", s); */
+/* free(s); */
     expected = s7_eval_c_string(s7, sexp_expected);
     TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
 
@@ -143,10 +147,6 @@ void test_bash(void) {
     utstring_renew(sexp);
     utstring_printf(sexp, "(%s %s)", fn, sexp_action);
     actual = s7_eval_c_string(s7, utstring_body(sexp));
-/* s7_flush_output_port(s7, s7_current_output_port(s7)); */
-/* char *s = s7_object_to_c_string(s7, actual); */
-/* log_debug("result: %s", s); */
-/* free(s); */
     expected = s7_eval_c_string(s7, sexp_expected);
     TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
 

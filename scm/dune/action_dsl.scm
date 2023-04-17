@@ -28,8 +28,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define pct-regex "(%{[^}]+})")
-(define rgx (regex.make))
-(define rx (regcomp rgx pct-regex REG_EXTENDED))
+(define rgx ((*libc* 'regex.make)))
+(define rx ((*libc* 'regcomp) rgx pct-regex (*libc* 'REG_EXTENDED)))
 (define match-ct 2)
 
 ;; input: string or sym of form %{<str>}
@@ -112,7 +112,7 @@
                             arg (type-of arg)))))
 
           (let ((slen (length s))
-                (res (regexec rgx s match-ct 0)))
+                (res ((*libc* 'regexec) rgx s match-ct 0)))
             (mibl-trace "slen" slen :test *mibl-debug-action-dsl*)
             (mibl-trace "rgx res" res :test *mibl-debug-action-dsl*)
             (if (int-vector? res)

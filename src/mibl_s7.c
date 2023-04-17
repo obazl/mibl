@@ -721,7 +721,11 @@ void _mibl_s7_configure_paths(char *scmdir, /*char *main_script,*/ char *ws_root
     if (!s7_load(s7, "libmibl.scm")) {
         log_error("Can't load libmibl.scm");
         exit(EXIT_FAILURE);
+    } else {
+        log_info("loaded libmibl.scm");
     }
+    s7_flush_output_port(s7, s7_current_output_port(s7));
+    s7_flush_output_port(s7, s7_current_error_port(s7));
 
     /* if (!s7_load(s7, "mibl_pp.scm")) { */
     /*     log_error("Can't load mibl_pp.scm"); */
@@ -751,7 +755,7 @@ EXPORT struct mibl_config_s *mibl_s7_init2(char *scm_dir, char *ws_root)
     // scm_dir augments default *load-path*, which contains the mibl/scm dirs
 #if defined(DEBUG_TRACE)
     if (mibl_trace) {
-        log_debug("mibl_s7_init: scm dir: %s, wsroot: %s", scm_dir, ws_root);
+        log_debug("mibl_s7_init2: scm dir: %s, wsroot: %s", scm_dir, ws_root);
     }
 #endif
 

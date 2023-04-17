@@ -16,6 +16,9 @@ rules_foreign_cc_dependencies()
 load("@libs7//:WORKSPACE.bzl", libs7_fetch_repos = "fetch_repos")
 libs7_fetch_repos()
 
+load("@libs7//:WORKSPACE.notcurses.bzl", nc_fetch_repos = "fetch_repos")
+nc_fetch_repos()
+
 ################ rules_jsoo etc. ################
 ## NB: for now we need the jsoo stuff because @obazl//coswitch writes
 ## jsoo targets into the opam pkgs - some pkgs include a jsoo runtime.
