@@ -466,7 +466,14 @@ int main(int argc, char **argv, char **envp)
         mibl_s7_run(options[OPT_MAIN].argument, options[OPT_WS].argument);
     } else {
         mibl_s7_run("mibl_main.scm", NULL);
-        xen_repl(argc, argv);
+        /* xen_repl(argc, argv); */
+
+        char *script = "repl.scm";
+        if (!s7_load(s7, script)) {
+            log_error("failed: load %s", script);
+            log_info("cwd: %s", getcwd(NULL,0));
+        }
+        s7_eval_c_string(s7, "((*repl* 'run))");
     }
 
     if (verbose)

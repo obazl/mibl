@@ -116,6 +116,7 @@ char *scm_runfiles_dirs[] = {
     "../mibl/scm/mibl",
     "../mibl/scm",
 
+    "../libs7/repl",
     // libs7/scm already in runfiles, since libmibl depends on libs7
     NULL /* do not remove terminating null */
 };
