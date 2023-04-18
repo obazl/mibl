@@ -143,7 +143,7 @@
 
     ;; now update :modules if ctarget matchs a sig or struct
     ;; if no match, update :structures or :signatures
-    (if (eq? (fnmatch "*.ml" (format #f "~A" ctarget) 0) 0)
+    (if (eq? ((*libc* 'fnmatch) "*.ml" (format #f "~A" ctarget) 0) 0)
         (if (truthy? sigs)
             (begin
               (if *mibl-debug-all*
@@ -198,7 +198,7 @@
                                       `(,(cons (filename->module-name ctarget) ctarget)))))
             )))
 
-    (if (and (eq? (fnmatch "*.mli" (format #f "~A" ctarget) 0) 0)
+    (if (and (eq? ((*libc* 'fnmatch) "*.mli" (format #f "~A" ctarget) 0) 0)
              (truthy? structs))
         (begin
           (if *mibl-debug-all*

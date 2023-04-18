@@ -211,7 +211,7 @@
                                         `(:ws-path . ,ws-path)
                                         `(:pkg-path . ,fg-path)
                                         `(:realpath .
-                                          ,(realpath (string-join (map (lambda (x) (format #f "~A" x))
+                                          ,((*libc* 'realpath) (string-join (map (lambda (x) (format #f "~A" x))
                                                                        (list  ws-path fg-path)) "/")
                                                      '()))
                                         (cons :filegroups (cdr kv)))))

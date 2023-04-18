@@ -752,7 +752,7 @@
   ;; 2. add to :targets
 
   (cond
-   ((eq? (fnmatch "*.ml" (format #f "~A" arg) 0) 0)
+   ((eq? ((*libc* 'fnmatch) "*.ml" (format #f "~A" arg) 0) 0)
     (if (or *mibl-debug-expanders* *mibl-debug-all*)
         (format #t "~A: ~A~%" (red "Matched *.ml") arg))
     (let ((struct (find-if (lambda (f-assoc)
@@ -814,10 +814,10 @@
                   ;;(string->keyword arg)
                   arg))))))
 
-   ((eq? (fnmatch "*.mli" (format #f "~A" arg) 0) 0)
+   ((eq? ((*libc* 'fnmatch) "*.mli" (format #f "~A" arg) 0) 0)
     (error 'fixme (format #f "not yet implemented for: ~A" arg)))
 
-   ;;((eq? (fnmatch "*.mli" (format #f "~A" arg) 0) 0)
+   ;;((eq? ((*libc* 'fnmatch) "*.mli" (format #f "~A" arg) 0) 0)
    ((string=? "%{target}" (format #f "~A" arg))
     ;; targets should be a singleton list
     ;; e.g. (::outputs (:foo.txt (:pkg "a/b") (:tgt "foo.txt")))
@@ -845,10 +845,10 @@
 
   (let ((arg (format #f "~A" arg))) ;; (keyword->symbol arg))))
     (cond
-     ((eq? 0 (fnmatch "*.ml" arg 0))
+     ((eq? 0 ((*libc* 'fnmatch) "*.ml" arg 0))
       (find-structfile-in-pkg-files!? arg deps pkg))
 
-     ((eq? 0 (fnmatch "*.mli" arg 0))
+     ((eq? 0 ((*libc* 'fnmatch) "*.mli" arg 0))
       (find-sigfile-in-pkg-files!? arg deps pkg))
 
      (else

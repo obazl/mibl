@@ -13,7 +13,7 @@
   (if *mibl-debug-all*
       (format #t "~A: ~A~%" (blue "normalize-pkg-path") path))
   ;; path is not in pkg-path dir
-  (let ((rp (realpath path '())))
+  (let ((rp ((*libc* 'realpath) path '())))
     (if *mibl-debug-all*
         (begin
           (format #t "f rel path: ~A\n" path)

@@ -592,13 +592,15 @@ EXPORT void s7_shutdown(s7_scheme *s7)
 #define DSO_EXT ".so"
 #endif
 
+
+s7_scheme *libs7_init(void);     /* libs7_init.h */
 void _s7_init(void)
 {
 #if defined(DEBUG_TRACE)
     if (mibl_trace) log_trace("_s7_init");
 #endif
 
-    s7 = s7_init();             /* @libs7//src:s7.c */
+    s7 = libs7_init();             /* @libs7//src:s7.c */
     /* s7_gc_on(s7, s7_f(s7)); */
 
 #if defined(DEBUG_TRACE)

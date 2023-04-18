@@ -114,7 +114,7 @@
                          (if (or *mibl-debug-all* *mibl-debug-modules*)
                              (format #t "f: ~A\n" f))
                          (let* ((fname (if (symbol? f) (symbol->string f) f))
-                                (type (if (eq? 0 (fnmatch "*.mli" fname 0))
+                                (type (if (eq? 0 ((*libc* 'fnmatch) "*.mli" fname 0))
                                           :mli :ml))
                                 (mname (filename->module-name fname)))
                            (if (or *mibl-debug-all* *mibl-debug-modules*)
