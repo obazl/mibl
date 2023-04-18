@@ -1,0 +1,4 @@
+run --ui_event_filters=-info
+run --noshow_progress
+run --noshow_loading_progress
+run --show_result=0
