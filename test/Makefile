@@ -2,7 +2,8 @@
 
 BAZELRC=--bazelrc .config/runmibl.bazelrc
 QUIET=
-#--quiet
+
+##--quiet
 
 default:
 	echo "Targets: all, deps, execs, dsl_base, dsl_inductive, rules"

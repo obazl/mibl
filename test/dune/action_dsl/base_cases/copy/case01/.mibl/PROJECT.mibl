@@ -1,16 +1,16 @@
 ((:@ (:name . "@")
-     (:path . /Users/gar/obazl/mibl/test/dune/action_dsl/base_cases/copy/case01)
+     (:path . /home/gar_mobileink_com/obazl/mibl/test/dune/action_dsl/base_cases/copy/case01)
      (:exports
          (hash-table)) (:opam (hash-table)) (:shared-ppx (hash-table))
      (:filegroups
          (hash-table))
      (:pkgs
          (hash-table
-           '"config" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/action_dsl/base_cases/copy/case01") (:pkg-path . "config")
-                       (:realpath . "/Users/gar/obazl/mibl/test/dune/action_dsl/base_cases/copy/case01/config")
+           '"config" ((:ws-path . "/home/gar_mobileink_com/obazl/mibl/test/dune/action_dsl/base_cases/copy/case01") (:pkg-path . "config")
+                       (:realpath . "/home/gar_mobileink_com/obazl/mibl/test/dune/action_dsl/base_cases/copy/case01/config")
                        (:files (:static "config.mlh")))
-           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/action_dsl/base_cases/copy/case01") (:pkg-path . "./")
-                   (:realpath . "/Users/gar/obazl/mibl/test/dune/action_dsl/base_cases/copy/case01")
+           '"./" ((:ws-path . "/home/gar_mobileink_com/obazl/mibl/test/dune/action_dsl/base_cases/copy/case01") (:pkg-path . "./")
+                   (:realpath . "/home/gar_mobileink_com/obazl/mibl/test/dune/action_dsl/base_cases/copy/case01")
                    (dune (rule (targets config.mlh) (mode promote) (deps config/config.mlh)
                                (action (copy config/config.mlh config.mlh))))
                    (:mibl (:rule (:mode promote)

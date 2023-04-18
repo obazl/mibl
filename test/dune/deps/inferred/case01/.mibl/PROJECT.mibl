@@ -1,13 +1,13 @@
 ((:@ (:name . "@")
-     (:path . /Users/gar/obazl/mibl/test/dune/deps/inferred/case01)
+     (:path . /home/gar_mobileink_com/obazl/mibl/test/dune/deps/inferred/case01)
      (:exports
          (hash-table)) (:opam (hash-table)) (:shared-ppx (hash-table))
      (:filegroups
          (hash-table))
      (:pkgs
          (hash-table
-           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/deps/inferred/case01") (:pkg-path . "./")
-                   (:realpath . "/Users/gar/obazl/mibl/test/dune/deps/inferred/case01")
+           '"./" ((:ws-path . "/home/gar_mobileink_com/obazl/mibl/test/dune/deps/inferred/case01") (:pkg-path . "./")
+                   (:realpath . "/home/gar_mobileink_com/obazl/mibl/test/dune/deps/inferred/case01")
                    (:files (:static "a.txt") (:dynamic "b.txt" "b.txt"))
                    (dune (rule (target b.txt) (copy a.txt b.txt)))
                    (:mibl (:rule (::inputs (:a.txt (:pkg . "./") (:tgt . "a.txt")))

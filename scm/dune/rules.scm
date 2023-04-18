@@ -268,7 +268,7 @@
                                         ws pkg-path pkg (string->keyword fg-tag) tgt)))))))
                         (cdr deps))))
 
-        (mibl-trace  "DISPATCHING  on action (mibl)" rule-alist :color green #t)
+        (mibl-trace  "DISPATCHING  on action (mibl)" rule-alist :color green)
         (mibl-trace "action" action)
         (mibl-trace "targets" targets)
         (mibl-trace "deps" deps)
@@ -277,8 +277,8 @@
                                     ;; all dune rule stanzas have an action, so they have a tool
                                     (::tools :DUMMY2) ;; a placeholder, to be replaced by set-cdr!
                                     ,@action))))
-               (mibl-trace "mibl-rulex" mibl-rule :color bgred :test #t)
-               mibl-rule)))))
+          ;; (mibl-trace "mibl-rulex" mibl-rule :color bgred :test #t)
+          mibl-rule)))))
 
 (define x-rule-inferred->mibl
   ;; WARNING: this means rule stanza has no 'action fld, must be inferred
@@ -367,7 +367,7 @@
                                         ws pkg-path pkg (string->keyword fg-tag) tgt)))))))
                         (cdr deps))))
 
-        (mibl-trace  "DISPATCHING  on action (mibl)" rule-alist :color green #t)
+        (mibl-trace  "DISPATCHING  on action (mibl)" rule-alist :color green)
         (mibl-trace "action" action)
         (mibl-trace "targets" targets)
         (mibl-trace "deps" deps)
@@ -376,7 +376,7 @@
                                     ;; all dune rule stanzas have an action, so they have a tool
                                     (::tools :DUMMY4) ;; a placeholder, to be replaced by set-cdr!
                                     ,action))))
-               (mibl-trace "mibl-rulex" mibl-rule :color bgred :test #t)
+               ;; (mibl-trace "mibl-rulex" mibl-rule :color bgred :test #t)
                mibl-rule)))))
 
 (define -dune-rule-explicit->mibl
@@ -462,7 +462,7 @@
                                         ws pkg-path pkg (string->keyword fg-tag) tgt)))))))
                         (cdr deps))))
 
-        (mibl-trace  "DISPATCHING  on action (explicit)" rule-alist :color green #t)
+        (mibl-trace  "DISPATCHING  on action (explicit)" rule-alist :color green)
         (mibl-trace "targets" targets)
         (mibl-trace "deps" deps)
 
@@ -475,7 +475,7 @@
         (let* ((mibl-rule
                 (cond
                  ((assoc 'action rule-alist)
-                  (mibl-trace "rule alist" rule-alist :color red :test #t)
+                  (mibl-trace "rule alist" rule-alist :color red)
                   (let ((nrule (-normalize-rule-action ws pkg tools rule-alist
                                                        (if (null? targets) (list :targets) targets)
                                                        (if deps deps (list ::inputs)))))

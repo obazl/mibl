@@ -1,5 +1,5 @@
-;; (if *mibl-debug-s7-loads*
-    (format #t "loading libmibl.scm~%") ;;)
+(if *mibl-debug-s7-loads*
+    (format #t "loading libmibl.scm~%"))
 
 ;; prove that *libc* is defined and linked:
 ;; (let ((x ((*libc* 'strlen) "foo")))

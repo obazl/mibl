@@ -1,13 +1,13 @@
 ((:@ (:name . "@")
-     (:path . /Users/gar/obazl/mibl/test/dune/action_dsl/inductive/stdin/with/bash)
+     (:path . /home/gar_mobileink_com/obazl/mibl/test/dune/action_dsl/inductive/stdin/with/bash)
      (:exports
          (hash-table)) (:opam (hash-table)) (:shared-ppx (hash-table))
      (:filegroups
          (hash-table))
      (:pkgs
          (hash-table
-           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/action_dsl/inductive/stdin/with/bash") (:pkg-path . "./")
-                   (:realpath . "/Users/gar/obazl/mibl/test/dune/action_dsl/inductive/stdin/with/bash")
+           '"./" ((:ws-path . "/home/gar_mobileink_com/obazl/mibl/test/dune/action_dsl/inductive/stdin/with/bash") (:pkg-path . "./")
+                   (:realpath . "/home/gar_mobileink_com/obazl/mibl/test/dune/action_dsl/inductive/stdin/with/bash")
                    (:files (:static "BUILD.sh.bazel" "a.txt" "b.txt" "c.txt" "d.txt" "myscript.sh"))
                    (dune (rule (targets output.txt)
                                (deps myscript.sh (:inputs (glob_files *.txt)))

@@ -1,4 +1,4 @@
-(format #t "loading mibl.scm\n")
+;; (format #t "loading mibl.scm\n")
 
 ;; (load "mibl/show.scm")
 

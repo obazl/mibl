@@ -39,7 +39,7 @@
 ;;               pkgs)))
 
 (define* (-main root-path ws-path)
-  (format #t "-main (mibl_main.scm)\n")
+  ;; (format #t "-main (mibl_main.scm)\n")
   (load "libmibl.scm")
   (if *mibl-clean-mibl*
       (mibl-clean-mibl)
@@ -52,8 +52,8 @@
                                  (flush-output-port))
                                (if *mibl-show-pkg*
                                    (mibl-debug-print-pkg)))
-                           (if (not *mibl-quiet*)
-                               (format #t "~A: mibl returning...~%" (green "INFO")))
+                           ;; (if (not *mibl-quiet*)
+                           ;;     (format #t "~A: mibl returning...~%" (green "INFO")))
                            (return))
                          ;; root-path ws-path
                          )))))

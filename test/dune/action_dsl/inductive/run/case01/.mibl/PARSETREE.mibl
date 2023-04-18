@@ -1,13 +1,13 @@
 ((:@ (:name . "@")
-     (:path . /Users/gar/obazl/mibl/test/dune/action_dsl/inductive/run/case01)
+     (:path . /home/gar_mobileink_com/obazl/mibl/test/dune/action_dsl/inductive/run/case01)
      (:exports
          (hash-table)) (:opam (hash-table)) (:shared-ppx (hash-table))
      (:filegroups
          (hash-table))
      (:pkgs
          (hash-table
-           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/action_dsl/inductive/run/case01") (:pkg-path . "./")
-                   (:realpath . "/Users/gar/obazl/mibl/test/dune/action_dsl/inductive/run/case01")
+           '"./" ((:ws-path . "/home/gar_mobileink_com/obazl/mibl/test/dune/action_dsl/inductive/run/case01") (:pkg-path . "./")
+                   (:realpath . "/home/gar_mobileink_com/obazl/mibl/test/dune/action_dsl/inductive/run/case01")
                    (dune (rule (target registerer.ml)
                                (deps a.ml b.ml (:src_dir TEZOS_PROTOCOL))
                                (action (chdir %{workspace_root}

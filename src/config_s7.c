@@ -675,7 +675,7 @@ void _s7_init(void)
     s7_set_curlet(s7, old_e);       /* restore incoming (curlet) */
     s7_gc_unprotect_at(s7, gc_loc);
 
-    log_debug("libc_s7 initialized");
+    /* log_debug("libc_s7 initialized"); */
 
     utstring_free(libc_s7);
 

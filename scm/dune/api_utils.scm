@@ -13,7 +13,7 @@
                           ;; (format #t "~A: ~A~%" (magenta "fld") (cdr fld))
                           (not (null? (cdr fld))))
                      (cdr (car mibl-rule)))))
-    (format #t "~A: ~A~%" (red "pruned") pruned)
+    ;; (format #t "~A: ~A~%" (red "pruned") pruned)
     (list `(:rule ,@pruned))))
 
 ;;;;;;;;;;;;;;;;;;

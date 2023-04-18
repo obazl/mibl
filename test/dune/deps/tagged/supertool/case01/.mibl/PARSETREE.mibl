@@ -1,12 +1,12 @@
 ((:@ (:name . "@")
-     (:path . /Users/gar/obazl/mibl/test/dune/deps/tagged/supertool/case01)
+     (:path . /home/gar_mobileink_com/obazl/mibl/test/dune/deps/tagged/supertool/case01)
      (:exports
          (hash-table)) (:opam (hash-table)) (:shared-ppx (hash-table))
      (:filegroups
          (hash-table))
      (:pkgs
          (hash-table
-           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/deps/tagged/supertool/case01") (:pkg-path . "./")
-                   (:realpath . "/Users/gar/obazl/mibl/test/dune/deps/tagged/supertool/case01")
+           '"./" ((:ws-path . "/home/gar_mobileink_com/obazl/mibl/test/dune/deps/tagged/supertool/case01") (:pkg-path . "./")
+                   (:realpath . "/home/gar_mobileink_com/obazl/mibl/test/dune/deps/tagged/supertool/case01")
                    (dune (rule (targets foo.txt) (deps (:< ../gen.sh))
                                (action (run %{<} %{targets})))))))))

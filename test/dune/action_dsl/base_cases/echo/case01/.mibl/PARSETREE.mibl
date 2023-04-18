@@ -1,11 +1,11 @@
 ((:@ (:name . "@")
-     (:path . /Users/gar/obazl/mibl/test/dune/action_dsl/base_cases/echo/case01)
+     (:path . /home/gar_mobileink_com/obazl/mibl/test/dune/action_dsl/base_cases/echo/case01)
      (:exports
          (hash-table)) (:opam (hash-table)) (:shared-ppx (hash-table))
      (:filegroups
          (hash-table))
      (:pkgs
          (hash-table
-           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/action_dsl/base_cases/echo/case01") (:pkg-path . "./")
-                   (:realpath . "/Users/gar/obazl/mibl/test/dune/action_dsl/base_cases/echo/case01")
+           '"./" ((:ws-path . "/home/gar_mobileink_com/obazl/mibl/test/dune/action_dsl/base_cases/echo/case01") (:pkg-path . "./")
+                   (:realpath . "/home/gar_mobileink_com/obazl/mibl/test/dune/action_dsl/base_cases/echo/case01")
                    (dune (rule (deps a.txt) (action (echo "Hello world")))))))))

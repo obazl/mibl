@@ -189,7 +189,8 @@
                  (append
                   (cdr mibl-stanzas)
                   `,@(dune-rule->mibl ws pkg-alist stanza-assoc)))
-       (mibl-trace "mibl-stanzas" mibl-stanzas :color red :test #t))
+       ;; (mibl-trace "mibl-stanzas" mibl-stanzas :color red :test #t)
+       )
 
       ((library)
        ;; (format #t "~A~%" (green "LIB"))
