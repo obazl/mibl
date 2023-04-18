@@ -1,0 +1,15 @@
+((:@ (:name . "@")
+     (:path . /Users/gar/obazl/mibl/test/dune/executable/flags/compile/common)
+     (:exports
+         (hash-table)) (:opam (hash-table)) (:shared-ppx (hash-table))
+     (:filegroups
+         (hash-table))
+     (:pkgs
+         (hash-table
+           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/executable/flags/compile/common") (:pkg-path . "./")
+                   (:realpath . "/Users/gar/obazl/mibl/test/dune/executable/flags/compile/common")
+                   (dune (executable (name main) (public_name main)
+                                     (flags (:standard -open A -open B -linkall))
+                                     (link_flags -link_flag_a) (libraries A B) (ocamlc_flags -foo)
+                                     (ocamlopt_flags -bar) (modules Main)))
+                   (:structures (:static (Main . main.ml))))))))
