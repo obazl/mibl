@@ -1,16 +1,16 @@
 ((:@ (:name . "@")
-     (:path . /home/gar_mobileink_com/obazl/mibl/test/dune/deps/tagged/subtool/case01)
+     (:path . /Users/gar/obazl/mibl/test/dune/deps/tagged/subtool/case01)
      (:exports
          (hash-table)) (:opam (hash-table)) (:shared-ppx (hash-table))
      (:filegroups
          (hash-table))
      (:pkgs
          (hash-table
-           '"sub" ((:ws-path . "/home/gar_mobileink_com/obazl/mibl/test/dune/deps/tagged/subtool/case01") (:pkg-path . "sub")
-                    (:realpath . "/home/gar_mobileink_com/obazl/mibl/test/dune/deps/tagged/subtool/case01/sub")
+           '"sub" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/deps/tagged/subtool/case01") (:pkg-path . "sub")
+                    (:realpath . "/Users/gar/obazl/mibl/test/dune/deps/tagged/subtool/case01/sub")
                     (:files (:static "gen.sh")))
-           '"./" ((:ws-path . "/home/gar_mobileink_com/obazl/mibl/test/dune/deps/tagged/subtool/case01") (:pkg-path . "./")
-                   (:realpath . "/home/gar_mobileink_com/obazl/mibl/test/dune/deps/tagged/subtool/case01")
+           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/deps/tagged/subtool/case01") (:pkg-path . "./")
+                   (:realpath . "/Users/gar/obazl/mibl/test/dune/deps/tagged/subtool/case01")
                    (dune (rule (targets foo.txt) (deps (:< sub/gen.sh))
                                (action (run %{<} %{targets}))))
                    (:mibl (:rule (::inputs (:< (:pkg . "sub") (:tgt . "gen.sh"))) (::tools :DUMMY5)

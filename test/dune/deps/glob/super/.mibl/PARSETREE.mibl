@@ -1,13 +1,11 @@
 ((:@ (:name . "@")
-     (:path . /home/gar_mobileink_com/obazl/mibl/test/dune/deps/glob/super)
-     (:exports
-         (hash-table)) (:opam (hash-table)) (:shared-ppx (hash-table))
-     (:filegroups
-         (hash-table))
+     (:path . /Users/gar/obazl/mibl/test/dune/deps/glob/super) (:exports (hash-table))
+     (:opam
+         (hash-table)) (:shared-ppx (hash-table)) (:filegroups (hash-table))
      (:pkgs
          (hash-table
-           '"./" ((:ws-path . "/home/gar_mobileink_com/obazl/mibl/test/dune/deps/glob/super") (:pkg-path . "./")
-                   (:realpath . "/home/gar_mobileink_com/obazl/mibl/test/dune/deps/glob/super")
+           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/deps/glob/super") (:pkg-path . "./")
+                   (:realpath . "/Users/gar/obazl/mibl/test/dune/deps/glob/super")
                    (:files (:static "concat.sh"))
                    (dune (rule (targets output.css)
                                (deps (:< concat.sh) (:css (glob_files ../css/*.css)))

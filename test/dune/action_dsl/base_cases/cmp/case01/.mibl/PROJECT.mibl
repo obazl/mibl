@@ -1,13 +1,13 @@
 ((:@ (:name . "@")
-     (:path . /home/gar_mobileink_com/obazl/mibl/test/dune/action_dsl/base_cases/cmp/case01)
+     (:path . /Users/gar/obazl/mibl/test/dune/action_dsl/base_cases/cmp/case01)
      (:exports
          (hash-table)) (:opam (hash-table)) (:shared-ppx (hash-table))
      (:filegroups
          (hash-table))
      (:pkgs
          (hash-table
-           '"./" ((:ws-path . "/home/gar_mobileink_com/obazl/mibl/test/dune/action_dsl/base_cases/cmp/case01") (:pkg-path . "./")
-                   (:realpath . "/home/gar_mobileink_com/obazl/mibl/test/dune/action_dsl/base_cases/cmp/case01")
+           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/action_dsl/base_cases/cmp/case01") (:pkg-path . "./")
+                   (:realpath . "/Users/gar/obazl/mibl/test/dune/action_dsl/base_cases/cmp/case01")
                    (dune (rule (deps a.ml b.ml) (action (cmp a.ml b.ml))))
                    (:mibl (:rule (::inputs (:a.ml (:pkg . "./") (:tgt . "a.ml"))
                                            (:b.ml (:pkg . "./") (:tgt . "b.ml")))

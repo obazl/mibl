@@ -1,5 +1,5 @@
 ((:@ (:name . "@")
-     (:path . /home/gar_mobileink_com/obazl/mibl/test/dune/deps/dynamic/case01)
+     (:path . /Users/gar/obazl/mibl/test/dune/deps/dynamic/case01)
      (:exports
          (hash-table
            ':dynsig2.mli ((:pkg . ./) (:tgt . :dynsig2.mli)))) (:opam (hash-table))
@@ -7,8 +7,8 @@
          (hash-table)) (:filegroups (hash-table))
      (:pkgs
          (hash-table
-           '"./" ((:ws-path . "/home/gar_mobileink_com/obazl/mibl/test/dune/deps/dynamic/case01") (:pkg-path . "./")
-                   (:realpath . "/home/gar_mobileink_com/obazl/mibl/test/dune/deps/dynamic/case01")
+           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/deps/dynamic/case01") (:pkg-path . "./")
+                   (:realpath . "/Users/gar/obazl/mibl/test/dune/deps/dynamic/case01")
                    (:files (:static "BUILD.expected" "WORKSPACE"))
                    (dune (rule (target dynsig2.mli)
                                (action

@@ -1,5 +1,5 @@
 ((:@ (:name . "@")
-     (:path . /home/gar_mobileink_com/obazl/mibl/test/dune/deps/glob/cwd/tagged/case01)
+     (:path . /Users/gar/obazl/mibl/test/dune/deps/glob/cwd/tagged/case01)
      (:exports
          (hash-table)) (:opam (hash-table)) (:shared-ppx (hash-table))
      (:filegroups
@@ -7,8 +7,8 @@
            '"./" (("glob_STAR.css" (:pkg "./") (:glob . "*.css") (:clients "./" "./")))))
      (:pkgs
          (hash-table
-           '"./" ((:ws-path . "/home/gar_mobileink_com/obazl/mibl/test/dune/deps/glob/cwd/tagged/case01") (:pkg-path . "./")
-                   (:realpath . "/home/gar_mobileink_com/obazl/mibl/test/dune/deps/glob/cwd/tagged/case01")
+           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/deps/glob/cwd/tagged/case01") (:pkg-path . "./")
+                   (:realpath . "/Users/gar/obazl/mibl/test/dune/deps/glob/cwd/tagged/case01")
                    (:files (:static "a.css" "b.css" "concat.sh") (:dynamic "foo.css" "foo.css"))
                    (dune (rule (targets foo.css)
                                (deps concat.sh (:css (glob_files *.css)))

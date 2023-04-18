@@ -1,13 +1,13 @@
 ((:@ (:name . "@")
-     (:path . /home/gar_mobileink_com/obazl/mibl/test/dune/deps/tagged/cwd/case02)
+     (:path . /Users/gar/obazl/mibl/test/dune/deps/tagged/cwd/case02)
      (:exports
          (hash-table)) (:opam (hash-table)) (:shared-ppx (hash-table))
      (:filegroups
          (hash-table))
      (:pkgs
          (hash-table
-           '"./" ((:ws-path . "/home/gar_mobileink_com/obazl/mibl/test/dune/deps/tagged/cwd/case02") (:pkg-path . "./")
-                   (:realpath . "/home/gar_mobileink_com/obazl/mibl/test/dune/deps/tagged/cwd/case02")
+           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/deps/tagged/cwd/case02") (:pkg-path . "./")
+                   (:realpath . "/Users/gar/obazl/mibl/test/dune/deps/tagged/cwd/case02")
                    (dune (rule (targets output.ml)
                                (deps (:hello hello.txt) (:world world.txt))
                                (action (with-stdout-to %{targets} (cat %{hello} %{world})))))

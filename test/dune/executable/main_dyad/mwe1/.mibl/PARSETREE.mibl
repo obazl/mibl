@@ -1,12 +1,12 @@
 ((:@ (:name . "@")
-     (:path . /home/gar_mobileink_com/obazl/mibl/test/dune/executable/main_dyad/mwe1)
+     (:path . /Users/gar/obazl/mibl/test/dune/executable/main_dyad/mwe1)
      (:exports
          (hash-table)) (:opam (hash-table)) (:shared-ppx (hash-table))
      (:filegroups
          (hash-table))
      (:pkgs
          (hash-table
-           '"./" ((:ws-path . "/home/gar_mobileink_com/obazl/mibl/test/dune/executable/main_dyad/mwe1") (:pkg-path . "./")
-                   (:realpath . "/home/gar_mobileink_com/obazl/mibl/test/dune/executable/main_dyad/mwe1")
+           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/executable/main_dyad/mwe1") (:pkg-path . "./")
+                   (:realpath . "/Users/gar/obazl/mibl/test/dune/executable/main_dyad/mwe1")
                    (dune (executable (public_name main)))
                    (:modules (Main (:ml . main.ml) (:mli . main.mli))))))))

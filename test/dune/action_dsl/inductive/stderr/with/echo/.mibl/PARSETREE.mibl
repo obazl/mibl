@@ -1,12 +1,12 @@
 ((:@ (:name . "@")
-     (:path . /home/gar_mobileink_com/obazl/mibl/test/dune/action_dsl/inductive/stderr/with/echo)
+     (:path . /Users/gar/obazl/mibl/test/dune/action_dsl/inductive/stderr/with/echo)
      (:exports
          (hash-table)) (:opam (hash-table)) (:shared-ppx (hash-table))
      (:filegroups
          (hash-table))
      (:pkgs
          (hash-table
-           '"./" ((:ws-path . "/home/gar_mobileink_com/obazl/mibl/test/dune/action_dsl/inductive/stderr/with/echo") (:pkg-path . "./")
-                   (:realpath . "/home/gar_mobileink_com/obazl/mibl/test/dune/action_dsl/inductive/stderr/with/echo")
+           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/action_dsl/inductive/stderr/with/echo") (:pkg-path . "./")
+                   (:realpath . "/Users/gar/obazl/mibl/test/dune/action_dsl/inductive/stderr/with/echo")
                    (dune (rule (target config.status.in) (mode fallback)
                                (action (with-stdout-to %{target} (echo ""))))))))))

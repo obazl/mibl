@@ -1,16 +1,16 @@
 ((:@ (:name . "@")
-     (:path . /home/gar_mobileink_com/obazl/mibl/test/dune/deps/glob/sub/case01)
+     (:path . /Users/gar/obazl/mibl/test/dune/deps/glob/sub/case01)
      (:exports
          (hash-table)) (:opam (hash-table)) (:shared-ppx (hash-table))
      (:filegroups
          (hash-table))
      (:pkgs
          (hash-table
-           '"css" ((:ws-path . "/home/gar_mobileink_com/obazl/mibl/test/dune/deps/glob/sub/case01") (:pkg-path . "css")
-                    (:realpath . "/home/gar_mobileink_com/obazl/mibl/test/dune/deps/glob/sub/case01/css")
+           '"css" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/deps/glob/sub/case01") (:pkg-path . "css")
+                    (:realpath . "/Users/gar/obazl/mibl/test/dune/deps/glob/sub/case01/css")
                     (:files (:static "main.css")))
-           '"./" ((:ws-path . "/home/gar_mobileink_com/obazl/mibl/test/dune/deps/glob/sub/case01") (:pkg-path . "./")
-                   (:realpath . "/home/gar_mobileink_com/obazl/mibl/test/dune/deps/glob/sub/case01")
+           '"./" ((:ws-path . "/Users/gar/obazl/mibl/test/dune/deps/glob/sub/case01") (:pkg-path . "./")
+                   (:realpath . "/Users/gar/obazl/mibl/test/dune/deps/glob/sub/case01")
                    (:files (:static "concat.sh"))
                    (dune (rule (targets foo.ml)
                                (deps (:< concat.sh) (:css (glob_files css/*.css)))
