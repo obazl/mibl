@@ -658,19 +658,18 @@ void _s7_init(void)
 #endif
     }
 
-    //FIXME
-    /* s7_config_libc_s7(s7, utstring_body(libc_s7)); /\* @libs7//src:s7.c*\/ */
-    log_debug("Axxxxxxxxxxxxxxxx");
+    /* currently we statically link libc_s7.a, so we must initialize it. */
+    // this loads libc_s7 into root env
+    /* libc_s7_init(s7); */
+
+    // and this loads libc_s7 into *libc*
     s7_pointer e = s7_inlet(s7, s7_nil(s7));
     s7_int gc_loc = s7_gc_protect(s7, e);
     s7_pointer old_e = s7_set_curlet(s7, e);
-    log_debug("Bxxxxxxxxxxxxxxxx");
     libc_s7_init(s7);
-    log_debug("Cxxxxxxxxxxxxxxxx");
     s7_pointer libs = s7_slot(s7, s7_make_symbol(s7, "*libraries*"));
     s7_define(s7, s7_nil(s7), s7_make_symbol(s7, "*libc*"), e);
     s7_slot_set_value(s7, libs, s7_cons(s7, s7_cons(s7, s7_make_semipermanent_string(s7, "libc.scm"), e), s7_slot_value(libs)));
-
     s7_set_curlet(s7, old_e);       /* restore incoming (curlet) */
     s7_gc_unprotect_at(s7, gc_loc);
 
@@ -680,7 +679,7 @@ void _s7_init(void)
 
     /* libc stuff is in *libc*, which is an environment
      * (i.e. (let? *libc*) => #t)
-     * import the stuff we're likely to use into the root env:
+     * we can import the stuff we're likely to use into the root env:
      * (varlet (rootlet 'regcomp (*libc* 'regcomp) ...)
      */
 

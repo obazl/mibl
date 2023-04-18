@@ -8,6 +8,14 @@
 
 ;; (set! *mibl-debug-action-dsl* #t)
 
+;; (if (not *libc*)
+;;     (varlet (rootlet 'regex.make (*libc* 'regex.make)
+;;                      'regcomp (*libc* 'regcomp)
+;;                      'regexec (*libc* 'regexec)
+;;                      'REG_EXTENDED (*libc* 'REG_EXTENDED))
+;;             ;; etc.
+;;             ))
+
 ;; variables (pct-vars) - see https://dune.readthedocs.io/en/stable/concepts.html#variables
 
 ;; string args to e.g. echo may contain percent vars.
@@ -29,7 +37,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define pct-regex "(%\\{[^}]+\\})")
 (define rgx ((*libc* 'regex.make)))
-(define rx ((*libc* 'regcomp) rgx pct-regex (*libc* 'REG_EXTENDED)))
+((*libc* 'regcomp) rgx pct-regex (*libc* 'REG_EXTENDED))
+
+;; (define rgx (regex.make))
+;; (define rx (regcomp rgx pct-regex REG_EXTENDED))
 (define match-ct 2)
 
 ;; input: string or sym of form %{<str>}

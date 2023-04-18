@@ -2,8 +2,8 @@
     (format #t "loading libmibl.scm~%") ;;)
 
 ;; prove that *libc* is defined and linked:
-(let ((x ((*libc* 'strlen) "foo")))
-  (format #t "(strlen 'foo'): ~A\n" x))
+;; (let ((x ((*libc* 'strlen) "foo")))
+;;   (format #t "(strlen 'foo'): ~A\n" x))
 
 (provide 'libmibl.scm)
 
