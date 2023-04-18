@@ -27,7 +27,7 @@
   '((:string "let test_var = \"" (:% (:FIXME . PCTVARS)) "\"")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define pct-regex "(%{[^}]+})")
+(define pct-regex "(%\\{[^}]+\\})")
 (define rgx ((*libc* 'regex.make)))
 (define rx ((*libc* 'regcomp) rgx pct-regex (*libc* 'REG_EXTENDED)))
 (define match-ct 2)
