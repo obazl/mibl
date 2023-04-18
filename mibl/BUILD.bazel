@@ -11,38 +11,16 @@ mibl(name = "mibl")
 ################
 genrule(
     name = "mkhdrs",
-    srcs = ["//mibl:mibl.c", "//mibl:xen_repl.c"],
-    outs = ["mibl.h", "//mibl:xen_repl.h"],
+    srcs = ["//mibl:mibl.c"], # "//mibl:xen_repl.c"],
+    outs = ["mibl.h"],# "//mibl:xen_repl.h"],
     cmd = "\n".join([
         "SRC1=$(location //mibl:mibl.c)",
         "SRCDIR1=`dirname $$SRC1`",
         "$(location //vendored/makeheaders) \\",
-        "    $(location //mibl:mibl.c) \\",
-        "    $(location //mibl:xen_repl.c);",
+        "    $(location //mibl:mibl.c);",
+        # "    $(location //mibl:xen_repl.c);",
         "cp $${SRCDIR1}/*.h $(@D)",
     ]),
     tools = ["//vendored/makeheaders"],
     visibility = ["//visibility:public"]
 )
-
-    # native.genrule(
-    #     name = name + "replhdrs",
-    #     srcs = [
-    #         # "repl.c",
-    #         "xen_repl.c",
-    #     ],
-    #     outs = [
-    #         # "repl.h",
-    #         "xen_repl.h",
-    #     ],
-    #     cmd = "\n".join([
-    #         "SRC1=$(location xen_repl.c)",
-    #         "SRCDIR1=`dirname $$SRC1`",
-    #         "$(location //vendored/makeheaders) \\",
-    #         # "    $(location repl.c) \\",
-    #         "    $(location xen_repl.c)",
-    #         "cp $${SRCDIR1}/*.h $(@D)",
-    #     ]),
-    #     tools = ["//vendored/makeheaders"],
-    #     visibility = ["//visibility:public"]
-    # )

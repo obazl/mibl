@@ -8,7 +8,7 @@
 /* libmibl.a public header */
 #include "libmibl.h"
 
-#include "xen_repl.h"
+/* #include "xen_repl.h" */
 
 #include "mibl.h"
 

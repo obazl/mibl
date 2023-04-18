@@ -34,8 +34,6 @@ def mibl(name = "mibl", main = None, args = None, **kwargs):
         ],
         srcs  = [
             "//mibl:mibl.c", "//mibl:mibl.h",
-            # "//mibl:repl.c", "//mibl:repl.h",
-            "//mibl:xen_repl.c", "//mibl:xen_repl.h",
         ],
         linkstatic = True,
         defines = select({
