@@ -226,6 +226,9 @@ cc_library(
         "//vendored/logc",
         "//vendored/uthash",
         "@libs7//src:s7",
+        # we statically link these s7 libs for now
+        # TODO: make this configurable,
+        # for apps that do not need them all
         "@libs7//lib:c_s7",
         "@libs7//lib:dl_s7",
         "@libs7//lib:m_s7",

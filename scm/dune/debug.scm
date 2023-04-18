@@ -1,27 +1,40 @@
+(set! *mibl-debug-s7* #t)
 (define-expansion* (mibl-trace-entry hdr msg (color ublue) (test #f))
   (if *mibl-debug-s7*
       `(if ,test
-           (format #t "~A: ~A~%" (,color ,hdr) ,msg)
+           (begin
+             (format #t "~A: ~A~%" (,color ,hdr) ,msg)
+             (flush-output-port))
            (if ,(eq? (symbol->value '*mibl-debug-all*) #t)
-                (format #t "~A: ~A~%" (,color ,hdr) ,msg)
+               (begin
+                 (format #t "~A: ~A~%" (,color ,hdr) ,msg)
+                 (flush-output-port))
                 (values)))
       (values)))
 
 (define-expansion* (mibl-trace hdr msg (color blue) (test #f))
   (if *mibl-debug-s7*
       `(if ,test
-           (format #t "~A: ~A~%" (,color ,hdr) ,msg)
+           (begin
+             (format #t "~A: ~A~%" (,color ,hdr) ,msg)
+             (flush-output-port))
            (if ,(eq? (symbol->value '*mibl-debug-all*) #t)
-               (format #t "~A: ~A~%" (,color ,hdr) ,msg)
+               (begin
+                 (format #t "~A: ~A~%" (,color ,hdr) ,msg)
+                 (flush-output-port))
                (values)))
       (values)))
 
 (define-expansion* (mibl-trace-let hdr msg (color blue) (test #f))
   (if *mibl-debug-s7*
       `(_ (if ,test
-              (format #t "~A: ~A~%" (,color ,hdr) ,msg)
+              (begin
+                (format #t "~A: ~A~%" (,color ,hdr) ,msg)
+                (flush-output-port))
               (if ,(eq? (symbol->value '*mibl-debug-all*) #t)
-                  (format #t "~A: ~A~%" (,color ,hdr) ,msg)
+                  (begin
+                    (format #t "~A: ~A~%" (,color ,hdr) ,msg)
+                    (flush-output-port))
                '())))
       (values)))
 

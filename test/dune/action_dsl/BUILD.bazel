@@ -2,6 +2,7 @@ load("@rules_cc//cc:defs.bzl", "cc_library")
 
 cc_test(
     name = "test",
+    linkstatic = True,
     srcs = ["dsl_test.c"],
     data = ["dsl_bash_script.dune"],
     copts = [
@@ -43,6 +44,13 @@ cc_test(
         ],
         "//conditions:default":   []
     }),
+    linkopts = select({
+        "//bzl/host:macos": [],
+        "//bzl/host:linux": ["-ldl", "-Wl,-export-dynamic"],
+        "//conditions:default": []
+    }) + [
+        "-lm"
+    ],
     deps = [
         "//src:mibl",
         "//vendored/gopt",

@@ -1,6 +1,10 @@
 ;; (if *mibl-debug-s7-loads*
     (format #t "loading libmibl.scm~%") ;;)
 
+;; prove that *libc* is defined and linked:
+(let ((x ((*libc* 'strlen) "foo")))
+  (format #t "(strlen 'foo'): ~A\n" x))
+
 (provide 'libmibl.scm)
 
 ;;(require 'dune.scm)
