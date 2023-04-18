@@ -125,12 +125,6 @@ cc_library(
         "//src/hdrs:dune_readers.h",
 
         "//src/xdg:xdg.c", "//src/hdrs:xdg.h",
-
-        # "utarray.c",
-        # "//vendored/uthash:utarray.h",
-        # "utstring.c",
-        # "//vendored/uthash:utstring.h",
-        "@libs7//src:s7",
     ] + select({
         "//bzl/host:linux": [
             "//src/linux:strlcat.c",
