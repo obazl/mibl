@@ -25,24 +25,35 @@
 #include "ini.h"
 #include "log.h"
 
+#include "trace.h"
 /* #if EXPORT_INTERFACE */
 #include "utarray.h"
 #include "utstring.h"
 /* #endif */
 
 /* #if INTERFACE */
-#include "s7.h"
+#include "libs7.h"
 /* #endif */
 
-// in lieu of #include "libc_s7.h"
-void libc_s7_init(s7_scheme *sc);
+/* #if ! defined(CLIBS_LINK_RUNTIME) */
+/* #include "libc_s7.h" */
+/* #include "libm_s7.h" */
+/* #include "libdl_s7.h" */
+/* /\* #include "libcwalk_s7.h" *\/ */
+/* #endif */
+/* // in lieu of #include "libc_s7.h" */
+/* void libc_s7_init(s7_scheme *sc); */
+/* void libm_s7_init(s7_scheme *sc); */
+/* void libdl_s7_init(s7_scheme *sc); */
 
 #include "config_s7.h"
 
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
 extern bool mibl_debug;
-extern bool mibl_trace;
 #endif
+/* #if defined(TRACING) */
+/* extern bool mibl_trace; */
+/* #endif */
 
 bool mibl_debug_scm   = false;
 
@@ -205,7 +216,7 @@ char **mibl_s7_flag;
 /* called by load-project, repl. needed for project scripting. */
 EXPORT void initialize_mibl_data_model(s7_scheme *s7)
 {
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
     if (mibl_debug_mibl)
         log_trace("initialize_mibl_data_model");
 #endif
@@ -223,8 +234,8 @@ EXPORT void initialize_mibl_data_model(s7_scheme *s7)
      * passes.
      */
 
-#if defined(DEBUG_TRACE)
-    if (mibl_trace)
+#if defined(TRACING)
+    /* if (mibl_trace) */
         log_debug("_initialize_mibl_data_model");
 #endif
 
@@ -332,15 +343,13 @@ EXPORT void initialize_mibl_data_model(s7_scheme *s7)
 
 s7_pointer init_scheme_fns(s7_scheme *s7)
 {
-#if defined(DEBUG_TRACE)
-    if (mibl_debug_s7_config) log_debug("init_scheme_fns");
-#endif
+    TRACE_ENTRY(init_scheme_fns);
 
     if (_s7_set_cdr == NULL) {
         _s7_set_cdr = s7_name_to_value(s7, "set-cdr!");
         if (_s7_set_cdr == s7_undefined(s7)) {
             log_error("unbound symbol: set-cdr!");
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
             s7_pointer lp = s7_load_path(s7);
             LOG_S7_DEBUG("*load-path*", lp);
 #endif
@@ -353,7 +362,7 @@ s7_pointer init_scheme_fns(s7_scheme *s7)
         _s7_quote = s7_name_to_value(s7, "quote");
         if (_s7_quote == s7_undefined(s7)) {
             log_error("unbound symbol: quote");
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
             s7_pointer lp = s7_load_path(s7);
             LOG_S7_DEBUG("*load-path* 2", lp);
 #endif
@@ -380,7 +389,7 @@ s7_pointer _load_acons(s7_scheme *s7)
         _s7_acons = s7_name_to_value(s7, "acons");
         if (_s7_acons == s7_undefined(s7)) {
             log_error("unbound symbol: acons");
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
             s7_pointer lp = s7_load_path(s7);
             LOG_S7_DEBUG("*load-path* 3", lp);
 #endif
@@ -399,7 +408,7 @@ s7_pointer _load_assoc(void)
         assoc = s7_name_to_value(s7, "assoc");
         if (assoc == s7_undefined(s7)) {
             log_error("unbound symbol: assoc");
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
             s7_pointer lp = s7_load_path(s7);
             LOG_S7_DEBUG("*load-path* 4", lp);
 #endif
@@ -416,7 +425,7 @@ s7_pointer _load_assoc_in(void)
         assoc_in = s7_name_to_value(s7, "assoc-in");
         if (assoc == s7_undefined(s7)) {
             log_error("unbound symbol: assoc-in");
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
             s7_pointer lp = s7_load_path(s7);
             LOG_S7_DEBUG("*load-path* 5", lp);
 #endif
@@ -433,7 +442,7 @@ s7_pointer _load_assoc_val(void)
         assoc_val = s7_name_to_value(s7, "assoc-in");
         if (assoc == s7_undefined(s7)) {
             log_error("unbound symbol: assoc-in");
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
             s7_pointer lp = s7_load_path(s7);
             LOG_S7_DEBUG("*load-path* 6", lp);
 #endif
@@ -450,7 +459,7 @@ s7_pointer _load_append(void)
         _s7_append = s7_name_to_value(s7, "append");
         if (assoc == s7_undefined(s7)) {
             log_error("unbound symbol: append");
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
             s7_pointer lp = s7_load_path(s7);
             LOG_S7_DEBUG("*load-path* 7", lp);
 #endif
@@ -467,7 +476,7 @@ s7_pointer _load_list_set(s7_scheme *s7)
         _s7_list_set = s7_name_to_value(s7, "list-set!");
         if (_s7_list_set == s7_undefined(s7)) {
             log_error("unbound symbol: list-set!");
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
             s7_pointer lp = s7_load_path(s7);
             LOG_S7_DEBUG("*load-path* 8", lp);
 #endif
@@ -483,7 +492,7 @@ s7_pointer _load_sort(void)
     sort_bang = s7_name_to_value(s7, "sort!");
     if (assoc == s7_undefined(s7)) {
         log_error("unbound symbol: sort!");
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
         s7_pointer lp = s7_load_path(s7);
         LOG_S7_DEBUG("*load-path* 9", lp);
 #endif
@@ -498,7 +507,7 @@ s7_pointer _load_string_lt(void)
     string_lt = s7_name_to_value(s7, "string<?");
     if (assoc == s7_undefined(s7)) {
         log_error("unbound symbol: string<?");
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
         s7_pointer lp = s7_load_path(s7);
         LOG_S7_DEBUG("*load-path* 10", lp);
 #endif
@@ -509,76 +518,76 @@ s7_pointer _load_string_lt(void)
 }
 
 /* FIXME: call into libs7 for this */
-LOCAL __attribute__((unused)) void s7_config_repl(s7_scheme *sc)
-{
-    printf("mibl: s7_repl\n");
-#if (!WITH_C_LOADER)
-  /* dumb_repl(sc); */
-#else
-#if WITH_NOTCURSES
-  s7_load(sc, "nrepl.scm");
-#else
-  log_debug("XXXXXXXXXXXXXXXX");
-  s7_pointer old_e, e, val;
-  s7_int gc_loc;
-  bool repl_loaded = false;
-  /* try to get lib_s7.so from the repl's directory, and set *libc*.
-   *   otherwise repl.scm will try to load libc.scm which will try to build libc_s7.so locally, but that requires s7.h
-   */
-  e = s7_inlet(sc,
-               s7_list(sc, 2,
-                       s7_make_symbol(sc, "init_func"),
-                      s7_make_symbol(sc, "libc_s7_init")));
-               /* list_2(sc, s7_make_symbol(sc, "init_func"), */
-               /*        s7_make_symbol(sc, "libc_s7_init"))); */
-  gc_loc = s7_gc_protect(sc, e);
-  old_e = s7_set_curlet(sc, e);   /* e is now (curlet) so loaded names from libc will be placed there, not in (rootlet) */
+/* LOCAL __attribute__((unused)) void s7_config_repl(s7_scheme *sc) */
+/* { */
+/*     printf("mibl: s7_repl\n"); */
+/* #if (!WITH_C_LOADER) */
+/*   /\* dumb_repl(sc); *\/ */
+/* #else */
+/* #if WITH_NOTCURSES */
+/*   s7_load(sc, "nrepl.scm"); */
+/* #else */
+/*   log_debug("XXXXXXXXXXXXXXXX"); */
+/*   s7_pointer old_e, e, val; */
+/*   s7_int gc_loc; */
+/*   bool repl_loaded = false; */
+/*   /\* try to get lib_s7.so from the repl's directory, and set *libc*. */
+/*    *   otherwise repl.scm will try to load libc.scm which will try to build libc_s7.so locally, but that requires s7.h */
+/*    *\/ */
+/*   e = s7_inlet(sc, */
+/*                s7_list(sc, 2, */
+/*                        s7_make_symbol(sc, "init_func"), */
+/*                       s7_make_symbol(sc, "libc_s7_init"))); */
+/*                /\* list_2(sc, s7_make_symbol(sc, "init_func"), *\/ */
+/*                /\*        s7_make_symbol(sc, "libc_s7_init"))); *\/ */
+/*   gc_loc = s7_gc_protect(sc, e); */
+/*   old_e = s7_set_curlet(sc, e);   /\* e is now (curlet) so loaded names from libc will be placed there, not in (rootlet) *\/ */
 
-  /* printf("loading %s/%s\n", TOSTRING(OBAZL_RUNFILES_DIR), "/libc_s7.o"); */
-  printf("loading libc_s7.o\n");
-  printf("cwd: %s\n", getcwd(NULL, 0));
+/*   /\* printf("loading %s/%s\n", TOSTRING(OBAZL_RUNFILES_DIR), "/libc_s7.o"); *\/ */
+/*   printf("loading libc_s7.o\n"); */
+/*   printf("cwd: %s\n", getcwd(NULL, 0)); */
 
-  val = s7_load_with_environment(sc, "libc_s7.so", e);
-  if (val)
-    {
-      /* s7_pointer libs; */
-      /* uint64_t hash; */
-      /* hash = raw_string_hash((const uint8_t *)"*libc*", 6);  /\* hack around an idiotic gcc 10.2.1 warning *\/ */
-      /* s7_define(sc, sc->nil, new_symbol(sc, "*libc*", 6, hash, hash % SYMBOL_TABLE_SIZE), e); */
-      /* libs = global_slot(sc->libraries_symbol); */
-      /* slot_set_value(libs, cons(sc, cons(sc, make_permanent_string("libc.scm"), e), slot_value(libs))); */
-    }
-  /* else */
-  /*   { */
-  /*       printf("mibl: load libc_s7.so failed\n"); */
-  /*     val = s7_load(sc, "repl.scm"); */
-  /*     if (val) repl_loaded = true; */
-  /*   } */
-  s7_set_curlet(sc, old_e);       /* restore incoming (curlet) */
-  s7_gc_unprotect_at(sc, gc_loc);
+/*   val = s7_load_with_environment(sc, "libc_s7.so", e); */
+/*   if (val) */
+/*     { */
+/*       /\* s7_pointer libs; *\/ */
+/*       /\* uint64_t hash; *\/ */
+/*       /\* hash = raw_string_hash((const uint8_t *)"*libc*", 6);  /\\* hack around an idiotic gcc 10.2.1 warning *\\/ *\/ */
+/*       /\* s7_define(sc, sc->nil, new_symbol(sc, "*libc*", 6, hash, hash % SYMBOL_TABLE_SIZE), e); *\/ */
+/*       /\* libs = global_slot(sc->libraries_symbol); *\/ */
+/*       /\* slot_set_value(libs, cons(sc, cons(sc, make_permanent_string("libc.scm"), e), slot_value(libs))); *\/ */
+/*     } */
+/*   /\* else *\/ */
+/*   /\*   { *\/ */
+/*   /\*       printf("mibl: load libc_s7.so failed\n"); *\/ */
+/*   /\*     val = s7_load(sc, "repl.scm"); *\/ */
+/*   /\*     if (val) repl_loaded = true; *\/ */
+/*   /\*   } *\/ */
+/*   s7_set_curlet(sc, old_e);       /\* restore incoming (curlet) *\/ */
+/*   s7_gc_unprotect_at(sc, gc_loc); */
 
-  if (!val) /* s7_load was unable to find/load libc_s7.so or repl.scm */
-      {
-          log_error("Unable to load libc_s7.so");
-          exit(EXIT_FAILURE);
-    /* dumb_repl(sc); */
-      }
-  else
-    {
-      s7_provide(sc, "libc.scm");
+/*   if (!val) /\* s7_load was unable to find/load libc_s7.so or repl.scm *\/ */
+/*       { */
+/*           log_error("Unable to load libc_s7.so"); */
+/*           exit(EXIT_FAILURE); */
+/*     /\* dumb_repl(sc); *\/ */
+/*       } */
+/*   else */
+/*     { */
+/*       s7_provide(sc, "libc.scm"); */
 
-      printf("repl_loaded? %d\n", repl_loaded); /* OBAZL */
-      /* if (!repl_loaded) { */
-      /*     printf("Loading repl.scm\n"); /\* OBAZL *\/ */
-      /*     s7_load(sc, "s7/repl.scm"); */
-      /*             /\* TOSTRING(OBAZL_RUNFILES_DIR) *\/ */
-      /*             /\* "/repl.scm"); /\\* OBAZL *\\/ *\/ */
-      /* } */
-      /* s7_eval_c_string(sc, "((*repl* 'run))"); */
-    }
-#endif
-#endif
-}
+/*       printf("repl_loaded? %d\n", repl_loaded); /\* OBAZL *\/ */
+/*       /\* if (!repl_loaded) { *\/ */
+/*       /\*     printf("Loading repl.scm\n"); /\\* OBAZL *\\/ *\/ */
+/*       /\*     s7_load(sc, "s7/repl.scm"); *\/ */
+/*       /\*             /\\* TOSTRING(OBAZL_RUNFILES_DIR) *\\/ *\/ */
+/*       /\*             /\\* "/repl.scm"); /\\\* OBAZL *\\\/ *\\/ *\/ */
+/*       /\* } *\/ */
+/*       /\* s7_eval_c_string(sc, "((*repl* 'run))"); *\/ */
+/*     } */
+/* #endif */
+/* #endif */
+/* } */
 
 EXPORT void s7_shutdown(s7_scheme *s7)
 {
@@ -593,17 +602,15 @@ EXPORT void s7_shutdown(s7_scheme *s7)
 #endif
 
 
-s7_scheme *libs7_init(void);     /* libs7_init.h */
+/* s7_scheme *libs7_init(void);     /\* libs7_init.h *\/ */
 void _s7_init(void)
 {
-#if defined(DEBUG_TRACE)
-    if (mibl_trace) log_trace("_s7_init");
-#endif
+    TRACE_ENTRY(_s7_init);
 
     s7 = libs7_init();             /* @libs7//src:s7.c */
     /* s7_gc_on(s7, s7_f(s7)); */
 
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
     s7_pointer lp = s7_load_path(s7);
     LOG_S7_DEBUG("*load-path* 11", lp);
     if (mibl_debug_s7_config) {
@@ -616,7 +623,7 @@ void _s7_init(void)
         bzl_mode = true;
     UT_string *libc_s7;
     utstring_new(libc_s7);
-    char *dso_dir;
+    /* char *dso_dir; */
     if (bzl_mode) {
         /* log_debug("BZL MODE"); */
         /* running under bazel run or test */
@@ -628,56 +635,59 @@ void _s7_init(void)
         free(libs7_scmdir);
 
         /* load libc_s7 */
-        dso_dir = utstring_body(mibl_runfiles_root);
-#if defined(DEBUG_TRACE)
-        if (mibl_trace)
-            log_debug("bzl mode: %s", dso_dir);
-#endif
-        char *dso_subdir;
-        if (getenv("TEST_TARGET"))
-            dso_subdir = "libs7/src/libc_s7";
-        else
-            dso_subdir = "external/libs7/src/libc_s7";
+/*         dso_dir = utstring_body(mibl_runfiles_root); */
+/* #if defined(DEBUGGING) */
+/*         if (mibl_trace) */
+/*             log_debug("bzl mode: %s", dso_dir); */
+/* #endif */
+/*         char *dso_subdir; */
+/*         if (getenv("TEST_TARGET")) */
+/*             dso_subdir = "libs7/src/libc_s7"; */
+/*         else */
+/*             dso_subdir = "external/libs7/src/libc_s7"; */
 
-        utstring_printf(libc_s7, "%s/%s%s",
-                        dso_dir,
-                        // no 'external' when run from @//mibl under test
-                        //
-                        /* "libs7/src/libc_s7" DSO_EXT); */
-                        // "../libs7/src/libc_s7"
-                        dso_subdir,
-                        DSO_EXT);
+/*         utstring_printf(libc_s7, "%s/%s%s", */
+/*                         dso_dir, */
+/*                         // no 'external' when run from @//mibl under test */
+/*                         // */
+/*                         /\* "libs7/src/libc_s7" DSO_EXT); *\/ */
+/*                         // "../libs7/src/libc_s7" */
+/*                         dso_subdir, */
+/*                         DSO_EXT); */
 
     } else {
         /* running standalone, outside of bazel */
         /* FIXME: add /usr/share/lib/libs7/scm */
-        dso_dir = utstring_body(xdg_data_home);
-        utstring_printf(libc_s7, "%s/%s",
-                        dso_dir,
-                        "mibl/libc_s7" DSO_EXT);
-#if defined(DEBUG_TRACE)
-        log_debug("not bzl mode: %s", dso_dir);
-#endif
+        /* dso_dir = utstring_body(xdg_data_home); */
+        /* utstring_printf(libc_s7, "%s/%s", */
+        /*                 dso_dir, */
+        /*                 "mibl/libc_s7" DSO_EXT); */
     }
+#if defined(DEBUGGING)
+    /* s7_pointer */ lp = s7_load_path(s7);
+    char *s = s7_object_to_c_string(s7, lp);
+    log_debug("load-path: %s", s);
+    free(s);
+#endif
 
-    /* currently we statically link libc_s7.a, so we must initialize it. */
-    // this loads libc_s7 into root env
-    /* libc_s7_init(s7); */
+    libs7_load_clib(s7, "c");
+    libs7_load_clib(s7, "cwalk");
 
-    // and this loads libc_s7 into *libc*
-    s7_pointer e = s7_inlet(s7, s7_nil(s7));
-    s7_int gc_loc = s7_gc_protect(s7, e);
-    s7_pointer old_e = s7_set_curlet(s7, e);
-    libc_s7_init(s7);
-    s7_pointer libs = s7_slot(s7, s7_make_symbol(s7, "*libraries*"));
-    s7_define(s7, s7_nil(s7), s7_make_symbol(s7, "*libc*"), e);
-    s7_slot_set_value(s7, libs, s7_cons(s7, s7_cons(s7, s7_make_semipermanent_string(s7, "libc.scm"), e), s7_slot_value(libs)));
-    s7_set_curlet(s7, old_e);       /* restore incoming (curlet) */
-    s7_gc_unprotect_at(s7, gc_loc);
+    libs7_load_clib(s7, "toml");
 
-    /* log_debug("libc_s7 initialized"); */
+/* #if defined(CLIBS_LINK_RUNTIME) */
+/*     clib_dload_ns(s7, "libc_s7", "libc", DSO_EXT); */
+/*     /\* clib_dload_ns(s7, "libdl_s7", "libdl", DSO_EXT); *\/ */
+/*     /\* clib_dload_global(s7, "libm_s7", "libm.scm", DSO_EXT); *\/ */
+/*     /\* clib_dload_global(s7, "libcwalk_s7", "libcwalk.scm", DSO_EXT); *\/ */
+/* #else  /\* link static or shared *\/ */
+/*     clib_sinit(s7, libc_s7_init, "libc"); */
+/*     /\* clib_sinit(s7, libdl_s7_init, "libdl"); *\/ */
+/*     /\* clib_sinit(s7, libm_s7_init, "libm"); *\/ */
+/*     /\* clib_sinit(s7, libcwalk_s7_init, "libcwalk"); *\/ */
+/* #endif */
 
-    utstring_free(libc_s7);
+    /* utstring_free(libc_s7); */
 
     /* libc stuff is in *libc*, which is an environment
      * (i.e. (let? *libc*) => #t)
@@ -694,7 +704,7 @@ void _s7_init(void)
     /* tmp dir */
     char tplt[] = "/tmp/obazl.XXXXXXXXXX";
     char *tmpdir = mkdtemp(tplt);
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
     if (mibl_debug)
         log_debug("tmpdir: %s", tmpdir);
 #endif
@@ -704,9 +714,7 @@ void _s7_init(void)
 /* s7 kws used by tree-crawlers to create parsetree mibl */
 void _define_mibl_s7_keywords(void)
 {
-#if defined(DEBUG_TRACE)
-    if (mibl_trace) log_trace(BLU "_define_mibl_s7_keywords" CRESET);
-#endif
+    TRACE_ENTRY(_define_mibl_s7_keywords);
 
     /* initialize s7 stuff */
     dune_project_sym = s7_make_symbol(s7, "dune-project"),
@@ -742,10 +750,7 @@ void _define_mibl_s7_keywords(void)
    break with undefined var. */
 void _define_mibl_s7_flags(void)
 {
-#if defined(DEBUG_TRACE)
-    if (mibl_trace)
-        log_debug(BLU "_define_mibl_s7_flags" CRESET);
-#endif
+    TRACE_ENTRY(_define_mibl_s7_flags);
 
     /* define global flags */
     mibl_s7_flag = mibl_s7_flags;
@@ -765,10 +770,7 @@ void _define_mibl_s7_flags(void)
 
 void _define_mibl_s7_vars(void)
 {
-#if defined(DEBUG_TRACE)
-    if (mibl_debug_s7_config)
-        log_debug(BLU "_define_mibl_s7_vars" CRESET);
-#endif
+    TRACE_ENTRY(_define_mibl_s7_vars);
 
     s7_define_variable(s7, "*mibl-shared-ppx-pkg*",
                        s7_make_string(s7, "bzl"));
@@ -787,11 +789,12 @@ void _define_mibl_s7_vars(void)
 /* FIXME: if var does not exist, create it.
    That way users can use globals to pass args to -main.
  */
-EXPORT void mibl_s7_set_flag(char *flag, bool val) {
-#if defined(DEBUG_TRACE)
-    if (mibl_trace)
-        log_trace(BLU "mibl_s7_set_flag:" CRESET
-                  " %s: %d", flag, val);
+EXPORT void mibl_s7_set_flag(char *flag, bool val)
+{
+    TRACE_ENTRY(mibl_s7_set_flag);
+#if defined(TRACING)
+    /* if (mibl_trace) */
+        log_trace("flag: %s, val: %d", flag, val);
 #endif
     s7_pointer fld = s7_name_to_value(s7, flag);
     if (fld == s7_undefined(s7)) {
@@ -803,7 +806,7 @@ EXPORT void mibl_s7_set_flag(char *flag, bool val) {
     utstring_renew(setter);
     utstring_printf(setter, "(set! %s %s)",
                     flag, val? "#t": "#f");
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
     if (mibl_debug) {
         log_debug("Setting s7 global var: %s", utstring_body(setter));
     }
@@ -855,11 +858,7 @@ EXPORT void show_s7_config(void)
 /* called by all apps */
 EXPORT void mibl_s7_init(void)
 {
-#if defined(DEBUG_TRACE)
-    if (mibl_trace) {
-        log_debug(UBLU "mibl_s7_init" CRESET);
-    }
-#endif
+    TRACE_ENTRY(mibl_s7_init);
     /* _mibl_s7_init(); */
     _s7_init();
 
@@ -869,7 +868,7 @@ EXPORT void mibl_s7_init(void)
 
     _define_mibl_s7_vars();
 
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
     s7_pointer lp = s7_load_path(s7);
     LOG_S7_DEBUG("mibl_s7_init *load-path*", lp);
 #endif

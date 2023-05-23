@@ -4,7 +4,7 @@
 #include <unistd.h>
 
 #include "log.h"
-
+#include "trace.h"
 #include "ini.h"
 
 /* #include "s7.h" */
@@ -16,7 +16,7 @@ extern const UT_icd ut_str_icd;
 extern bool bzl_mode;
 extern int  verbosity;
 
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
 bool mibl_debug_mibl = false;
 bool mibl_debug_miblrc   = false;
 /* bool mibl_debug_traversal = false; */
@@ -46,7 +46,7 @@ struct mibl_config_s {
     char *schema_version;
     int libct;
     bool load_miblrc; // allows --no-miblrc
-    //FIXME: remove debug flags, they're globals guarded by DEBUG_TRACE?
+    //FIXME: remove debug flags, they're globals guarded by TRACING?
     bool debug_ppx;
     bool debug_dune_rules;
     bool debug_deps;
@@ -91,7 +91,8 @@ struct mibl_config_s mibl_config = {
 // returns 1 on success
 LOCAL int _miblrc_handler(void* config, const char* section, const char* name, const char* value)
 {
-#if defined(DEBUG_TRACE)
+    TRACE_ENTRY(_miblrc_handler);
+#if defined(DEBUGGING)
     if (mibl_debug_miblrc)
         log_trace("_miblrc_handler, section %s: %s=%s", section, name, value);
 #endif
@@ -182,7 +183,7 @@ LOCAL int _miblrc_handler(void* config, const char* section, const char* name, c
     }
 
     if (MATCH("mibl", "pkg")) {
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
         if (mibl_debug_mibl) log_debug("section: mibl; entry: pkg");
 #endif
         char *token, *sep = " ,\t";
@@ -204,7 +205,7 @@ LOCAL int _miblrc_handler(void* config, const char* section, const char* name, c
     /* FIXME: normalize filepaths. remove leading ./ and embedded ../ */
     /* disallow leading / and ../ */
     if (MATCH("srcs", "exclude")) {
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
         if (mibl_debug_miblrc)
             log_debug("section: srcs; entry: exclude; val: %s", value);
 #endif
@@ -370,10 +371,7 @@ EXPORT void show_mibl_config(void)
 
 LOCAL void _load_user_mibl_config(void)
 {
-#if defined(DEBUG_TRACE)
-    if (mibl_trace)
-        log_trace(BLU "_load_user_mibl_config" CRESET);
-#endif
+    TRACE_ENTRY(_load_user_mibl_config);
     // WARNING: $HOME not accessible when BAZEL_TEST defined
     utstring_new(obazl_ini_path);
     utstring_printf(obazl_ini_path,
@@ -413,10 +411,7 @@ LOCAL void _load_user_mibl_config(void)
 
 LOCAL void _load_ws_mibl_config(void)
 {
-#if defined(DEBUG_TRACE)
-    if (mibl_trace)
-        log_trace(BLU "_load_ws_mibl_config" CRESET);
-#endif
+    TRACE_ENTRY(_load_ws_mibl_config);
     utstring_new(obazl_ini_path);
     utstring_printf(obazl_ini_path, "%s/%s",
                     rootws, MIBL_INI_FILE);
@@ -460,12 +455,9 @@ LOCAL void _load_ws_mibl_config(void)
 
 EXPORT void mibl_configure(void)
 {
+    TRACE_ENTRY(mibl_configure);
     /* mibl_debug_mibl = true; */
     /* mibl_debug_miblrc = true; */
-#if defined(DEBUG_TRACE)
-    if (mibl_trace)
-        log_trace(UBLU "mibl_configure" CRESET);
-#endif
     /* **************** */
     /* project-local .config/miblrc config file */
 

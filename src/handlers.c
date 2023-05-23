@@ -47,7 +47,7 @@ UT_string *dunefile_name;
 
 bool include_this(FTSENT *ftsentry)
 {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     if (mibl_trace)
         log_trace(MAG "_include_this?" CRESET " %s (%s)",
                   ftsentry->fts_name, ftsentry->fts_path);
@@ -77,7 +77,7 @@ bool include_this(FTSENT *ftsentry)
     else
         ptr = ftsentry->fts_path;
 
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     if (mibl_debug) log_debug("srch ptr: %s", ptr);
 #endif
     char **p;
@@ -102,7 +102,7 @@ bool include_this(FTSENT *ftsentry)
     if (utarray_len(mibl_config.include_dirs) > 0) {
         p = NULL;
         while ( (p=(char**)utarray_next(mibl_config.include_dirs, p))) {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
             if (mibl_debug) {
                 log_debug("inclusion test pfx: '%s', path: '%s'",
                           *p, ftsentry->fts_path);
@@ -134,7 +134,7 @@ EXPORT int compare_fts(const FTSENT** one, const FTSENT** two)
 
 bool _is_ws_root(FTSENT *ftsentry)
 {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     if (mibl_trace)
         log_trace("_is_ws_root: %s", ftsentry->fts_path);
 #endif
@@ -147,7 +147,7 @@ bool _is_ws_root(FTSENT *ftsentry)
     int rc = access(utstring_body(pathdir), R_OK);
     /* log_debug("RC: %d", rc); */
     if (!rc) {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         if (mibl_trace) log_trace("true");
 #endif
         return true;
@@ -157,13 +157,13 @@ bool _is_ws_root(FTSENT *ftsentry)
         utstring_printf(pathdir, "%s", "/WORKSPACE");
         rc = access(utstring_body(pathdir), R_OK);
         if (!rc) {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
             if (mibl_trace) log_trace("true");
 #endif
             return true;
         }
     }
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     if (mibl_trace) log_trace("false");
 #endif
     return false;
@@ -206,7 +206,7 @@ bool _is_ws_root(FTSENT *ftsentry)
  */
 /* void handle_dir(FTS* tree, FTSENT *ftsentry) */
 /* { */
-/* #if defined(DEBUG_TRACE) */
+/* #if defined(TRACING) */
 /*     if (mibl_debug) { */
 /*         log_debug(""); */
 /*         /\* log_debug(BLUE "_handle_dir:" CRESET " %s (%s)", *\/ */

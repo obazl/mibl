@@ -51,9 +51,9 @@
             ;;                             ;; lib:<public-library-name>:<file>
             ;;                             ;; lib-private:<library-name>:<file>
             ;;                             ;; libexec-private:<library-name>:<file>
-            ;;                             ((= 0 ((*libc* 'fnmatch) "*.sh" argstr 0)) (cons arg accum))
-            ;;                             ((= 0 ((*libc* 'fnmatch) "*.py" argstr 0)) (cons arg accum))
-            ;;                             ((= 0 ((*libc* 'fnmatch) "*.js" argstr 0)) (cons arg accum))
+            ;;                             ((= 0 (libc:fnmatch  "*.sh" argstr 0)) (cons arg accum))
+            ;;                             ((= 0 (libc:fnmatch  "*.py" argstr 0)) (cons arg accum))
+            ;;                             ((= 0 (libc:fnmatch  "*.js" argstr 0)) (cons arg accum))
             ;;                             ;;FIXME others?
             ;;                             (else accum))))
             ;;                        '() args)))
@@ -112,9 +112,9 @@
                                             ;; lib:<public-library-name>:<file>
                                             ;; lib-private:<library-name>:<file>
                                             ;; libexec-private:<library-name>:<file>
-                                            ((= 0 ((*libc* 'fnmatch) "*.sh" argstr 0)) (cons arg accum))
-                                            ((= 0 ((*libc* 'fnmatch) "*.py" argstr 0)) (cons arg accum))
-                                            ((= 0 ((*libc* 'fnmatch) "*.js" argstr 0)) (cons arg accum))
+                                            ((= 0 (libc:fnmatch  "*.sh" argstr 0)) (cons arg accum))
+                                            ((= 0 (libc:fnmatch  "*.py" argstr 0)) (cons arg accum))
+                                            ((= 0 (libc:fnmatch  "*.js" argstr 0)) (cons arg accum))
                                             ;;FIXME others?
                                             (else accum))))
                                        '() (cdr args))))

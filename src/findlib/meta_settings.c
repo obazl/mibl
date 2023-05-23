@@ -10,7 +10,7 @@
 
 #include "meta_settings.h"
 
-#if defined(DEBUG_PROPERTIES) || defined (DEBUG_TRACE)
+#if defined(DEBUG_PROPERTIES) || defined (TRACING)
 extern int indent;
 extern int delta;
 extern char *sp;
@@ -189,7 +189,7 @@ void obzl_meta_settings_dtor(void *_elt) {
     free(elt);
 }
 
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
 void dump_setting(int indent, struct obzl_meta_setting *setting)
 {
     log_trace("%*ssetting:", indent, sp);

@@ -2,10 +2,10 @@
 
 (define (structfile? s)
   (let ((f (if (symbol? s) (symbol->string s) s)))
-    (eq? 0 ((*libc* 'fnmatch) "*.ml" f 0))))
+    (eq? 0 (libc:fnmatch  "*.ml" f 0))))
 
 (define (sigfile? s)
   (let ((f (if (symbol? s) (symbol->string s) s)))
-    (eq? 0 ((*libc* 'fnmatch) "*.mli" f 0))))
+    (eq? 0 (libc:fnmatch  "*.mli" f 0))))
 
 ;; (format #t "loaded dune/predicates.scm\n")

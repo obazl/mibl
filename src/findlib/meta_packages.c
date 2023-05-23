@@ -6,7 +6,7 @@
 
 #include "meta_packages.h"
 
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
 extern bool mibl_trace;
 #endif
 
@@ -147,7 +147,7 @@ obzl_meta_values *resolve_setting_values(obzl_meta_setting *_setting,
                                          obzl_meta_flags *_flags,
                                          obzl_meta_settings *_settings)
 {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     if (mibl_trace)
         log_debug("resolve_setting_values, opcode: %d", _setting->opcode);
 #endif
@@ -216,7 +216,7 @@ EXPORT int pkg_deps(struct obzl_meta_package *_pkg,
                     UT_array *pending_deps,
                     UT_array *completed_deps)
 {
-/* #if defined(DEBUG_TRACE) */
+/* #if defined(TRACING) */
 /*     if (mibl_trace) log_trace("pkg_deps"); */
 /* #endif */
     utarray_sort(completed_deps,strsort);
@@ -227,7 +227,7 @@ EXPORT int pkg_deps(struct obzl_meta_package *_pkg,
     struct obzl_meta_property *deps_prop = NULL;
     deps_prop = obzl_meta_entries_property(entries, property);
     if ( deps_prop == NULL ) {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         log_warn("Prop '%s' not found for pkg: %s.", property, _pkg->name);
 #endif
         return 0;
@@ -317,7 +317,7 @@ EXPORT int pkg_deps(struct obzl_meta_package *_pkg,
         /* dump_values(0, vals); */
         /* now we handle UPDATE settings */
 
-/* #if defined(DEBUG_TRACE) */
+/* #if defined(TRACING) */
 /*         log_debug("iterating values"); */
 /* #endif */
         char **p = NULL;        /* for searching completed_deps */
@@ -326,7 +326,7 @@ EXPORT int pkg_deps(struct obzl_meta_package *_pkg,
             /* log_debug("property val[%d]: '%s'", j, *dep_name); */
 
             char *s = strdup((char*)*dep_name);
-/* #if defined(DEBUG_TRACE) */
+/* #if defined(TRACING) */
 /*             if (mibl_debug) log_debug("DEP: '%s'", s); */
 /* #endif */
 
@@ -342,7 +342,7 @@ EXPORT int pkg_deps(struct obzl_meta_package *_pkg,
             p = NULL;
             p = (char**)utarray_find(completed_deps, &s, strsort);
             if (p != NULL) {
-/* #if defined(DEBUG_TRACE) */
+/* #if defined(TRACING) */
 /*                 if (mibl_debug) */
 /*                     log_debug(" found completed dep: %s", *p); */
 /* #endif */
@@ -350,12 +350,12 @@ EXPORT int pkg_deps(struct obzl_meta_package *_pkg,
                 utarray_sort(pending_deps,strsort); /* FIXME: can we avoid this? */
                 p = (char**)utarray_find(pending_deps, &s, strsort);
                 if (p != NULL) {
-/* #if defined(DEBUG_TRACE) */
+/* #if defined(TRACING) */
 /*                     if (mibl_debug) */
 /*                         log_debug(" pending dep already added: %s", *p); */
 /* #endif */
                 } else {
-/* #if defined(DEBUG_TRACE) */
+/* #if defined(TRACING) */
 /*                     if (mibl_debug) log_debug(" adding new pending dep: %s", s); */
 /* #endif */
                     utarray_push_back(pending_deps, &s);

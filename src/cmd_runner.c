@@ -31,7 +31,7 @@
 #include "cmd_runner.h"
 
 bool mibl_debug_cmd_runner = false;
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
 extern bool mibl_debug_deps;
 #endif
 
@@ -43,7 +43,7 @@ char buffer[BUFSZ];
 
 EXPORT char * run_cmd(char *executable, char **argv)
 {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     if (mibl_debug_cmd_runner) {
         char **ptr = argv;
         UT_string *tmp;
@@ -152,7 +152,7 @@ EXPORT char * run_cmd(char *executable, char **argv)
         posix_spawn_file_actions_destroy(&action);
         return NULL;
     }
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     if (mibl_debug_deps)
         log_trace("waitpid for pid %d returned %d", pid, waitrc);
 #endif
@@ -160,7 +160,7 @@ EXPORT char * run_cmd(char *executable, char **argv)
     // child exit OK
     if ( WIFEXITED(status) ) {
         // terminated normally by a call to _exit(2) or exit(3).
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         if (mibl_debug_deps) {
             log_trace("status: %d", status);
             log_trace("WIFEXITED(status): %d", WIFEXITED(status));
@@ -215,7 +215,7 @@ EXPORT char * run_cmd(char *executable, char **argv)
 
         /* log_debug("reading cout_pipe"); */
         bytes_read = read(cout_pipe[0], &buffer[0], BUFSZ);
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         if (mibl_debug_deps)
             log_debug("outpipe bytes_read: %d", bytes_read);
 #endif

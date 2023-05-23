@@ -28,7 +28,7 @@ cc_binary(
 
         "-Iexternal/libs7/src",
     ],
-    defines = ["DEBUG", "DEBUG_TRACE"],
+    defines = ["DEBUG", "TRACING"],
     deps = [
         "//src:treewalker",
         # "//src/opam:opam_lexer"
@@ -56,7 +56,7 @@ cc_binary(
         "-Ivendored/logc",
         # "-I$(GENDIR)/external/opam/test"
     ],
-    defines = ["DEBUG", "DEBUG_TRACE"],
+    defines = ["DEBUG", "TRACING"],
     deps = [
         "//src/opam:opam_lexer"
     ],
@@ -99,7 +99,7 @@ cc_binary(
     #     # "-Ivendored/uthash",
     #     # "-Iexternal/sealark/vendored/uthash",
     # ],
-    defines = ["DEBUG", "DEBUG_TRACE"],
+    defines = ["DEBUG", "TRACING"],
     deps = [
         "//src/opam:opam_parser"
     ],

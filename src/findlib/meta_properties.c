@@ -7,7 +7,7 @@
 
 #include "meta_properties.h"
 
-#if defined(DEBUG_PROPERTIES) || defined (DEBUG_TRACE)
+#if defined(DEBUG_PROPERTIES) || defined (TRACING)
 extern int indent;
 extern int delta;
 extern char *sp;

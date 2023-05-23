@@ -52,7 +52,7 @@ UT_string *opam_ocaml_version   = NULL;
 /* seets global opam_switch_* vars */
 EXPORT void opam_configure(char *_opam_switch)
 {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     if (mibl_trace)
         log_trace("opam_configure: '%s'", _opam_switch);
     log_trace("cwd: %s\n", getcwd(NULL, 0));
@@ -91,7 +91,7 @@ EXPORT void opam_configure(char *_opam_switch)
             if (verbose && verbosity > 1)
                 log_info(" Current OPAM switch: %s", result);
 
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
             log_debug("cmd result: '%s'", utstring_body(opam_switch_id));
 #endif
         }
@@ -109,7 +109,7 @@ EXPORT void opam_configure(char *_opam_switch)
         utstring_printf(opam_switch_prefix, "%s", result);
         /* default: coswitch == switch */
         utstring_printf(opam_coswitch_prefix, "%s", result);
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         log_debug("cmd result: '%s'", utstring_body(opam_switch_bin));
 #endif
     }
@@ -125,7 +125,7 @@ EXPORT void opam_configure(char *_opam_switch)
         utstring_printf(opam_switch_bin, "%s", result);
         /* default: coswitch == switch */
         utstring_printf(opam_coswitch_bin, "%s", result);
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         log_debug("cmd result: '%s'", utstring_body(opam_switch_bin));
 #endif
     }
@@ -141,7 +141,7 @@ EXPORT void opam_configure(char *_opam_switch)
         utstring_printf(opam_switch_lib, "%s", result);
         /* default: coswitch == switch */
         utstring_printf(opam_coswitch_lib, "%s", result);
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         log_debug("cmd result: '%s'", utstring_body(opam_switch_lib));
 #endif
     }
@@ -156,7 +156,7 @@ EXPORT void opam_configure(char *_opam_switch)
         if (verbose && verbosity > 1)
             log_info("Current OPAM ocaml version: %s", result);
         utstring_printf(opam_ocaml_version, "%s", result);
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         log_debug("cmd result: '%s'", utstring_body(opam_ocaml_version));
 #endif
     }

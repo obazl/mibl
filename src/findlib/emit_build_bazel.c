@@ -39,7 +39,7 @@ extern int level;
 extern int spfactor;
 extern char *sp;
 
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
 extern int indent;
 extern int delta;
 #endif
@@ -133,14 +133,14 @@ void emit_new_local_subpkg_entries(FILE *bootstrap_FILE,
                                    char *_pkg_prefix,
                                    char *_filedeps_path)
 {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     log_debug("EMIT_NEW_local_subpkg_entries: %s", _pkg->name);
 #endif
     /* dump_package(0, _pkg); */
 
     char *pkg_name = _pkg->name;
     int subpkg_ct = obzl_meta_package_subpkg_count(_pkg);
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     log_debug("subpkg_ct: %d", subpkg_ct);
 #endif
 
@@ -161,7 +161,7 @@ void emit_new_local_subpkg_entries(FILE *bootstrap_FILE,
             entry = obzl_meta_entries_nth(entries, i);
             subpkg = entry->package;
             if (entry->type == OMP_PACKAGE) {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
                 log_debug("next subpkg: %s", subpkg->name);
 #endif
 
@@ -236,7 +236,7 @@ void emit_new_local_subpkg_entries(FILE *bootstrap_FILE,
 void emit_new_local_pkg_repo(FILE *bootstrap_FILE,
                              struct obzl_meta_package *_pkg)
 {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     log_debug("emit_new_local_pkg_repo %s", _pkg->name);
 #endif
 
@@ -321,7 +321,7 @@ void emit_local_repo_decl(FILE *bootstrap_FILE,
                           char *pkg_name)
                           /* struct obzl_meta_package *_pkg) */
 {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     log_debug("emit_local_repo_decl %s", pkg_name); //_pkg->name);
 #endif
 
@@ -384,7 +384,7 @@ void emit_bazel_hdr(FILE* ostream)
 /*                                          obzl_meta_flags *_flags, */
 /*                                          obzl_meta_settings *_settings) */
 /* { */
-/* #if defined(DEBUG_TRACE) */
+/* #if defined(TRACING) */
 /*     log_debug("resolve_setting_values, opcode: %d", _setting->opcode); */
 /* #endif */
 /*     obzl_meta_values * vals = obzl_meta_setting_values(_setting); */
@@ -431,7 +431,7 @@ void emit_bazel_hdr(FILE* ostream)
 /*             obzl_meta_flag *setting_flag = obzl_meta_flags_nth(setting_flags, 0); */
 /*             if (setting_flag->polarity == a_flag->polarity) { */
 /*                 if (strncmp(setting_flag->s, a_flag->s, 32) == 0) { */
-/* #if defined(DEBUG_TRACE) */
+/* #if defined(TRACING) */
 /*                     log_debug("matched flag"); */
 /* #endif */
 /*                     /\* we have found a setting with exactly one flag, that matches the search flag *\/ */
@@ -462,7 +462,7 @@ void emit_bazel_attribute(FILE* ostream,
                           char *property, /* = 'archive' or 'plugin' */
                           obzl_meta_package *_pkg)
 {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     log_debug("EMIT_BAZEL_ATTRIBUTE _pkg_name: '%s'; prop: '%s'; filedeps path: '%s'",
               _pkg_name, property, _filedeps_path);
     log_debug("  pkg_prefix: %s", _pkg_prefix);
@@ -493,7 +493,7 @@ void emit_bazel_attribute(FILE* ostream,
     /* log_debug("DIRECTORY: %s", directory); */
     /* log_debug(" PROP: %s", property); */
 
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     if (mibl_debug)
         log_debug("## _filedeps_path: '%s'\n", _filedeps_path);
 #endif
@@ -582,7 +582,7 @@ void emit_bazel_attribute(FILE* ostream,
 
         /* now we handle UPDATE settings */
         vals = resolve_setting_values(setting, flags, settings);
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         log_debug("setting values:");
 #endif
         /* dump_values(0, vals); */
@@ -785,7 +785,7 @@ void emit_bazel_cc_imports(FILE* ostream,
     while ((direntry = readdir(d)) != NULL) {
         if ((direntry->d_type==DT_REG)
             || (direntry->d_type==DT_LNK)) {
-            if (fnmatch("lib*stubs.a", direntry->d_name, 0) == 0) {
+            if (libc:fnmatch ("lib*stubs.a", direntry->d_name, 0) == 0) {
                 /* printf("FOUND STUBLIB: %s\n", direntry->d_name); */
 
                 fprintf(ostream, "cc_import(\n");
@@ -795,7 +795,7 @@ void emit_bazel_cc_imports(FILE* ostream,
                         direntry->d_name);
                 fprintf(ostream, ")\n");
             } else {
-                if (fnmatch("*stubs.so", direntry->d_name, 0) == 0) {
+                if (libc:fnmatch ("*stubs.so", direntry->d_name, 0) == 0) {
                     printf("FOUND SO LIB: %s\n", direntry->d_name);
             }
                 /* printf("skipping %s\n", direntry->d_name); */
@@ -818,7 +818,7 @@ void emit_bazel_stublibs_attr(FILE* ostream,
                               obzl_meta_package *_pkg)
 {
     /* here we read the symlinks in the coswitch not the opam switch */
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     log_debug("stublibs pkg root: %s", _pkg_root);
     log_debug("stublibs pkg prefix: %s", _pkg_prefix);
     log_debug("stublibs pkg name: %s", _pkg_name);
@@ -836,7 +836,7 @@ void emit_bazel_stublibs_attr(FILE* ostream,
         utstring_printf(dname, "/%s", utstring_body(_pkg_parent));
     utstring_printf(dname, "/%s", _pkg_name);
 
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     log_debug("emit_bazel_stublibs_attr: %s", utstring_body(dname));
 #endif
 
@@ -869,7 +869,7 @@ void emit_bazel_stublibs_attr(FILE* ostream,
     while ((direntry = readdir(d)) != NULL) {
         if ((direntry->d_type==DT_REG)
             || (direntry->d_type==DT_LNK)) {
-            if (fnmatch("lib*stubs.a", direntry->d_name, 0) == 0) {
+            if (libc:fnmatch ("lib*stubs.a", direntry->d_name, 0) == 0) {
 
                 /* fprintf(ostream, "%*scc_deps   = [\":_%s\"],\n", */
                 /*         level*spfactor, sp, direntry->d_name); */
@@ -884,7 +884,7 @@ void emit_bazel_stublibs_attr(FILE* ostream,
                 utarray_push_back(cc_stubs, &sbuf);
 
             } else {
-                if (fnmatch("*stubs.so", direntry->d_name, 0) == 0) {
+                if (libc:fnmatch ("*stubs.so", direntry->d_name, 0) == 0) {
                     printf("FOUND SO STUBLIB: %s\n", direntry->d_name);
             }
                 /* printf("skipping %s\n", direntry->d_name); */
@@ -916,7 +916,7 @@ void emit_bazel_jsoo_runtime_attr(FILE* ostream,
                                   obzl_meta_package *_pkg)
 {
     /* here we read the symlinks in the coswitch not the opam switch */
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     log_debug("stublibs pkg root: %s", _pkg_root);
     log_debug("stublibs pkg prefix: %s", _pkg_prefix);
     log_debug("stublibs pkg name: %s", _pkg_name);
@@ -934,7 +934,7 @@ void emit_bazel_jsoo_runtime_attr(FILE* ostream,
         utstring_printf(dname, "/%s", utstring_body(_pkg_parent));
     utstring_printf(dname, "/%s", _pkg_name);
 
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     log_debug("emit_bazel_stublibs_attr: %s", utstring_body(dname));
 #endif
 
@@ -959,7 +959,7 @@ void emit_bazel_jsoo_runtime_attr(FILE* ostream,
     while ((direntry = readdir(d)) != NULL) {
         if ((direntry->d_type==DT_REG)
             || (direntry->d_type==DT_LNK)) {
-            if (fnmatch("runtime.js", direntry->d_name, 0) == 0) {
+            if (libc:fnmatch ("runtime.js", direntry->d_name, 0) == 0) {
                 fprintf(ostream, "%*sjsoo_runtime = \"%s\",\n",
                         level*spfactor, sp, direntry->d_name);
 
@@ -990,7 +990,7 @@ void emit_bazel_archive_attr(FILE* ostream,
                              char *property, /* always 'archive' */
                              obzl_meta_package *_pkg)
 {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     log_debug("EMIT_BAZEL_ARCHIVE_ATTR _pkg_name: '%s'; prop: '%s'; filedeps path: '%s'",
               _pkg_name, property, _filedeps_path);
     log_debug("  pkg_prefix: %s", _pkg_prefix);
@@ -1014,11 +1014,11 @@ void emit_bazel_archive_attr(FILE* ostream,
     obzl_meta_settings *settings = obzl_meta_property_settings(deps_prop);
 
     int settings_ct = obzl_meta_settings_count(settings);
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     log_info("settings count: %d", settings_ct);
 #endif
     if (settings_ct == 0) {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         log_info("No settings for %s", obzl_meta_property_name(deps_prop));
 #endif
         return;
@@ -1037,7 +1037,7 @@ void emit_bazel_archive_attr(FILE* ostream,
     /* iter over archive(byte), archive(native) */
     for (int i = 0; i < settings_ct; i++) {
         setting = obzl_meta_settings_nth(settings, i);
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         log_debug("setting[%d]", i+1);
 #endif
         /* dump_setting(0, setting); */
@@ -1081,7 +1081,7 @@ void emit_bazel_archive_attr(FILE* ostream,
 
         /* now we handle UPDATE settings */
         vals = resolve_setting_values(setting, flags, settings);
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         log_debug("setting values:");
 #endif
         /* dump_values(0, vals); */
@@ -1093,7 +1093,7 @@ void emit_bazel_archive_attr(FILE* ostream,
         /* for archive, should be only 1 value */
         for (int j = 0; j < obzl_meta_values_count(vals); j++) {
             archive_name = obzl_meta_values_nth(vals, j);
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
             log_info("prop[%d] '%s' == '%s'",
                      j, property, (char*)*archive_name);
 #endif
@@ -1171,7 +1171,7 @@ void emit_bazel_cmxs_attr(FILE* ostream,
                           char *property, /* = 'archive' or 'plugin' */
                           obzl_meta_package *_pkg)
 {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     log_debug(BLU "EMIT_BAZEL_CMXS_ATTR" CRESET);
     log_debug("\t_pkg_name: '%s'", _pkg_name);
     log_debug("\tprop: '%s'", property);
@@ -1213,11 +1213,11 @@ void emit_bazel_cmxs_attr(FILE* ostream,
     obzl_meta_settings *settings = obzl_meta_property_settings(deps_prop);
 
     int settings_ct = obzl_meta_settings_count(settings);
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     log_info("settings count: %d", settings_ct);
 #endif
     if (settings_ct == 0) {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         log_info("No settings for %s", obzl_meta_property_name(deps_prop));
 #endif
         return;
@@ -1295,7 +1295,7 @@ void emit_bazel_cmxs_attr(FILE* ostream,
 
         /* now we handle UPDATE settings */
         vals = resolve_setting_values(setting, flags, settings);
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         log_debug("setting values:");
 #endif
         /* dump_values(0, vals); */
@@ -1306,7 +1306,7 @@ void emit_bazel_cmxs_attr(FILE* ostream,
 
         for (int j = 0; j < obzl_meta_values_count(vals); j++) {
             archive_name = obzl_meta_values_nth(vals, j);
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
             log_info("\tprop[%d] '%s' == '%s'",
                      j, property, (char*)*archive_name);
 #endif
@@ -1501,7 +1501,7 @@ void emit_bazel_archive_rule(FILE* ostream,
                              /* char *_subpkg_dir) */
                              obzl_meta_package *_pkg)
 {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     log_debug("EMIT_BAZEL_ARCHIVE_RULE: _filedeps_path: %s", _filedeps_path);
 #endif
     /* http://projects.camlcity.org/projects/dl/findlib-1.9.1/doc/ref-html/r759.html
@@ -1626,7 +1626,7 @@ void emit_bazel_plugin_rule(FILE* ostream, int level,
                             obzl_meta_package *_pkg)
                             /* char *_subpkg_dir) */
 {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     log_debug(BLU "EMIT_BAZEL_PLUGIN_RULE:" CRESET " _filedeps_path: %s", _filedeps_path);
     log_debug("pkg_pfx: %s", _pkg_prefix);
     log_debug("_pkg_name: %s", _pkg_name);
@@ -1712,13 +1712,13 @@ void emit_bazel_plugin_rule(FILE* ostream, int level,
 bool emit_special_case_rule(FILE* ostream,
                             obzl_meta_package *_pkg)
 {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     log_trace("emit_special_case_rule pkg: %s", _pkg->name);
 #endif
 
     if ((strncmp(_pkg->name, "bigarray", 8) == 0)
         && strlen(_pkg->name) == 8) {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         log_trace("emit_special_case_rule: bigarrray");
 #endif
 
@@ -1732,7 +1732,7 @@ bool emit_special_case_rule(FILE* ostream,
 
     if ((strncmp(_pkg->name, "dynlink", 7) == 0)
         && strlen(_pkg->name) == 7) {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         log_trace("emit_special_case_rule: dynlink");
 #endif
 
@@ -1753,7 +1753,7 @@ bool emit_special_case_rule(FILE* ostream,
 
     if ((strncmp(_pkg->name, "compiler-libs", 13) == 0)
         && strlen(_pkg->name) == 13) {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         log_trace("emit_special_case_rule: compiler-libs");
 #endif
 
@@ -1791,7 +1791,7 @@ bool emit_special_case_rule(FILE* ostream,
 
     if ((strncmp(_pkg->name, "num", 3) == 0)
         && strlen(_pkg->name) == 3) {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         log_trace("emit_special_case_rule: num");
 #endif
 
@@ -1805,7 +1805,7 @@ bool emit_special_case_rule(FILE* ostream,
 
     if ((strncmp(_pkg->name, "ocamldoc", 8) == 0)
         && strlen(_pkg->name) == 8) {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         log_trace("emit_special_case_rule: ocamldoc");
 #endif
 
@@ -1819,7 +1819,7 @@ bool emit_special_case_rule(FILE* ostream,
 
     if ((strncmp(_pkg->name, "str", 3) == 0)
         && strlen(_pkg->name) == 3) {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         log_trace("emit_special_case_rule: str");
 #endif
         /* fprintf(ostream, "xxxxxxxxxxxxxxxx"); */
@@ -1833,7 +1833,7 @@ bool emit_special_case_rule(FILE* ostream,
 
     if ((strncmp(_pkg->name, "threads", 7) == 0)
         && strlen(_pkg->name) == 7) {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         log_trace("emit_special_case_rule: threads");
 #endif
 
@@ -1847,7 +1847,7 @@ bool emit_special_case_rule(FILE* ostream,
 
     if ((strncmp(_pkg->name, "unix", 4) == 0)
         && strlen(_pkg->name) == 4) {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         log_trace("emit_special_case_rule: unix");
 #endif
 
@@ -2180,7 +2180,7 @@ void emit_bazel_ppx_codeps(FILE* ostream, int level,
     //FIXME: skip if no 'requires'
     /* obzl_meta_entries *entries = obzl_meta_package_entries(_pkg); */
 
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     log_debug("emit_bazel_ppx_codeps, repo: %s, pfx: %s, pkg: %s",
               repo, _pkg_prefix, _pkg_name);
 #endif
@@ -2192,7 +2192,7 @@ void emit_bazel_ppx_codeps(FILE* ostream, int level,
     struct obzl_meta_property *deps_prop = obzl_meta_entries_property(_entries, "ppx_runtime_deps");
     if ( deps_prop == NULL ) {
         /* char *pkg_name = obzl_meta_package_name(_pkg); */
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         log_warn("Prop 'ppx_runtime_deps' not found for pkg: %s.",
                  _pkg_name);
 #endif
@@ -2453,7 +2453,7 @@ void emit_bazel_deps_target(FILE* ostream, int level,
                                char *_pkg_name,
                                obzl_meta_entries *_entries)
 {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     log_debug("DUMMY %s", _pkg_name);
 #endif
 
@@ -2504,7 +2504,7 @@ void emit_bazel_error_target(FILE* ostream, int level,
                                char *_pkg_name,
                                obzl_meta_entries *_entries)
 {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     log_debug("ERROR TARGET: %s", _pkg_name);
 #endif
     fprintf(ostream, "\nopam_import( # error\n");
@@ -2679,7 +2679,7 @@ void emit_bazel_subpackages(// char *ws_name,
                             UT_array *opam_completed_deps)
                             /* char *_subpkg_dir) */
 {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     log_debug(BLU "EMIT_BAZEL_SUBPACKAGES" CRESET " pkg: %s", _pkg->name);
     /* log_debug("\tws_name: %s", ws_name); */
     log_debug("\t_bazel_ws_root: %s", bazel_ws_root);
@@ -2691,7 +2691,7 @@ void emit_bazel_subpackages(// char *ws_name,
 #endif
 
     obzl_meta_entries *entries = _pkg->entries;
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     log_debug("entries ct: %d", obzl_meta_entries_count(entries));
 #endif
 
@@ -2712,7 +2712,7 @@ void emit_bazel_subpackages(// char *ws_name,
         utstring_printf(pkg_parent, "%s", pkg_name);
     }
 
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     log_debug("starting level: %d", newlevel);
 #endif
     /* UT_string *filedeps_path; */
@@ -2746,7 +2746,7 @@ void emit_bazel_subpackages(// char *ws_name,
             /* } */
         }
     }
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     log_debug("finished level: %d", newlevel);
 #endif
     /*  restore */
@@ -2804,7 +2804,7 @@ The variable "directory" redefines the location of the package directory. Normal
 
 EXPORT void emit_workspace_file(UT_string *ws_file, const char *repo_name)
 {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     log_debug("emit_workspace_file: %s", utstring_body(ws_file));
 #endif
 
@@ -2826,19 +2826,19 @@ void emit_pkg_symlinks(UT_string *dst_dir,
                        UT_string *src_dir,
                        char *pkg_name)
 {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     if (mibl_debug)
         log_debug("emit_symlinks for pkg: %s", pkg_name);
 #endif
 /*     if ((strncmp(pkg_name, "dune", 4) == 0)) { */
 /*         || (strncmp(utstring_body(src_dir), "dune/configurator", 17) == 0)) { */
-/* #if defined(DEBUG_TRACE) */
+/* #if defined(TRACING) */
 /*         if (mibl_debug) */
 /*             log_debug("Skipping 'dune' stuff\n"); */
 /* #endif */
 /*         return; */
 /*     } */
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     if (mibl_debug) {
         log_debug("\tpkg_symlinks src_dir: %s", utstring_body(src_dir));
         log_debug("\tpkg_symlinks dst_dir: %s", utstring_body(dst_dir));
@@ -2859,7 +2859,7 @@ void emit_pkg_symlinks(UT_string *dst_dir,
     utstring_new(dst);
     int rc;
 
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     log_debug("opening src_dir for read: %s", utstring_body(opamdir));
 #endif
     DIR *d = opendir(utstring_body(opamdir));
@@ -2868,7 +2868,7 @@ void emit_pkg_symlinks(UT_string *dst_dir,
             if (strncmp(utstring_body(src_dir),
                         "topkg/../topkg-care",
                         19) == 0) {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
                 if (mibl_debug)
                     log_debug("Skipping missing 'topkg-care'");
 #endif
@@ -2908,7 +2908,7 @@ void emit_pkg_symlinks(UT_string *dst_dir,
     while ((direntry = readdir(d)) != NULL) {
         //Condition to check regular file.
         if(direntry->d_type==DT_REG){
-/* #if defined(DEBUG_TRACE) */
+/* #if defined(TRACING) */
 /*             if (mibl_debug) { */
 /*                 log_debug("dirent: %s/%s", */
 /*                           utstring_body(opamdir), direntry->d_name); */
@@ -2927,7 +2927,7 @@ void emit_pkg_symlinks(UT_string *dst_dir,
                             utstring_body(dst_dir),
                             pkg_name,
                             direntry->d_name);
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
             if (mibl_debug) {
                 log_debug("pkg symlinking");
                 fprintf(stderr, "  from %s\n", utstring_body(src));
@@ -2973,7 +2973,7 @@ EXPORT void emit_build_bazel(// char *ws_name,
 /* FILE *bootstrap_FILE) */
                              /* char *_subpkg_dir) */
 {
-#ifdef DEBUG_TRACE
+#ifdef TRACING
     log_info("");
     log_info(BLU "EMIT_BUILD_BAZEL" CRESET " pkg: %s", obzl_meta_package_name(_pkg));
     /* log_info("\tws_name_name: %s", ws_name); */
@@ -3006,7 +3006,7 @@ EXPORT void emit_build_bazel(// char *ws_name,
     /* } */
 
     char *pkg_name = obzl_meta_package_name(_pkg);
-#ifdef DEBUG_TRACE
+#ifdef TRACING
     /* log_set_quiet(false); */
     /* log_debug("%*sparsed name: %s", indent, sp, pkg_name); */
     log_debug("%*spkg dir:  %s", indent, sp, obzl_meta_package_dir(_pkg));
@@ -3022,35 +3022,35 @@ EXPORT void emit_build_bazel(// char *ws_name,
 
 /*     if (_pkg_suffix == NULL) { */
 /*         if (pfxdir == NULL) { */
-/* #if defined(DEBUG_TRACE) */
+/* #if defined(TRACING) */
 /*             log_debug("NULL NULL"); */
 /* #endif */
 /*             utstring_printf(build_bazel_file, "%s/%s", bazel_ws_root, pkg_name); */
 /*         } else { */
-/* #if defined(DEBUG_TRACE) */
+/* #if defined(TRACING) */
 /*             log_debug("NULL NOTNULL"); */
 /* #endif */
 /*             utstring_printf(build_bazel_file, "%s/%s", bazel_ws_root, pfxdir); */
 /*         } */
 /*     } else { */
-/* #if defined(DEBUG_TRACE) */
+/* #if defined(TRACING) */
 /*         log_debug("_pkg_suffix != NULL"); */
 /* #endif */
 /*         if (pfxdir == NULL) { */
-/* #if defined(DEBUG_TRACE) */
+/* #if defined(TRACING) */
 /*             log_debug("pfxdir == NULL"); */
 /* #endif */
 /*             utstring_printf(build_bazel_file, "%s/%s", */
 /*                             bazel_ws_root, _pkg_suffix); */
 /*         } else { */
-/* #if defined(DEBUG_TRACE) */
+/* #if defined(TRACING) */
 /*             log_debug("NOTNULL NOTNULL"); */
 /* #endif */
 /*             utstring_printf(build_bazel_file, "%s/%s/%s", */
 /*                             bazel_ws_root, pfxdir, _pkg_suffix); */
 /*         } */
 /*     } */
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     log_debug("build_bazel_file: %s", utstring_body(build_bazel_file));
 #endif
     /* printf("_PKG_SUFFIX: %s\n", _pkg_suffix); */
@@ -3061,11 +3061,11 @@ EXPORT void emit_build_bazel(// char *ws_name,
     UT_string *new_filedeps_path = NULL;
     utstring_renew(new_filedeps_path);
     char *directory = obzl_meta_directory_property(entries);
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     log_debug("DIRECTORY property: '%s'", directory);
 #endif
     if ( directory == NULL ) {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         log_debug("AAAA");
 #endif
         /* directory omitted or directory = "" */
@@ -3074,7 +3074,7 @@ EXPORT void emit_build_bazel(// char *ws_name,
     } else {
         /* utstring_printf(build_bazel_file, "/%s", subpkg_dir); */
         if ( strncmp(directory, "+", 1) == 0 ) {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
             log_debug("BBBB");
 #endif
             /* Initial '+' means 'relative to stdlib dir', i.e. these
@@ -3083,7 +3083,7 @@ EXPORT void emit_build_bazel(// char *ws_name,
                threads, threads/posix, ocamldoc.
             */
             /* stdlib = true; */
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
             log_debug("Found STDLIB directory '%s' for %s", directory, pkg_name);
 #endif
             directory++;
@@ -3091,7 +3091,7 @@ EXPORT void emit_build_bazel(// char *ws_name,
             /* utstring_printf(new_filedeps_path, "_lib/ocaml/%s", directory); */
         } else {
             if (strncmp(directory, "^", 1) == 0) {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
                 log_debug("CCCC");
 #endif
                 /* Initial '^' means pkg within stdlib; "Only included
@@ -3111,12 +3111,12 @@ EXPORT void emit_build_bazel(// char *ws_name,
                                     "ocaml/%s",
                                     directory);
                 /* utstring_printf(new_filedeps_path, "_lib/%s", "ocaml"); */
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
                 log_debug("Found STDLIB root directory for %s: '%s' => '%s'",
                           pkg_name, directory, utstring_body(new_filedeps_path));
 #endif
             } else {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
                 log_debug("DDDD");
 #endif
                 utstring_printf(new_filedeps_path,
@@ -3124,7 +3124,7 @@ EXPORT void emit_build_bazel(// char *ws_name,
             }
         }
     }
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     log_debug("new_filedeps_path: %s", utstring_body(new_filedeps_path));
 #endif
 
@@ -3149,7 +3149,7 @@ EXPORT void emit_build_bazel(// char *ws_name,
     /* if (strncmp(_pkg_root, pkg_name, strlen(pkg_name)) != 0) { */
     /*     utstring_printf(bazel_pkg_root, "/%s", pkg_name); */
     /* } */
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     if (mibl_debug)
         log_debug("bazel_pkg_root: %s", utstring_body(bazel_pkg_root));
 #endif
@@ -3168,7 +3168,7 @@ EXPORT void emit_build_bazel(// char *ws_name,
     mkdir_r(utstring_body(build_bazel_file));
     utstring_printf(build_bazel_file, "/%s", "BUILD.bazel");
 
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     log_debug("bazel_pkg_root: %s", utstring_body(bazel_pkg_root));
     log_debug(CYN "build_bazel_file:" CRESET);
     log_debug(CYN "\t%s" CRESET, utstring_body(build_bazel_file));
@@ -3192,7 +3192,7 @@ EXPORT void emit_build_bazel(// char *ws_name,
     /*                         _pkg_suffix, */
     /*                         _pkg); */
 
-/* #if defined(DEBUG_TRACE) */
+/* #if defined(TRACING) */
 /*     log_debug("fopening for write: %s", utstring_body(build_bazel_file)); */
 /* #endif */
 
@@ -3210,7 +3210,7 @@ EXPORT void emit_build_bazel(// char *ws_name,
         || ((strncmp(_pkg_suffix, "ocaml", 5) == 0) ))
             /* && (strlen(_pkg_suffix) == 5))) */
         if (emit_special_case_rule(ostream, _pkg)) {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
             log_trace("emit_special_case_rule:TRUE %s", _pkg->name);
 #endif
             return;
@@ -3291,7 +3291,7 @@ EXPORT void emit_build_bazel(// char *ws_name,
 
     obzl_meta_entry *e = NULL;
     if (_pkg->entries == NULL) {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         log_debug("EMPTY ENTRIES\n");
 #endif
     } else {
@@ -3414,7 +3414,7 @@ EXPORT void emit_build_bazel(// char *ws_name,
                     break;
                 }
 
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
                 log_warn("processing other property: %s", e->property->name);
 #endif
                 /* dump_entry(0, e); */

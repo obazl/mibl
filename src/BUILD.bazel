@@ -123,9 +123,16 @@ cc_library(
 
         "//src/dune:dune_readers.c",
         "//src/hdrs:dune_readers.h",
-
         "//src/xdg:xdg.c", "//src/hdrs:xdg.h",
     ] + select({
+        "@libs7//config/clibs/link:shared?": [
+            "@libs7//lib/libc:c_s7", # "@libs7//lib:libc_s7.h",
+            "@libs7//lib/libcwalk:cwalk_s7", # "@libs7//lib:libcwalk_s7.h"
+            # "@libs7//lib/lib:dl_s7", # "@libs7//lib:libdl_s7.h",
+            # "@libs7//lib/lib:m_s7", # "@libs7//lib:libm_s7.h",
+        ],
+        "//conditions:default": []
+    }) + select({
         "//bzl/host:linux": [
             "//src/linux:strlcat.c",
             "//src/linux:strlcpy.c",
@@ -133,15 +140,19 @@ cc_library(
         ],
         "//conditions:default":   []
     }) + select({
-        "//compilation_mode:dbg?": [
+        "//config/debug:debug?": [
             "debug.c", "//src/hdrs:debug.h",
             "debug_bazel.c", "//src/hdrs:debug_bazel.h",
             # "debug_mibl.c", "//src/hdrs:debug_mibl.h",
             "debug_s7.c", "//src/hdrs:debug_s7.h"
         ],
         "//conditions:default": []
+    }) + select({
+        "//config/debug:trace?": [
+            # "trace.h"
+        ],
+        "//conditions:default": []
     }),
-
     # }) + select({
     #     "//compilation_mode:dbg?": [
     #         "debug.c", "debug.h",
@@ -162,7 +173,15 @@ cc_library(
         "//scm/findlib:srcs",
         "//scm/opam:srcs"
         # "//scm/codept:srcs",
-    ],
+    ] +select({
+        "@libs7//config/clibs/link:runtime?": [
+            "@libs7//lib/lib/libc:c_s7",
+            "@libs7//lib/lib/libcwalk:cwalk_s7",
+            # "@libs7//lib/lib/libdl:dl_s7",
+            # "@libs7//lib/lib/libm:m_s7",
+        ],
+        "//conditions:default": []
+    }),
     # data = [
     #     "//scm:dune.scm",
     #     "//scm/dune:srcs",
@@ -171,14 +190,20 @@ cc_library(
     #     "//scm:opam.scm",
     #     "//scm/opam:srcs",
     # ],
-    defines = select({
-        "//bzl/host:debug": ["DEBUG_TRACE", "DEBUG_MIBL"],
-        "//conditions:default":   []
-    }) + select({
+    local_defines = select({
         "//bzl/host:linux": [
             "_XOPEN_SOURCE=500", # strdup
             "_DEFAULT_SOURCE"    # dirent DT_* macros
         ],
+        "//conditions:default":   []
+    }) + select({
+        "@libs7//config/clibs/link:runtime?": ["CLIBS_LINK_RUNTIME"],
+        "//conditions:default":   []
+    }) + select({
+        "//config/debug:debug?": ["DEBUGGING", "DEBUG_MIBL"],
+        "//conditions:default":   []
+    }) + select({
+        "//config/debug:trace?": ["TRACING"],
         "//conditions:default":   []
     }),
     copts = COPTS + [
@@ -188,6 +213,7 @@ cc_library(
         "-Wpedantic",
         # "-Wno-unused-function",
 
+        "-Idev", "-Iexternal/mibl/dev",
         "-Isrc",
         "-Iexternal/src",
         "-Iexternal/mibl/src",
@@ -200,6 +226,11 @@ cc_library(
 
         "-Iexternal/libs7/src",
 
+        "-I$(GENDIR)/external/libs7/lib/libc",
+        "-I$(GENDIR)/external/libs7/lib/libcwalk",
+        # "-I$(GENDIR)/external/libs7/lib/libdl",
+        # "-I$(GENDIR)/external/libs7/lib/libm",
+
         "-Ivendored/libinih",
         "-Iexternal/mibl/vendored/libinih",
 
@@ -208,27 +239,37 @@ cc_library(
 
         "-Ivendored/uthash",
         "-Iexternal/mibl/vendored/uthash",
+
+        "-I$(GENDIR)/external/libs7/lib"
     ],
     alwayslink = False, # True,
     linkstatic = True,
-    # linkopts = [
-    #     "-ls7",
-    # ],
     deps = [
+        "//dev",
         # "//src/xdg",
         "//vendored/libinih:inih",
         "//vendored/logc",
         "//vendored/uthash",
-        "@libs7//src:s7",
+        "@libs7//src:s7_archive",
+
         # we statically link these s7 libs for now
         # TODO: make this configurable,
         # for apps that do not need them all
-        "@libs7//lib:c_s7",
-        "@libs7//lib:dl_s7",
-        "@libs7//lib:m_s7",
+        # "@libs7//lib/static:c_s7",
+        # "@libs7//lib/static:dl_s7",
+        # "@libs7//lib/static:m_s7",
         # "@libs7//vendored/linenoise",
-    ],
-    # ] + select({
+    ] + select({
+        "@libs7//config/clibs/link:archive?": [
+            "@libs7//lib/libc:c_s7_archive",
+            "@libs7//lib/libcwalk:cwalk_s7_archive",
+            "@libs7//lib/libtoml:toml_s7_archive",
+            # "@libs7//lib/libdl:dl_s7_archive",
+            # "@libs7//lib/libm:m_s7_archive",
+        ],
+        "//conditions:default": []
+    }),
+    #  + select({
     #     # sigh. fixme: s7 v. non-s7 :debug target
     #     "//compilation_mode:dbg?": [":debug"],
     #     "//conditions:default": []
@@ -363,8 +404,11 @@ cc_library(
         "-Ivendored/uthash",
         "-Iexternal/miblvendored/uthash"
     ],
-    defines = select({
-        "//compilation_mode:dbg?": ["DEBUG_TRACE", "DEBUG_MIBL"],
+    local_defines = select({
+        "//config/debug:debug?": ["DEBUGGING"],
+        "//conditions:default":   []
+    }) + select({
+        "//config/debug:trace?": ["TRACING"],
         "//conditions:default":   []
     }),
     deps = [
@@ -434,7 +478,7 @@ cc_library(
 #         "-Iexternal/mibl/vendored/uthash",
 #     ],
 #     defines = select({
-#         "//compilation_mode:dbg?": ["DEBUG_TRACE", "DEBUG_MIBL"],
+#         "//compilation_mode:dbg?": ["TRACING", "DEBUG_MIBL"],
 #         "//conditions:default":   []
 #     }),
 #     deps = [

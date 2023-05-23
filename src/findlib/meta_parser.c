@@ -33,7 +33,7 @@ char *package_name_from_file_name(char *fname)
 
 EXPORT struct obzl_meta_package *obzl_meta_parse_file(char *_fname)
 {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
 /* #ifdef DEBUG */
 /*     log_set_quiet(false); */
 /* #else */
@@ -59,13 +59,13 @@ EXPORT struct obzl_meta_package *obzl_meta_parse_file(char *_fname)
         log_error("fopen error %s", strerror( errno ));
         return NULL;
     }
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     /* log_debug("fopened %s", fname); */
 #endif
     fseek(f, 0, SEEK_END);
     const size_t fsize = (size_t) ftell(f);
     if (fsize == 0) {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         log_debug("%s fsize == 0; returning NULL", fname);
 #endif
         fclose(f);
@@ -76,7 +76,7 @@ EXPORT struct obzl_meta_package *obzl_meta_parse_file(char *_fname)
     char *buffer = (char*) malloc(fsize + 1);
     size_t read_ct = fread(buffer, 1, fsize, f);
     (void)read_ct;              /* prevent -Wunused-variable */
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     /* log_info("readed: %d", read_ct); */
 #endif
     buffer[fsize] = 0;
@@ -88,7 +88,7 @@ EXPORT struct obzl_meta_package *obzl_meta_parse_file(char *_fname)
         return NULL;
     }
 
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     /* log_debug("lexing"); */
 #endif
     /* THE_METAFILE[0] = '\0'; */

@@ -51,7 +51,7 @@ s7_int gc_loc = -1;
 /*         // FIXME: test case: 'include' after baddot */
 /*         s7_pointer fixed = fix_baddot(dunefile_name); */
 /*         /\* s7_pointer fixed = s7_eval_c_string(s7, "'(foob)"); *\/ */
-/* #if defined(DEBUG_TRACE) */
+/* #if defined(TRACING) */
 /*         if (mibl_debug) log_debug(RED "FIXED:" CRESET " %s", */
 /*                              TO_STR(fixed)); */
 /*         /\* s7_show_stack(s7); *\/ */
@@ -111,7 +111,7 @@ s7_pointer _s7_error_handler(s7_scheme *s7, s7_pointer args)
     /* log_info("err: %s", TO_STR(args)); */
 
     if (strstr(s7_string(s7_car(args)), "unexpected close paren:") != NULL) {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         if (mibl_debug)
             printf(RED "Error: BAD DOT" CRESET "\n");
 #endif
@@ -381,7 +381,7 @@ void close_error_config(void) // s7_pointer err_port)
 /* s7_pointer fix_baddot(UT_string *dunefile_name) */
 /* { */
 /*     //FIXME: this duplicates the code in load_project:_read_dunefile */
-/* #if defined(DEBUG_TRACE) */
+/* #if defined(TRACING) */
 /*     log_debug("fix_baddot"); */
 /* #endif */
 
@@ -409,7 +409,7 @@ void close_error_config(void) // s7_pointer err_port)
 /*             exit(EXIT_FAILURE); */
 /*         } */
 /*     } */
-/* #if defined(DEBUG_TRACE) */
+/* #if defined(TRACING) */
 /*     if (mibl_debug) */
 /*         log_debug("s7_open_input_string for error correction"); */
 /* #endif */
@@ -421,7 +421,7 @@ void close_error_config(void) // s7_pointer err_port)
 /*         /\* log_debug("stanza: %s", stanza); *\/ */
 /*         errmsg = s7_get_output_string(s7, s7_current_error_port(s7)); */
 /*         if ((errmsg) && (*errmsg)) { */
-/* #if defined(DEBUG_TRACE) */
+/* #if defined(TRACING) */
 /*             if (mibl_debug) log_error("[%s\n]", errmsg); */
 /* #endif */
 /*             s7_close_input_port(s7, sport); */

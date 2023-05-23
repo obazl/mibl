@@ -89,7 +89,7 @@ EXPORT int copyfile(char *fromfile, char *tofile) {
     }
     while ((ch = fgetc(source)) != EOF)
         fputc(ch, target);
-/* #if defined(DEBUG_TRACE) */
+/* #if defined(TRACING) */
 /*         printf("File copy successful: %s -> %s.\n", */
 /*                fromfile, tofile); */
 /* #endif */

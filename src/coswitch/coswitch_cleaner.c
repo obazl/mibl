@@ -43,7 +43,7 @@ int _select(const struct dirent *de) {
 
 EXPORT void clean_coswitch(void)
 {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     if (mibl_debug) {
         log_debug(BLU "clean_coswitch" CRESET);
         log_debug("%-16s%s", "opam switch:", utstring_body(opam_switch_lib));
@@ -75,7 +75,7 @@ EXPORT void clean_coswitch(void)
     struct dirent **namelist;
     int n;
 
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     if (mibl_debug) {
         log_info(GRN "Beginning traversal" CRESET " at %s", _pkg_path[0]);
         log_info(GRN " with cwd:" CRESET " at %s", getcwd(NULL, 0));
@@ -91,7 +91,7 @@ EXPORT void clean_coswitch(void)
                 /* log_debug("postorder: %s", ftsentry->fts_path); */
                 n = scandir(ftsentry->fts_path, &namelist, _select, alphasort);
                 if (n == 0) {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
                     if (mibl_debug)
                         log_info("removing EMPTY DIR: %s", ftsentry->fts_path);
 #endif
@@ -113,7 +113,7 @@ EXPORT void clean_coswitch(void)
                 break;
             case FTS_F : // regular file
                 if (strncmp("BUILD.bazel", ftsentry->fts_name, 11) == 0) {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
                     if (mibl_debug)
                         log_info("Removing %s", ftsentry->fts_path);
 #endif
@@ -122,7 +122,7 @@ EXPORT void clean_coswitch(void)
                     break;
                 }
                 if (strncmp("WORKSPACE.bazel", ftsentry->fts_name, 15) == 0) {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
                     if (mibl_debug)
                         log_info("Removing %s", ftsentry->fts_path);
 #endif
@@ -132,7 +132,7 @@ EXPORT void clean_coswitch(void)
                 }
                 break;
             case FTS_SL: // symlink
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
                 if (mibl_debug)
                     log_info("unlinking %s", ftsentry->fts_path);
 #endif

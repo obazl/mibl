@@ -44,7 +44,7 @@ UT_string *xdg_home_install_root; // $HOME/.local/share/mibl
 UT_string *xdg_install_dir;
 UT_string *xdg_home_bin;
 
-//FIXME: use #ifdef DEBUG_TRACE instead of if(mibl_trace)
+//FIXME: use #ifdef TRACING instead of if(mibl_trace)
 
 EXPORT void deploy(void)
 {

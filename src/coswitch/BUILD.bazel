@@ -62,8 +62,11 @@ cc_library(
         "-Ivendored/uthash",
         "-Iexternal/mibl/vendored/uthash"
     ],
-    defines = select({
-        "//compilation_mode:dbg?": ["DEBUG_TRACE", "DEBUG_MIBL"],
+    local_defines = select({
+        "//config/debug:debug?": ["DEBUGGING", "DEBUG-MIBL"],
+        "//conditions:default":   []
+    }) + select({
+        "//config/debug:trace?": ["TRACING"],
         "//conditions:default":   []
     }),
     deps = [

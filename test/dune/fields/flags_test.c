@@ -14,7 +14,7 @@
 #include "unity.h"
 
 
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
 /* extern bool debug; */
 extern bool mibl_debug_bazel;
 extern int  mibl_debug_level;
@@ -481,7 +481,7 @@ void _set_options(struct option options[])
     }
 
     if (options[FLAG_DEBUG].count) {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         if (verbose)
             log_info("debug ct: %d", options[FLAG_DEBUG].count);
         /* debug = true; */
@@ -490,7 +490,7 @@ void _set_options(struct option options[])
     }
 
     if (options[FLAG_DEBUG_CONFIG].count) {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         if (verbose)
            log_info("debug_config ct: %d", options[FLAG_DEBUG_CONFIG].count);
         mibl_debug_bazel = true;
@@ -503,14 +503,14 @@ void _set_options(struct option options[])
     }
 
     if (options[FLAG_DEBUG_MIBLRC].count) {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         if (verbose) log_info("debug_miblrc ct: %d", options[FLAG_DEBUG_MIBLRC].count);
         mibl_debug_miblrc = true;
 #endif
     }
 
     if (options[FLAG_DEBUG_MIBL_CRAWL].count) {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         if (verbose) log_info("mibl_debug_traversal ct: %d", options[FLAG_DEBUG_MIBL_CRAWL].count);
         mibl_debug_traversal = true;
 #else
@@ -521,7 +521,7 @@ void _set_options(struct option options[])
     }
 
     if (options[FLAG_DEBUG_SCM].count) {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         mibl_debug_scm = true;
 #else
         log_warn("--debug-scm only takes effect for debug builds (-c dbg)");
@@ -532,7 +532,7 @@ void _set_options(struct option options[])
     }
 
     if (options[FLAG_TRACE].count) {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         if (verbose)
             log_info("trace ct: %d", options[FLAG_TRACE].count);
         mibl_trace = true;

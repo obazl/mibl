@@ -54,7 +54,7 @@ cc_library(
         # "-I$(GENDIR)/src/hdrs",
         # "-I$(GENDIR)/external/mibl/src/hdrs",
     ] + CMD_FLAGS + BOOTSTRAP_INCLUDES,
-    defines = select({
+    local_defines = select({
         ":yydebug-enabled": ["YYDEBUG"],
         "//conditions:default":   []
     }) + select({
@@ -62,6 +62,12 @@ cc_library(
         "//conditions:default":   []
     }) + select({
         ":lexdebug-fvf": ["LEXDEBUG_FVF"],
+        "//conditions:default":   []
+    }) + select({
+        "//config/debug:debug?": ["DEBUGGING"],
+        "//conditions:default":   []
+    }) + select({
+        "//config/debug:trace?": ["TRACING"],
         "//conditions:default":   []
     }),
     deps = [
@@ -107,7 +113,7 @@ cc_library(
         "-Iexternal/mibl/vendored/uthash",
     ],
     defines = select({
-        ":yydebug-enabled": ["YYDEBUG", "DEBUG_TRACE"],
+        ":yydebug-enabled": ["YYDEBUG", "TRACING"],
         "//conditions:default":   []
     }) + select({
         ":yytrace-enabled": ["YYTRACE"],

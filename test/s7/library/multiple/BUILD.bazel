@@ -50,7 +50,7 @@ cc_test(
     #     "//scm/dune:srcs"
     # ],
     defines = select({
-        "//bzl/host:debug": ["DEBUG_TRACE", "DEBUG_MIBL"],
+        "//bzl/host:debug": ["TRACING", "DEBUG_MIBL"],
         "//conditions:default":   []
     }) + select({
         "//bzl/host:linux": [

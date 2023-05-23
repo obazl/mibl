@@ -6,6 +6,8 @@
 #include "utstring.h"
 #endif
 
+#include "trace.h"
+
 #include "xdg.h"
 
 /* XDG
@@ -41,9 +43,7 @@ UT_string *xdg_state_home;
 
 EXPORT void config_xdg_dirs(void)
 {
-#if defined(DEBUG_TRACE)
-    if (mibl_trace_xdg) log_trace("config_xdg_dirs");
-#endif
+    TRACE_ENTRY(config_xdg_dirs);
 
     char *s_xdg_data_home = getenv("XDG_DATA_HOME");
     utstring_new(xdg_data_home);

@@ -1,4 +1,4 @@
-(set! *mibl-debug-s7* #t)
+;; (set! *mibl-debug-s7* #t)
 (define-expansion* (mibl-trace-entry hdr msg (color ublue) (test #f))
   (if *mibl-debug-s7*
       `(if ,test

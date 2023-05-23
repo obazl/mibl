@@ -49,7 +49,7 @@ UT_string *dunefile_name;
 
 /* bool _is_ws_root(FTSENT *ftsentry) */
 /* { */
-/* #if defined(DEBUG_TRACE) */
+/* #if defined(TRACING) */
 /*     if (mibl_trace) */
 /*         log_trace("_is_ws_root: %s", ftsentry->fts_path); */
 /* #endif */
@@ -62,7 +62,7 @@ UT_string *dunefile_name;
 /*     int rc = access(utstring_body(pathdir), R_OK); */
 /*     /\* log_debug("RC: %d", rc); *\/ */
 /*     if (!rc) { */
-/* #if defined(DEBUG_TRACE) */
+/* #if defined(TRACING) */
 /*         if (mibl_trace) log_trace("true"); */
 /* #endif */
 /*         return true; */
@@ -72,13 +72,13 @@ UT_string *dunefile_name;
 /*         utstring_printf(pathdir, "%s", "/WORKSPACE"); */
 /*         rc = access(utstring_body(pathdir), R_OK); */
 /*         if (!rc) { */
-/* #if defined(DEBUG_TRACE) */
+/* #if defined(TRACING) */
 /*             if (mibl_trace) log_trace("true"); */
 /* #endif */
 /*             return true; */
 /*         } */
 /*     } */
-/* #if defined(DEBUG_TRACE) */
+/* #if defined(TRACING) */
 /*     if (mibl_trace) log_trace("false"); */
 /* #endif */
 /*     return false; */
@@ -121,7 +121,7 @@ LOCAL bool _this_is_hidden(FTSENT *ftsentry)
  */
 void handle_dir(FTS* tree, FTSENT *ftsentry)
 {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     if (mibl_debug) {
         log_debug("");
         log_debug(BLU "handle_dir:" CRESET);
@@ -211,7 +211,7 @@ void handle_dune_package_file(FTSENT *ftsentry)
 void handle_meta_file(FTSENT *ftsentry)
 {
     opam_meta_ct++;
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     if (mibl_debug_findlib) {
         log_debug("");
         log_debug(BLU "handle_meta_file:" CRESET);
@@ -228,7 +228,7 @@ void handle_meta_file(FTSENT *ftsentry)
 
 void handle_opam_file(FTSENT *ftsentry)
 {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     if (mibl_debug) {
         log_debug("");
         log_debug(BLU "handle_opam_file:" CRESET);
@@ -270,7 +270,7 @@ void handle_symlink(FTS *tree, FTSENT *ftsentry)
 /* **************************************************************** */
 void opam_handle_fts_d(FTS *tree, FTSENT *ftsentry)
 {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     if (mibl_trace)
         log_trace("pre-order visit dir: %s (%s) :: (%s)",
                   ftsentry->fts_name,
@@ -278,7 +278,7 @@ void opam_handle_fts_d(FTS *tree, FTSENT *ftsentry)
                   ftsentry->fts_accpath);
 #endif
     if (_this_is_hidden(ftsentry)) {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         if (mibl_trace)
             log_trace(RED "Excluding" CRESET " hidden dir: %s",
                       ftsentry->fts_path);
@@ -286,7 +286,7 @@ void opam_handle_fts_d(FTS *tree, FTSENT *ftsentry)
         fts_set(tree, ftsentry, FTS_SKIP);
         /* break; */
     }
-    else if (fnmatch("*.opam-bundle",
+    else if (libc:fnmatch ("*.opam-bundle",
                      ftsentry->fts_name, 0) == 0) {
         fts_set(tree, ftsentry, FTS_SKIP);
         /* break; */
@@ -294,7 +294,7 @@ void opam_handle_fts_d(FTS *tree, FTSENT *ftsentry)
         handle_dir(tree, ftsentry);
 
         /*                         if (_include_this(ftsentry)) { */
-        /* #if defined(DEBUG_TRACE) */
+        /* #if defined(TRACING) */
         /*                             if (mibl_trace) log_info(RED "Including" CRESET " %s", */
         /*                                                 ftsentry->fts_path); */
         /* #endif */
@@ -360,7 +360,7 @@ void opam_handle_fts_f(FTS *tree, FTSENT *ftsentry)
                  && (strlen(ext) == 5)) {
             handle_opam_file(ftsentry);
         }
-        else if (fnmatch("*.opam.template",
+        else if (libc:fnmatch ("*.opam.template",
                          ftsentry->fts_name, 0) == 0) {
             handle_opam_template_file(ftsentry);
         }

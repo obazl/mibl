@@ -121,7 +121,7 @@ char **tc;
 
 /*     int rc = chdir(opam_switch); (void)rc; */
 
-/* #if defined(DEBUG_TRACE) */
+/* #if defined(TRACING) */
 /*     if (mibl_debug) log_debug("%-16s%s", "cwd:",  getcwd(NULL, 0)); */
 /* #endif */
 /*     log_debug("%-16s%s", "cwd:",  getcwd(NULL, 0)); */
@@ -165,7 +165,7 @@ char **tc;
 /*         while( (ftsentry = fts_read(tree)) != NULL) { */
 /*             /\* if (ftsentry->fts_info == FTS_DP) { continue; } // do not process post-order visits *\/ */
 
-/* #if defined(DEBUG_TRACE) */
+/* #if defined(TRACING) */
 /*             if (mibl_debug) { */
 /*                 printf("\n"); */
 /*                 log_debug(CYN "iter ftsentry->fts_name: " CRESET "%s", */
@@ -247,7 +247,7 @@ char **tc;
 /*     rc = chdir(old_cwd); */
 
 
-/* #if defined(DEBUG_TRACE) */
+/* #if defined(TRACING) */
 /*     log_debug("fts_d_ct: %d", fts_d_ct); */
 /*     log_debug("fts_dp_ct: %d", fts_dp_ct); */
 /*     log_debug("fts_dot_ct: %d", fts_dot_ct); */
@@ -271,7 +271,7 @@ LOCAL void _walk_findlib_all(char *opam_switch)
 
     int rc = chdir(opam_switch); (void)rc;
 
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     if (mibl_debug) log_debug("%-16s%s", "cwd:",  getcwd(NULL, 0));
 #endif
     log_debug("%-16s%s", "cwd:",  getcwd(NULL, 0));
@@ -315,7 +315,7 @@ LOCAL void _walk_findlib_all(char *opam_switch)
         while( (ftsentry = fts_read(tree)) != NULL) {
             /* if (ftsentry->fts_info == FTS_DP) { continue; } // do not process post-order visits */
 
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
             if (mibl_debug) {
                 printf("\n");
                 log_debug(CYN "iter ftsentry->fts_name: " CRESET "%s",
@@ -397,7 +397,7 @@ LOCAL void _walk_findlib_all(char *opam_switch)
     rc = chdir(old_cwd);
 
 
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     log_debug("fts_d_ct: %d", fts_d_ct);
     log_debug("fts_dp_ct: %d", fts_dp_ct);
     log_debug("fts_dot_ct: %d", fts_dot_ct);
@@ -417,7 +417,7 @@ LOCAL void _walk_findlib_all(char *opam_switch)
 */
 EXPORT void walk_tree(char *opam_switch, char* pkg_name)
 {
-/* #if defined(DEBUG_TRACE) */
+/* #if defined(TRACING) */
         log_debug(BLU "walk_tree" CRESET);
         log_debug("%-16s%s", "opam switch:", opam_switch);
         log_debug("%-16s%s", "pkg name:", pkg_name);

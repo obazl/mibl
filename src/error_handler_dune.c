@@ -6,13 +6,18 @@
 
 #include "s7.h"
 #include "log.h"
+#include "trace.h"
 #include "utarray.h"
 #include "utstring.h"
 
 #include "error_handler_dune.h"
 
-/* extern bool debug; */
-/* extern bool trace; */
+#if defined(DEBUGGING)
+extern bool debug;
+#endif
+#if defined(TRACING)
+extern bool trace;
+#endif
 
 s7_pointer old_err_port;
 const char *errmsg = NULL;
@@ -30,7 +35,7 @@ s7_pointer _s7_error_handler(s7_scheme *s7, s7_pointer args)
     /* log_info("err: %s", TO_STR(args)); */
 
     if (strstr(s7_string(s7_car(args)), "unexpected close paren:") != NULL) {
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
         if (mibl_debug)
             printf(RED "Error: BAD DOT" CRESET "\n");
 #endif
@@ -275,10 +280,8 @@ void close_error_config(void) // s7_pointer err_port)
 
 s7_pointer fix_baddot(const char *dunefile_name)
 {
+    TRACE_ENTRY(fix_baddot);
     //FIXME: this duplicates the code in load_project:_read_dunefile
-#if defined(DEBUG_TRACE)
-    log_debug("fix_baddot");
-#endif
 
     char *dunestring = dunefile_to_string(dunefile_name);
 
@@ -304,7 +307,7 @@ s7_pointer fix_baddot(const char *dunefile_name)
             exit(EXIT_FAILURE);
         }
     }
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
     if (mibl_debug)
         log_debug("s7_open_input_string for error correction");
 #endif
@@ -316,7 +319,7 @@ s7_pointer fix_baddot(const char *dunefile_name)
         /* log_debug("stanza: %s", stanza); */
         errmsg = s7_get_output_string(s7, s7_current_error_port(s7));
         if ((errmsg) && (*errmsg)) {
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
             if (mibl_debug) log_error("[%s\n]", errmsg);
 #endif
             s7_close_input_port(s7, sport);

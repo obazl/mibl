@@ -1,8 +1,38 @@
+load("@bazel_skylib//rules:native_binary.bzl", "native_binary")
+
 load("//mibl:BUILD.bzl", "mibl")
 
-mibl("debug", args = ["--show-config"])
+load("//mibl:BUILD_RULES.bzl", "run_mibl")
+
+# mibl("debug", args = ["--show-config"])
+
+## native_binary does not work (runfiles issue), but the same code
+## installed locally as run_mibl does work. ???
+
+# native_binary(
+#     name = "debug",
+#     src = "@mibl//mibl:mibl",
+#     out = "mibl.debug",
+#     args = ["--show-config"]
+# )
+
+run_mibl(
+    name = "debug",
+    src = "//mibl",
+    out = "mibl.dbg",
+    args = [## "--show-config",
+            "--main", "mibl_main.scm",
+            # "--emit-parsetree",
+            # "--halt-after", "parsetree"
+    ]
+)
 
 mibl("dev", args = ["--show-config"])
+
+# mibl_runner(
+#     name = "parsetree",
+#     args = ["--main", "mibl_main.scm", "--emit-parsetree", "--halt-after", "parsetree"],
+# )
 
 sh_binary(
     name = "parsetree",

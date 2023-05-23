@@ -5,12 +5,13 @@
 #include <unistd.h>
 
 #include "log.h"
+#include "trace.h"
 #include "utarray.h"
 #include "utstring.h"
 #include "s7.h"
 #include "deps.h"
 
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
 bool mibl_debug_deps = false;
 #endif
 
@@ -41,10 +42,7 @@ LOCAL int _compare(const FTSENT** one, const FTSENT** two)
 /* traverse tree once to get list of dirs containing ocaml srcs */
 UT_array *_ws_src_dirs(char *const *rootdir)
 {
-#if defined(DEBUG_TRACE)
-    if (mibl_trace)
-        log_trace("_ws_src_dirs");
-#endif
+    TRACE_ENTRY(_ws_src_dirs);
     UT_array  *_ocaml_src_dirs;
     utarray_new(_ocaml_src_dirs, &ut_str_icd);
 
@@ -54,7 +52,7 @@ UT_array *_ws_src_dirs(char *const *rootdir)
     int scan_ct;
     struct dirent **namelist;
 
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     if (mibl_debug_deps) {
         log_debug("cwd: %s", getcwd(NULL,0));
         log_debug("traversal root: %s", *rootdir);
@@ -77,7 +75,7 @@ UT_array *_ws_src_dirs(char *const *rootdir)
             switch (ftsentry->fts_info) {
             case FTS_D : // dir visited in post-order
                 if (traverse_dir(tree, ftsentry)) {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
                     if (mibl_debug_deps)
                         log_debug("Scanning dir: %s", ftsentry->fts_path);
 #endif
@@ -95,7 +93,7 @@ UT_array *_ws_src_dirs(char *const *rootdir)
                         free(s);
                     }
                 }
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
                 else {
                     if (mibl_debug_deps)
                         log_debug("NOT scanning dir: %s", ftsentry->fts_path);
@@ -200,10 +198,9 @@ s7_pointer _codept_deps(UT_array *_ocaml_src_dirs)
 
 s7_pointer _codept_deps_pkg(char *pkgdir)
 {
-#if defined(DEBUG_TRACE)
-    if (mibl_trace) {
+    TRACE_ENTRY(_codept_deps_pkg);
+#if defined(TRACING)
         log_trace("_codept_deps_pkg: %s", pkgdir);
-    }
 #endif
 
     char **argv = calloc(7, sizeof(char*));
@@ -230,7 +227,7 @@ s7_pointer _codept_deps_pkg(char *pkgdir)
 
     /* FIXME: write to tmp dir instead of buffer */
     /* or write to DEPS.mibl? */
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     log_debug("running codept cmd");
 #endif
     result = run_cmd(exe, argv);
@@ -287,8 +284,9 @@ s7_int gc_depgraph_port, gc_depgraph, gc_env, gc_deps_list;
 /* returns gc_protected deps-list */
 s7_pointer analyze_deps_file(char *pkg, char *tgt)
 {
-#if defined(DEBUG_TRACE)
-    if (mibl_trace) {
+    TRACE_ENTRY(analyze_deps_file);
+#if defined(DEBUGGING)
+    if (mibl_debug) {
         log_trace(RED "analyze_deps_file" CRESET);
         log_debug("pkg: '%s'", pkg); //ftsentry->fts_path);
         log_debug("tgt: '%s'", tgt); //ftsentry->fts_name);
@@ -340,13 +338,13 @@ s7_pointer analyze_deps_file(char *pkg, char *tgt)
         return s7_nil(s7);
     }
 
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
     log_debug("CODEPT result string: %s", result);
 #endif
 
     s7_pointer depgraph_port = s7_open_input_string(s7, result);
     s7_gc_protect_via_stack(s7, depgraph_port);
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
     if (mibl_config.debug_deps)
         LOG_S7_DEBUG("depgraph_port", depgraph_port);
 #endif
@@ -356,7 +354,7 @@ s7_pointer analyze_deps_file(char *pkg, char *tgt)
     s7_gc_unprotect_via_stack(s7, depgraph_port);
     s7_close_input_port(s7, depgraph_port);
 
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
     LOG_S7_DEBUG("depgraph", depgraph);
 #endif
 
@@ -366,7 +364,7 @@ s7_pointer analyze_deps_file(char *pkg, char *tgt)
                                               s7_make_symbol(s7, "depgraph"),
                                               depgraph)));
     s7_gc_protect_via_stack(s7, env);
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
     LOG_S7_DEBUG("env", env);
 #endif
     /* gc_env = s7_gc_protect(s7, env); */
@@ -405,12 +403,12 @@ s7_pointer analyze_deps_file(char *pkg, char *tgt)
 
     s7_pointer deps_list = s7_eval_c_string_with_environment(s7, sexp, env);
     gc_deps_list = s7_gc_protect(s7, deps_list);
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
     LOG_S7_DEBUG("DEPS_list", deps_list);
 #endif
 
     /* (void)deps_list; */
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
     LOG_S7_DEBUG("DEPS_LIST", deps_list);
 #endif
 
@@ -495,7 +493,7 @@ s7_pointer analyze_deps_file(char *pkg, char *tgt)
 /* analyze_deps - run codept and ingest resulting sexp */
 /* s7_pointer analyze_deps_wsroot(char *const *rootdir) //, UT_array *ocaml_src_dirs) */
 /* { */
-/* #if defined(DEBUG_TRACE) */
+/* #if defined(TRACING) */
 /*     if (mibl_trace) { */
 /*         log_trace("analyze_deps"); */
 /*         log_trace("cwd: %s", getcwd(NULL,0)); */
@@ -514,7 +512,7 @@ s7_pointer analyze_deps_file(char *pkg, char *tgt)
 /*     /\* NB: the utarray must be freed *\/ */
 /*     UT_array *_ocaml_src_dirs = _ws_src_dirs(rootdir); */
 
-/* #if defined(DEBUG_TRACE) */
+/* #if defined(TRACING) */
 /*     /\* if (mibl_debug_deps) { *\/ */
 /*         log_debug("ocaml_src_dirs for codept:"); */
 /*         char **p = NULL; */
@@ -545,7 +543,7 @@ s7_pointer analyze_deps_file(char *pkg, char *tgt)
 
 /* s7_pointer analyze_deps_pkg(char *pkgdir) */
 /* { */
-/* #if defined(DEBUG_TRACE) */
+/* #if defined(TRACING) */
 /*     if (mibl_trace) { */
 /*         log_trace("cwd: %s", getcwd(NULL,0)); */
 /*         log_debug("pkgdir: '%s'", pkgdir); */
@@ -563,7 +561,7 @@ s7_pointer analyze_deps_file(char *pkg, char *tgt)
 /*     /\* NB: the utarray must be freed *\/ */
 /* /\*     UT_array *_ocaml_src_dirs = _ws_src_dirs(rootdir); *\/ */
 
-/* /\* #if defined(DEBUG_TRACE) *\/ */
+/* /\* #if defined(TRACING) *\/ */
 /* /\*     /\\* if (mibl_debug_deps) { *\\/ *\/ */
 /* /\*         log_debug("ocaml_src_dirs for codept:"); *\/ */
 /* /\*         char **p = NULL; *\/ */
@@ -595,7 +593,7 @@ s7_pointer analyze_deps_file(char *pkg, char *tgt)
 /* returns gc_protected deps list */
 s7_pointer get_deps(char *_pkg, char *tgt) // , s7_pointer deps_list)
 {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     if (mibl_debug_deps)
         log_trace(RED "get_deps:" CRESET " %s : %s", _pkg, tgt);
         log_trace("traversal ct: %d", tct);
@@ -603,7 +601,7 @@ s7_pointer get_deps(char *_pkg, char *tgt) // , s7_pointer deps_list)
 
     /* return s7_nil(s7); */
 
-/* #if defined(DEBUG_TRACE) */
+/* #if defined(TRACING) */
 /*     LOG_S7_DEBUG("DEPS-LIST", deps_list); */
 /* #endif */
 
@@ -634,7 +632,7 @@ s7_pointer get_deps(char *_pkg, char *tgt) // , s7_pointer deps_list)
     /* deps_list is referenced by env inlet, so we can unprotect it */
     s7_gc_unprotect_at(s7, gc_deps_list);
 
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     LOG_S7_DEBUG("ENV", env);
 #endif
 
@@ -694,7 +692,7 @@ s7_pointer get_deps(char *_pkg, char *tgt) // , s7_pointer deps_list)
     s7_gc_unprotect_via_stack(s7, env);
     /* s7_flush_output_port(s7, s7_current_output_port(s7)); */
 
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     LOG_S7_DEBUG("DEPS", deps);
 #endif
     s7_flush_output_port(s7, s7_current_output_port(s7));

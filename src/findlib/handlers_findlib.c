@@ -177,7 +177,7 @@ bool _skip_pkg(char *pkg)
 /*                         char *metafile) */
 EXPORT int handle_findlib_meta(FTSENT *ftsentry) /* OBSOLETE */
 {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     log_debug(BLU "handle_findlib_meta" CRESET);
     log_info("%-20s%s", "ftsentry->name:", ftsentry->fts_name);
     log_info("%-20s%s", "ftsentry->path:", ftsentry->fts_path);
@@ -206,7 +206,7 @@ EXPORT int handle_findlib_meta(FTSENT *ftsentry) /* OBSOLETE */
     /* fclose(f); */
 
     errno = 0;
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     log_debug("PARSING: %s", utstring_body(buf));
 #endif
     struct obzl_meta_package *pkg = obzl_meta_parse_file(utstring_body(buf));
@@ -220,7 +220,7 @@ EXPORT int handle_findlib_meta(FTSENT *ftsentry) /* OBSOLETE */
                 log_error("Error parsing %s", utstring_body(buf));
         emitted_bootstrapper = false;
     } else {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         log_warn("PARSED %s", utstring_body(buf));
         if (mibl_debug_findlib)
             dump_package(0, pkg);
@@ -304,7 +304,7 @@ void handle_findlib_pkg(// char *opam_switch_lib,
                         UT_array *opam_pending_deps,
                         UT_array *opam_completed_deps)
 {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     log_trace(RED "handle_findlib_pkg:" CRESET " %s", pkg_name);
     log_trace("global opam_lib: %s", utstring_body(opam_switch_lib));
 #endif
@@ -320,7 +320,7 @@ void handle_findlib_pkg(// char *opam_switch_lib,
     int rc = chdir(utstring_body(opam_switch_lib));
     (void)rc;
 
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     if (mibl_debug) log_debug("%-16s%s", "cwd:",  getcwd(NULL, 0));
 #endif
 
@@ -342,7 +342,7 @@ void handle_findlib_pkg(// char *opam_switch_lib,
     } else {
         /* fail */
         /* perror(utstring_body(meta_path)); */
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         if (mibl_debug)
             log_info("%s: %s", strerror(errno), utstring_body(meta_path));
 #endif
@@ -352,13 +352,13 @@ void handle_findlib_pkg(// char *opam_switch_lib,
     }
 
     errno = 0;
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     log_debug("PARSING: %s", utstring_body(meta_path));
 #endif
     struct obzl_meta_package *pkg = obzl_meta_parse_file(utstring_body(meta_path));
     if (pkg == NULL) {
         if (errno == -1) {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
             log_warn("Empty META file: %s", utstring_body(meta_path));
 #endif
             /* check dune-package for installed executables */
@@ -371,7 +371,7 @@ void handle_findlib_pkg(// char *opam_switch_lib,
                 log_error("Error parsing %s", utstring_body(meta_path));
         /* emitted_bootstrapper = false; */
     } else {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         if (mibl_debug)
             log_warn("PARSED %s", utstring_body(meta_path));
         if (mibl_debug_findlib)

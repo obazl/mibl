@@ -89,7 +89,7 @@ char **tc;
 EXPORT void convert_findlib_pkgs(UT_array *opam_pending_deps,
                                  UT_array *opam_exclude_pkgs)
 {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         log_debug(BLU "convert_findlib_pkgs" CRESET);
         log_debug("%-16s%s", "opam switch:", utstring_body(opam_switch_lib));
         log_debug("%-16s%s", "launch_dir:", launch_dir);
@@ -159,7 +159,7 @@ EXPORT void convert_findlib_pkgs(UT_array *opam_pending_deps,
     while ( utarray_len(opam_pending_deps) > 0 ) {
         this = utarray_eltptr(opam_pending_deps, 0);
         next = strdup(*this);
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         log_info("next pkg: %s", next);
 #endif
         utarray_erase(opam_pending_deps, 0, 1);
@@ -180,19 +180,19 @@ EXPORT void convert_findlib_pkgs(UT_array *opam_pending_deps,
     /* Do @ocaml last, since it creates dirs */
     emit_ocaml_workspace(bazel_ws_root);
 
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     if (mibl_trace) log_trace("done");
 #endif
 
     UT_string *dune_pkg_file;    /* FIXME: free */
     utstring_new(dune_pkg_file); /* global, in emit_pkg_bindir.c */
     while ( (p=(const char**)utarray_next(opam_completed_deps, p))) {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         if (mibl_debug) log_info("opam pkg:  %s", *p);
 #endif
         emit_pkg_bindir(*p);
     }
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     if (mibl_debug) {
         log_debug("pending list:");
         while ( (p=(const char**)utarray_next(opam_pending_deps, p))) {
@@ -253,7 +253,7 @@ EXPORT void convert_findlib_pkgs(UT_array *opam_pending_deps,
         }
     }
 
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     log_debug("pending ct: %d",  utarray_len(opam_pending_deps));
 #endif
     /* if (verbose) */

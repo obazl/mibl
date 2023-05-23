@@ -11,7 +11,7 @@
 
 #include "meta_flags.h"
 
-#if DEBUG_TRACE
+#if TRACING
 extern int indent;
 extern int delta;
 extern char *sp;
@@ -326,7 +326,7 @@ bool obzl_meta_flags_to_selection_label(obzl_meta_flags *flags,
                 } else {
                     /* compound condition */
                     int ct = utarray_len(flags->list); // obzl_meta_flags_count(flags);
-#if DEBUG_TRACE
+#if TRACING
                     log_trace("%*sflags ct: %d", indent, sp, ct);
 #endif
                     /* char config_name[128]; */
@@ -371,7 +371,7 @@ bool obzl_meta_flags_to_selection_label(obzl_meta_flags *flags,
                         if (strncmp(a_flag->s, "mt", 2) == 0) return false;
 
                         if (i - saw_ppx_driver > 0) utstring_printf(config_name, "%s", "_"); // mystrcat(config_name, "_");
-#if DEBUG_TRACE
+#if TRACING
                         log_debug("%*s%s (polarity: %d)", delta+indent, sp, a_flag->s, a_flag->polarity);
 #endif
                         if ( !a_flag->polarity ) /* '-' prefix */
@@ -470,7 +470,7 @@ bool obzl_meta_flags_to_cmtag(obzl_meta_flags *flags,
                 } else {
                     /* compound condition */
                     int ct = utarray_len(flags->list); // obzl_meta_flags_count(flags);
-#if DEBUG_TRACE
+#if TRACING
                     log_trace("%*sflags ct: %d", indent, sp, ct);
 #endif
                     /* char config_name[128]; */
@@ -515,7 +515,7 @@ bool obzl_meta_flags_to_cmtag(obzl_meta_flags *flags,
                         if (strncmp(a_flag->s, "mt", 2) == 0) return false;
 
                         if (i - saw_ppx_driver > 0) utstring_printf(config_name, "%s", "_"); // mystrcat(config_name, "_");
-#if DEBUG_TRACE
+#if TRACING
                         log_debug("%*s%s (polarity: %d)", delta+indent, sp, a_flag->s, a_flag->polarity);
 #endif
                         if ( !a_flag->polarity ) /* '-' prefix */
@@ -702,7 +702,7 @@ EXPORT void dispose_flag_table(void)
 /* } */
 
 /* **************************************************************** */
-#if DEBUG_TRACE
+#if TRACING
 void dump_flags(int indent, obzl_meta_flags *flags)
 {
     indent++;            /* account for width of log label */

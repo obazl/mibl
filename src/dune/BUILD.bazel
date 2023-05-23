@@ -35,13 +35,16 @@ cc_library(
     }),
     # hdrs = ["libdune.h"],
     defines = select({
-        "//bzl/host:debug": ["DEBUG_TRACE", "DEBUG_MIBL"],
-        "//conditions:default":   []
-    }) + select({
         "//bzl/host:linux": [
             "_XOPEN_SOURCE=500", # strdup
             "_DEFAULT_SOURCE"    # dirent DT_* macros
         ],
+        "//conditions:default":   []
+    }) + select({
+        "//config/debug:debug?": ["DEBUGGING", "DEBUG_MIBL"],
+        "//conditions:default":   []
+    }) + select({
+        "//config/debug:trace?": ["TRACING"],
         "//conditions:default":   []
     }),
     copts = [

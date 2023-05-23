@@ -10,7 +10,7 @@ cc_binary(
         # "//src:fs.h"
     ],
     defines = select({
-        "//bzl/host:debug": ["DEBUG_TRACE"],
+        "//bzl/host:debug": ["TRACING"],
         "//conditions:default":   []
     }) + select({
         "//bzl/host:linux": ["_XOPEN_SOURCE=500"], # strdup

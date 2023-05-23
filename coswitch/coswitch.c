@@ -26,7 +26,7 @@
 #include "coswitch.h"
 
 
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
 extern bool mibl_debug;
 extern int  debug_level;
 extern bool debug_findlib;
@@ -106,14 +106,14 @@ void _set_options(struct option options[])
     }
 
     if (options[FLAG_DEBUG].count) {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         mibl_debug = true;
         mibl_debug_level = options[FLAG_DEBUG].count;
 #endif
     }
 
     if (options[FLAG_TRACE].count) {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         mibl_trace = true;
 #endif
     }
@@ -217,7 +217,7 @@ int main(int argc, char *argv[])
 
     /* FIXME: free opam_include_pkgs, opam_exclude_pkgs */
 
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     log_debug("exiting coswitch");
 #endif
     /* dump_nodes(result); */

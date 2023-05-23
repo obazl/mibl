@@ -11,7 +11,7 @@
 #include "unity.h"
 
 
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
 extern bool debug;
 extern int  mibl_debug_level;
 extern bool debug_miblrc;
@@ -140,21 +140,21 @@ int main(int argc, char **argv)
     }
 
     if (options[FLAG_DEBUG].count) {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         debug = true;
         mibl_debug_level = options[FLAG_DEBUG].count;
 #endif
     }
 
     if (options[FLAG_DEBUG_MIBLRC].count) {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         debug_miblrc = true;
 #endif
     }
 
     if (options[FLAG_TRACE].count) {
         /* printf("trace ct: %d\n", options[FLAG_TRACE].count); */
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         trace = true;
 #endif
     }

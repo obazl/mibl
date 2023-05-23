@@ -9,7 +9,7 @@
 
 extern const UT_icd ut_str_icd;
 
-#if defined(DEBUG_PROPERTIES) || defined (DEBUG_TRACE)
+#if defined(DEBUG_PROPERTIES) || defined (TRACING)
 extern int indent;
 extern int delta;
 extern char *sp;
@@ -81,7 +81,7 @@ EXPORT obzl_meta_values *obzl_meta_values_new_tokenized(char *valstr)
 }
 
 /* **************************************************************** */
-#if DEBUG_TRACE
+#if TRACING
 EXPORT void dump_values(int indent, obzl_meta_values *values)
 {
     /* log_trace("dump_values %p", values); */

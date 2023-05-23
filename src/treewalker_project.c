@@ -29,7 +29,7 @@ LOCAL bool _this_is_hidden(FTSENT *ftsentry)
 
 EXPORT void convert_dune_project(UT_array *opam_pending_deps)
 {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     log_debug(BLU "convert_dune_project" CRESET);
     log_debug("%-16s%s", "opam switch:", utstring_body(opam_switch_lib));
     log_debug("%-16s%s", "launch_dir:", launch_dir);
@@ -52,7 +52,7 @@ EXPORT void convert_dune_project(UT_array *opam_pending_deps)
     */
     char *old_cwd = getcwd(NULL, 0);
     if (strncmp(old_cwd, ews_root, strlen(ews_root)) != 0) {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         if (mibl_debug) {
             log_debug("chdir: %s => %s\n", old_cwd, ews_root);
         }
@@ -64,7 +64,7 @@ EXPORT void convert_dune_project(UT_array *opam_pending_deps)
                     old_cwd, ews_root, strerror(errno));
             exit(EXIT_FAILURE);
         }
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         if (mibl_debug) log_debug("%-16s%s", "cwd:",  getcwd(NULL, 0));
 #endif
     }
@@ -79,7 +79,7 @@ EXPORT void convert_dune_project(UT_array *opam_pending_deps)
         [0] = (char *const)pkg_path,
         NULL
     };
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     if (mibl_debug) {
         log_debug("_pkg_path: %s", _pkg_path[0]);
         log_debug("real _pkg_path: %s",
@@ -119,7 +119,7 @@ EXPORT void convert_dune_project(UT_array *opam_pending_deps)
             if (ftsentry->fts_info == FTS_DP) {
                 continue; // do not process post-order visits
             }
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
             if (mibl_debug) {
                 printf("\n");
                 log_debug(CYN "iter ftsentry->fts_name: " CRESET "%s",
@@ -139,7 +139,7 @@ EXPORT void convert_dune_project(UT_array *opam_pending_deps)
             switch (ftsentry->fts_info)
                 {
                 case FTS_D : // dir visited in pre-order
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
                     if (mibl_trace)
                         log_trace("pre-order visit dir: %s (%s) :: (%s)",
                                   ftsentry->fts_name,
@@ -147,7 +147,7 @@ EXPORT void convert_dune_project(UT_array *opam_pending_deps)
                                   ftsentry->fts_accpath);
 #endif
                     if (_this_is_hidden(ftsentry)) {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
                         if (mibl_trace)
                             log_trace(RED "Excluding" CRESET " hidden dir: %s",
                                       ftsentry->fts_path);
@@ -155,13 +155,13 @@ EXPORT void convert_dune_project(UT_array *opam_pending_deps)
                         fts_set(tree, ftsentry, FTS_SKIP);
                         /* break; */
                     }
-                    else if (fnmatch("*.opam-bundle",
+                    else if (libc:fnmatch ("*.opam-bundle",
                                      ftsentry->fts_name, 0) == 0) {
                         fts_set(tree, ftsentry, FTS_SKIP);
                         /* break; */
                     } else {
                         if (include_this(ftsentry)) {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
                             if (mibl_trace) log_info(RED "Including" CRESET " %s",
                                                 ftsentry->fts_path);
 #endif
@@ -179,7 +179,7 @@ EXPORT void convert_dune_project(UT_array *opam_pending_deps)
                     }
                     break;
                 case FTS_DP: /* postorder directory */
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
                     if (mibl_trace)
                         log_trace("post-order visit dir: %s (%s) :: (%s)",
                                   ftsentry->fts_name,
@@ -234,7 +234,7 @@ EXPORT void convert_dune_project(UT_array *opam_pending_deps)
                                  && (strlen(ext) == 5)) {
                             handle_opam_file(ftsentry);
                         }
-                        else if (fnmatch("*.opam.template",
+                        else if (libc:fnmatch ("*.opam.template",
                                          ftsentry->fts_name, 0) == 0) {
                             handle_opam_template_file(ftsentry);
                         }

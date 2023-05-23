@@ -8,7 +8,7 @@
 extern int spfactor;
 extern char *sp;
 
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
 extern bool mibl_debug;
 #endif
 
@@ -41,7 +41,7 @@ void emit_bazel_jsoo(FILE* ostream,
                      char *property, /* = 'archive' or 'plugin' */
                      obzl_meta_package *_pkg)
 {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     log_debug("EMIT_BAZEL_JSOO _pkg_name: '%s'; prop: '%s'; filedeps path: '%s'",
               _pkg_name, property, _filedeps_path);
     log_debug("  pkg_prefix: %s", _pkg_prefix);
@@ -69,11 +69,11 @@ void emit_bazel_jsoo(FILE* ostream,
     obzl_meta_settings *settings = obzl_meta_property_settings(deps_prop);
 
     int settings_ct = obzl_meta_settings_count(settings);
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     log_info("settings count: %d", settings_ct);
 #endif
     if (settings_ct == 0) {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         log_info("No settings for %s", obzl_meta_property_name(deps_prop));
 #endif
         return;
@@ -88,7 +88,7 @@ void emit_bazel_jsoo(FILE* ostream,
 
     for (int i = 0; i < settings_ct; i++) {
         setting = obzl_meta_settings_nth(settings, i);
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         log_debug("setting[%d]", i+1);
 #endif
         /* dump_setting(0, setting); */
@@ -127,7 +127,7 @@ void emit_bazel_jsoo(FILE* ostream,
 
         /* now we handle UPDATE settings */
         vals = resolve_setting_values(setting, flags, settings);
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         log_debug("setting values:");
 #endif
         /* dump_values(0, vals); */
@@ -138,7 +138,7 @@ void emit_bazel_jsoo(FILE* ostream,
 
         for (int j = 0; j < obzl_meta_values_count(vals); j++) {
             archive_name = obzl_meta_values_nth(vals, j);
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
             log_info("prop[%d] '%s' == '%s'",
                      j, property, (char*)*archive_name);
 #endif

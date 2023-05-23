@@ -128,7 +128,7 @@
                                     ;;              (format #t "~A: ~A~%" (red "OUT") o)
                                     ;;              (let ((tgt (assoc-val :tgt (cdr o))))
                                     ;;                (format #t "~A: ~A~%" (red "tgt") tgt)
-                                    ;;                (if (= ((*libc* 'fnmatch) "*.ml" tgt 0) 0)
+                                    ;;                (if (= (libc:fnmatch  "*.ml" tgt 0) 0)
                                     ;;                    (update-pkg-files-with-struct! pkg tgt))
                                     ;;                ))
                                     ;;            (assoc-val ::outputs (cdr stanza))))

@@ -12,12 +12,15 @@
 
 #include "mibl.h"
 
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
 extern bool mibl_debug;
 extern bool mibl_debug_deps;
+extern bool mibl_debug_runfiles;
 extern bool mibl_debug_traversal;
-extern bool mibl_trace;
 #endif
+/* #if defined(TRACING) */
+/* extern bool mibl_trace; */
+/* #endif */
 
 extern bool mibl_show_deps;
 extern bool mibl_show_raw_deps;
@@ -57,6 +60,7 @@ enum OPTS {
     FLAG_DEBUG_DEPS,
     FLAG_DEBUG_EMIT,
     FLAG_DEBUG_PPX,
+    FLAG_DEBUG_RUNFILES,
     FLAG_DEBUG_S7,
     FLAG_DEBUG_S7_ALL,
     FLAG_DEBUG_TRAVERSAL,
@@ -251,10 +255,10 @@ void _print_usage(void) {
     printf("\t--show-traversal\tPrint statistics on traversal.\n");
 
     printf("\n");
-    /* printf("\t-d, --debug\t\tEnable all debugging flags.\n"); */
-    /* printf("\t-t, --trace\t\tEnable trace flags.\n"); */
+    printf("\t-h, --help\t\tPrint this help screen.\n");
+    printf("\t-hh\t\t\tPrint debug help screen.\n");
     printf("\t-v, --verbose\t\tEnable verbosity. Repeatable.\n");
-    printf("\t-q, --quiet\t\tSuppress stdout/stderr.\n");
+    printf("\t-q, --quiet\t\tSuppress msgs to stdout/stderr.\n");
     printf("\t--version\t\tShow version Id.\n");
     printf("\n");
     printf("INI file: $XDG_CONFIG_HOME/miblrc\n");
@@ -267,6 +271,12 @@ void _print_debug_usage(void) {
     printf("Debug flags:\n");
     printf("\n");
     printf("\t-d, --debug\t\tEnable all debugging flags.\n");
+    printf("\t    --debug-deps\tEnable deps debugging.\n");
+    printf("\t    --debug-ppx\t\tEnable ppx debugging.\n");
+    printf("\t    --debug-runfiles\tEnable debugging for Bazel runfiles.\n");
+    printf("\t    --debug-s7\t\tEnable s7 debugging.\n");
+    printf("\t    --debug-s7-loads\tEnable s7 load debugging.\n");
+    printf("\t    --debug-all\t\tEnable all s7 debugging.\n");
     printf("\t-t, --trace\t\tEnable trace flags.\n");
     printf("\t-v, --verbose\t\tEnable verbosity. Repeatable.\n");
     printf("\t-q, --quiet\t\tSuppress stdout/stderr.\n");
@@ -309,6 +319,8 @@ static struct option options[] = {
                     .flags=GOPT_ARGUMENT_FORBIDDEN | GOPT_REPEATABLE},
     [FLAG_DEBUG_DEPS] = {.long_name="debug-deps",
                          .flags=GOPT_ARGUMENT_FORBIDDEN},
+    [FLAG_DEBUG_RUNFILES] = {.long_name="debug-runfiles",
+                             .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_DEBUG_EMIT] = {.long_name="debug-emit",
                          .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_DEBUG_PPX] = {.long_name="debug-ppx",
@@ -383,13 +395,13 @@ void _set_options(struct option options[])
     }
 
     if (options[FLAG_DEBUG].count) {
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
         mibl_debug = true;
 #endif
     }
 
     if (options[FLAG_DEBUG_DEPS].count) {
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
         mibl_debug_deps = true;
 #else
         log_error("--debug-deps requires debug build, -c dbg");
@@ -397,8 +409,17 @@ void _set_options(struct option options[])
 #endif
     }
 
+    if (options[FLAG_DEBUG_RUNFILES].count) {
+#if defined(DEBUGGING)
+        mibl_debug_runfiles = true;
+#else
+        log_error("--debug-runfiles requires debug build, -c dbg");
+        exit(EXIT_FAILURE);
+#endif
+    }
+
     if (options[FLAG_DEBUG_TRAVERSAL].count) {
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
         mibl_debug_traversal = true;
 #else
         log_error("--debug-traversal requires debug build, -c dbg");
@@ -408,9 +429,9 @@ void _set_options(struct option options[])
 
     if (options[FLAG_TRACE].count) {
         /* printf("trace ct: %d\n", options[FLAG_TRACE].count); */
-#if defined(DEBUG_TRACE)
-        mibl_trace = true;
-#endif
+/* #if defined(TRACING) */
+/*         mibl_trace = true; */
+/* #endif */
     }
 
     if (options[FLAG_SHOW_DEPS].count) {
@@ -464,6 +485,9 @@ int main(int argc, char **argv, char **envp)
 
     if (options[OPT_MAIN].count) {
         mibl_s7_run(options[OPT_MAIN].argument, options[OPT_WS].argument);
+    }
+    else if (mibl_config.halt_after_parsetree) {
+        mibl_s7_run(NULL, NULL); /* FIXME */
     } else {
         mibl_s7_run("mibl_main.scm", NULL);
         /* xen_repl(argc, argv); */

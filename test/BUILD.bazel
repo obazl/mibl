@@ -62,7 +62,7 @@ cc_binary(
         "//conditions:default":   []
     }),
     defines = select({
-        "//bzl/host:debug": ["DEBUG_TRACE", "DEBUG_MIBL"],
+        "//bzl/host:debug": ["TRACING", "DEBUG_MIBL"],
         "//conditions:default":   []
     }) + select({
         "//bzl/host:linux": [
@@ -94,7 +94,7 @@ cc_binary(
 #         "//scm/dune:srcs"
 #     ],
 #     # defines = select({
-#     #     "//bzl/debug/trace": [], # "DEBUG_TRACE"],
+#     #     "//bzl/debug/trace": [], # "TRACING"],
 #     #     "//conditions:default":   []
 #     # }),
 #     copts = CMD_FLAGS + BOOTSTRAP_INCLUDES + [
@@ -124,7 +124,7 @@ cc_binary(
 #         "//scm/dune:srcs"
 #     ],
 #     defines = select({
-#         "//bzl/host:debug": ["DEBUG_TRACE", "DEBUG_MIBL"],
+#         "//bzl/host:debug": ["TRACING", "DEBUG_MIBL"],
 #         "//conditions:default":   []
 #     }) + select({
 #         "//bzl/host:linux": [

@@ -140,7 +140,7 @@ debug_defs = select({
     "//:debug-targets": ["DEBUG_TARGETS"],
     "//conditions:default":   []
 }) + select({
-    "//:debug-trace": ["DEBUG_TRACE"],
+    "//:debug-trace": ["TRACING"],
     "//conditions:default":   []
 }) + select({
     "//:debug-utarrays": ["DEBUG_UTARRAYS"],

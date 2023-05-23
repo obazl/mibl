@@ -27,6 +27,7 @@ cc_library(
         "-Wall",
         "-Wpedantic",
 
+        "-Idev", "-Iexternal/mibl/dev",
         "-I$(GENDIR)/src/hdrs",
         "-I$(GENDIR)/external/mibl/src/hdrs",
 
@@ -36,6 +37,6 @@ cc_library(
         "-Iexternal/mibl/vendored/uthash",
     ],
     linkstatic = True,
-    deps = ["//vendored/logc", "//vendored/uthash"],
+    deps = ["//vendored/logc", "//vendored/uthash", "//dev"],
     visibility = ["//visibility:public"]
 )

@@ -16,8 +16,10 @@
 ;;  ocamlopt_flags -> :ocamlopt_opts
 
 (define (-handle-shared-opts pkg-kv opt-type)
-  (if (or *mibl-debug-shared* *mibl-debug-all*)
-      (format #t "~A: ~A - ~A~%" (ublue "-handle-shared-opts") opt-type pkg-kv))
+  (mibl-trace-entry "-handle-shared-opts")
+  (mibl-trace "opt-type" opt-type)
+  ;; (if (or *mibl-debug-shared* *mibl-debug-all*)
+  ;;     (format #t "~A: ~A - ~A~%" (ublue "-handle-shared-opts") opt-type pkg-kv))
   (let* ((pkg (cdr pkg-kv))
          (pkg-shared-opts '())) ;; we will set! this as we iterate over stanzas
     (if-let ((dune (assoc :mibl pkg)))
@@ -122,8 +124,8 @@
     '()))
 
 (define (handle-shared-opts ws)
-  (if *mibl-debug-all*
-      (format #t "~A: ~A~%" (ublue "handle-shared-opts") ws))
+  (mibl-trace-entry "handle-shared-opts")
+  (mibl-trace "ws" ws)
 
   (let* ((@ws (assoc-val ws *mibl-project*))
          (pkgs (car (assoc-val :pkgs @ws))))

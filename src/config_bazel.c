@@ -24,12 +24,17 @@
 /* #include "ini.h" */
 #include "log.h"
 
+#include "trace.h"
 #if EXPORT_INTERFACE
 #include "utarray.h"
 #include "utstring.h"
 #endif
 
 #include "config_bazel.h"
+
+#if defined(DEBUGGING)
+extern bool mibl_debug_bazel;
+#endif
 
 extern int rc;
 
@@ -67,10 +72,7 @@ UT_string *obazl_ini_path; // .config
  */
 char *_effective_ws_root(char *dir)
 {
-#if defined(DEBUG_TRACE)
-    if (mibl_trace)
-        log_trace("_effective_ws_root: %s", dir);
-#endif
+    TRACE_ENTRY(_effective_ws_root);
 
    /* if (strncmp(homedir, dir, strlen(dir)) == 0) { */
    /*     log_warn("No Bazel workspace file found."); */
@@ -100,9 +102,7 @@ char *_effective_ws_root(char *dir)
 
 char *effective_ws_root(char *_dir)
 {
-#if defined(DEBUG_TRACE)
-    if (mibl_trace) log_trace("effective_ws_root for: %s", _dir);
-#endif
+    TRACE_ENTRY(effective_ws_root);
 
     if (getenv("BAZEL_TEST"))
         return getcwd(NULL,0);
@@ -122,9 +122,7 @@ char *effective_ws_root(char *_dir)
 //FIXME: this sets runfiles dir, not root ws!
 void _set_rootws(char *ws_root)
 {
-#if defined(DEBUG_TRACE)
-    if (mibl_trace) log_trace("_set_rootws: %s", ws_root);
-#endif
+    TRACE_ENTRY(_set_rootws);
 
     UT_string *_root_ws;
     utstring_new(_root_ws);
@@ -137,7 +135,7 @@ void _set_rootws(char *ws_root)
         else {
             ;//??
         }
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
         if (mibl_debug_bazel)
             log_debug("Running under bazel test; setting bws to runfiles root%s", utstring_body(mibl_runfiles_root));
 #endif
@@ -170,7 +168,7 @@ void _set_rootws(char *ws_root)
 
             /* effective_ws_root makes a copy */
             rootws = effective_ws_root(getcwd(NULL,0));
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
             if (mibl_debug_bazel)
                 log_debug("Found WS file at %s", rootws);
 #endif
@@ -186,7 +184,7 @@ void _set_rootws(char *ws_root)
 
       rootws = strdup(utstring_body(_root_ws));
     ews_root = strdup(rootws);  /* by default, effective ws == base ws */
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
     if (mibl_debug_bazel)
         log_debug("base ws root: %s", rootws);
 #endif
@@ -246,11 +244,7 @@ EXPORT void show_bazel_config(void)
  */
 EXPORT void bazel_configure(char *ws_root) // char *_exec_root)
 {
-#if defined(DEBUG_TRACE)
-    if (mibl_trace || mibl_debug_bazel) {
-        log_trace(UBLU "bazel_configure" CRESET);
-    }
-#endif
+    TRACE_ENTRY(bazel_configure);
 
     /* RUNTIME ENVIRONMENT:
 
@@ -269,7 +263,7 @@ EXPORT void bazel_configure(char *ws_root) // char *_exec_root)
     /* NB: the Bazel cc toolchain _may_ set
        -DBAZEL_CURRENT_REPOSITORY, not sure when.
      */
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
 #ifdef BAZEL_CURRENT_REPOSITORY
     /* defined for 'bazel run' UNLESS target is a test rule */
     if (mibl_debug_bazel)
@@ -281,7 +275,7 @@ EXPORT void bazel_configure(char *ws_root) // char *_exec_root)
     //FIXME: is runfiles_root always === cwd?
     utstring_new(mibl_runfiles_root);
     utstring_printf(mibl_runfiles_root, "%s", getcwd(NULL, 0));
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
     if (verbose)
         log_info("mibl_runfiles_root: %s", utstring_body(mibl_runfiles_root));
 #endif
@@ -293,16 +287,16 @@ EXPORT void bazel_configure(char *ws_root) // char *_exec_root)
     }
     else if (build_wd == NULL) {
         /* running standalone - outside of bazel */
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
         if (verbose) log_info("Running outside of Bazel");
 #endif
         build_wd = launch_dir;
         bzl_mode = false;
         config_xdg_dirs();
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
         log_debug("xdg_data_home: %s", utstring_body(xdg_data_home));
 #endif
-/* #if defined(DEBUG_TRACE) */
+/* #if defined(DEBUGGING) */
     } else {
         /* running under 'bazel run' */
         bzl_mode = true;
@@ -310,7 +304,7 @@ EXPORT void bazel_configure(char *ws_root) // char *_exec_root)
 /* #endif */
     }
 
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
     if (mibl_debug_bazel) {
         log_debug("build_wd: %s", build_wd);
         log_debug("launch_dir: %s", launch_dir);

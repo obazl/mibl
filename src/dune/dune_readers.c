@@ -6,12 +6,12 @@
 #include "log.h"
 /* #include "s7.h" */
 
-/* #if EXPORT_INTERFACE */
+#include "trace.h"
 #include "utarray.h"
 #include "utstring.h"
 /* #endif */
 
-/* #if defined(DEBUG_TRACE) */
+/* #if defined(TRACING) */
 /* #include "debug.h" */
 /* #endif */
 
@@ -33,11 +33,17 @@ extern const UT_icd ut_str_icd;
 extern s7_scheme *s7;
 extern UT_string *opam_switch_bin;
 extern bool verbose;
-#if defined(DEBUG_TRACE)
+
+#if defined(DEBUGGING)
+extern bool mibl_debug;
+extern bool mibl_debug_traversal;
 extern bool debug;
-extern bool trace;
 extern char *tostr1;
 extern char *tostr2;
+#endif
+
+#if defined(TRACING)
+extern bool trace;
 #endif
 
 #define ERRSEXP "(with-let (owlet) " \
@@ -67,7 +73,8 @@ void init_dune_readers(void)
 
 s7_pointer g_dune_read_thunk_catcher(s7_scheme *s7, s7_pointer args)
 {
-#if defined(DEBUG_TRACE)
+    TRACE_ENTRY(g_dune_read_thunk_catcher);
+#if defined(DEBUGGING)
     LOG_S7_DEBUG("s7_read_thunk_catcher args", args);
 #endif
     /* log_info("s7_read_thunk_catcher arg0: %s", TO_STR(s7_car(args))); */
@@ -102,7 +109,7 @@ s7_pointer g_dune_read_thunk_catcher(s7_scheme *s7, s7_pointer args)
         // FIXME: test case: 'include' after baddot
         s7_pointer fixed = fix_baddot(dunefile); //_name);
         /* s7_pointer fixed = s7_eval_c_string(s7, "'(foob)"); */
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
         LOG_S7_DEBUG("FIXED", fixed);
         /* if (mibl_debug) log_debug(RED "FIXED:" CRESET " %s", */
         /*                      TO_STR(fixed)); */
@@ -228,7 +235,8 @@ s7_pointer g_mibl_read_thunk(s7_scheme *s7, s7_pointer args) {
 
 s7_pointer read_dunefile(char *path) //, char *fname)
 {
-#if defined(DEBUG_TRACE)
+    TRACE_ENTRY(read_dunefile);
+#if defined(DEBUGGING)
     if (mibl_debug_traversal) {
         log_debug("read_dunefile %s", path); //, fname);
         /* s7_show_stack(s7); */
@@ -263,8 +271,8 @@ s7_pointer read_dunefile(char *path) //, char *fname)
             exit(EXIT_FAILURE);
         }
     } else {
-#if defined(DEBUG_TRACE)
-        if (mibl_trace)
+#if defined(DEBUGGING)
+        if (mibl_debug)
             log_trace("opened input dunefile_port for %s",
                       utstring_body(dunefile_name));
 #endif
@@ -287,13 +295,13 @@ s7_pointer read_dunefile(char *path) //, char *fname)
     error_config();
     /* init_error_handling(); */
 
-#if defined(DEBUG_TRACE)
-    if (mibl_trace)
+#if defined(DEBUggING)
+    if (mibl_debug)
         log_trace("reading stanzas of %s", utstring_body(dunefile_name));
 #endif
     /* repeat until all objects read */
     while(true) {
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
         if (mibl_debug_traversal) log_trace("reading stanza");
 #endif
 
@@ -307,7 +315,7 @@ s7_pointer read_dunefile(char *path) //, char *fname)
         }
         /* s7_pointer stanza = s7_read(s7, dunefile_port); */
 
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
         if (mibl_debug_traversal) {
             LOG_S7_DEBUG("Readed stanza", stanza);
         }
@@ -318,7 +326,7 @@ s7_pointer read_dunefile(char *path) //, char *fname)
         /* log_error("errmsg: %s", errmsg); */
 
         if ((errmsg) && (*errmsg)) {
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
             if (mibl_debug_traversal)
                 log_error(RED "[%s]" CRESET, errmsg);
 #endif
@@ -346,7 +354,7 @@ s7_pointer read_dunefile(char *path) //, char *fname)
                 // FIXME: test case: 'include' after baddot
                 s7_pointer fixed = fix_baddot(utstring_body(dunefile_name));
                 /* s7_pointer fixed = s7_eval_c_string(s7, "'(foob)"); */
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
                 if (mibl_debug_traversal)
                     LOG_S7_DEBUG("FIXED", fixed);
 #endif
@@ -380,8 +388,8 @@ s7_pointer read_dunefile(char *path) //, char *fname)
         /* s7_gc_unprotect_at(s7, dune_gc_loc); */
 
         if (stanza == s7_eof_object(s7)) {
-#if defined(DEBUG_TRACE)
-            if (mibl_trace) log_trace("readed eof");
+#if defined(DEBUGGING)
+            if (mibl_debug) log_trace("readed eof");
 #endif
             break;
         }
@@ -433,11 +441,11 @@ s7_pointer read_dunefile(char *path) //, char *fname)
     /* fprintf(stderr, "s7_gc_unprotect_at dune_gc_loc: %ld\n", (long)dune_gc_loc); */
     s7_close_input_port(s7, dunefile_port);
 
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
     if (mibl_debug_traversal)
         log_debug("finished reading dunefile: %s",
                   utstring_body(dunefile_name));
-    if (mibl_trace) LOG_S7_DEBUG("readed stanzas", stanzas);
+    if (mibl_debug) LOG_S7_DEBUG("readed stanzas", stanzas);
 #endif
 
     return stanzas;
@@ -448,13 +456,14 @@ s7_pointer read_dunefile(char *path) //, char *fname)
 /* s7_pointer */
 void *read_dune_package(UT_string *dunefile_name)
 {
+    TRACE_ENTRY(read_dune_package);
     //FIXME: this duplicates the code in read_dunefile
-#if defined(DEBUG_TRACE)
-    if (mibl_trace) log_trace("read_dune_package: %s", utstring_body(dunefile_name));
+#if defined(TRACING)
+    log_trace("read_dune_package: %s", utstring_body(dunefile_name));
 #endif
 
     char *dunestring = dunefile_to_string(utstring_body(dunefile_name));
-/* #if defined(DEBUG_TRACE) */
+/* #if defined(DEBUGGING) */
 /*     if (mibl_debug) log_debug("readed str: %s", dunestring); */
 /* #endif */
 
@@ -474,13 +483,14 @@ void *read_dune_package(UT_string *dunefile_name)
         }
     }
 
-#if defined(DEBUG_TRACE)
-    if (mibl_debug) log_debug("s7 reading stanzas");
+#if defined(TRACING)
+    /* if (mibl_debug) */
+    log_debug("s7 reading stanzas");
 #endif
 
     /* read all stanzas in dunefile */
     while(true) {
-/* #if defined(DEBUG_TRACE) */
+/* #if defined(TRACING) */
 /*         if (mibl_debug) log_debug("iter"); */
 /* #endif */
         s7_pointer stanza = s7_read(s7, sport);
@@ -501,8 +511,9 @@ void *read_dune_package(UT_string *dunefile_name)
         }
     }
     s7_close_input_port(s7, sport);
-#if defined(DEBUG_TRACE)
-    if (mibl_debug) log_debug("finished reading");
+#if defined(TRACING)
+    /* if (mibl_debug) */
+        log_debug("finished reading");
 #endif
 
     /* s7_gc_unprotect_at(s7, baddot_gc_loc); */
@@ -517,9 +528,8 @@ void *read_dune_package(UT_string *dunefile_name)
 EXPORT UT_array *get_pkg_executables(void *_stanzas)
 /* UT_string *dune_pkg_file) */
 {
-#if defined(DEBUG_TRACE)
-    if (mibl_trace) log_trace("get_pkg_executables");
-#endif
+    TRACE_ENTRY(get_pkg_executables);
+
     s7_pointer stanzas = (s7_pointer) _stanzas;
     UT_string *outpath;
     UT_string *opam_bin;
@@ -550,7 +560,7 @@ EXPORT UT_array *get_pkg_executables(void *_stanzas)
     if (executables == s7_unspecified(s7))
         return bins;
 
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
     if (mibl_debug) {
         /* log_debug("Pkg: %s", utstring_body(dune_pkg_file)); */
         LOG_S7_DEBUG("executables", executables);
@@ -566,13 +576,13 @@ EXPORT UT_array *get_pkg_executables(void *_stanzas)
         //gc_loc = s7_gc_protect(s7, iter);
     if (!s7_is_iterator(iter)) {
         log_error("s7_make_iterator failed");
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
         LOG_S7_DEBUG("not an iterator", iter);
 #endif
     }
     if (s7_iterator_is_at_end(s7, iter)) {
         log_error("s7_iterator_is_at_end prematurely");
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
         LOG_S7_DEBUG("iterator prematurely done", iter);
 #endif
     }
@@ -580,7 +590,7 @@ EXPORT UT_array *get_pkg_executables(void *_stanzas)
     while (true) {
         binfile = s7_iterate(s7, iter);
         if (s7_iterator_is_at_end(s7, iter)) break;
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
         LOG_S7_DEBUG("binfile", binfile);
 #endif
         f = TO_STR(binfile);
@@ -617,11 +627,10 @@ EXPORT UT_array *get_pkg_executables(void *_stanzas)
 EXPORT UT_array *get_pkg_stublibs(char *pkg, void *_stanzas)
 /* UT_string *dune_pkg_file) */
 {
-#if defined(DEBUG_TRACE)
-    if (mibl_trace) log_trace("get_pkg_stublibs");
-#endif
+    TRACE_ENTRY(get_pkg_stublibs);
+
     s7_pointer stanzas = (s7_pointer) _stanzas;
-/* #if defined(DEBUG_TRACE) */
+/* #if defined(DEBUGGING) */
 /*     log_debug("stanzas: %s", TO_STR(stanzas)); */
 /* #endif */
 
@@ -654,7 +663,7 @@ EXPORT UT_array *get_pkg_stublibs(char *pkg, void *_stanzas)
     if (stublibs == s7_unspecified(s7))
         return stubs;
 
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
     if (mibl_debug) {
         /* log_debug("Pkg: %s", utstring_body(dune_pkg_file)); */
         LOG_S7_DEBUG(RED "STUBLIBS" CRESET, stublibs);
@@ -675,13 +684,13 @@ EXPORT UT_array *get_pkg_stublibs(char *pkg, void *_stanzas)
         //gc_loc = s7_gc_protect(s7, iter);
     if (!s7_is_iterator(iter)) {
         log_error("s7_is_iterator fail");
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
         LOG_S7_DEBUG("not an iterator", iter);
 #endif
     }
     if (s7_iterator_is_at_end(s7, iter)) {
         log_error("s7_iterator_is_at_end prematurely");
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
         LOG_S7_DEBUG("iterator prematurely done", iter);
 #endif
     }
@@ -689,7 +698,7 @@ EXPORT UT_array *get_pkg_stublibs(char *pkg, void *_stanzas)
     while (true) {
         stublib_file = s7_iterate(s7, iter);
         if (s7_iterator_is_at_end(s7, iter)) break;
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
         LOG_S7_DEBUG("stublib_file", stublib_file);
 #endif
         f = TO_STR(stublib_file);
@@ -701,9 +710,9 @@ EXPORT UT_array *get_pkg_stublibs(char *pkg, void *_stanzas)
 
 char *dunefile_to_string(const char *dunefile_name)
 {
-#if defined(DEBUG_TRACE)
-    if (mibl_trace)
-        log_trace("dunefile_to_string: %s", dunefile_name);
+    TRACE_ENTRY(dunefile_to_string);
+#if defined(TRACING)
+    log_trace("dunefile: %s", dunefile_name);
                   //utstring_body(dunefile_name));
 #endif
     /* core/dune file size: 45572 */
@@ -725,7 +734,7 @@ char *dunefile_to_string(const char *dunefile_name)
         perror(NULL);
         exit(EXIT_FAILURE);
     } else {
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
         if (mibl_debug) log_debug("fopened %s",
                                   dunefile_name);
                                   /* utstring_body(dunefile_name)); */
@@ -733,7 +742,7 @@ char *dunefile_to_string(const char *dunefile_name)
     }
     fseek(instream, 0, SEEK_END);
     uint64_t fileSize = ftell(instream);
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
     if (mibl_debug) log_debug("filesize: %d", fileSize);
 #endif
 
@@ -780,7 +789,7 @@ char *dunefile_to_string(const char *dunefile_name)
         }
         else {
             read_ct = fread(inbuf, 1, (size_t) outFileSizeCounter, instream);
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
             if (mibl_debug) log_debug("read_ct: %d", read_ct);
 #endif
             if (read_ct != outFileSizeCounter) {
@@ -809,7 +818,7 @@ char *dunefile_to_string(const char *dunefile_name)
             outFileSizeCounter = 0ULL;
         }
     } while (outFileSizeCounter > 0);
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
     if (mibl_debug) {
         log_debug(RED "readed" CRESET " %d bytes", read_ct);
         /* log_debug(RED "readed string:" CRESET " '%s'", inbuf); */
@@ -828,21 +837,21 @@ char *dunefile_to_string(const char *dunefile_name)
 /* https://stackoverflow.com/questions/54592366/replacing-one-character-in-a-string-with-multiple-characters-in-c */
 
         if (cursor == NULL) {
-/* #if defined(DEBUG_TRACE) */
+/* #if defined(DEBUGGING) */
 /*             if (mibl_debug) log_debug("remainder: '%s'", inptr); */
 /* #endif */
             size_t ct = strlcpy(outptr, (const char*)inptr, fileSize); // strlen(outptr));
             (void)ct;           /* prevent -Wunused-variable */
-/* #if defined(DEBUG_TRACE) */
+/* #if defined(DEBUGGING) */
 /*             if (mibl_debug) log_debug("concatenated: '%s'", outptr); */
 /* #endif */
             break;
         } else {
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
             if (mibl_debug) log_error("FOUND and fixing \".)\" at pos: %d", cursor - inbuf);
 #endif
             size_t ct = strlcpy(outptr, (const char*)inptr, cursor - inptr);
-#if defined(DEBUG_TRACE)
+#if defined(DEBUGGING)
             if (mibl_debug) {
                 log_debug("copied %d chars", ct);
                 /* log_debug("to buf: '%s'", outptr); */

@@ -1,4 +1,4 @@
-common --symlink_prefix=.bazel/
+# common --symlink_prefix=.bazel/
 
 common --color=yes
 common:show --subcommands=pretty_print
@@ -10,4 +10,5 @@ common:q --noshow_loading_progress
 common:q --show_result=0
 common:q --ui_event_filters=-info,-debug
 
+# try-import .config/dev.bazelrc
 try-import .config/user.bazelrc

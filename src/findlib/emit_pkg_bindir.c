@@ -40,7 +40,7 @@ extern UT_string *opam_switch_lib;
 extern int spfactor;
 extern char *sp;
 
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
 extern int indent;
 extern int delta;
 #endif
@@ -63,7 +63,7 @@ void emit_opam_pkg_bindir(const char *pkg) // UT_string *dune_pkg_file)
                           /* char *obazl, */
                           /* bool emitted_bootstrapper) */
 {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     if (mibl_trace) log_trace("emit_opam_pkg_bindir");
 #endif
 
@@ -105,12 +105,12 @@ void emit_opam_pkg_bindir(const char *pkg) // UT_string *dune_pkg_file)
     utstring_printf(outpath, "%s/%s/WORKSPACE.bazel",
                     utstring_body(opam_coswitch_lib),
                     pkg);
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     if (mibl_debug)
         log_debug("checking ws: %s", utstring_body(outpath));
 #endif
     if (access(utstring_body(outpath), F_OK) != 0) {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         log_debug("creating %s\n", utstring_body(outpath));
 #endif
         /* if obazl/pkg not exist, create it with WORKSPACE */
@@ -137,7 +137,7 @@ void emit_opam_pkg_bindir(const char *pkg) // UT_string *dune_pkg_file)
                     utstring_body(opam_coswitch_lib),
                     pkg);
     /* rc = access(utstring_body(build_bazel_file), F_OK); */
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     log_debug("fopening: %s", utstring_body(outpath));
 #endif
 
@@ -158,7 +158,7 @@ void emit_opam_pkg_bindir(const char *pkg) // UT_string *dune_pkg_file)
     /* For each executable, create symlink and exports_files entry */
     char **p = NULL;
     while ( (p=(char**)utarray_next(executables,p))) {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         log_debug("bin: %s",*p);
 #endif
         fprintf(ostream, "\"%s\",", *p);
@@ -167,7 +167,7 @@ void emit_opam_pkg_bindir(const char *pkg) // UT_string *dune_pkg_file)
         utstring_printf(opam_bin, "%s/%s",
                         utstring_body(opam_switch_bin),
                         *p);
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         log_debug("SYMLINK SRC: %s", utstring_body(opam_bin));
 #endif
         utstring_renew(outpath);
@@ -175,7 +175,7 @@ void emit_opam_pkg_bindir(const char *pkg) // UT_string *dune_pkg_file)
                         utstring_body(opam_coswitch_lib),
                         pkg,
                         *p);
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         log_debug("SYMLINK DST: %s", utstring_body(outpath));
 #endif
         rc = symlink(utstring_body(opam_bin),
@@ -227,12 +227,12 @@ void emit_opam_pkg_bindir(const char *pkg) // UT_string *dune_pkg_file)
                     utstring_body(opam_coswitch_lib),
                     pkg);
 
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     if (mibl_debug)
         log_debug("checking ws: %s", utstring_body(outpath));
 #endif
     if (access(utstring_body(outpath), F_OK) != 0) {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         log_debug("creating %s\n", utstring_body(outpath));
 #endif
         /* if obazl/pkg not exist, create it with WORKSPACE */
@@ -258,7 +258,7 @@ void emit_opam_pkg_bindir(const char *pkg) // UT_string *dune_pkg_file)
                     utstring_body(opam_coswitch_lib),
                     pkg);
     /* rc = access(utstring_body(build_bazel_file), F_OK); */
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     log_debug("fopening: %s", utstring_body(outpath));
 #endif
 
@@ -279,7 +279,7 @@ void emit_opam_pkg_bindir(const char *pkg) // UT_string *dune_pkg_file)
     /* For each stublib, create symlink and exports_files entry */
     p = NULL;
     while ( (p=(char**)utarray_next(stublibs,p))) {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         log_debug("stublib: %s",*p);
 #endif
         fprintf(ostream, "\"%s\",", *p);
@@ -288,7 +288,7 @@ void emit_opam_pkg_bindir(const char *pkg) // UT_string *dune_pkg_file)
         utstring_printf(opam_stublib, "%s/stublibs/%s",
                         utstring_body(opam_switch_lib),
                         *p);
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         log_debug("SYMLINK SRC: %s", utstring_body(opam_stublib));
 #endif
         utstring_renew(outpath);
@@ -296,7 +296,7 @@ void emit_opam_pkg_bindir(const char *pkg) // UT_string *dune_pkg_file)
                         utstring_body(opam_coswitch_lib),
                         pkg,
                         *p);
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
         log_debug("SYMLINK DST: %s", utstring_body(outpath));
 #endif
         rc = symlink(utstring_body(opam_stublib),
@@ -325,7 +325,7 @@ void emit_opam_pkg_bindir(const char *pkg) // UT_string *dune_pkg_file)
 
  exit: ;
     /* utstring_free(outpath); */
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     if (mibl_trace) printf("exiting emit_opam_pkg_bindir\n");
 #endif
 }
@@ -335,7 +335,7 @@ UT_string *dune_pkg_file;
 /* pkg always relative to (global) opam_switch_lib */
 EXPORT void emit_pkg_bindir(const char *pkg)
 {
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     if (mibl_trace) log_trace("emit_pkg_bindir");
 #endif
 
@@ -344,7 +344,7 @@ EXPORT void emit_pkg_bindir(const char *pkg)
                     utstring_body(opam_switch_lib), /* global */
                     pkg);
 
-#if defined(DEBUG_TRACE)
+#if defined(TRACING)
     if (mibl_trace)
         log_debug("CHECKING DUNE-PACKAGE: %s\n", utstring_body(dune_pkg_file));
 #endif
