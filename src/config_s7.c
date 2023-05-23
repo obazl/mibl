@@ -92,6 +92,7 @@ s7_pointer cc_kw;
 s7_pointer cc_srcs_kw;
 s7_pointer cc_hdrs_kw;
 s7_pointer files_kw;
+s7_pointer toml_kw;
 s7_pointer scripts_kw;
 s7_pointer static_kw;
 s7_pointer dynamic_kw;
@@ -733,6 +734,7 @@ void _define_mibl_s7_keywords(void)
     mllib_kw = s7_make_keyword(s7, "mllib");
     cppo_kw = s7_make_keyword(s7, "cppo");
     files_kw   = s7_make_keyword(s7, "files");
+    toml_kw   = s7_make_keyword(s7, "toml");
     static_kw  = s7_make_keyword(s7, "static");
     dynamic_kw = s7_make_keyword(s7, "dynamic");
 

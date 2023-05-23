@@ -422,8 +422,8 @@ void _set_options(struct option options[])
 #if defined(DEBUGGING)
         mibl_debug_traversal = true;
 #else
-        log_error("--debug-traversal requires debug build, -c dbg");
-        exit(EXIT_FAILURE);
+        /* log_error("--debug-traversal requires debug build, -c dbg"); */
+        /* exit(EXIT_FAILURE); */
 #endif
     }
 

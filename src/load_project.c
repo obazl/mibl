@@ -22,6 +22,7 @@
 #include "utarray.h"
 #include "utstring.h"
 #include "s7.h"
+#include "libtoml_s7.h"
 /* #endif */
 
 
@@ -2695,7 +2696,7 @@ LOCAL void _update_ml(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
  */
 LOCAL void _handle_ml_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 {
-    TRACE_ENTRY(_handle_ml_file);
+    TRACE_ENTRY_STR(_handle_ml_file, ftsentry->fts_path);
 #if defined(DEBUGGING)
     if (mibl_debug_traversal) {
         log_debug("_handle_ml_file");
@@ -2929,12 +2930,7 @@ LOCAL void _handle_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
 
 LOCAL void _handle_generic_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 {
-    TRACE_ENTRY(_handle_generic_file);
-#if defined(DEBUGGING)
-    if (mibl_debug_traversal)
-        log_debug("_handle_generic_file %s, %s", ftsentry->fts_name, ext);
-#endif
-    /* printf("    pkg: %s\n", dirname(ftsentry->fts_path)); */
+    TRACE_ENTRY_STR(_handle_generic_file, ftsentry->fts_path);
 
     /* _indent(ftsentry->fts_level); */
     /* printf("%d. %s\n", ftsentry->fts_level, ftsentry->fts_name); */
@@ -2955,16 +2951,152 @@ LOCAL void _handle_generic_file(s7_pointer pkg_tbl, FTSENT *ftsentry, char *ext)
 
 LOCAL void _handle_toml_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
 {
-    TRACE_ENTRY(_handle_toml_file);
-    /* log_debug("_handle_toml_file %s", ftsentry->fts_path); */
+    TRACE_ENTRY_STR(_handle_toml_file, ftsentry->fts_path);
+
+    s7_pointer toml_obj = toml_read_file(s7, ftsentry->fts_path);
+    /* TRACE_S7_DUMP("toml_obj", toml_obj); */
+    fflush(NULL);
+
+    char *pkg_name = dirname(ftsentry->fts_path);
+
+    /* s7_pointer pkg_key = s7_make_string(s7, pkg_name); */
+    s7_pointer pkg_key = make_pkg_key(pkg_name);
+    s7_gc_protect_via_stack(s7, pkg_key);
+
+    s7_pointer pkg_alist  = s7_hash_table_ref(s7, pkg_tbl, pkg_key);
+    s7_gc_protect_via_stack(s7, pkg_alist);
+
+    if (pkg_alist == s7_f(s7)) {
+        // FIXME: should not happen, we always add a pkg entry first
+        log_error("NO ENTRY FOR PKG: %s", pkg_name);
+        exit(EXIT_FAILURE);
+#if defined(TRACING)
+        if (mibl_debug_traversal)
+            log_debug("no entry for this pkg: %s", pkg_name);
+#endif
+        s7_gc_unprotect_via_stack(s7, pkg_alist);
+
+    } else {
+        // found pkg_alist
+        /* LOG_S7_DEBUG("pkg_alist", pkg_alist); */
+
+        s7_pointer assoc = _load_assoc();
+        s7_pointer toml_assoc = s7_call(s7, assoc,
+                                        s7_list(s7, 2,
+                                                toml_kw,
+                                                pkg_alist));
+
+#if defined(DEBUGGING)
+            if (mibl_debug_traversal) {
+                LOG_S7_DEBUG("toml_assoc", toml_assoc);
+            }
+#endif
+
+        if (toml_assoc == s7_f(s7)) {
+#if defined(DEBUGGING)
+            if (mibl_debug_traversal)
+                log_debug("initializing (:toml ...)");
+#endif
+
+            // create new toml entry in *mibl-ws*
+            // e.g. for dune.toml:  (:toml (dune <#toml-table ...>))
+            // we know the extension is '.toml'
+            char *stem = strdup(ftsentry->fts_name);
+            stem[strlen(stem) - 5] = '\0';
+            /* log_debug("STEM: %s", stem); */
+            s7_pointer toml_file_sym = s7_make_symbol(s7, stem);
+            free(stem);
+
+            s7_pointer toml_list =
+                s7_list(s7, 1,
+                        s7_cons(s7,
+                                toml_kw,
+                                s7_list(s7, 1,
+                                        s7_cons(s7,
+                                                toml_file_sym,
+                                                toml_obj
+                                                ))));
+#if defined(TRACING)
+            if (mibl_debug_traversal) {
+                LOG_S7_DEBUG("toml_list", toml_list);
+            }
+#endif
+
+            s7_pointer new_pkg = s7_append(s7,
+                                           pkg_alist,
+                                           toml_list);
+#if defined(TRACING)
+            if (mibl_debug_traversal) {
+                LOG_S7_DEBUG("pkg_alist", pkg_alist);
+                LOG_S7_DEBUG("new_pkg", new_pkg);
+                LOG_S7_DEBUG("new pkg", toml_list);
+            }
+#endif
+
+            s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg);
+            s7_gc_unprotect_via_stack(s7, pkg_alist);
+            s7_gc_unprotect_via_stack(s7, pkg_key);
+
+        } else {
+            /* (assoc :toml pkgs) returned assoc (:toml ...),
+               but we need the alist */
+            s7_pointer toml_alist = s7_cdr(toml_assoc);
+            /* LOG_S7_DEBUG("toml_alist", toml_alist); */
+
+            // create new toml assoc to add to aist
+            // we know the extension is '.toml'
+            char *stem = strdup(ftsentry->fts_name);
+            stem[strlen(stem) - 5] = '\0';
+            /* log_debug("STEM: %s", stem); */
+            s7_pointer toml_file_sym = s7_make_symbol(s7, stem);
+            free(stem);
+
+            s7_pointer toml_file_assoc = // toml_assoc? s7_cons
+                s7_list(s7, 1, s7_list(s7, 2,
+                                       toml_file_sym,
+                                       toml_obj
+                                       //s7_make_string(s7, "TOML TEST")
+                                       ));
+#if defined(TRACING)
+            if (mibl_debug_traversal) {
+                LOG_S7_DEBUG("toml_file_assoc", toml_file_assoc);
+            }
+#endif
+
+            s7_pointer new_toml_alist =
+                s7_append(s7,
+                /* s7_list(s7, 2, */
+                /* s7_cons(s7, */
+                          toml_alist,
+                          toml_file_assoc
+                        /* file_pair, */
+                          );
+/* #if defined(TRACING) */
+/*             if (mibl_debug_traversal) */
+/*                 LOG_S7_DEBUG("new files_alist", new_files_alist); */
+/* #endif */
+
+            /* s7_pointer sort      = _load_sort(); */
+            /* s7_pointer string_lt = _load_string_lt(); */
+            /* s7_pointer sorted */
+            /*     = s7_call(s7, sort, s7_list(s7, 2, */
+            /*                                 new_files_alist, */
+            /*                                 string_lt)); */
+
+            /* LOG_S7_DEBUG("new files_alist sorted", sorted); */
+
+            s7_set_cdr(toml_assoc, new_toml_alist);
+            /* LOG_S7_DEBUG("toml_assoc", toml_assoc); */
+
+            /* s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg); */
+
+        }
+    }
 }
 
 LOCAL void _handle_dune_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
 {
-    TRACE_ENTRY(_handle_dune_file);
-#if defined(TRACING)
-        log_debug("_handle_dune_file: %s", ftsentry->fts_path);
-#endif
+    TRACE_ENTRY_STR(_handle_dune_file, ftsentry->fts_path);
 
     /* && (ftsentry->fts_namelen = 4) == 0)) { */
     _indent(ftsentry->fts_level);
@@ -3079,7 +3211,8 @@ LOCAL void _handle_dune_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
     s7_gc_protect_via_stack(s7, pkg_alist);
 
     /* if (mibl_debug_traversal) */
-    /*     LOG_S7_DEBUG("pkg_alist", pkg_alist); */
+        /* LOG_S7_DEBUG("pkg_alist", pkg_alist); */
+        /* LOG_S7_DEBUG("stanzas", stanzas); */
 
     s7_pointer assoc = _load_assoc();
 
@@ -3092,14 +3225,15 @@ LOCAL void _handle_dune_file(s7_pointer pkg_tbl, FTSENT *ftsentry)
     if (stanzas_alist == s7_f(s7)) {
         s7_pointer stanzas_assoc = s7_cons(s7, dune_stanzas_sym, stanzas);
         /* LOG_S7_DEBUG("appending new stanzas_assoc", stanzas_assoc); */
+        s7_pointer new_pkg_alist =
+            s7_append(s7, pkg_alist,
+                      s7_list(s7, 1, stanzas_assoc));
+        /* LOG_S7_DEBUG("new_pkg_alist", new_pkg_alist); */
         /* FIXME: check result */
         /* s7_pointer result = */
-        s7_hash_table_set(s7, pkg_tbl, pkg_key,
-                          s7_append(s7, pkg_alist,
-                                    s7_list(s7, 1, stanzas_assoc)));
+        s7_hash_table_set(s7, pkg_tbl, pkg_key, new_pkg_alist);
         s7_gc_unprotect_via_stack(s7, pkg_key);
         s7_gc_unprotect_via_stack(s7, pkg_alist);
-
     } else {
         /* if (mibl_debug_traversal) log_debug("setting cdr of "); */
         s7_set_cdr(stanzas_alist, stanzas);

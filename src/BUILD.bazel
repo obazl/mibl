@@ -126,10 +126,9 @@ cc_library(
         "//src/xdg:xdg.c", "//src/hdrs:xdg.h",
     ] + select({
         "@libs7//config/clibs/link:shared?": [
-            "@libs7//lib/libc:c_s7", # "@libs7//lib:libc_s7.h",
-            "@libs7//lib/libcwalk:cwalk_s7", # "@libs7//lib:libcwalk_s7.h"
-            # "@libs7//lib/lib:dl_s7", # "@libs7//lib:libdl_s7.h",
-            # "@libs7//lib/lib:m_s7", # "@libs7//lib:libm_s7.h",
+            "@libs7//lib/libc:c_s7",
+            "@libs7//lib/libcwalk:cwalk_s7",
+            "@libs7//lib/libtoml:toml_s7",
         ],
         "//conditions:default": []
     }) + select({
@@ -177,8 +176,7 @@ cc_library(
         "@libs7//config/clibs/link:runtime?": [
             "@libs7//lib/lib/libc:c_s7",
             "@libs7//lib/lib/libcwalk:cwalk_s7",
-            # "@libs7//lib/lib/libdl:dl_s7",
-            # "@libs7//lib/lib/libm:m_s7",
+            "@libs7//lib/lib/libtoml:toml_s7",
         ],
         "//conditions:default": []
     }),
@@ -228,8 +226,8 @@ cc_library(
 
         "-I$(GENDIR)/external/libs7/lib/libc",
         "-I$(GENDIR)/external/libs7/lib/libcwalk",
-        # "-I$(GENDIR)/external/libs7/lib/libdl",
-        # "-I$(GENDIR)/external/libs7/lib/libm",
+        "-Iexternal/libs7/lib/libtoml",
+        # "-Iexternal/libs7/vendored/tomlc99",
 
         "-Ivendored/libinih",
         "-Iexternal/mibl/vendored/libinih",
@@ -241,7 +239,10 @@ cc_library(
         "-Iexternal/mibl/vendored/uthash",
 
         "-I$(GENDIR)/external/libs7/lib"
-    ],
+    ] + select({
+        "//config/debug:trace?": ["-Wno-gnu-statement-expression"],
+        "//conditions:default":   []
+    }),
     alwayslink = False, # True,
     linkstatic = True,
     deps = [
@@ -264,8 +265,6 @@ cc_library(
             "@libs7//lib/libc:c_s7_archive",
             "@libs7//lib/libcwalk:cwalk_s7_archive",
             "@libs7//lib/libtoml:toml_s7_archive",
-            # "@libs7//lib/libdl:dl_s7_archive",
-            # "@libs7//lib/libm:m_s7_archive",
         ],
         "//conditions:default": []
     }),
