@@ -29,7 +29,7 @@ EXPORT int obzl_meta_values_count(obzl_meta_values *_values)
     return utarray_len(_values->list);
 }
 
-EXPORT obzl_meta_value *obzl_meta_values_nth(obzl_meta_values *_values, int _i)
+EXPORT obzl_meta_value *obzl_meta_values_nth(obzl_meta_values *_values, unsigned int _i)
 {
     return utarray_eltptr(_values->list, _i);
 }

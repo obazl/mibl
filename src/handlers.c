@@ -34,6 +34,7 @@ extern int dir_ct;
 
 void _indent(int i)
 {
+    (void)i;
     /* printf("_indent: %d\n", i); */
     /* for (; i > 0; i--) */
     /*     printf("    "); */

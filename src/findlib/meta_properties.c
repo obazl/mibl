@@ -193,6 +193,7 @@ EXPORT struct obzl_meta_entry *handle_simple_prop(union meta_token *token,
                                               enum obzl_meta_opcode_e opcode,
                                               union meta_token *word)
 {
+    (void)opcode;
 #if DEBUG_PROPERTIES
     log_trace(">>handle_simple_prop");
     log_trace("\tproperty ::= PWORD opcode WORD");

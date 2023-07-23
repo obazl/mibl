@@ -21,7 +21,7 @@ run_mibl(
     src = "//mibl",
     out = "mibl.dbg",
     args = [## "--show-config",
-            "--main", "mibl_main.scm",
+            "--script", "mibl_main.scm",
             # "--emit-parsetree",
             # "--halt-after", "parsetree"
     ]
@@ -31,13 +31,13 @@ mibl("dev", args = ["--show-config"])
 
 # mibl_runner(
 #     name = "parsetree",
-#     args = ["--main", "mibl_main.scm", "--emit-parsetree", "--halt-after", "parsetree"],
+#     args = ["--script", "mibl_main.scm", "--emit-parsetree", "--halt-after", "parsetree"],
 # )
 
 sh_binary(
     name = "parsetree",
     srcs = ["//mibl:run_mibl.sh"],
-    args = ["--main", "mibl_main.scm", "--emit-parsetree", "--halt-after", "parsetree"],
+    args = ["--script", "mibl_main.scm", "--emit-parsetree", "--halt-after", "parsetree"],
     deps = ["@bazel_tools//tools/bash/runfiles"],
     data = ["//mibl:mibl"] # the executable run by run_mibl.sh
 )
@@ -45,7 +45,7 @@ sh_binary(
 sh_binary(
     name = "mibl",
     srcs = ["//mibl:run_mibl.sh"],
-    args = ["--main", "mibl_main.scm", "--emit-mibl"], # "--emit-project"],
+    args = ["--script", "mibl_main.scm", "--emit-mibl"], # "--emit-project"],
     deps = ["@bazel_tools//tools/bash/runfiles"],
     data = ["//mibl:mibl"] # the executable run by run_mibl.sh
 )

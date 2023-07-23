@@ -45,6 +45,7 @@ struct meta_lexer_s
 /* static void mtag(const char *t) */
 static void mtag(int t)
 {
+    (void)t;
     /* fprintf(stderr, "mtag ctor idx: %d, s: %.22s\n", curr_tag, t); */
     /* deps[curr_tag++] = t; */
 }

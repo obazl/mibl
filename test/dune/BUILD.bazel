@@ -1,0 +1,10 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+test_suite(
+    name = "test",
+    tests = [
+        "//test/dune/deps:mibl_test",
+        "//test/dune/fields:flags_test",
+        "//test/dune/action_dsl:test",
+    ]
+)

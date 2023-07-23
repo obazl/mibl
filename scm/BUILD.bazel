@@ -6,7 +6,8 @@ filegroup(
             "dune.scm",
             "findlib.scm",
             "mibl.scm",
-            "opam.scm"],
+            "opam.scm",
+            "mibl_repl.scm"],
     visibility = ["//visibility:public"]
 )
 

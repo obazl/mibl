@@ -32,7 +32,7 @@
 
 #include "config_bazel.h"
 
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
 extern bool mibl_debug_bazel;
 #endif
 
@@ -135,7 +135,7 @@ void _set_rootws(char *ws_root)
         else {
             ;//??
         }
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
         if (mibl_debug_bazel)
             log_debug("Running under bazel test; setting bws to runfiles root%s", utstring_body(mibl_runfiles_root));
 #endif
@@ -168,7 +168,7 @@ void _set_rootws(char *ws_root)
 
             /* effective_ws_root makes a copy */
             rootws = effective_ws_root(getcwd(NULL,0));
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
             if (mibl_debug_bazel)
                 log_debug("Found WS file at %s", rootws);
 #endif
@@ -184,7 +184,7 @@ void _set_rootws(char *ws_root)
 
       rootws = strdup(utstring_body(_root_ws));
     ews_root = strdup(rootws);  /* by default, effective ws == base ws */
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
     if (mibl_debug_bazel)
         log_debug("base ws root: %s", rootws);
 #endif
@@ -263,7 +263,7 @@ EXPORT void bazel_configure(char *ws_root) // char *_exec_root)
     /* NB: the Bazel cc toolchain _may_ set
        -DBAZEL_CURRENT_REPOSITORY, not sure when.
      */
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
 #ifdef BAZEL_CURRENT_REPOSITORY
     /* defined for 'bazel run' UNLESS target is a test rule */
     if (mibl_debug_bazel)
@@ -275,7 +275,7 @@ EXPORT void bazel_configure(char *ws_root) // char *_exec_root)
     //FIXME: is runfiles_root always === cwd?
     utstring_new(mibl_runfiles_root);
     utstring_printf(mibl_runfiles_root, "%s", getcwd(NULL, 0));
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
     if (verbose)
         log_info("mibl_runfiles_root: %s", utstring_body(mibl_runfiles_root));
 #endif
@@ -287,16 +287,16 @@ EXPORT void bazel_configure(char *ws_root) // char *_exec_root)
     }
     else if (build_wd == NULL) {
         /* running standalone - outside of bazel */
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
         if (verbose) log_info("Running outside of Bazel");
 #endif
         build_wd = launch_dir;
         bzl_mode = false;
         config_xdg_dirs();
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
         log_debug("xdg_data_home: %s", utstring_body(xdg_data_home));
 #endif
-/* #if defined(DEBUGGING) */
+/* #if defined(DEVBUILD) */
     } else {
         /* running under 'bazel run' */
         bzl_mode = true;
@@ -304,7 +304,7 @@ EXPORT void bazel_configure(char *ws_root) // char *_exec_root)
 /* #endif */
     }
 
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
     if (mibl_debug_bazel) {
         log_debug("build_wd: %s", build_wd);
         log_debug("launch_dir: %s", launch_dir);

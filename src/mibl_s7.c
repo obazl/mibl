@@ -17,7 +17,7 @@ extern const UT_icd ut_str_icd;
 extern bool bzl_mode;
 extern int  verbosity;
 
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
 extern bool mibl_debug;
 #endif
 
@@ -132,7 +132,7 @@ LOCAL void _config_s7_load_path_bazel_env(void)
 {
     TRACE_ENTRY(_config_s7_load_path_bazel_env);
     /* s7_pointer tmp_load_path = s7_list(s7, 0); */
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
 #ifdef BAZEL_CURRENT_REPOSITORY
     if (mibl_debug)
         log_debug("bazel_current_repo: " BAZEL_CURRENT_REPOSITORY);
@@ -141,16 +141,16 @@ LOCAL void _config_s7_load_path_bazel_env(void)
     scm_dir = scm_runfiles_dirs;
     char *scmdir;
     while (*scm_dir) {
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
         if (mibl_debug_runfiles)
             log_debug("runfile: %s", *scm_dir);
 #endif
         scmdir = realpath(*scm_dir, NULL);
-        if (scmdir == NULL) {
-            log_error("realpath fail: runfile not found: %s", *scm_dir);
-            exit(EXIT_FAILURE);
-        }
-#if defined(DEBUGGING)
+        /* if (scmdir == NULL) { */
+        /*    log_error("realpath fail: runfile not found: %s", *scm_dir); */
+        /*     exit(EXIT_FAILURE); */
+        /* } */
+#if defined(DEVBUILD)
         if (mibl_debug_runfiles)
             log_debug("runfile realpath: %s", scmdir);
 #endif
@@ -158,6 +158,22 @@ LOCAL void _config_s7_load_path_bazel_env(void)
         free(scmdir);
         (void)*scm_dir++;
     }
+    char *mibl_repo;
+    /* log_debug("mibl BAZEL_CURRENT_REPOSITORY: '%s'", BAZEL_CURRENT_REPOSITORY); */
+    /* log_debug("PWD: '%s'", getcwd(NULL,0)); */
+    if (strlen(BAZEL_CURRENT_REPOSITORY) == 0) {
+        mibl_repo = realpath("scm", NULL);
+    } else {
+        mibl_repo = realpath("external/" BAZEL_CURRENT_REPOSITORY "/scm", NULL);
+    }
+    log_debug("MIBL REPO: %s", mibl_repo);
+    s7_add_to_load_path(s7, mibl_repo);
+
+    s7_pointer lp = s7_load_path(s7);
+    char *s = s7_object_to_c_string(s7, lp);
+    log_debug("load-path: %s", s);
+    free(s);
+
     //FIXME: uas s7_add_to_load_path!!!
     /* s7_define_variable(s7, "*load-path*", tmp_load_path); */
 }
@@ -194,7 +210,7 @@ LOCAL void _config_s7_load_path_bazel_env(void)
 /*         /\* exit(EXIT_FAILURE); *\/ */
 /*     } */
 
-/* #if defined(DEBUGGING) */
+/* #if defined(DEVBUILD) */
 /*     if (mibl_debug) */
 /*         log_debug("Reading MANIFEST"); */
 /* #endif */
@@ -237,7 +253,7 @@ LOCAL void _config_s7_load_path_bazel_env(void)
 
 /*         if ( (strncmp(basename(token), */
 /*                       "libc_s7.so", 10) == 0) ) { */
-/* #if defined(DEBUGGING) */
+/* #if defined(DEVBUILD) */
 /*             if (mibl_trace) */
 /*                 log_info("FOUND LIBC_S7.SO: %s", token); */
 /* #endif */
@@ -578,7 +594,7 @@ LOCAL void _mibl_s7_configure_x(void)
     char **p = NULL;
     s7_pointer _s7_pkgs = s7_nil(s7);
     while ( (p=(char**)utarray_next(mibl_config.pkgs, p))) {
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
         if (mibl_debug) printf("Adding to pkgs list: %s\n", *p);
 #endif
         _s7_pkgs = s7_cons(s7, s7_make_string(s7, *p), _s7_pkgs);
@@ -589,13 +605,13 @@ LOCAL void _mibl_s7_configure_x(void)
     p = NULL;
     s7_pointer _s7_exclusions = s7_nil(s7);
     while ( (p=(char**)utarray_next(mibl_config.exclude_dirs, p))) {
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
         if (mibl_debug_miblrc)
             log_debug("Adding to exlusions list: %s",*p);
 #endif
         _s7_exclusions = s7_cons(s7, s7_make_string(s7, *p), _s7_exclusions);
     }
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
     if (mibl_debug)
         LOG_S7_DEBUG("exclusions list", _s7_exclusions);
 #endif
@@ -606,7 +622,7 @@ EXPORT void set_load_path(void) // char *scriptfile)
 {
     /* char *_wd = getcwd(NULL, 0); */
 
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
     if (mibl_debug) {
         s7_pointer lp = s7_load_path(s7);
         LOG_S7_DEBUG("*load-path*", lp);
@@ -641,7 +657,7 @@ EXPORT void set_load_path(void) // char *scriptfile)
         _config_s7_load_path_bazel_env();
         s7_pointer lp = s7_load_path(s7);
         (void)lp;
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
         if (mibl_debug) {
             LOG_S7_DEBUG("2 *LOAD-PATH*", lp);
         }
@@ -661,7 +677,7 @@ EXPORT void set_load_path(void) // char *scriptfile)
                ensures a pristine runtime env. The user can always add
                directories to load-path. The only exception is the
                project-local script directory in <projroot>/.mibl . */
-            #if defined(DEBUGGING)
+            #if defined(DEVBUILD)
                     if (mibl_debug) {
                         s7_pointer lp = s7_load_path(s7);
                         LOG_S7_DEBUG("1 *LOAD-PATH*", lp);
@@ -670,7 +686,7 @@ EXPORT void set_load_path(void) // char *scriptfile)
 
             /* _config_s7_load_path_bazel_run_env(manifest); */
             _config_s7_load_path_bazel_env();
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
             if (mibl_debug) {
                 s7_pointer lp = s7_load_path(s7);
                 log_debug("3 *LOAD-PATH*", lp);
@@ -700,6 +716,7 @@ EXPORT void set_load_path(void) // char *scriptfile)
 /* called by scripters, not coswitch */
 void _mibl_s7_configure_paths(char *scmdir, /*char *main_script,*/ char *ws_root)
 {
+    (void)ws_root;
     set_load_path(); //callback_script_file);
 
     // we need to do this before we chdir to repo root
@@ -733,7 +750,7 @@ void _mibl_s7_configure_paths(char *scmdir, /*char *main_script,*/ char *ws_root
     //TODO: what should be loaded by default and what left to user?
     if (!s7_load(s7, "libmibl.scm")) {
         log_error("Can't load libmibl.scm");
-        exit(EXIT_FAILURE);
+        /* exit(EXIT_FAILURE); */
     /* } else { */
     /*     log_info("loaded libmibl.scm"); */
     }
@@ -792,7 +809,7 @@ EXPORT struct mibl_config_s *mibl_s7_init2(char *scm_dir, char *ws_root)
 
     if (verbose) {
         log_info("pwd: %s", getcwd(NULL,0));
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
         s7_pointer lp =s7_load_path(s7);
         LOG_S7_DEBUG("*load-path*", lp);
 #endif
@@ -922,6 +939,21 @@ EXPORT void mibl_s7_run(char *main_script, char *ws)
 
     /* now we have the parsetree in *mibl-project* */
 
+    /* if (s7_name_to_value(s7, "*mibl-mustachios*") == s7_t(s7)) { */
+    /*     log_debug("MUSTACHIOS PARSETREE"); */
+    /*     UT_string *sexp; */
+    /*     utstring_new(sexp); */
+    /*     utstring_printf(sexp, "(mustache:render template *mibl-project* 0)"); */
+    /*     s7_pointer x = s7_eval_c_string(s7, utstring_body(sexp)); */
+    /*     (void)x; */
+    /*     s7_newline(s7,  s7_current_output_port(s7)); */
+    /*     s7_flush_output_port(s7, s7_current_output_port(s7)); */
+    /*     /\* char *s = TO_STR(ptree); *\/ */
+    /*     /\* log_debug("%s", s); *\/ */
+    /*     /\* free(s); *\/ */
+    /*     return; */
+    /* } */
+
     if (s7_name_to_value(s7, "*mibl-show-parsetree*") == s7_t(s7)) {
         log_debug("SHOW PARSETREE");
         UT_string *sexp;
@@ -934,6 +966,7 @@ EXPORT void mibl_s7_run(char *main_script, char *ws)
         /* char *s = TO_STR(ptree); */
         /* log_debug("%s", s); */
         /* free(s); */
+        return;
     }
 
     if (mibl_config.emit_parsetree) {
@@ -952,6 +985,15 @@ EXPORT void mibl_s7_run(char *main_script, char *ws)
     }
 
     /* **************************************************************** */
+    /* parsetree processing: one of */
+    /* a. mustache:render */
+    /* b. mibl:normalize */
+    /* c. other scm sript? */
+
+    /* or: pass arbitrary script and run -main. script decides which
+       of a-c to run. */
+
+    /* legacy: */
     /* now run the s7 script on the parsetree */
     /* s7_pointer lp = s7_load_path(s7); */
     /* LOG_S7_DEBUG("*load-path*", lp); */
@@ -1007,7 +1049,7 @@ EXPORT void mibl_s7_run(char *main_script, char *ws)
                        _s7_ws);
     /* } */
 
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
     if (mibl_debug) LOG_S7_DEBUG("s7 args", _s7_args);
 #endif
 

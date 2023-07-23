@@ -1,28 +1,3 @@
-# load("//vendored/makeheaders:BUILD.bzl", "makeheaders")
-
-# makeheaders(
-#     name = "xhdrs",
-#     srcs = [
-#         "//src:mkhdrs_srcs",
-#         "//src/findlib:mkhdrs_srcs",
-#     ],
-#     xsrcs = [
-#         "//src:mkhdrs_xsrcs",
-#         "//src/linux:mkhdrs_srcs"
-#     ],
-#     #     "//src:log.c",
-#     #     "//src:log.h",
-#     #     "//src:utarray.c",
-#     #     "//src:utarray.h",
-#     # ],
-#     hdrs = [
-#         "//src:mkhdrs_hdrs"
-#         # "//src:ansi_colors.h",
-#         # "//src:uthash.h",
-#         # "//src:utstring.h",
-#     ]
-# )
-
 ########
 DIRLOCS = [
     "SRC0=$(location //coswitch:coswitch.c);",
@@ -42,11 +17,6 @@ DIRLOCS = [
 
     "SRC6=$(location //src/xdg:xdg.c);",
     "SRCDIR6=`dirname $$SRC6`;",
-    "SRC7=$(location //src/opam:opam_lexer.c);",
-    "SRCDIR7=`dirname $$SRC7`;",
-    ## opam_syntaxis.c generated
-    "SRC8=$(location //src/opam:opam_syntaxis.c);",
-    "SRCDIR8=`dirname $$SRC8`;",
     "SRC9=$(location //src/coswitch:opam_switch_converter.c);",
     "SRCDIR9=`dirname $$SRC9`;",
 ]
@@ -55,7 +25,8 @@ DIRLOCS = [
 # since for for a few srcfiles we do not want to emit a hdr;
 # for those we use the suffixed colon notation e.g. 'foo.c:'.
 FILELOCS = [
-    "$(location //vendored/makeheaders)",
+    "$(execpath @makeheaders//src:makeheaders)",
+    # "$(location //vendored/makeheaders)",
     "$(location //src:ansi_colors.h)",
     "$(location //src:globals.c)",
     "$(location //src:config_bazel.c)",
@@ -70,8 +41,7 @@ FILELOCS = [
 
     "$(location //src/dune:dune_readers.c)",
 
-    "$(location //src:error_handler_dune.c)",
-    "$(location //src:error_handler_opam.c)",
+    "$(location //src/dune:error_handler_dune.c)",
     "$(location //src:error_handler_s7.c)",
     "$(location //src:handlers.c)",
     "$(location //src:handlers_opam.c)",
@@ -107,12 +77,6 @@ FILELOCS = [
     "$(location //src/findlib:meta_values.c)",
     "$(location //src/findlib:meta_syntaxis.c)",
 
-    "$(location //src/opam:opam_lexer.c)",
-    "$(location //src/opam:opam_lexis.c)",
-    "$(location //src/opam:opam_parser.c)",
-    "$(location //src/opam:opam_syntaxis.c)",
-    "$(location //src/opam:opam_package.c):",
-
     # "$(location //convert:convert.c)",
     "$(location //coswitch:coswitch.c)",
 
@@ -143,8 +107,8 @@ CP_CMDS = " ".join([
     "cp $${SRCDIR4}/*.h $(@D);",
     # "cp $${SRCDIR5}/*.h $(@D);",
     "cp $${SRCDIR6}/*.h $(@D);",
-    "cp $${SRCDIR7}/*.h $(@D);",
-    "cp $${SRCDIR8}/*.h $(@D);",
+    # "cp $${SRCDIR7}/*.h $(@D);",
+    # "cp $${SRCDIR8}/*.h $(@D);",
     "cp $${SRCDIR9}/*.h $(@D);",
 ])
 
@@ -162,8 +126,7 @@ genrule(
         "//src:deps.c",
         "//src:cmd_runner.c",
 
-        "//src:error_handler_dune.c",
-        "//src:error_handler_opam.c",
+        "//src/dune:error_handler_dune.c",
         "//src:error_handler_s7.c",
         "//src:handlers.c",
         "//src:handlers_opam.c",
@@ -199,12 +162,6 @@ genrule(
 
         "//src/findlib:meta_lexis.c",
         "//src/findlib:meta_syntaxis.c", # //src/findlib/gen_meta_syntaxis
-
-        "//src/opam:opam_lexer.c",
-        "//src/opam:opam_lexis.c",
-        "//src/opam:opam_parser.c",
-        "//src/opam:opam_syntaxis.c",
-        "//src/opam:opam_package.c",
 
         "//src/xdg:xdg.c",
 
@@ -267,16 +224,9 @@ genrule(
         "meta_values.h",
         "meta_syntaxis.h",
 
-        "opam_lexer.h",
-        "opam_lexis.h",
-        "opam_parser.h",
-        "opam_syntaxis.h",
-
-
         "load_project.h",
         "error_handler_dune.h",
         "error_handler_s7.h",
-        "error_handler_opam.h",
 
         "utils.h",
         # "utstring.h",
@@ -289,7 +239,7 @@ genrule(
     cmd = " ".join(DIRLOCS) +
     " ".join(FILELOCS) + LINUX_FILELOCS + ";"
     + CP_CMDS,
-    tools = ["//vendored/makeheaders"],
+    tools = ["@makeheaders//src:makeheaders"],
     visibility = ["//visibility:public"]
 )
 
@@ -315,8 +265,7 @@ genrule(
         "//src/findlib:debug_findlib.c",
         "//src/findlib:debug_meta.c",
 
-        "//src:error_handler_dune.c",
-        "//src:error_handler_opam.c",
+        "//src/dune:error_handler_dune.c",
         "//src:error_handler_s7.c",
         "//src:handlers.c",
         "//src:handlers_opam.c",
@@ -379,7 +328,7 @@ genrule(
         # "SRC4=$(location //src/findlib:meta_syntaxis.c);",
         # "SRCDIR4=`dirname $$SRC4`;",
 
-        "$(location //vendored/makeheaders)",
+        "$(execpath @makeheaders//src:makeheaders)",
         "-H",
         "$(location //src:ansi_colors.h)",
         "$(location //src:globals.c)",
@@ -400,8 +349,7 @@ genrule(
         "$(location //src/findlib:debug_findlib.c)",
         "$(location //src/findlib:debug_meta.c)",
 
-        "$(location //src:error_handler_dune.c)",
-        "$(location //src:error_handler_opam.c)",
+        "$(location //src/dune:error_handler_dune.c)",
         "$(location //src:error_handler_s7.c)",
         "$(location //src:handlers.c)",
         "$(location //src:handlers_opam.c)",
@@ -453,7 +401,7 @@ genrule(
         # "cp $${SRCDIR3}/*.h $(@D);",
         # "cp $${SRCDIR4}/*.h $(@D);",
     ]),
-    tools = ["//vendored/makeheaders"],
+    tools = ["@makeheaders//src:makeheaders"],
     visibility = ["//visibility:public"]
 )
 

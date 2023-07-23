@@ -1,9 +1,12 @@
-load("//src:BUILD.bzl", COPTS = "COPTS")
+load("//:BUILD.bzl",
+     COPTS = "BASE_COPTS",
+     "LIBLOG_CC_VERSION", "UTHASH_VERSION")
 
 exports_files(["opam_switch_converter.c", "coswitch_cleaner.c"])
 
 ################################################################
 ####    libcoswitch - converts opam switch
+## depends on dune_s7, libfindlib, config
 ################################################################
 cc_library(
     name = "coswitch",
@@ -13,7 +16,7 @@ cc_library(
         "coswitch_cleaner.c",
         "//src/hdrs:coswitch_cleaner.h",
         "//src:handlers_srcs",
-        "//src:coswitch_srcs",
+        # "//src:coswitch_srcs",
     ] + select({
         "//bzl/host:linux": [
             "//src/linux:strlcat.c",
@@ -29,11 +32,21 @@ cc_library(
         ],
         "//conditions:default": []
     }),
-
     hdrs = [
         "//src/hdrs:libmibl.h",
         # "//src/hdrs:opam_switch_converter.h",
         # "//src/hdrs:coswitch_cleaner.h",
+    ],
+    deps = [
+        "//src:config",
+        "//src/dune",
+        "//src/findlib",
+        "//src/xdg",
+        # "//src:mibl",
+        "@libs7//src:s7",
+        "//vendored/libinih:inih",
+        "@liblog_cc//src:logc",
+        "@uthash//src:uthash",
     ],
     copts = COPTS + [
         "-Isrc",
@@ -56,28 +69,17 @@ cc_library(
         "-Ivendored/libinih",
         "-Iexternal/mibl/vendored/libinih",
 
-        "-Ivendored/logc",
-        "-Iexternal/mibl/vendored/logc",
+        "-Iexternal/liblog_cc~{}/src".format(LIBLOG_CC_VERSION),
 
-        "-Ivendored/uthash",
-        "-Iexternal/mibl/vendored/uthash"
+        "-Iexternal/uthash~{}/src".format(UTHASH_VERSION)
     ],
     local_defines = select({
-        "//config/debug:debug?": ["DEBUGGING", "DEBUG-MIBL"],
+        "//config/debug:debug?": ["DEVBUILD", "DEBUG-MIBL"],
         "//conditions:default":   []
     }) + select({
         "//config/debug:trace?": ["TRACING"],
         "//conditions:default":   []
     }),
-    deps = [
-        "//src/dune",
-        "//src/findlib",
-        # "//src:mibl",
-        "@libs7//src:s7",
-        "//vendored/libinih:inih",
-        "//vendored/logc",
-        "//vendored/uthash",
-    ],
     # ] + select({
     #     "//compilation_mode:dbg?": [":debug"],
     #     "//conditions:default": []

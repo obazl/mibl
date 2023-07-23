@@ -48,7 +48,7 @@
 
 #include "config_s7.h"
 
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
 extern bool mibl_debug;
 #endif
 /* #if defined(TRACING) */
@@ -92,6 +92,7 @@ s7_pointer cc_kw;
 s7_pointer cc_srcs_kw;
 s7_pointer cc_hdrs_kw;
 s7_pointer files_kw;
+s7_pointer json_kw;
 s7_pointer toml_kw;
 s7_pointer scripts_kw;
 s7_pointer static_kw;
@@ -217,7 +218,7 @@ char **mibl_s7_flag;
 /* called by load-project, repl. needed for project scripting. */
 EXPORT void initialize_mibl_data_model(s7_scheme *s7)
 {
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
     if (mibl_debug_mibl)
         log_trace("initialize_mibl_data_model");
 #endif
@@ -350,7 +351,7 @@ s7_pointer init_scheme_fns(s7_scheme *s7)
         _s7_set_cdr = s7_name_to_value(s7, "set-cdr!");
         if (_s7_set_cdr == s7_undefined(s7)) {
             log_error("unbound symbol: set-cdr!");
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
             s7_pointer lp = s7_load_path(s7);
             LOG_S7_DEBUG("*load-path*", lp);
 #endif
@@ -363,7 +364,7 @@ s7_pointer init_scheme_fns(s7_scheme *s7)
         _s7_quote = s7_name_to_value(s7, "quote");
         if (_s7_quote == s7_undefined(s7)) {
             log_error("unbound symbol: quote");
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
             s7_pointer lp = s7_load_path(s7);
             LOG_S7_DEBUG("*load-path* 2", lp);
 #endif
@@ -390,7 +391,7 @@ s7_pointer _load_acons(s7_scheme *s7)
         _s7_acons = s7_name_to_value(s7, "acons");
         if (_s7_acons == s7_undefined(s7)) {
             log_error("unbound symbol: acons");
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
             s7_pointer lp = s7_load_path(s7);
             LOG_S7_DEBUG("*load-path* 3", lp);
 #endif
@@ -409,7 +410,7 @@ s7_pointer _load_assoc(void)
         assoc = s7_name_to_value(s7, "assoc");
         if (assoc == s7_undefined(s7)) {
             log_error("unbound symbol: assoc");
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
             s7_pointer lp = s7_load_path(s7);
             LOG_S7_DEBUG("*load-path* 4", lp);
 #endif
@@ -426,7 +427,7 @@ s7_pointer _load_assoc_in(void)
         assoc_in = s7_name_to_value(s7, "assoc-in");
         if (assoc == s7_undefined(s7)) {
             log_error("unbound symbol: assoc-in");
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
             s7_pointer lp = s7_load_path(s7);
             LOG_S7_DEBUG("*load-path* 5", lp);
 #endif
@@ -443,7 +444,7 @@ s7_pointer _load_assoc_val(void)
         assoc_val = s7_name_to_value(s7, "assoc-in");
         if (assoc == s7_undefined(s7)) {
             log_error("unbound symbol: assoc-in");
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
             s7_pointer lp = s7_load_path(s7);
             LOG_S7_DEBUG("*load-path* 6", lp);
 #endif
@@ -460,7 +461,7 @@ s7_pointer _load_append(void)
         _s7_append = s7_name_to_value(s7, "append");
         if (assoc == s7_undefined(s7)) {
             log_error("unbound symbol: append");
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
             s7_pointer lp = s7_load_path(s7);
             LOG_S7_DEBUG("*load-path* 7", lp);
 #endif
@@ -477,7 +478,7 @@ s7_pointer _load_list_set(s7_scheme *s7)
         _s7_list_set = s7_name_to_value(s7, "list-set!");
         if (_s7_list_set == s7_undefined(s7)) {
             log_error("unbound symbol: list-set!");
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
             s7_pointer lp = s7_load_path(s7);
             LOG_S7_DEBUG("*load-path* 8", lp);
 #endif
@@ -493,7 +494,7 @@ s7_pointer _load_sort(void)
     sort_bang = s7_name_to_value(s7, "sort!");
     if (assoc == s7_undefined(s7)) {
         log_error("unbound symbol: sort!");
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
         s7_pointer lp = s7_load_path(s7);
         LOG_S7_DEBUG("*load-path* 9", lp);
 #endif
@@ -508,7 +509,7 @@ s7_pointer _load_string_lt(void)
     string_lt = s7_name_to_value(s7, "string<?");
     if (assoc == s7_undefined(s7)) {
         log_error("unbound symbol: string<?");
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
         s7_pointer lp = s7_load_path(s7);
         LOG_S7_DEBUG("*load-path* 10", lp);
 #endif
@@ -611,7 +612,7 @@ void _s7_init(void)
     s7 = libs7_init();             /* @libs7//src:s7.c */
     /* s7_gc_on(s7, s7_f(s7)); */
 
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
     s7_pointer lp = s7_load_path(s7);
     LOG_S7_DEBUG("*load-path* 11", lp);
     if (mibl_debug_s7_config) {
@@ -637,7 +638,7 @@ void _s7_init(void)
 
         /* load libc_s7 */
 /*         dso_dir = utstring_body(mibl_runfiles_root); */
-/* #if defined(DEBUGGING) */
+/* #if defined(DEVBUILD) */
 /*         if (mibl_trace) */
 /*             log_debug("bzl mode: %s", dso_dir); */
 /* #endif */
@@ -664,7 +665,7 @@ void _s7_init(void)
         /*                 dso_dir, */
         /*                 "mibl/libc_s7" DSO_EXT); */
     }
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
     /* s7_pointer */ lp = s7_load_path(s7);
     char *s = s7_object_to_c_string(s7, lp);
     log_debug("load-path: %s", s);
@@ -673,8 +674,10 @@ void _s7_init(void)
 
     libs7_load_clib(s7, "c");
     libs7_load_clib(s7, "cwalk");
-
+    libs7_load_clib(s7, "cjson");
     libs7_load_clib(s7, "toml");
+
+    libs7_load_clib(s7, "dune"); // experimental: load dune_s7
 
 /* #if defined(CLIBS_LINK_RUNTIME) */
 /*     clib_dload_ns(s7, "libc_s7", "libc", DSO_EXT); */
@@ -705,7 +708,7 @@ void _s7_init(void)
     /* tmp dir */
     char tplt[] = "/tmp/obazl.XXXXXXXXXX";
     char *tmpdir = mkdtemp(tplt);
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
     if (mibl_debug)
         log_debug("tmpdir: %s", tmpdir);
 #endif
@@ -734,6 +737,7 @@ void _define_mibl_s7_keywords(void)
     mllib_kw = s7_make_keyword(s7, "mllib");
     cppo_kw = s7_make_keyword(s7, "cppo");
     files_kw   = s7_make_keyword(s7, "files");
+    json_kw   = s7_make_keyword(s7, "json");
     toml_kw   = s7_make_keyword(s7, "toml");
     static_kw  = s7_make_keyword(s7, "static");
     dynamic_kw = s7_make_keyword(s7, "dynamic");
@@ -808,7 +812,7 @@ EXPORT void mibl_s7_set_flag(char *flag, bool val)
     utstring_renew(setter);
     utstring_printf(setter, "(set! %s %s)",
                     flag, val? "#t": "#f");
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
     if (mibl_debug) {
         log_debug("Setting s7 global var: %s", utstring_body(setter));
     }
@@ -870,7 +874,7 @@ EXPORT void mibl_s7_init(void)
 
     _define_mibl_s7_vars();
 
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
     s7_pointer lp = s7_load_path(s7);
     LOG_S7_DEBUG("mibl_s7_init *load-path*", lp);
 #endif

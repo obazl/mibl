@@ -68,6 +68,8 @@ other build metalanguages (e.g. ninja).
 
 == mibl commands
 
+Use with `bazel run`.
+
 * `@mibl//mibl` - the engine. With `--main <script filename>` runs a script; otherwise launches a repl.
 
 Aliases:

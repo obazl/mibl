@@ -1,0 +1,10 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+test_suite(
+    name = "test",
+    tests = [
+        "//test/dune/rules/shell:mibl_test",
+        "//test/dune/rules/stdio:mibl_test",
+        "//test/dune/rules/stdout:mibl_test"
+    ]
+)

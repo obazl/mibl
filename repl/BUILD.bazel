@@ -1,3 +1,4 @@
+load("//:BUILD.bzl", "LIBLOG_CC_VERSION")
 load("@rules_cc//cc:defs.bzl", "cc_binary")
 
 alias(
@@ -14,8 +15,6 @@ cc_binary(
         "xen_repl.c", "xen_repl.h",
         # "//src:opam_config.h",
         # "//src:bazel_config.h"
-        # "//vendored/logc:log.c",
-        # "//vendored/logc:log.h"
     ] + select({
         "//compilation_mode:dbg?": [
             "//src:debug_srcs"
@@ -41,8 +40,7 @@ cc_binary(
         "-I$(GENDIR)/src/hdrs",
         "-I$(GENDIR)/external/mibl/src/hdrs", # mibl.h is generated
 
-        "-Ivendored/logc",
-        "-Iexternal/mibl/vendored/logc",
+        "-Iexternal/liblog_cc~{}/src".format(LIBLOG_CC_VERSION),
 
         "-Ivendored/gopt",
         "-Iexternal/mibl/vendored/gopt",
@@ -77,7 +75,7 @@ cc_binary(
     deps = [
         "//src:mibl",
         "//vendored/gopt",
-        "//vendored/logc",
+        "@liblog_cc//src:logc",
         "//vendored/uthash",
         "@libs7//src:s7",
     ],
@@ -98,11 +96,11 @@ genrule(
     cmd = "\n".join([
         "SRC1=$(location repl.c)",
         "SRCDIR1=`dirname $$SRC1`",
-        "$(location //vendored/makeheaders) \\",
+        "$(execpath @makeheaders//src:makeheaders) \\",
         "    $(location repl.c) \\",
         "    $(location xen_repl.c)",
         "cp $${SRCDIR1}/*.h $(@D)",
     ]),
-    tools = ["//vendored/makeheaders"],
+    tools = ["@makeheaders//src:makeheaders"],
     visibility = ["//visibility:public"]
 )

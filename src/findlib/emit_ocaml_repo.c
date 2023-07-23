@@ -17,9 +17,9 @@
 #include "utarray.h"
 #include "utstring.h"
 
-#include "cjson/cJSON.h"
-#include "mustach-cjson.h"
-#include "mustach.h"
+/* #include "cjson/cJSON.h" */
+/* #include "mustach-cjson.h" */
+/* #include "mustach.h" */
 
 #include "emit_ocaml_repo.h"
 
@@ -38,123 +38,123 @@ extern UT_string *mibl_runfiles_root;
 bool mibl_debug_symlinks = false;
 #endif
 
-static char *readtemplate(const char *filename, size_t *length)
-{
-    errno = 0;
-#if defined(TRACING)
-        printf("cwd: %s\n", getcwd(NULL, 0));
-#endif
+/* static char *readtemplate(const char *filename, size_t *length) */
+/* { */
+/*     errno = 0; */
+/* #if defined(TRACING) */
+/*         printf("cwd: %s\n", getcwd(NULL, 0)); */
+/* #endif */
 
-    UT_string *src;
-    utstring_new(src);
+/*     UT_string *src; */
+/*     utstring_new(src); */
 
-    /* FIXME: use a proper runfiles library */
-    utstring_printf(src,
-                    "%s/external/%s/coswitch/templates/%s",
-                    utstring_body(mibl_runfiles_root),
-                    ws_name,
-                    filename);
-    int rc = access(utstring_body(src), F_OK);
-    if (rc != 0) {
-        perror(utstring_body(src));
-        log_error("not found: %s", utstring_body(src));
-        /* fprintf(stderr, "not found: %s\n", utstring_body(src)); */
-        exit(EXIT_FAILURE);
-    }
+/*     /\* FIXME: use a proper runfiles library *\/ */
+/*     utstring_printf(src, */
+/*                     "%s/external/%s/coswitch/templates/%s", */
+/*                     utstring_body(mibl_runfiles_root), */
+/*                     ws_name, */
+/*                     filename); */
+/*     int rc = access(utstring_body(src), F_OK); */
+/*     if (rc != 0) { */
+/*         perror(utstring_body(src)); */
+/*         log_error("not found: %s", utstring_body(src)); */
+/*         /\* fprintf(stderr, "not found: %s\n", utstring_body(src)); *\/ */
+/*         exit(EXIT_FAILURE); */
+/*     } */
 
-    FILE *stream = fopen(utstring_body(src), "r");
-    if (stream == NULL) {
-        printf(RED "ERROR: " CRESET "fopen %s: %s\n",
-               filename, strerror(errno));
-        return NULL;
-#if defined(TRACING)
-    } else {
-        if (mibl_debug) printf("fopened %s\n", filename);
-#endif
-    }
+/*     FILE *stream = fopen(utstring_body(src), "r"); */
+/*     if (stream == NULL) { */
+/*         printf(RED "ERROR: " CRESET "fopen %s: %s\n", */
+/*                filename, strerror(errno)); */
+/*         return NULL; */
+/* #if defined(TRACING) */
+/*     } else { */
+/*         if (mibl_debug) printf("fopened %s\n", filename); */
+/* #endif */
+/*     } */
 
-    fseek (stream, 0, SEEK_END);
-    long filea_sz = ftell (stream);
-    fseek (stream, 0, SEEK_SET);
-    char * buffer = malloc (filea_sz);
-    if (buffer == NULL) {
-        fprintf(stderr, "Out of memory reading template file %s\n", filename);
-        fclose(stream);
-        exit(EXIT_FAILURE);
-    }
+/*     fseek (stream, 0, SEEK_END); */
+/*     long filea_sz = ftell (stream); */
+/*     fseek (stream, 0, SEEK_SET); */
+/*     char * buffer = malloc (filea_sz); */
+/*     if (buffer == NULL) { */
+/*         fprintf(stderr, "Out of memory reading template file %s\n", filename); */
+/*         fclose(stream); */
+/*         exit(EXIT_FAILURE); */
+/*     } */
 
-    size_t readed;
-    readed = fread(buffer, 1, (size_t)filea_sz, stream);
-    if (readed != filea_sz) {
-        fprintf(stderr, "fread readed ct != nitems\n");
-        free(buffer);
-        fclose(stream);
-        exit(EXIT_FAILURE);     /* FIXME: exit gracefully */
-    }
-    fclose(stream);
-    utstring_free(src);
+/*     size_t readed; */
+/*     readed = fread(buffer, 1, (size_t)filea_sz, stream); */
+/*     if (readed != filea_sz) { */
+/*         fprintf(stderr, "fread readed ct != nitems\n"); */
+/*         free(buffer); */
+/*         fclose(stream); */
+/*         exit(EXIT_FAILURE);     /\* FIXME: exit gracefully *\/ */
+/*     } */
+/*     fclose(stream); */
+/*     utstring_free(src); */
 
-    *length = readed;
+/*     *length = readed; */
 
-#if defined(TRACING)
-    log_debug("readed template: %ld (nitems: %ld)\n", readed, filea_sz);
-#endif
-    return buffer;
-}
+/* #if defined(TRACING) */
+/*     log_debug("readed template: %ld (nitems: %ld)\n", readed, filea_sz); */
+/* #endif */
+/*     return buffer; */
+/* } */
 
 /* FIXME: put this in mustach lib */
-static const char *mustach_errors[] = {
-	"??? unreferenced ???",
-	"system",
-	"unexpected end",
-	"empty tag",
-	"tag too long",
-	"bad separators",
-	"too depth",
-	"closing",
-	"bad unescape tag",
-	"invalid interface",
-	"item not found",
-	"partial not found",
-	"undefined tag"
-};
+/* static const char *mustach_errors[] = { */
+/* 	"??? unreferenced ???", */
+/* 	"system", */
+/* 	"unexpected end", */
+/* 	"empty tag", */
+/* 	"tag too long", */
+/* 	"bad separators", */
+/* 	"too depth", */
+/* 	"closing", */
+/* 	"bad unescape tag", */
+/* 	"invalid interface", */
+/* 	"item not found", */
+/* 	"partial not found", */
+/* 	"undefined tag" */
+/* }; */
 
-void _process_mustache(char *template, UT_string *to_file)
-{
-    /* log_debug("_process_mustache"); */
-    /* log_debug("opam_ocaml_version: %s", utstring_body(opam_ocaml_version)); */
+/* void _process_mustache(char *template, UT_string *to_file) */
+/* { */
+/*     /\* log_debug("_process_mustache"); *\/ */
+/*     /\* log_debug("opam_ocaml_version: %s", utstring_body(opam_ocaml_version)); *\/ */
 
-    /* static const char *errmsg = 0; */
-    static int flags = Mustach_With_AllExtensions;
-    static FILE *output = 0;
+/*     /\* static const char *errmsg = 0; *\/ */
+/*     static int flags = Mustach_With_AllExtensions; */
+/*     static FILE *output = 0; */
 
-    errno = 0;
-    output = fopen(utstring_body(to_file), "w");
-    if (output == NULL) {
-        fprintf(stdout, "%s", strerror(errno));
-        exit(EXIT_FAILURE);
-    }
+/*     errno = 0; */
+/*     output = fopen(utstring_body(to_file), "w"); */
+/*     if (output == NULL) { */
+/*         fprintf(stdout, "%s", strerror(errno)); */
+/*         exit(EXIT_FAILURE); */
+/*     } */
 
-    cJSON *version = cJSON_CreateString(utstring_body(opam_ocaml_version));
-    cJSON *root    = cJSON_CreateObject();
-    cJSON_AddItemToObject(root, "compiler_version", version);
+/*     cJSON *version = cJSON_CreateString(utstring_body(opam_ocaml_version)); */
+/*     cJSON *root    = cJSON_CreateObject(); */
+/*     cJSON_AddItemToObject(root, "compiler_version", version); */
 
-    size_t length;
-    char *template_str = readtemplate(template, &length);
+/*     size_t length; */
+/*     char *template_str = readtemplate(template, &length); */
 
-    /* s = process(template_str, length); */
-    int s = mustach_cJSON_file(template_str, length, root, flags, output);
+/*     /\* s = process(template_str, length); *\/ */
+/*     int s = mustach_cJSON_file(template_str, length, root, flags, output); */
 
-    free(template_str);
-    if (s != MUSTACH_OK) {
-        s = -s;
-        if (s < 1 || s >= (int)(sizeof mustach_errors / sizeof * mustach_errors))
-            s = 0;
-        fprintf(stderr, "Template error %s (file %s)\n", mustach_errors[s], template);
-    }
-    fclose(output);
-    cJSON_Delete(root);
-}
+/*     free(template_str); */
+/*     if (s != MUSTACH_OK) { */
+/*         s = -s; */
+/*         if (s < 1 || s >= (int)(sizeof mustach_errors / sizeof * mustach_errors)) */
+/*             s = 0; */
+/*         fprintf(stderr, "Template error %s (file %s)\n", mustach_errors[s], template); */
+/*     } */
+/*     fclose(output); */
+/*     cJSON_Delete(root); */
+/* } */
 
 void _copy_buildfile(char *buildfile, UT_string *to_file)
 {
@@ -754,8 +754,10 @@ void emit_ocaml_toolchain_buildfiles(char *bzl_switch_lib)
                     bzl_switch_lib);
     mkdir_r(utstring_body(ocaml_file));
     utstring_printf(ocaml_file, "/BUILD.bazel");
-    /* _copy_buildfile("toolchain/adapters/local.BUILD", ocaml_file); */
-    _process_mustache("toolchain/adapters/local.BUILD.mustache", ocaml_file);
+    _copy_buildfile("toolchain/adapters/local.BUILD", ocaml_file);
+    //TODO: mustache support
+    /* _process_mustache("toolchain/adapters/local.BUILD.mustache", ocaml_file); */
+
 
     utstring_new(ocaml_file);
     utstring_printf(ocaml_file, "%s/ocaml/toolchain/adapters/linux/x86_64",
@@ -1915,6 +1917,7 @@ void _symlink_ocaml_c_libs(char *tgtdir)
 /* **************************************************************** */
 void emit_ocaml_bootstrap(char *opam_switch, FILE *bootstrap_FILE)
 {
+    (void)opam_switch;
 #if defined(TRACING)
     if (mibl_trace) log_trace("emit_ocaml_bootstrap");
 #endif

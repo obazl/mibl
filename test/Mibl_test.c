@@ -14,7 +14,7 @@
 #include "unity.h"
 
 
-#if defined(TRACING)
+#if defined(DEVBUILD)
 extern bool mibl_debug;
 extern bool mibl_debug_bazel;
 extern int  mibl_debug_level;
@@ -23,6 +23,9 @@ extern bool mibl_debug_miblrc;
 extern bool mibl_debug_scm;
 extern bool mibl_debug_s7_config;
 extern bool mibl_debug_traversal;
+#endif
+
+#if defined(TRACING)
 extern bool mibl_trace;
 extern bool mibl_trace_bazel;
 #endif

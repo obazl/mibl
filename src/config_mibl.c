@@ -16,7 +16,7 @@ extern const UT_icd ut_str_icd;
 extern bool bzl_mode;
 extern int  verbosity;
 
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
 bool mibl_debug_mibl = false;
 bool mibl_debug_miblrc   = false;
 /* bool mibl_debug_traversal = false; */
@@ -92,7 +92,7 @@ struct mibl_config_s mibl_config = {
 LOCAL int _miblrc_handler(void* config, const char* section, const char* name, const char* value)
 {
     TRACE_ENTRY(_miblrc_handler);
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
     if (mibl_debug_miblrc)
         log_trace("_miblrc_handler, section %s: %s=%s", section, name, value);
 #endif
@@ -108,6 +108,7 @@ LOCAL int _miblrc_handler(void* config, const char* section, const char* name, c
     }
 
     if (MATCH("mibl", "flag")) {
+        // allows user to set arbitrary s7 flag var
         if (verbose && verbosity > 1)
             log_debug("miblrc [mibl] debug: %s", value);
 
@@ -183,7 +184,7 @@ LOCAL int _miblrc_handler(void* config, const char* section, const char* name, c
     }
 
     if (MATCH("mibl", "pkg")) {
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
         if (mibl_debug_mibl) log_debug("section: mibl; entry: pkg");
 #endif
         char *token, *sep = " ,\t";
@@ -205,7 +206,7 @@ LOCAL int _miblrc_handler(void* config, const char* section, const char* name, c
     /* FIXME: normalize filepaths. remove leading ./ and embedded ../ */
     /* disallow leading / and ../ */
     if (MATCH("srcs", "exclude")) {
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
         if (mibl_debug_miblrc)
             log_debug("section: srcs; entry: exclude; val: %s", value);
 #endif

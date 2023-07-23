@@ -93,7 +93,7 @@ bool _skip_pkg(char *pkg)
     int len = strlen(pkg);
     int skiplen;
 
-    for (int i = 0; i < skips_ct; i++) {
+    for (unsigned long i = 0; i < skips_ct; i++) {
         skiplen = strlen(skips[i]);
         if (strncmp(pkg + len - skiplen,
                     skips[i], skiplen) == 0) {

@@ -26,7 +26,7 @@
 #include "coswitch.h"
 
 
-#if defined(TRACING)
+#if defined(DEVBUILD)
 extern bool mibl_debug;
 extern int  debug_level;
 extern bool debug_findlib;

@@ -1,6 +1,9 @@
+load("//:BUILD.bzl",
+     COPTS = "BASE_COPTS",
+     "LIBLOG_CC_VERSION",
+     "LIBS7_VERSION",
+     "UTHASH_VERSION")
 # load("@rules_cc//cc:defs.bzl", "cc_library")
-
-load("//src:BUILD.bzl", "COPTS")
 
 exports_files(["coswitch.c"]) # for makeheaders(?)
 
@@ -12,6 +15,13 @@ cc_binary(
         "coswitch.c",
         "//src/hdrs:coswitch.h",
     ],
+    deps = [
+        "//src/coswitch",
+        "//vendored/gopt",
+        "@libs7//src:s7",
+        "@liblog_cc//src:logc",
+        "@uthash//src:uthash"
+   ],
     copts = COPTS + [
         "-Isrc",
         "-Icoswitch",
@@ -28,26 +38,18 @@ cc_binary(
         "-Iexternal/mibl/src",
         "-I$(GENDIR)/external/mibl/src",
 
-        "-Iexternal/libs7/src",
+        "-Iexternal/libs7~{}/src".format(LIBS7_VERSION),
+        # "-Iexternal/libs7/src",
 
         "-Ivendored/gopt", "-Iexternal/mibl/vendored/gopt",
 
-        "-Ivendored/logc", "-Iexternal/mibl/vendored/logc",
-
-        "-Ivendored/uthash", "-Iexternal/mibl/vendored/uthash",
+        "-Iexternal/liblog_cc~{}/src".format(LIBLOG_CC_VERSION),
+        "-Iexternal/uthash~{}/src".format(UTHASH_VERSION)
     ],
-    defines = select({
+    local_defines = select({
         "//compilation_mode:dbg?": ["TRACING", "DEBUG_MIBL"],
         "//conditions:default":   []
     }),
-    deps = [
-        "//src/coswitch",
-        # "//src:opam_switch_converter",
-        # "//src/opam:opam_lexer"
-        "//vendored/gopt",
-        "//vendored/logc",
-        "//vendored/uthash"
-   ],
     linkstatic = 1
 )
 

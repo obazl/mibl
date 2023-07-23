@@ -285,7 +285,7 @@ s7_int gc_depgraph_port, gc_depgraph, gc_env, gc_deps_list;
 s7_pointer analyze_deps_file(char *pkg, char *tgt)
 {
     TRACE_ENTRY(analyze_deps_file);
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
     if (mibl_debug) {
         log_trace(RED "analyze_deps_file" CRESET);
         log_debug("pkg: '%s'", pkg); //ftsentry->fts_path);
@@ -338,13 +338,13 @@ s7_pointer analyze_deps_file(char *pkg, char *tgt)
         return s7_nil(s7);
     }
 
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
     log_debug("CODEPT result string: %s", result);
 #endif
 
     s7_pointer depgraph_port = s7_open_input_string(s7, result);
     s7_gc_protect_via_stack(s7, depgraph_port);
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
     if (mibl_config.debug_deps)
         LOG_S7_DEBUG("depgraph_port", depgraph_port);
 #endif
@@ -354,7 +354,7 @@ s7_pointer analyze_deps_file(char *pkg, char *tgt)
     s7_gc_unprotect_via_stack(s7, depgraph_port);
     s7_close_input_port(s7, depgraph_port);
 
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
     LOG_S7_DEBUG("depgraph", depgraph);
 #endif
 
@@ -364,7 +364,7 @@ s7_pointer analyze_deps_file(char *pkg, char *tgt)
                                               s7_make_symbol(s7, "depgraph"),
                                               depgraph)));
     s7_gc_protect_via_stack(s7, env);
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
     LOG_S7_DEBUG("env", env);
 #endif
     /* gc_env = s7_gc_protect(s7, env); */
@@ -403,12 +403,12 @@ s7_pointer analyze_deps_file(char *pkg, char *tgt)
 
     s7_pointer deps_list = s7_eval_c_string_with_environment(s7, sexp, env);
     gc_deps_list = s7_gc_protect(s7, deps_list);
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
     LOG_S7_DEBUG("DEPS_list", deps_list);
 #endif
 
     /* (void)deps_list; */
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
     LOG_S7_DEBUG("DEPS_LIST", deps_list);
 #endif
 
@@ -594,7 +594,7 @@ s7_pointer analyze_deps_file(char *pkg, char *tgt)
 s7_pointer get_deps(char *_pkg, char *tgt) // , s7_pointer deps_list)
 {
 #if defined(TRACING)
-    if (mibl_debug_deps)
+    /* if (mibl_debug_deps) */
         log_trace(RED "get_deps:" CRESET " %s : %s", _pkg, tgt);
         log_trace("traversal ct: %d", tct);
 #endif

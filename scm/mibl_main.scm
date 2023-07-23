@@ -39,7 +39,7 @@
 ;;               pkgs)))
 
 (define* (-main root-path ws-path)
-  ;; (format #t "-main (mibl_main.scm)\n")
+  (format #t "-main (mibl_main.scm)\n")
   (load "libmibl.scm")
   (if *mibl-clean-mibl*
       (mibl-clean-mibl)

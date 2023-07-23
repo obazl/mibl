@@ -1,3 +1,4 @@
+load("//:BUILD.bzl", "LIBLOG_CC_VERSION")
 load("@rules_cc//cc:defs.bzl", "cc_library")
 
 cc_test(
@@ -17,8 +18,7 @@ cc_test(
         "-Ivendored/gopt",
         "-Iexternal/mibl/vendored/gopt",
 
-        "-Ivendored/logc",
-        "-Iexternal/mibl/vendored/logc",
+        "-Iexternal/liblog_cc~{}/src".format(LIBLOG_CC_VERSION),
 
         "-Ivendored/unity",
         "-Iexternal/mibl/vendored/unity",
@@ -54,7 +54,7 @@ cc_test(
     deps = [
         "//src:mibl",
         "//vendored/gopt",
-        "//vendored/logc",
+        "@liblog_cc//src:logc",
         "//vendored/unity",
         "//vendored/uthash",
     ],

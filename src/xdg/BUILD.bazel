@@ -1,15 +1,21 @@
+load("//:BUILD.bzl",
+     COPTS = "BASE_COPTS",
+     DEFINES = "BASE_DEFINES",
+     "LIBLOG_CC_VERSION",
+     "UTHASH_VERSION")
+
 exports_files(glob(["*.c", "*.h"]))
 
-COPTS = [
-    "-x", "c",
-    "-std=c11",
-    "-pedantic-errors",
-] + select({
-    "//bzl/host:linux": [
-        "-D_POSIX_C_SOURCE=200809L", ## strdup, strndup, waitpid, etc.
-        "-D_DEFAULT_SOURCE"],        ## DT_ constants from dirent.h
-    "//conditions:default":   []
-})
+# COPTS = [
+#     "-x", "c",
+#     "-std=c11",
+#     "-pedantic-errors",
+# ] + select({
+#     "//bzl/host:linux": [
+#         "-D_POSIX_C_SOURCE=200809L", ## strdup, strndup, waitpid, etc.
+#         "-D_DEFAULT_SOURCE"],        ## DT_ constants from dirent.h
+#     "//conditions:default":   []
+# })
 
 config_setting(name = "linux",
                constraint_values = ["@platforms//os:linux"])
@@ -20,23 +26,26 @@ config_setting(name = "macos",
 ##########
 cc_library(
     name  = "xdg",
+    linkstatic = True,
     srcs = ["xdg.c", "//src/hdrs:xdg.h"],
+    deps = ["@liblog_cc//src:logc",
+            "@uthash//src:uthash",
+            "//dev"],
     copts = COPTS + [
         "-x", "c",
         "-std=c11",
         "-Wall",
         "-Wpedantic",
 
-        "-Idev", "-Iexternal/mibl/dev",
+        "-Idev",
+        "-Iexternal/mibl/dev",
+
         "-I$(GENDIR)/src/hdrs",
         "-I$(GENDIR)/external/mibl/src/hdrs",
 
-        "-Ivendored/logc",
-        "-Iexternal/mibl/vendored/logc",
-        "-Ivendored/uthash",
-        "-Iexternal/mibl/vendored/uthash",
+        "-Iexternal/liblog_cc~{}/src".format(LIBLOG_CC_VERSION),
+        "-Iexternal/uthash~{}/src".format(UTHASH_VERSION)
     ],
-    linkstatic = True,
-    deps = ["//vendored/logc", "//vendored/uthash", "//dev"],
+    local_defines = DEFINES,
     visibility = ["//visibility:public"]
 )

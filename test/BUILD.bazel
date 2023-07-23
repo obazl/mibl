@@ -1,3 +1,4 @@
+load("//:BUILD.bzl", "LIBLOG_CC_VERSION")
 load("@rules_cc//cc:defs.bzl", "cc_library")
 
 test_suite(
@@ -44,8 +45,7 @@ cc_binary(
         "-Ivendored/gopt",
         "-Iexternal/mibl/vendored/gopt",
 
-        "-Ivendored/logc",
-        "-Iexternal/mibl/vendored/logc",
+        "-Iexternal/liblog_cc~{}/src".format(LIBLOG_CC_VERSION),
 
         "-Ivendored/unity",
         "-Iexternal/mibl/vendored/unity",
@@ -74,7 +74,7 @@ cc_binary(
     deps = [
         "//src:mibl",
         "//vendored/gopt",
-        "//vendored/logc",
+        "@liblog_cc//src:logc",
         "//vendored/unity",
         "//vendored/uthash",
     ],
@@ -110,7 +110,7 @@ cc_binary(
 #         "-I$(GENDIR)/src/hdrs",
 
 #         "-Ivendored/logc",
-#         "-Iexternal/mibl/vendored/logc",
+#         "-Iexternal/liblog_cc~{}/src".format(LIBLOG_CC_VERSION),
 
 #         "-Ivendored/unity",
 #         "-Iexternal/mibl/vendored/unity",
@@ -135,7 +135,7 @@ cc_binary(
 #     }),
 #     deps = [
 #         "//src:mibl",
-#         "//vendored/logc",
+#         "@liblog_cc//src:logc",
 #         "//vendored/unity",
 #         "//vendored/uthash",
 #     ],

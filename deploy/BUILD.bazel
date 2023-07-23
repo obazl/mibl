@@ -80,11 +80,11 @@ genrule(
     cmd = "\n".join([
         "SRC1=$(location deploy.c)",
         "SRCDIR1=`dirname $$SRC1`",
-        "$(location //vendored/makeheaders) \\",
+        "$(exepath @makeheaders//src:makeheaders) \\",
         "    $(location deploy.c) \\",
         "    $(location deploy_config.c)",
         "cp $${SRCDIR1}/*.h $(@D)",
     ]),
-    tools = ["//vendored/makeheaders"],
+    tools = ["@makeheaders//src:makeheaders"],
     visibility = ["//visibility:public"]
 )

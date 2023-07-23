@@ -147,6 +147,7 @@
   ;;                           (member x main-deps))
   ;;                    prolog)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; normalize-prologues!
 ;; An executable has a :main and may have a :prologue.
 ;; This routine makes them mutually independent by

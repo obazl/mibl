@@ -16,7 +16,7 @@
 ;;  ocamlopt_flags -> :ocamlopt_opts
 
 (define (-handle-shared-opts pkg-kv opt-type)
-  (mibl-trace-entry "-handle-shared-opts")
+  (mibl-trace-entry "-Handle-shared-opts")
   (mibl-trace "opt-type" opt-type)
   ;; (if (or *mibl-debug-shared* *mibl-debug-all*)
   ;;     (format #t "~A: ~A - ~A~%" (ublue "-handle-shared-opts") opt-type pkg-kv))

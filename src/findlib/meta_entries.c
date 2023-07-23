@@ -35,7 +35,7 @@ EXPORT int obzl_meta_entries_count(obzl_meta_entries *_entries)
 }
 
 /* **************** */
-EXPORT obzl_meta_entry *obzl_meta_entries_nth(obzl_meta_entries *_entries, int _i)
+EXPORT obzl_meta_entry *obzl_meta_entries_nth(obzl_meta_entries *_entries, unsigned int _i)
 {
     if (_i < 0) {
         log_error("Index < min (1)");
@@ -107,6 +107,7 @@ void entry_copy(void *_dst, const void *_src) {
 }
 
 void entry_dtor(void *_elt) {
+    (void)_elt;
     /* struct obzl_meta_entry *elt = (struct obzl_meta_entry*)_elt; */
     /* if (elt->s) free(elt->s); */
 }

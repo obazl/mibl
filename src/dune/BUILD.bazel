@@ -1,3 +1,9 @@
+load("//:BUILD.bzl",
+     "LIBLOG_CC_VERSION",
+     "LIBS7_VERSION",
+     "MIBL_VERSION",
+     "UTHASH_VERSION")
+
 filegroup(
     name = "mkhdrs_srcs",
     srcs = glob(["*.c"]),
@@ -14,6 +20,10 @@ cc_library(
     srcs = [
         "dune_readers.c",
         "//src/hdrs:dune_readers.h",
+
+        "error_handler_dune.c",
+        "//src/hdrs:error_handler_dune.h",
+
         # "config.h",
         # "config_bazel.h",
         # "config_mibl.h",
@@ -26,27 +36,22 @@ cc_library(
         # "uthash.h", "utarray.h", "utstring.h"
         # "@uthash//:include"
         # "//src:utarray.c",
-        "//vendored/uthash:utarray.h",
-        "//vendored/uthash:utstring.h"
+        # "//vendored/uthash:utarray.h",
+        # "//vendored/uthash:utstring.h"
     ] + select({
         "//bzl/host:linux": [
             "//src/linux:strlcat.c", "//src/linux:strlcpy.c", "//src/linux:strnstr.c"],
         "//conditions:default":   []
     }),
     # hdrs = ["libdune.h"],
-    defines = select({
-        "//bzl/host:linux": [
-            "_XOPEN_SOURCE=500", # strdup
-            "_DEFAULT_SOURCE"    # dirent DT_* macros
-        ],
-        "//conditions:default":   []
-    }) + select({
-        "//config/debug:debug?": ["DEBUGGING", "DEBUG_MIBL"],
-        "//conditions:default":   []
-    }) + select({
-        "//config/debug:trace?": ["TRACING"],
-        "//conditions:default":   []
-    }),
+    deps = [
+        "//dev",
+        # "//external/libinih:inih",
+        "@liblog_cc//src:logc",
+        "@libs7//src:s7",
+        # "@libs7//vendored/linenoise",
+        "@uthash//src:uthash",
+    ],
     copts = [
         "-std=c11",
         "-g",
@@ -54,42 +59,53 @@ cc_library(
         "-Wpedantic",
         "-Wno-unused-function",
 
-        "-Isrc",
-        "-Iexternal/src",
-        "-Iexternal/mibl/src",
+        "-Idev",
+        "-Iexternal/mibl~{}/dev".format(MIBL_VERSION),
 
-        "-Ivendored/uthash",
+        "-Isrc",
+        "-I$(GENDIR)external/mibl~{}/src".format(MIBL_VERSION),
+        # "-Iexternal/src",
+        # "-Iexternal/mibl/src",
 
         "-I$(GENDIR)/src",
-        "-I$(GENDIR)/src/hdrs",
+        "-I$(GENDIR)/external/mibl~{}/src/hdrs".format(MIBL_VERSION),
+        # "-I$(GENDIR)/src/hdrs",
 
-        "-I$(GENDIR)/external/mibl/src",
-        "-I$(GENDIR)/external/mibl/src/hdrs",
+        # "-I$(GENDIR)/external/mibl/src",
+        # "-I$(GENDIR)/external/mibl/src/hdrs",
 
-        "-Isrc/dune",
-        "-Iexternal/src/dune",
-        "-Iexternal/mibl/src/dune",
+        # "-Isrc/dune",
+        # "-I$(GENDIR)/external/mibl~{}/dune".format(MIBL_VERSION),
+        # "-Iexternal/src/dune",
+        # "-Iexternal/mibl/src/dune",
 
         "-I$(GENDIR)/src/dune",
         "-I$(GENDIR)/external/mibl/src/dune",
 
-        "-Iexternal/libs7/src",
+        "-Iexternal/libs7~{}/src".format(LIBS7_VERSION),
+        # "-Iexternal/libs7/src",
 
         # "-Iexternal/libinih",
-        "-Ivendored/logc",
-        "-Iexternal/mibl/vendored/logc",
-        "-Iexternal/mibl/vendored/uthash",
-    ],
-    deps = [
-        # "//external/libinih:inih",
-        "//vendored/logc",
-        "@libs7//src:s7",
-        # "@libs7//vendored/linenoise",
+        "-Iexternal/liblog_cc~{}/src".format(LIBLOG_CC_VERSION),
+        "-Iexternal/uthash~{}/src".format(UTHASH_VERSION),
     ],
     # ] + select({
     #     "//compilation_mode:dbg?": ["//src:debug"],
     #     "//conditions:default": []
     # }),
+    local_defines = select({
+        "//bzl/host:linux": [
+            "_XOPEN_SOURCE=500", # strdup
+            "_DEFAULT_SOURCE"    # dirent DT_* macros
+        ],
+        "//conditions:default":   []
+    }) + select({
+        "//config/debug:debug?": ["DEVBUILD", "DEBUG_MIBL"],
+        "//conditions:default":   []
+    }) + select({
+        "//config/debug:trace?": ["TRACING"],
+        "//conditions:default":   []
+    }),
     visibility = ["//visibility:public"]
 )
 

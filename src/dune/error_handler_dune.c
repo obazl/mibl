@@ -12,7 +12,7 @@
 
 #include "error_handler_dune.h"
 
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
 extern bool debug;
 #endif
 #if defined(TRACING)
@@ -35,7 +35,7 @@ s7_pointer _s7_error_handler(s7_scheme *s7, s7_pointer args)
     /* log_info("err: %s", TO_STR(args)); */
 
     if (strstr(s7_string(s7_car(args)), "unexpected close paren:") != NULL) {
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
         if (mibl_debug)
             printf(RED "Error: BAD DOT" CRESET "\n");
 #endif
@@ -307,7 +307,7 @@ s7_pointer fix_baddot(const char *dunefile_name)
             exit(EXIT_FAILURE);
         }
     }
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
     if (mibl_debug)
         log_debug("s7_open_input_string for error correction");
 #endif
@@ -319,7 +319,7 @@ s7_pointer fix_baddot(const char *dunefile_name)
         /* log_debug("stanza: %s", stanza); */
         errmsg = s7_get_output_string(s7, s7_current_error_port(s7));
         if ((errmsg) && (*errmsg)) {
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
             if (mibl_debug) log_error("[%s\n]", errmsg);
 #endif
             s7_close_input_port(s7, sport);

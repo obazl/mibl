@@ -1,9 +1,16 @@
 load("@bazel_skylib//rules:common_settings.bzl",
      "bool_flag", "string_flag")
-
 load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
+load("@lemon//src:BUILD.bzl", "lemon")
 
-load("//vendored/lemon:BUILD.bzl", "lemon")
+load("//:BUILD.bzl",
+     "BASE_COPTS",
+     "BASE_DEFINES",
+     "LIBLOG_CC_VERSION",
+     "UTHASH_VERSION")
+
+COPTS = BASE_COPTS
+DEFINES = BASE_DEFINES
 
 exports_files(glob(["*.c"]))
 
@@ -19,17 +26,17 @@ filegroup(
     visibility = ["//visibility:public"]
 )
 
-CMD_FLAGS = [
-    "-std=c11",
-    "-pedantic-errors",
-    "-Wno-unused-variable"  # warning from lemon-generated code meta_syntaxis
-] + select({
-    "//bzl/host:linux": [
-        "-D_POSIX_C_SOURCE=200809L", ## strdup, strndup
-        "-D_DEFAULT_SOURCE",        ## DT_ constants from dirent.h
-    ],
-    "//conditions:default":   []
-})
+# CMD_FLAGS = [
+#     "-std=c11",
+#     "-pedantic-errors",
+#     "-Wno-unused-variable"  # warning from lemon-generated code meta_syntaxis
+# ] + select({
+#     "//bzl/host:linux": [
+#         "-D_POSIX_C_SOURCE=200809L", ## strdup, strndup
+#         "-D_DEFAULT_SOURCE",        ## DT_ constants from dirent.h
+#     ],
+#     "//conditions:default":   []
+# })
 
 cc_library(
     name = "findlib",
@@ -74,13 +81,11 @@ cc_library(
         # "//src:config_mibl.h",
         # "//src:config_opam.c",
         # "//src:config_opam.h",
-        # "//src:utils.c",
-        # "//src:utils.h",
-        # "//src:log.c",
-        # "//vendored/logc:log.h",
-        "//vendored/uthash:utarray.h",
-        "//vendored/uthash:uthash.h",
-        "//vendored/uthash:utstring.h",
+        "//src:utils.c",
+        "//src/hdrs:utils.h",
+        # "//vendored/uthash:utarray.h",
+        # "//vendored/uthash:uthash.h",
+        # "//vendored/uthash:utstring.h",
     ] + select({
         "//bzl/host:linux": [
             "//src/linux:strlcat.c",
@@ -100,20 +105,20 @@ cc_library(
         # "libfindlib.h",
         # "log.h",
     ],
-    copts = [
-        "-Wall",
-        "-Werror",
-        "-pedantic-errors",
+    deps = [
+        "@liblog_cc//src:logc",
+        "@uthash//src:uthash",
+        ":meta_lexis",
+        ":meta_syntaxis",
+        "//src/dune",
+        # "//vendored/cjson",
+        # "//vendored/mustach"
+    ],
+    copts = COPTS + [
         "-Isrc",
         "-Iexternal/mibl/src",
         "-I$(GENDIR)/src",
         "-I$(GENDIR)/external/mibl/src",
-
-        "-Ivendored/logc",
-        "-Iexternal/mibl/vendored/logc",
-
-        "-Ivendored/uthash",
-        "-Iexternal/mibl/vendored/uthash",
 
         # "-Isrc/hdrs",
         "-I$(GENDIR)/src/hdrs",
@@ -133,11 +138,14 @@ cc_library(
         "-Ivendored",
         "-Iexternal/mibl/vendored",
 
-        "-Ivendored/mustach",
-        "-Iexternal/mibl/vendored/mustach",
+        # "-Ivendored/mustach",
+        # "-Iexternal/mibl/vendored/mustach",
+
+        "-Iexternal/liblog_cc~{}/src".format(LIBLOG_CC_VERSION),
+        "-Iexternal/uthash~{}/src".format(UTHASH_VERSION),
     ],
-    local_defines = select({
-        "//config/debug:debug?": ["DEBUGGING", "DEBUG_MIBL"],
+    local_defines = DEFINES + select({
+        "//config/debug:debug?": ["DEVBUILD", "DEBUG_MIBL"],
         "//conditions:default":   []
     }) + select({
         "//config/debug:trace?": ["TRACING"],
@@ -181,14 +189,6 @@ cc_library(
         "//coswitch/templates:ocaml_threads.BUILD",
         "//coswitch/templates:ocaml_unix.BUILD",
     ],
-    deps = [
-        ":meta_lexis",
-        ":meta_syntaxis",
-        "//src/dune",
-        "//vendored/logc",
-        "//vendored/cjson",
-        "//vendored/mustach"
-    ],
     # ] + select({
     #     "//compilation_mode:dbg?": ["//src:debug"],
     #     "//conditions:default": []
@@ -210,7 +210,6 @@ cc_library(
         "meta_syntaxis.c",
         "meta_syntaxis.h",
 
-        # "//vendored/logc:log.h",
         # "//vendored/uthash:utarray.h",
         # # "//vendored/uthash:uthash.h",
         # "//vendored/uthash:utstring.h",
@@ -221,8 +220,14 @@ cc_library(
         ],
         "//conditions:default":   []
     }),
-    deps = ["//vendored/logc", "//vendored/uthash"],
-    copts = CMD_FLAGS + [
+    deps = [
+        "@liblog_cc//src:logc",
+        "@uthash//src:uthash",
+    ],
+    copts = COPTS + [
+        "-Wno-unused-parameter",
+        "-Wno-unused-variable",
+
         ## NOTE: generated meta_syntaxis.c includes header with full
         ## bazel path, e.g.
         ## #include "bazel-out/darwin-fastbuild/bin/external/mibl/src/findlib/meta_syntaxis.h"
@@ -237,12 +242,13 @@ cc_library(
         # "-I$(GENDIR)/mibl/src/findlib",
         "-I$(GENDIR)/external/mibl/src/findlib",
 
-        "-Ivendored/logc",
-        "-Iexternal/mibl/vendored/logc",
-        "-Ivendored/uthash",
-        "-Iexternal/mibl/vendored/uthash",
+        "-Iexternal/liblog_cc~{}/src".format(LIBLOG_CC_VERSION),
+
+        "-Iexternal/uthash~{}/src".format(UTHASH_VERSION),
+        # "-Ivendored/uthash",
+        # "-Iexternal/mibl/vendored/uthash",
     ],
-    defines = select({
+    defines = DEFINES + select({
         ":yydebug-enabled": ["YYDEBUG", "TRACING"],
         "//conditions:default":   []
     }) + select({
@@ -276,9 +282,8 @@ cc_library(
         "meta_lexis.h",
         # "//src/hdrs:meta_lexis.h",
 
-        # "//src:log.c", "//vendored/logc:log.h",
-        "//vendored/uthash:utarray.h",
-        "//vendored/uthash:uthash.h",
+        # "//vendored/uthash:utarray.h",
+        # "//vendored/uthash:uthash.h",
         # "//vendored/uthash:utstring.h",
     ],
     # alwayslink = True,
@@ -286,15 +291,18 @@ cc_library(
         # "log.h",
         # "meta_lexer.h"
     ],
-    copts = CMD_FLAGS + [
+    deps = ["@uthash//src:uthash"],
+    copts = COPTS + [
+        "-Wno-unused-parameter",
         # "-Iexternal/mibl/src/findlib",
         # "-I$(GENDIR)/src/hdrs", # meta_lexis.h
 
         "-I$(GENDIR)/src/findlib", # meta_lexis.h
         "-I$(GENDIR)/external/mibl/src/findlib",
 
-        "-Ivendored/uthash",
-        "-Iexternal/mibl/vendored/uthash",
+        "-Iexternal/uthash~{}/src".format(UTHASH_VERSION),
+        # "-Ivendored/uthash",
+        # "-Iexternal/mibl/vendored/uthash",
 
         "-I$(GENDIR)/external/mibl/src/hdrs",
         # "-I$(GENDIR)/external/mibl/src/findlib",
@@ -311,33 +319,26 @@ cc_library(
 )
 
 ########
-## re2c takes a long time to build. we do not need to run it every
-## time once the grammar is stable, so we put the .c file under
-## version control. if you need to work on the meta lexer,
-## uncomment this genrule, run it, and replace meta_lexis.c
-## by the newly generated version.
-# genrule(
-#     name = "gen_meta_lexis",
-#     outs  = ["meta_lexis.c"],
-#     srcs = [
-#         "meta_lexis.re",
-#     ],
-#     tools = ["@re2c//:re2c"],
-#     cmd   = "\n".join([
-#         "for f in $(locations @re2c//:re2c)",
-#         "do",
-#         "    if [ -f $$f ]",
-#         "    then",
-#         "        if [ re2c = `basename $$f` -a -x $$f ]",
-#         "        then",
-#         "            break",
-#         "        fi",
-#         "    fi",
-#         "done",
-#         "$$f --conditions --tags -o $(@D)/meta_lexis.c $(location meta_lexis.re)",
-#     ]),
-#     visibility = ["//visibility:public"]
-# )
+genrule(
+    name = "gen_meta_lexis",
+    tools = ["@re2c//:re2c"],
+    outs  = ["meta_lexis.c"],
+    srcs = ["meta_lexis.re"],
+    cmd   = "\n".join([
+        "for f in $(locations @re2c//:re2c)",
+        "do",
+        "    if [ -f $$f ]",
+        "    then",
+        "        if [ re2c = `basename $$f` -a -x $$f ]",
+        "        then",
+        "            break",
+        "        fi",
+        "    fi",
+        "done",
+        "$$f --conditions --tags -o $(@D)/meta_lexis.c $(location meta_lexis.re)",
+    ]),
+    visibility = ["//visibility:public"]
+)
 
 ########
 # CMD_HDR = "\n".join([
@@ -368,7 +369,7 @@ FINDLIB_MKHDRS_SRCS = [
     # "//vendored/uthash:uthash.h",
     # "//vendored/uthash:utstring.h",
     # "//src:log.c",
-    # "//vendored/logc:log.h",
+    # "@liblog_cc//src:logc:log.h",
         "//src:utils.c",
     "//src:ansi_colors.h",
 ]
@@ -393,7 +394,7 @@ FINDLIB_MKHDRS_LOCNS = " ".join([
     # "$(location //vendored/uthash:uthash.h)",
     # "$(location //vendored/uthash:utstring.h)",
     # "$(location //src:log.c):", # do not emit header
-    # "$(location //vendored/logc:log.h)",
+    # "$(location @liblog_cc//src:logc:log.h)",
     "$(location //src:utils.c)",
     "$(location //src/dune:libdune.h)",
     "$(location //src:ansi_colors.h)",
@@ -429,7 +430,7 @@ genrule(
     cmd = " ".join([
         "SRC1=$(location meta_parser.c);",
         "SRCDIR1=`dirname $$SRC1`;",
-        "$(location //vendored/makeheaders)",
+        "$(execpath @makeheaders//src:makeheaders)",
         # "$(SRCS);",
 
         "$(location emit_build_bazel.c)",
@@ -456,14 +457,14 @@ genrule(
         # "$(location //vendored/uthash:uthash.h)",
         # "$(location //vendored/uthash:utstring.h)",
         # "$(location //src:log.c):", # do not emit header
-        # "$(location //vendored/logc:log.h)",
+        # "$(location @liblog_cc//src:logc:log.h)",
         "$(location //src:utils.c)",
         # "$(location //src/dune:libdune.h)",
         "$(location //src:ansi_colors.h);",
 
         "cp $${SRCDIR1}/*.h $(@D)",
     ]),
-    tools = ["//vendored/makeheaders"],
+    tools = ["@makeheaders//src:makeheaders"],
     visibility = ["//visibility:public"]
 )
 
@@ -491,7 +492,7 @@ genrule(
 #         # "//vendored/uthash:uthash.h",
 #         # "//vendored/uthash:utstring.h",
 #         # "//src:log.c",
-#         # "//vendored/logc:log.h",
+#         # "@liblog_cc//src:logc:log.h",
 #         # "//src:utils.c",
 #         # "//src:ansi_colors.h",
 #     ] + select({
@@ -507,7 +508,7 @@ genrule(
 #     cmd = " ".join([
 #         "SRC1=$(location meta_parser.c);",
 #         "SRCDIR1=`dirname $$SRC1`;",
-#         "$(location //vendored/makeheaders) -H",
+#         "$(execpath @makeheaders//src:makeheaders) -H",
 #         # "$(SRCS) \\",
 #         # FINDLIB_MKHDRS_LOCNS,
 #         "$(location emit_build_bazel.c)",
@@ -524,7 +525,7 @@ genrule(
 #         "$(location meta_syntaxis.c)",
 #         "> $@",
 #     ]),
-#     tools = ["//src:makeheaders"],
+#     tools = ["@makeheaders//src:makeheaders"],
 #     visibility = ["//visibility:public"]
 # )
 
@@ -541,7 +542,7 @@ genrule(
         "meta_lexis.c",
         "meta_syntaxis.c",
         "debug_meta.c",
-        # "//vendored/logc:log.h",
+        # "@liblog_cc//src:logc:log.h",
         # "//vendored/uthash:utarray.c",
         # "//vendored/uthash:utarray.h",
         "//src:utils.c",
@@ -556,7 +557,7 @@ genrule(
     cmd = " ".join([
         "SRC1=$(location debug_meta.c);",
         "SRCDIR1=`dirname $$SRC1`;",
-        "$(location //vendored:makeheaders)",
+        "$(execpath @makeheaders//src:makeheaders)",
         # "$(SRCS);",
 
         "$(location meta_parser.c)",
@@ -570,7 +571,7 @@ genrule(
         "$(location meta_syntaxis.c)",
         "$(location debug_meta.c)",
         # "$(location //src:log.c):", # do not emit header
-        # "$(location //vendored/logc:log.h)",
+        # "$(location @liblog_cc//src:logc:log.h)",
         "$(location //src:utils.c)",
         # "$(location //vendored/uthash:utarray.c):",
         # "$(location //vendored/uthash:utarray.h)",
@@ -578,7 +579,7 @@ genrule(
 
         "cp $${SRCDIR1}/*.h $(@D)",
     ]),
-    tools = ["//vendored:makeheaders"],
+    tools = ["@makeheaders//src:makeheaders"],
     visibility = ["//visibility:public"]
 )
 

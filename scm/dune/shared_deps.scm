@@ -53,7 +53,9 @@
                 (if *mibl-debug-all*
                     (format #t "~A: ~A~%" (ugreen "dep for pkg") (car kv)))
                 (let* ((pkg-path (car kv))
-                       (_ (if *mibl-debug-all* (format #t "~A: ~A~%" (green "pkg-path") pkg-path)))
+                       (_ (if *mibl-debug-all*
+                              (format #t "~A: ~A~%" (green "pkg-path") pkg-path)
+                              #f))
                        (pkg (cdr kv)))
                   ;; (format #t "~A: ~A~%" (green "pkg") pkg)
                   ;;(if (member pkg-path *mibl-shared-deps*)

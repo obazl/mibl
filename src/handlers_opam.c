@@ -121,6 +121,8 @@ LOCAL bool _this_is_hidden(FTSENT *ftsentry)
  */
 void handle_dir(FTS* tree, FTSENT *ftsentry)
 {
+    (void)tree;
+    (void)ftsentry;
 #if defined(TRACING)
     if (mibl_debug) {
         log_debug("");
@@ -189,22 +191,29 @@ void handle_dir(FTS* tree, FTSENT *ftsentry)
 
 void handle_ml_file(FTSENT *ftsentry, char *ext)
 {
+    (void)ftsentry;
+    (void)ext;
 }
 
 void handle_file(FTSENT *ftsentry, char *ext)
 {
+    (void)ftsentry;
+    (void)ext;
 }
 
 void handle_dune_file(FTSENT *ftsentry)
 {
+    (void)ftsentry;
 }
 
 void handle_dune_project_file(FTSENT *ftsentry)
 {
+    (void)ftsentry;
 }
 
 void handle_dune_package_file(FTSENT *ftsentry)
 {
+    (void)ftsentry;
     opam_dune_package_ct++;
 }
 
@@ -228,6 +237,7 @@ void handle_meta_file(FTSENT *ftsentry)
 
 void handle_opam_file(FTSENT *ftsentry)
 {
+    (void)ftsentry;
 #if defined(TRACING)
     if (mibl_debug) {
         log_debug("");
@@ -245,26 +255,36 @@ void handle_opam_file(FTSENT *ftsentry)
 
 void handle_opam_template_file(FTSENT *ftsentry)
 {
+    (void)ftsentry;
 }
 
 void handle_ocamlformat_file(FTSENT *ftsentry)
 {
+    (void)ftsentry;
 }
 
 void handle_script_file(FTSENT *ftsentry, char *ext)
 {
+    (void)ftsentry;
+    (void)ext;
 }
 
 void handle_cc_file(FTSENT *ftsentry, char *ext)
 {
+    (void)ftsentry;
+    (void)ext;
 }
 
 void opam_handle_symlink(FTS *tree, FTSENT *ftsentry)
 {
+    (void)ftsentry;
+    (void)tree;
 }
 
 void handle_symlink(FTS *tree, FTSENT *ftsentry)
 {
+    (void)ftsentry;
+    (void)tree;
 }
 
 /* **************************************************************** */
@@ -286,7 +306,7 @@ void opam_handle_fts_d(FTS *tree, FTSENT *ftsentry)
         fts_set(tree, ftsentry, FTS_SKIP);
         /* break; */
     }
-    else if (libc:fnmatch ("*.opam-bundle",
+    else if (fnmatch("*.opam-bundle",
                      ftsentry->fts_name, 0) == 0) {
         fts_set(tree, ftsentry, FTS_SKIP);
         /* break; */
@@ -314,6 +334,7 @@ void opam_handle_fts_d(FTS *tree, FTSENT *ftsentry)
 
 void opam_handle_fts_f(FTS *tree, FTSENT *ftsentry)
 {
+    (void)tree;
     if (strncmp(ftsentry->fts_name,"BUILD.bazel", 11)==0){
         /* skip BUILD.bazel files - we'll need this when we re-run conversion */
         return;
@@ -360,7 +381,7 @@ void opam_handle_fts_f(FTS *tree, FTSENT *ftsentry)
                  && (strlen(ext) == 5)) {
             handle_opam_file(ftsentry);
         }
-        else if (libc:fnmatch ("*.opam.template",
+        else if (fnmatch("*.opam.template",
                          ftsentry->fts_name, 0) == 0) {
             handle_opam_template_file(ftsentry);
         }

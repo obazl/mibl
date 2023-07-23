@@ -462,6 +462,7 @@ void emit_bazel_attribute(FILE* ostream,
                           char *property, /* = 'archive' or 'plugin' */
                           obzl_meta_package *_pkg)
 {
+    (void)_pkg;
 #if defined(TRACING)
     log_debug("EMIT_BAZEL_ATTRIBUTE _pkg_name: '%s'; prop: '%s'; filedeps path: '%s'",
               _pkg_name, property, _filedeps_path);
@@ -765,6 +766,12 @@ void emit_bazel_cc_imports(FILE* ostream,
                            obzl_meta_entries *_entries,
                            obzl_meta_package *_pkg)
 {
+    (void)level;
+    (void)_entries;
+    (void)_filedeps_path;
+    (void)_pkg;
+    (void)_pkg_name;
+    (void)_pkg_prefix;
     char *dname = dirname(utstring_body(build_bazel_file));
     /* log_debug("emit_bazel_cc_imports: %s", dname); */
     /* printf("emit_bazel_cc_imports: %s\n", dname); */
@@ -785,7 +792,7 @@ void emit_bazel_cc_imports(FILE* ostream,
     while ((direntry = readdir(d)) != NULL) {
         if ((direntry->d_type==DT_REG)
             || (direntry->d_type==DT_LNK)) {
-            if (libc:fnmatch ("lib*stubs.a", direntry->d_name, 0) == 0) {
+            if (fnmatch("lib*stubs.a", direntry->d_name, 0) == 0) {
                 /* printf("FOUND STUBLIB: %s\n", direntry->d_name); */
 
                 fprintf(ostream, "cc_import(\n");
@@ -795,7 +802,7 @@ void emit_bazel_cc_imports(FILE* ostream,
                         direntry->d_name);
                 fprintf(ostream, ")\n");
             } else {
-                if (libc:fnmatch ("*stubs.so", direntry->d_name, 0) == 0) {
+                if (fnmatch("*stubs.so", direntry->d_name, 0) == 0) {
                     printf("FOUND SO LIB: %s\n", direntry->d_name);
             }
                 /* printf("skipping %s\n", direntry->d_name); */
@@ -817,6 +824,9 @@ void emit_bazel_stublibs_attr(FILE* ostream,
                               obzl_meta_entries *_entries,
                               obzl_meta_package *_pkg)
 {
+    (void)_entries;
+    (void)_filedeps_path;
+    (void)_pkg;
     /* here we read the symlinks in the coswitch not the opam switch */
 #if defined(TRACING)
     log_debug("stublibs pkg root: %s", _pkg_root);
@@ -869,7 +879,7 @@ void emit_bazel_stublibs_attr(FILE* ostream,
     while ((direntry = readdir(d)) != NULL) {
         if ((direntry->d_type==DT_REG)
             || (direntry->d_type==DT_LNK)) {
-            if (libc:fnmatch ("lib*stubs.a", direntry->d_name, 0) == 0) {
+            if (fnmatch("lib*stubs.a", direntry->d_name, 0) == 0) {
 
                 /* fprintf(ostream, "%*scc_deps   = [\":_%s\"],\n", */
                 /*         level*spfactor, sp, direntry->d_name); */
@@ -884,7 +894,7 @@ void emit_bazel_stublibs_attr(FILE* ostream,
                 utarray_push_back(cc_stubs, &sbuf);
 
             } else {
-                if (libc:fnmatch ("*stubs.so", direntry->d_name, 0) == 0) {
+                if (fnmatch("*stubs.so", direntry->d_name, 0) == 0) {
                     printf("FOUND SO STUBLIB: %s\n", direntry->d_name);
             }
                 /* printf("skipping %s\n", direntry->d_name); */
@@ -915,6 +925,9 @@ void emit_bazel_jsoo_runtime_attr(FILE* ostream,
                                   obzl_meta_entries *_entries,
                                   obzl_meta_package *_pkg)
 {
+    (void)_entries;
+    (void)_filedeps_path;
+    (void)_pkg;
     /* here we read the symlinks in the coswitch not the opam switch */
 #if defined(TRACING)
     log_debug("stublibs pkg root: %s", _pkg_root);
@@ -959,7 +972,7 @@ void emit_bazel_jsoo_runtime_attr(FILE* ostream,
     while ((direntry = readdir(d)) != NULL) {
         if ((direntry->d_type==DT_REG)
             || (direntry->d_type==DT_LNK)) {
-            if (libc:fnmatch ("runtime.js", direntry->d_name, 0) == 0) {
+            if (fnmatch("runtime.js", direntry->d_name, 0) == 0) {
                 fprintf(ostream, "%*sjsoo_runtime = \"%s\",\n",
                         level*spfactor, sp, direntry->d_name);
 
@@ -990,6 +1003,9 @@ void emit_bazel_archive_attr(FILE* ostream,
                              char *property, /* always 'archive' */
                              obzl_meta_package *_pkg)
 {
+    (void)_pkg;
+    (void)_pkg_name;
+    (void)_filedeps_path;
 #if defined(TRACING)
     log_debug("EMIT_BAZEL_ARCHIVE_ATTR _pkg_name: '%s'; prop: '%s'; filedeps path: '%s'",
               _pkg_name, property, _filedeps_path);
@@ -1171,6 +1187,9 @@ void emit_bazel_cmxs_attr(FILE* ostream,
                           char *property, /* = 'archive' or 'plugin' */
                           obzl_meta_package *_pkg)
 {
+    (void)_pkg;
+    (void)_pkg_name;
+    (void)_filedeps_path;
 #if defined(TRACING)
     log_debug(BLU "EMIT_BAZEL_CMXS_ATTR" CRESET);
     log_debug("\t_pkg_name: '%s'", _pkg_name);
@@ -1446,6 +1465,8 @@ void emit_bazel_metadatum(FILE* ostream, int level,
                           char *_attrib    // Bazel attr name
                           )
 {
+    (void)level;
+    (void)repo;
     /* emit version, description properties */
 
     struct obzl_meta_property *the_prop = obzl_meta_entries_property(_entries, _property);
@@ -1501,6 +1522,7 @@ void emit_bazel_archive_rule(FILE* ostream,
                              /* char *_subpkg_dir) */
                              obzl_meta_package *_pkg)
 {
+    (void)level;
 #if defined(TRACING)
     log_debug("EMIT_BAZEL_ARCHIVE_RULE: _filedeps_path: %s", _filedeps_path);
 #endif
@@ -1626,6 +1648,8 @@ void emit_bazel_plugin_rule(FILE* ostream, int level,
                             obzl_meta_package *_pkg)
                             /* char *_subpkg_dir) */
 {
+    (void)level;
+    (void)_repo;
 #if defined(TRACING)
     log_debug(BLU "EMIT_BAZEL_PLUGIN_RULE:" CRESET " _filedeps_path: %s", _filedeps_path);
     log_debug("pkg_pfx: %s", _pkg_prefix);
@@ -1911,7 +1935,8 @@ void emit_bazel_deps_attribute(FILE* ostream, int level,
                                obzl_meta_entries *_entries)
 /* obzl_meta_package *_pkg) */
 {
-
+    (void)repo;
+    (void)pkg_name;
     //FIXME: skip if no 'requires' or requires == ''
     /* obzl_meta_entries *entries = obzl_meta_package_entries(_pkg); */
 
@@ -2127,6 +2152,7 @@ void emit_bazel_ppx_codeps(FILE* ostream, int level,
                            char *_pkg_prefix,
                            obzl_meta_entries *_entries)
 {
+    (void)_pkg_name;
     /* handle both 'ppx_runtime_deps' and 'requires(-ppx_driver)'
 
        e.g. ppx_sexp_conv has no ppx_runtime_deps property but:
@@ -2453,6 +2479,7 @@ void emit_bazel_deps_target(FILE* ostream, int level,
                                char *_pkg_name,
                                obzl_meta_entries *_entries)
 {
+    (void)level;
 #if defined(TRACING)
     log_debug("DUMMY %s", _pkg_name);
 #endif
@@ -2504,6 +2531,8 @@ void emit_bazel_error_target(FILE* ostream, int level,
                                char *_pkg_name,
                                obzl_meta_entries *_entries)
 {
+    (void)level;
+    (void)_pkg_src;
 #if defined(TRACING)
     log_debug("ERROR TARGET: %s", _pkg_name);
 #endif
@@ -2679,6 +2708,7 @@ void emit_bazel_subpackages(// char *ws_name,
                             UT_array *opam_completed_deps)
                             /* char *_subpkg_dir) */
 {
+    (void)level;
 #if defined(TRACING)
     log_debug(BLU "EMIT_BAZEL_SUBPACKAGES" CRESET " pkg: %s", _pkg->name);
     /* log_debug("\tws_name: %s", ws_name); */
@@ -2765,6 +2795,12 @@ void handle_directory_property(FILE* ostream, int level,
                                obzl_meta_entries *_entries)
 
 {
+    (void)_entries;
+    (void)level;
+    (void)ostream;
+    (void)_pkg_name;
+    (void)_pkg_src;
+    (void)_repo;
     /*
 The variable "directory" redefines the location of the package directory. Normally, the META file is the first file read in the package directory, and before any other file is read, the "directory" variable is evaluated in order to see if the package directory must be changed. The value of the "directory" variable is determined with an empty set of actual predicates. The value must be either: an absolute path name of the alternate directory, or a path name relative to the stdlib directory of OCaml (written "+path"), or a normal relative path name (without special syntax). In the latter case, the interpretation depends on whether it is contained in a main or sub package, and whether the standard repository layout or the alternate layout is in effect (see site-lib for these terms). For a main package in standard layout the base directory is the directory physically containing the META file, and the relative path is interpreted for this base directory. For a main package in alternate layout the base directory is the directory physically containing the META.pkg files. The base directory for subpackages is the package directory of the containing package. (In the case that a subpackage definition does not have a "directory" setting, the subpackage simply inherits the package directory of the containing package. By writing a "directory" directive one can change this location again.)
     */

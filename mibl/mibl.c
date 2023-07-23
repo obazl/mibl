@@ -5,6 +5,8 @@
 #include "log.h"
 #include "s7.h"
 
+#include "config.h"
+
 /* libmibl.a public header */
 #include "libmibl.h"
 
@@ -12,7 +14,7 @@
 
 #include "mibl.h"
 
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
 extern bool mibl_debug;
 extern bool mibl_debug_deps;
 extern bool mibl_debug_runfiles;
@@ -40,7 +42,7 @@ extern struct mibl_config_s mibl_config;
 
 enum OPTS {
     OPT_HALT_AFTER,
-    OPT_MAIN,
+    OPT_SCRIPT,
     OPT_WS,
     OPT_FLAGS, /* ad-hoc flags; if not passed, (if *mibl-foo*...) fails */
 
@@ -226,7 +228,7 @@ void _print_usage(void) {
     printf("Options:\n");
     printf("\t-w, --workspace <path>"
            "\tRelative path to workspace root directory to be used as traversal root. (OPTIONAL)\n");
-    printf("\t-m, --main <entry-pt>"
+    printf("\t-m, --script <file>"
            "\tPath to script containing -main routine. (OPTIONAL)\n");
     printf("\n");
     printf("Flags:\n");
@@ -286,7 +288,7 @@ void _print_debug_usage(void) {
 
 static struct option options[] = {
     /* 0 */
-    [OPT_MAIN] = {.long_name="main",.short_name='m',
+    [OPT_SCRIPT] = {.long_name="script",.short_name='s',
                   .flags=GOPT_ARGUMENT_REQUIRED | GOPT_REPEATABLE},
     [OPT_WS] = {.long_name="workspace",.short_name='w',
                 .flags=GOPT_ARGUMENT_REQUIRED},
@@ -395,13 +397,13 @@ void _set_options(struct option options[])
     }
 
     if (options[FLAG_DEBUG].count) {
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
         mibl_debug = true;
 #endif
     }
 
     if (options[FLAG_DEBUG_DEPS].count) {
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
         mibl_debug_deps = true;
 #else
         log_error("--debug-deps requires debug build, -c dbg");
@@ -410,7 +412,7 @@ void _set_options(struct option options[])
     }
 
     if (options[FLAG_DEBUG_RUNFILES].count) {
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
         mibl_debug_runfiles = true;
 #else
         log_error("--debug-runfiles requires debug build, -c dbg");
@@ -419,11 +421,11 @@ void _set_options(struct option options[])
     }
 
     if (options[FLAG_DEBUG_TRAVERSAL].count) {
-#if defined(DEBUGGING)
+#if defined(DEVBUILD)
         mibl_debug_traversal = true;
 #else
-        /* log_error("--debug-traversal requires debug build, -c dbg"); */
-        /* exit(EXIT_FAILURE); */
+        log_error("--debug-traversal requires debug build, -c dbg");
+        exit(EXIT_FAILURE);
 #endif
     }
 
@@ -447,8 +449,9 @@ void _set_options(struct option options[])
     }
 }
 
-int main(int argc, char **argv, char **envp)
+int main(int argc, char **argv) // , char **envp)
 {
+    (void)argc;
     int gopt_argc = gopt(argv, options);
     (void)gopt_argc;
 
@@ -465,7 +468,7 @@ int main(int argc, char **argv, char **envp)
 
     _update_mibl_config(options);
 
-    mibl_s7_init2(NULL, // options[OPT_MAIN].argument,
+    mibl_s7_init2(NULL, // options[OPT_SCRIPT].argument,
                  options[OPT_WS].argument);
 
     _update_s7_globals(options);
@@ -483,8 +486,8 @@ int main(int argc, char **argv, char **envp)
     /*     exit(EXIT_SUCCESS); */
     /* } */
 
-    if (options[OPT_MAIN].count) {
-        mibl_s7_run(options[OPT_MAIN].argument, options[OPT_WS].argument);
+    if (options[OPT_SCRIPT].count) {
+        mibl_s7_run(options[OPT_SCRIPT].argument, options[OPT_WS].argument);
     }
     else if (mibl_config.halt_after_parsetree) {
         mibl_s7_run(NULL, NULL); /* FIXME */
@@ -492,7 +495,12 @@ int main(int argc, char **argv, char **envp)
         mibl_s7_run("mibl_main.scm", NULL);
         /* xen_repl(argc, argv); */
 
-        char *script = "repl.scm";
+    s7_pointer lp = s7_load_path(s7);
+    char *s = s7_object_to_c_string(s7, lp);
+    log_debug("load-path: %s", s);
+    free(s);
+
+        char *script = "mibl_repl.scm";
         if (!s7_load(s7, script)) {
             log_error("failed: load %s", script);
             log_info("cwd: %s", getcwd(NULL,0));

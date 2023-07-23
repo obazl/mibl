@@ -1,3 +1,4 @@
+load("//:BUILD.bzl", "LIBLOG_CC_VERSION")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 
 # rules:
@@ -126,11 +127,11 @@ def mibl(name = "mibl", main = None, args = None, **kwargs):
     #     cmd = "\n".join([
     #         "SRC1=$(location //mibl:mibl.c)",
     #         "SRCDIR1=`dirname $$SRC1`",
-    #         "$(location //vendored/makeheaders) \\",
+    #         "$(execpath @makeheaders//src:makeheaders) \\",
     #         "    $(location //mibl:mibl.c);",
     #         "cp $${SRCDIR1}/*.h $(@D)",
     #     ]),
-    #     tools = ["//vendored/makeheaders"],
+    #     tools = ["@makeheaders//src:makeheaders"],
     #     visibility = ["//visibility:public"]
     # )
 
@@ -180,8 +181,7 @@ def mibl(name = "mibl", main = None, args = None, **kwargs):
             "-Ivendored/libinih",
             "-Iexternal/mibl/vendored/libinih",
 
-            "-Ivendored/logc",
-            "-Iexternal/mibl/vendored/logc",
+            "-Iexternal/liblog_cc~{}/src".format(LIBLOG_CC_VERSION),
 
             "-Ivendored/uthash",
             "-Iexternal/mibl/vendored/uthash",
@@ -202,7 +202,7 @@ def mibl(name = "mibl", main = None, args = None, **kwargs):
             "@mibl//src:mibl",
             "@mibl//vendored/gopt",
             "@mibl//vendored/libinih:inih",
-            "@mibl//vendored/logc",
+            "@liblog_cc//src:logc",
             "@mibl//vendored/uthash",
         ],
         visibility = ["//visibility:public"]

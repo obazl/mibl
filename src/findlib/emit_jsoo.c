@@ -8,7 +8,7 @@
 extern int spfactor;
 extern char *sp;
 
-#if defined(TRACING)
+#if defined(DEVBUILD)
 extern bool mibl_debug;
 #endif
 
@@ -41,6 +41,8 @@ void emit_bazel_jsoo(FILE* ostream,
                      char *property, /* = 'archive' or 'plugin' */
                      obzl_meta_package *_pkg)
 {
+    (void)_pkg;
+    (void)_filedeps_path;
 #if defined(TRACING)
     log_debug("EMIT_BAZEL_JSOO _pkg_name: '%s'; prop: '%s'; filedeps path: '%s'",
               _pkg_name, property, _filedeps_path);

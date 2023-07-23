@@ -86,7 +86,7 @@ EXPORT int obzl_meta_setting_has_flag(obzl_meta_setting *_setting, char *_flag, 
     return obzl_meta_flags_has_flag(flags, _flag, polarity);
 }
 
-EXPORT obzl_meta_setting *obzl_meta_settings_nth(obzl_meta_settings *_settings, int _i)
+EXPORT obzl_meta_setting *obzl_meta_settings_nth(obzl_meta_settings *_settings, unsigned int _i)
 {
     return utarray_eltptr(_settings->list, _i);
 }

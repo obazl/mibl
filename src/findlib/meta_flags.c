@@ -82,7 +82,7 @@ EXPORT int obzl_meta_flags_count(obzl_meta_flags *_flags)
     }
 }
 
-EXPORT obzl_meta_flag *obzl_meta_flags_nth(obzl_meta_flags *_flags, int _i)
+EXPORT obzl_meta_flag *obzl_meta_flags_nth(obzl_meta_flags *_flags, unsigned int _i)
 {
     return utarray_eltptr(_flags->list, _i);
 }
