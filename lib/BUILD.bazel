@@ -208,6 +208,8 @@ cc_library(
     }) + select({
         "@makeheaders//compilation_mode:fastbuild": [
             "//lib/debug"],
+        "@makeheaders//compilation_mode:dbg": [
+            "//lib/debug"],
         "//conditions:default": []
     }),
     copts = COPTS + [

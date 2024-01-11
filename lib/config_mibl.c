@@ -18,9 +18,9 @@ extern int  verbosity;
 
 #if defined(PROFILE_fastbuild)
 #define TRACE_FLAG mibl_trace
-bool    TRACE_FLAG = 0;
+extern bool    TRACE_FLAG;
 #define DEBUG_LEVEL mibl_debug
-int     DEBUG_LEVEL = 0;
+extern int     DEBUG_LEVEL;
 #define S7_DEBUG_LEVEL libs7_debug
 extern int libs7_debug;
 extern int s7plugin_debug;
