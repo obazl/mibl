@@ -1,5 +1,9 @@
-load("//:BUILD.bzl", "LIBLOG_CC_VERSION")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
+
+# load("//:BUILD.bzl",
+#      "GOPT_VERSION",
+#      # "INIH_VERSION",
+#      "LIBLOGC_VERSION")
 
 # rules:
 
@@ -172,16 +176,16 @@ def mibl(name = "mibl", main = None, args = None, **kwargs):
             "-I$(GENDIR)/mibl",               # mibl.h
             "-I$(GENDIR)/external/mibl/mibl",
 
-            "-I$(GENDIR)/src/hdrs",                # libmibl.h
+            "-I$(GENDIR)/src/hdrs",                # mibl.h
             "-I$(GENDIR)/external/mibl/src/hdrs",
 
-            "-Ivendored/gopt",
-            "-Iexternal/mibl/vendored/gopt",
+            # "-Iexternal/gopt~{}".format(GOPT_VERSION),
+            # "-Ivendored/gopt",
 
-            "-Ivendored/libinih",
-            "-Iexternal/mibl/vendored/libinih",
+            # "-Iexternal/inih~{}".format(INIH_VERSION),
+            # "-Ivendored/libinih",
 
-            "-Iexternal/liblog_cc~{}/src".format(LIBLOG_CC_VERSION),
+            # "-Iexternal/liblogc~{}/src".format(LIBLOGC_VERSION),
 
             "-Ivendored/uthash",
             "-Iexternal/mibl/vendored/uthash",
@@ -199,10 +203,10 @@ def mibl(name = "mibl", main = None, args = None, **kwargs):
             "//conditions:default": {}
         }),
         deps = [
-            "@mibl//src:mibl",
-            "@mibl//vendored/gopt",
-            "@mibl//vendored/libinih:inih",
-            "@liblog_cc//src:logc",
+            "//src:mibl",
+            "@gopt//src:gopt",
+            # "@inih//:inih",
+            "@liblogc//src:logc",
             "@mibl//vendored/uthash",
         ],
         visibility = ["//visibility:public"]

@@ -10,7 +10,7 @@
 
 #ifdef TRACING
 #define TRACE_ENTRY_STR(fn, str) \
-    log_trace(RED "entry:" CRESET " " #fn ": %s", str);
+    if (mibl_trace) log_trace(RED "ENTRY:" CRESET " " #fn ": %s", str);
 #else
 #define TRACE_ENTRY_STR(fn, str)
 #endif

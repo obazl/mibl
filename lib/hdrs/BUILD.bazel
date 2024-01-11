@@ -1,0 +1,492 @@
+package(default_visibility = ["//visibility:public"])
+
+load("@makeheaders//rules:makeheaders.bzl", "makeheaders")
+
+makeheaders(
+    name = "mkhdrs",
+    hdrs_srcs = [
+        "//lib:globals.c",
+        "//lib:config_bazel.c",
+        "//lib:config_mibl.c",
+        "//lib:config_opam.c",
+        "//lib:config_s7.c",
+        "//lib:mibl_s7.c",
+
+        "//lib:deps.c",
+        "//lib:cmd_runner.c",
+
+        # "//lib/dune:error_handler_dune.c",
+        "//lib:error_handler_s7.c",
+        "//lib:handlers.c",
+        "//lib:handlers_opam.c",
+
+        "//lib:load_project.c",
+        # "//lib/coswitch:coswitch_cleaner.c",
+        # "//lib/coswitch:opam_switch_converter.c",   # FIXME: rename
+        "//lib:treewalker_project.c", # FIXME: rename
+        "//lib:utils.c",
+
+        # "//lib/dune:dune_readers.c",
+
+        # "//lib/xdg:xdg.c",
+
+        ## runners
+        # "//convert:convert.c",
+        # "//coswitch:coswitch.c",
+
+        ## FIXME: select on //:compilation_mode: dbg?
+        "//lib/debug:debug.c",
+        "//lib/debug:debug_bazel.c",
+        # "//lib/debug:debug_s7.c",
+        # "//lib/debug:debug_mibl.c",
+        # "//lib/findlib:debug_findlib.c",
+        # "//lib/findlib:debug_meta.c",
+
+    ] + select({
+        "//bzl/host:linux": ["//lib/linux:strlcat.c",
+                             "//lib/linux:strlcpy.c",
+                             "//lib/linux:strnstr.c"],
+        "//conditions:default":   []
+    }),
+    additional_srcs = [
+        "@makeheaders//logging:ansi_colors.h"
+    ] + select({
+        "@makeheaders//compilation_mode:fastbuild": [
+            "@makeheaders//logging:macros_debug.h",
+            "@libs7//logging:s7_macros_debug.h",
+            # "//lib:trace_dev.h",
+        ],
+        # special case: built as tool, transitioned to opt
+        # "@makeheaders//compilation_mode:opt": [
+        #     "@makeheaders//logging:macros_debug.h"
+        # ],
+        "//conditions:default": [
+            "@makeheaders//logging:macros_ndebug.h",
+            "@libs7//logging:s7_macros_ndebug.h",
+            # "//lib:trace_prod.h",
+        ]
+    }),
+    # additional_srcs = [
+    # ] + select({
+    #     "//config/profile:dev?": [
+    #     "//lib:ansi_colors.h",
+    #     "//lib:trace_dev.h",
+    #     ],
+    #     "//conditions:default":   [
+    #         "//lib:ansi_colors.h",
+    #         "//lib:trace_prod.h",
+    #     ]
+    # }),
+    visibility = ["//visibility:public"]
+)
+
+########
+# DIRLOCS = [
+#     "SRC0=$(location //coswitch:coswitch.c);",
+#     "SRCDIR0=`dirname $$SRC0`;",
+#     "SRC1=$(location //lib:ansi_colors.h);",
+#     "SRCDIR1=`dirname $$SRC1`;",
+#     "SRC2=$(location //lib/dune:dune_readers.c);",
+#     "SRCDIR2=`dirname $$SRC2`;",
+#     # "SRC3=$(location //lib/findlib:meta_packages.c);",
+#     # "SRCDIR3=`dirname $$SRC3`;",
+#     # ## meta_syntaxis.c is generated so needs special treatment
+#     # "SRC4=$(location //lib/findlib:meta_syntaxis.c);",
+#     # "SRCDIR4=`dirname $$SRC4`;",
+
+#     # "SRC5=$(location //lib/dune:dune_readers.c);",
+#     # "SRCDIR5=`dirname $$SRC5`;",
+
+#     "SRC6=$(location //lib/xdg:xdg.c);",
+#     "SRCDIR6=`dirname $$SRC6`;",
+
+#     "SRC7=$(location //lib/debug:debug.c);",
+#     "SRCDIR7=`dirname $$SRC7`;",
+
+#     "SRC9=$(location //lib/coswitch:opam_switch_converter.c);",
+#     "SRCDIR9=`dirname $$SRC9`;",
+# ]
+
+# We need to enumerate rather than use $(SRCS) or a wildcard
+# since for for a few srcfiles we do not want to emit a hdr;
+# for those we use the suffixed colon notation e.g. 'foo.c:'.
+# FILELOCS = [
+#     "$(execpath @makeheaders//lib:makeheaders)",
+#     # "$(location //vendored/makeheaders)",
+#     "$(location //lib:ansi_colors.h)",
+#     "$(location //lib:globals.c)",
+#     "$(location //lib:config_bazel.c)",
+#     "$(location //lib:config_mibl.c)",
+#     "$(location //lib:mibl_s7.c)",
+#     "$(location //lib:config_opam.c)",
+#     # "$(location //lib:config_s7.c)",
+#     "$(location //lib:config_s7.c)",
+
+#     "$(location //lib:deps.c)",
+#     "$(location //lib:cmd_runner.c)",
+
+#     "$(location //lib/dune:dune_readers.c)",
+
+#     "$(location //lib/dune:error_handler_dune.c)",
+#     "$(location //lib:error_handler_s7.c)",
+#     "$(location //lib:handlers.c)",
+#     "$(location //lib:handlers_opam.c)",
+
+#     "$(location //lib:load_project.c)",
+
+#     "$(location //lib/coswitch:coswitch_cleaner.c)",
+#     "$(location //lib/coswitch:opam_switch_converter.c)",
+#     "$(location //lib:treewalker_project.c)",
+#     "$(location //lib:utils.c)",
+
+#     # "$(location //lib:log.c):", # do not emit header
+#     # "$(location //lib:log.h)",
+#     # "$(location //lib:utarray.c):",  # do not emit header
+#     # "$(location //lib:utarray.h)",
+#     # "$(location //lib:uthash.h)",
+#     # "$(location //lib:utstring.c)",
+
+#     "$(location //lib/dune:dune_readers.c)",
+
+#     # "$(location //lib/findlib:emit_build_bazel.c)",
+#     # "$(location //lib/findlib:emit_jsoo.c)",
+#     # "$(location //lib/findlib:emit_ocaml_repo.c)",
+#     # "$(location //lib/findlib:emit_pkg_bindir.c)",
+#     # "$(location //lib/findlib:handlers_findlib.c)",
+#     # "$(location //lib/findlib:meta_parser.c)",
+#     # "$(location //lib/findlib:meta_entries.c)",
+#     # "$(location //lib/findlib:meta_flags.c)",
+#     # "$(location //lib/findlib:meta_lexis.c)",
+#     # "$(location //lib/findlib:meta_packages.c)",
+#     # "$(location //lib/findlib:meta_properties.c)",
+#     # "$(location //lib/findlib:meta_settings.c)",
+#     # "$(location //lib/findlib:meta_values.c)",
+#     # "$(location //lib/findlib:meta_syntaxis.c)",
+
+#     # "$(location //convert:convert.c)",
+#     "$(location //coswitch:coswitch.c)",
+
+#     "$(location //lib/xdg:xdg.c)",
+
+#     ## FIXME: select on //:compilation_mode: dbg?
+#     "$(location //lib/debug:debug.c)",
+#     "$(location //lib/debug:debug_bazel.c)",
+#     # "$(location //lib/debug:debug_mibl.c)",
+#     "$(location //lib/debug:debug_s7.c)",
+#     # "$(location //lib/findlib:debug_findlib.c)",
+#     # "$(location //lib/findlib:debug_meta.c)",
+# ]
+
+# # Note the trailing ':', we do not need to emit headers for these.
+# LINUX_FILELOCS = " " + select({
+#     "//bzl/host:linux": " ".join(["$(location //lib/linux:strlcat.c):",
+#                                   "$(location //lib/linux:strlcpy.c):",
+#                                   "$(location //lib/linux:strnstr.c):"]),
+#     "//conditions:default": ""
+# })
+
+# CP_CMDS = " ".join([
+#     "cp $${SRCDIR0}/*.h $(@D);",
+#     "cp $${SRCDIR1}/*.h $(@D);",
+#     "cp $${SRCDIR2}/*.h $(@D);",
+#     # "cp $${SRCDIR3}/*.h $(@D);",
+#     # "cp $${SRCDIR4}/*.h $(@D);",
+#     # "cp $${SRCDIR5}/*.h $(@D);",
+#     "cp $${SRCDIR6}/*.h $(@D);",
+#     "cp $${SRCDIR7}/*.h $(@D);",
+#     # "cp $${SRCDIR8}/*.h $(@D);",
+#     "cp $${SRCDIR9}/*.h $(@D);",
+# ])
+
+# genrule(
+#     name = "hdrs",
+#     srcs = [
+#         "//lib:ansi_colors.h",
+#         "//lib:globals.c",
+#         "//lib:config_bazel.c",
+#         "//lib:config_mibl.c",
+#         "//lib:config_opam.c",
+#         "//lib:config_s7.c",
+#         "//lib:mibl_s7.c",
+
+#         "//lib:deps.c",
+#         "//lib:cmd_runner.c",
+
+#         "//lib/dune:error_handler_dune.c",
+#         "//lib:error_handler_s7.c",
+#         "//lib:handlers.c",
+#         "//lib:handlers_opam.c",
+
+#         "//lib:load_project.c",
+#         "//lib/coswitch:coswitch_cleaner.c",
+#         "//lib/coswitch:opam_switch_converter.c",   # FIXME: rename
+#         "//lib:treewalker_project.c", # FIXME: rename
+#         "//lib:utils.c",
+
+#         # "//lib:log.c",
+#         # "//lib:log.h",
+#         # "//lib:utarray.c",
+#         # "//lib:utarray.h",
+#         # "//lib:uthash.h",
+#         # "//lib:utstring.c",
+
+#         # "//lib/dune:mkhdrs_srcs",
+#         "//lib/dune:dune_readers.c",
+
+#         # "//lib/findlib:emit_build_bazel.c",
+#         # "//lib/findlib:emit_jsoo.c",
+#         # "//lib/findlib:emit_ocaml_repo.c",
+#         # "//lib/findlib:emit_pkg_bindir.c",
+#         # "//lib/findlib:handlers_findlib.c",
+#         # "//lib/findlib:meta_parser.c",
+#         # "//lib/findlib:meta_entries.c",
+#         # "//lib/findlib:meta_flags.c",
+#         # "//lib/findlib:meta_packages.c",
+#         # "//lib/findlib:meta_properties.c",
+#         # "//lib/findlib:meta_settings.c",
+#         # "//lib/findlib:meta_values.c",
+
+#         # "//lib/findlib:meta_lexis.c",
+#         # "//lib/findlib:meta_syntaxis.c", # //lib/findlib/gen_meta_syntaxis
+
+#         "//lib/xdg:xdg.c",
+
+#         ## runners
+#         # "//convert:convert.c",
+#         "//coswitch:coswitch.c",
+
+#         ## FIXME: select on //:compilation_mode: dbg?
+#         "//lib/debug:debug.c",
+#         "//lib/debug:debug_bazel.c",
+#         # "//lib/debug:debug_mibl.c",
+#         "//lib/debug:debug_s7.c",
+#         # "//lib/findlib:debug_findlib.c",
+#         # "//lib/findlib:debug_meta.c",
+
+#     ] + select({
+#         "//bzl/host:linux": ["//lib/linux:strlcat.c",
+#                              "//lib/linux:strlcpy.c",
+#                              "//lib/linux:strnstr.c"],
+#         "//conditions:default":   []
+#     }),
+#     outs = [
+#         "globals.h",
+#         "config_bazel.h",
+#         "config_mibl.h",
+#         "config_opam.h",
+#         "config_s7.h",
+#         "mibl_s7.h",
+#         "deps.h",
+#         "cmd_runner.h",
+
+#         "dune_readers.h",
+
+#         ## FIXME: select on //:compilation_mode: dbg?
+#         "debug.h",
+#         "debug_bazel.h",
+#         # "debug_mibl.h",
+#         "debug_s7.h",
+
+#         # "debug_findlib.h",
+#         # "debug_meta.h",
+
+#         "coswitch_cleaner.h",
+#         "opam_switch_converter.h",
+#         "treewalker_project.h",
+#         "handlers.h",
+#         # "handlers_findlib.h",
+#         "handlers_opam.h",
+
+#         # "emit_build_bazel.h",
+#         # "emit_jsoo.h",
+#         # "emit_ocaml_repo.h",
+#         # "emit_pkg_bindir.h",
+#         # "meta_parser.h",
+#         # "meta_entries.h",
+#         # "meta_flags.h",
+#         # "meta_lexis.h",
+#         # "meta_packages.h",
+#         # "meta_properties.h",
+#         # "meta_settings.h",
+#         # "meta_values.h",
+#         # "meta_syntaxis.h",
+
+#         "load_project.h",
+#         "error_handler_dune.h",
+#         "error_handler_s7.h",
+
+#         "utils.h",
+#         # "utstring.h",
+
+#         "xdg.h",
+
+#         # "convert.h",
+#         "coswitch.h"
+#     ],
+#     cmd = " ".join(DIRLOCS) +
+#     " ".join(FILELOCS) + LINUX_FILELOCS + ";"
+#     + CP_CMDS,
+#     tools = ["@makeheaders//lib:makeheaders"],
+#     visibility = ["//visibility:public"]
+# )
+
+########
+#genrule(
+makeheaders(
+    name = "export",
+    out  = "mibl.h",
+    export_interface = True,
+    hdrs_srcs = [
+        "//lib:globals.c",
+        "//lib:config_bazel.c",
+        "//lib:config_mibl.c",
+        "//lib:config_opam.c",
+        "//lib:config_s7.c",
+        "//lib:mibl_s7.c",
+
+        "//lib:deps.c",
+        "//lib:cmd_runner.c",
+
+        "//lib/debug:debug.c",
+        "//lib/debug:debug_bazel.c",
+        # "//lib/debug:debug_mibl.c",
+        # "//lib/debug:debug_s7.c",
+        # "//lib/findlib:debug_findlib.c",
+        # "//lib/findlib:debug_meta.c",
+
+        # "//lib/dune:error_handler_dune.c",
+        "//lib:error_handler_s7.c",
+        "//lib:handlers.c",
+        "//lib:handlers_opam.c",
+
+        "//lib:load_project.c",
+        # "//lib/coswitch:coswitch_cleaner.c",
+        # "//lib/coswitch:opam_switch_converter.c",
+        "//lib:treewalker_project.c",
+        "//lib:utils.c",
+
+        # "//lib:log.c",
+        # "//lib:log.h",
+        # "//lib:utarray.c",
+        # "//lib:utarray.h",
+        # "//lib:uthash.h",
+        # "//lib:utstring.c",
+
+        # "//lib/dune:mkhdrs_srcs",
+        # "//lib/dune:dune_readers.c",
+
+        # "//lib/findlib:emit_build_bazel.c",
+        # "//lib/findlib:emit_jsoo.c",
+        # "//lib/findlib:emit_ocaml_repo.c",
+        # "//lib/findlib:emit_pkg_bindir.c",
+        # "//lib/findlib:handlers_findlib.c",
+        # "//lib/findlib:meta_parser.c",
+        # "//lib/findlib:meta_entries.c",
+        # "//lib/findlib:meta_flags.c",
+        # "//lib/findlib:meta_packages.c",
+        # "//lib/findlib:meta_properties.c",
+        # "//lib/findlib:meta_settings.c",
+        # "//lib/findlib:meta_values.c",
+
+        # "//lib/findlib:meta_lexis.c",
+        # "//lib/findlib:meta_syntaxis.c", # //lib/findlib/gen_meta_syntaxis
+
+        # "//lib/xdg:xdg.c",
+
+        # "//coswitch:coswitch.c"
+    ] + select({
+        "//bzl/host:linux": ["//lib/linux:strlcat.c",
+                             "//lib/linux:strlcpy.c",
+                             "//lib/linux:strnstr.c"],
+        "//conditions:default":   []
+    }),
+    additional_srcs = [
+        "//lib:ansi_colors.h",
+    ],
+    # outs = ["mibl.h"],
+    # # we need to enumerate rather than use $(SRCS) or a wildcard
+    # # since for for a few srcfiles we do not want to emit a hdr;
+    # # for those we use the suffixed colon notation e.g. 'foo.c:'.
+    # cmd = " ".join([
+    #     # "SRC0=$(location //coswitch:coswitch.c);",
+    #     # "SRCDIR0=`dirname $$SRC0`;",
+    #     # "SRC1=$(location //lib:ansi_colors.h);",
+    #     # "SRCDIR1=`dirname $$SRC1`;",
+    #     # "SRC2=$(location //lib/dune:dune_readers.c);",
+    #     # "SRCDIR2=`dirname $$SRC2`;",
+    #     # "SRC3=$(location //lib/findlib:meta_packages.c);",
+    #     # "SRCDIR3=`dirname $$SRC3`;",
+    #     # ## meta_syntaxis.c is generated so needs special treatment
+    #     # "SRC4=$(location //lib/findlib:meta_syntaxis.c);",
+    #     # "SRCDIR4=`dirname $$SRC4`;",
+
+    #     "$(execpath @makeheaders//lib:makeheaders)",
+    #     "-H",
+    #     "$(location //lib:ansi_colors.h)",
+    #     "$(location //lib:globals.c)",
+    #     "$(location //lib:config_bazel.c)",
+    #     "$(location //lib:config_mibl.c)",
+    #     "$(location //lib:config_opam.c)",
+    #     "$(location //lib:config_s7.c)",
+    #     "$(location //lib:mibl_s7.c)",
+
+    #     "$(location //lib:deps.c)",
+    #     "$(location //lib:cmd_runner.c)",
+
+    #     ## FIXME: select on //:compilation_mode: dbg?
+    #     "$(location //lib/debug:debug.c)",
+    #     "$(location //lib/debug:debug_bazel.c)",
+    #     ### "$(location //lib/debug:debug_mibl.c)",
+    #     "$(location //lib/debug:debug_s7.c)",
+    #     # "$(location //lib/findlib:debug_findlib.c)",
+    #     # "$(location //lib/findlib:debug_meta.c)",
+
+    #     "$(location //lib/dune:error_handler_dune.c)",
+    #     "$(location //lib:error_handler_s7.c)",
+    #     "$(location //lib:handlers.c)",
+    #     "$(location //lib:handlers_opam.c)",
+
+    #     "$(location //lib:load_project.c)",
+
+    #     "$(location //lib/coswitch:coswitch_cleaner.c)",
+    #     "$(location //lib/coswitch:opam_switch_converter.c)",
+    #     "$(location //lib:treewalker_project.c)",
+    #     "$(location //lib:utils.c)",
+
+    #     "$(location //lib/dune:dune_readers.c)",
+
+    #     # "$(location //lib/linux:strlcat.c)",
+    #     # "$(location //lib/linux:strlcpy.c)",
+    #     # "$(location //lib/linux:strnstr.c)",
+
+    #     # "$(location //lib/findlib:emit_build_bazel.c)",
+    #     # "$(location //lib/findlib:emit_jsoo.c)",
+    #     # "$(location //lib/findlib:emit_ocaml_repo.c)",
+    #     # "$(location //lib/findlib:emit_pkg_bindir.c)",
+    #     # "$(location //lib/findlib:handlers_findlib.c)",
+    #     # "$(location //lib/findlib:meta_parser.c)",
+    #     # "$(location //lib/findlib:meta_entries.c)",
+    #     # "$(location //lib/findlib:meta_flags.c)",
+    #     # "$(location //lib/findlib:meta_lexis.c)",
+    #     # "$(location //lib/findlib:meta_packages.c)",
+    #     # "$(location //lib/findlib:meta_properties.c)",
+    #     # "$(location //lib/findlib:meta_settings.c)",
+    #     # "$(location //lib/findlib:meta_values.c)",
+    #     # "$(location //lib/findlib:meta_syntaxis.c)",
+    #     "$(location //lib/xdg:xdg.c)",
+
+    #     "$(location //coswitch:coswitch.c)",
+    #     ">",
+    #     "$@"
+    #     # ";",
+
+    #     # "cp $${SRCDIR0}/*.h $(@D);",
+    #     # "cp $${SRCDIR1}/*.h $(@D);",
+    #     # "cp $${SRCDIR2}/*.h $(@D);",
+    #     # "cp $${SRCDIR3}/*.h $(@D);",
+    #     # "cp $${SRCDIR4}/*.h $(@D);",
+    # ]),
+    # tools = ["@makeheaders//lib:makeheaders"],
+    # visibility = ["//visibility:public"]
+)
+

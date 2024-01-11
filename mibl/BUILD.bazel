@@ -1,13 +1,18 @@
 exports_files(["mibl.c", "run_mibl.sh"])
 
-load("//:BUILD.bzl",
+load("@makeheaders//rules:makeheaders.bzl", "makeheaders")
+
+# load("//:BUILD.bzl",
+#      "GOPT_VERSION",
+#      "INIH_VERSION",
+#      "LIBLOGC_VERSION",
+#      "LIBS7_VERSION",
+#      "MIBL_VERSION",
+#      "UTHASH_VERSION")
+
+load("//config/cc:BUILD.bzl",
      "BASE_SRCS", "BASE_DEPS", "BASE_INCLUDE_PATHS",
-     "BASE_COPTS", "BASE_DEFINES", "BASE_LINKOPTS",
-     "GOPT_VERSION",
-     "LIBLOG_CC_VERSION",
-     "LIBS7_VERSION",
-     "MIBL_VERSION",
-     "UTHASH_VERSION")
+     "BASE_COPTS", "BASE_DEFINES", "BASE_LINKOPTS")
 
 ## macros:
 load(":BUILD.bzl", "mibl")
@@ -30,37 +35,41 @@ cc_binary(
     # args  = _args,
     linkstatic = True,
     srcs  = SRCS + [
-        "//mibl:mibl.c", "//mibl:mibl.h",
+        "mibl_main.c", ":mkhdrs"
     ],
     deps = DEPS + [
-        "@mibl//src:mibl",
-        "@mibl//vendored/libinih:inih",
-        "@gopt//:gopt",
-        "@uthash//src:uthash",
+        "//lib:mibl",           # libmibl
+
+        "@gopt//lib:gopt",
+        "@uthash//lib:uthash",
+        # "@inih//:inih",
     ],
     copts = COPTS + [
         "-I$(GENDIR)/mibl",               # mibl.h
-        "-I$(GENDIR)/external/mibl~{}/mibl".format(MIBL_VERSION),
+        "-I$(GENDIR)/external/{}/mibl".format( # mibl.h
+            repository_name()[1:]
+        ),
+        # "-I$(GENDIR)/external/mibl~{}/mibl".format(MIBL_VERSION),
         # "-I$(GENDIR)/external/mibl/mibl",
 
-        "-Iexternal/mibl~{}/config".format(MIBL_VERSION),
+        # "-Iexternal/mibl~{}/config".format(MIBL_VERSION),
 
-        "-I$(GENDIR)/src/hdrs",                # libmibl.h
-        "-I$(GENDIR)/external/mibl~{}/src/hdrs".format(MIBL_VERSION),
+        "-I$(GENDIR)/src/hdrs",                # mibl.h
+        # "-I$(GENDIR)/external/mibl~{}/src/hdrs".format(MIBL_VERSION),
         # "-I$(GENDIR)/external/mibl/src/hdrs",
 
         "-Ivendored/gopt",
-        "-Iexternal/gopt~{}".format(GOPT_VERSION),
+        # "-Iexternal/gopt~{}".format(GOPT_VERSION),
         # "-Iexternal/mibl/vendored/gopt",
 
-        "-Ivendored/libinih",
-        "-Iexternal/mibl~{}/vendored/libinih".format(MIBL_VERSION),
+        # "-Iexternal/inih~{}".format(INIH_VERSION),
+        # "-Ivendored/libinih",
         # "-Iexternal/mibl/vendored/libinih",
 
-        "-Iexternal/uthash~{}/src".format(UTHASH_VERSION),
+        # "-Iexternal/uthash~{}/src".format(UTHASH_VERSION),
 
-        "-Iexternal/libs7~{}/src".format(LIBS7_VERSION),
-        # "-Iexternal/libs7/src", # loaded by @mibl//src:mibl
+        # "-Iexternal/libs7~{}/src".format(LIBS7_VERSION),
+        # "-Iexternal/libs7/src", # loaded by @mibl//lib:mibl
 
         ## repl
         "-Iexternal/libs7/vendored/linenoise",
@@ -95,18 +104,23 @@ cc_binary(
 )
 
 ################
-genrule(
+makeheaders(
     name = "mkhdrs",
-    srcs = ["//mibl:mibl.c"], # "//mibl:xen_repl.c"],
-    outs = ["mibl.h"],# "//mibl:xen_repl.h"],
-    cmd = "\n".join([
-        "SRC1=$(location //mibl:mibl.c)",
-        "SRCDIR1=`dirname $$SRC1`",
-        "$(execpath @makeheaders//src:makeheaders) \\",
-        "    $(location //mibl:mibl.c);",
-        # "    $(location //mibl:xen_repl.c);",
-        "cp $${SRCDIR1}/*.h $(@D)",
-    ]),
-    tools = ["@makeheaders//src:makeheaders"],
-    visibility = ["//visibility:public"]
+    hdrs_srcs = ["mibl_main.c"]
 )
+
+# genrule(
+#     name = "mkhdrs",
+#     srcs = ["//mibl:mibl_main.c"], # "//mibl:xen_repl.c"],
+#     outs = ["mibl_main.h"],# "//mibl:xen_repl.h"],
+#     cmd = "\n".join([
+#         "SRC1=$(location //mibl:mibl_main.c)",
+#         "SRCDIR1=`dirname $$SRC1`",
+#         "$(execpath @makeheaders//lib:makeheaders) \\",
+#         "    $(location //mibl:mibl_main.c);",
+#         # "    $(location //mibl:xen_repl.c);",
+#         "cp $${SRCDIR1}/*.h $(@D)",
+#     ]),
+#     tools = ["@makeheaders//lib:makeheaders"],
+#     visibility = ["//visibility:public"]
+# )

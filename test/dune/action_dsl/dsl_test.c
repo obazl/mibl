@@ -13,7 +13,7 @@
 #include "utstring.h"
 
 #include "libs7.h"
-#include "libmibl.h"
+#include "mibl.h"
 
 #include "unity.h"
 
@@ -32,7 +32,9 @@ extern bool mibl_trace_bazel;
 #endif
 
 extern UT_string *mibl_runfiles_root;
-extern bool verbose;
+
+bool verbose;
+int  verbosity;
 
 s7_scheme *s7;
 
@@ -60,7 +62,7 @@ s7_pointer expected;
 /* free(s); */
 
 /* verify that libc, libm, libdl are defined */
-void test_clibs(void) {
+void test_libc(void) {
     sexp_input = "(libc:fnmatch \"*.c\" \"s7.c\" libc:FNM_PATHNAME)";
     sexp_expected = "0";
     utstring_renew(sexp);
@@ -68,7 +70,9 @@ void test_clibs(void) {
     actual = s7_eval_c_string(s7, utstring_body(sexp));
     expected = s7_eval_c_string(s7, sexp_expected);
     TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
+}
 
+void test_libm(void) {
     sexp_input = "(libm:pow 2 3)";
     sexp_expected = "8.0";
     utstring_renew(sexp);
@@ -76,7 +80,9 @@ void test_clibs(void) {
     actual = s7_eval_c_string(s7, utstring_body(sexp));
     expected = s7_eval_c_string(s7, sexp_expected);
     TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
+}
 
+void test_libdl(void) {
     sexp_input = "(libdl:dlsym  libdl:RTLD_DEFAULT \"foobar\")";
     // returns #<void* 0x0>, and I don't know how to test for that in scheme
     utstring_renew(sexp);
@@ -1417,7 +1423,7 @@ void _set_options(struct option options[])
 #endif
     }
     if (options[FLAG_DEBUG_SCM_LOADS].count) {
-        mibl_s7_set_flag("*mibl-debug-s7-loads*", true);
+        mibl_s7_set_flag(s7, "*mibl-debug-s7-loads*", true);
     }
 
     if (options[FLAG_TRACE].count) {
@@ -1536,9 +1542,10 @@ int main(int argc, char **argv)
     else
         utstring_printf(mibl_runfiles_root, "%s", getcwd(NULL, 0));
 
-    mibl_s7_init();
+    s7 = mibl_s7_init();
 
-    mibl_s7_init2(NULL, // options[OPT_MAIN].argument,
+    mibl_s7_init2(s7,
+                  NULL, // options[OPT_MAIN].argument,
                   NULL); //options[OPT_WS].argument);
 
     // WARNING: when run under bazel test, user miblrc (XDG_DATA_HOME/.local/share) not accessible
@@ -1548,7 +1555,7 @@ int main(int argc, char **argv)
          log_debug("SHOW CONFIG");
         show_bazel_config();
         show_mibl_config();
-        show_s7_config();
+        show_s7_config(s7);
         exit(EXIT_SUCCESS);
      }
 
@@ -1597,7 +1604,10 @@ int main(int argc, char **argv)
     RUN_TEST(test_run);
     RUN_TEST(test_run_with_stdout_to);
 
-    RUN_TEST(test_clibs);
+    //FIXME: these are out of place here:
+    RUN_TEST(test_libc);
+    RUN_TEST(test_libm);
+    /* RUN_TEST(test_libdl); */
 
     utstring_free(sexp);
     return UNITY_END();

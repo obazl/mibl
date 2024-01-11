@@ -2,7 +2,7 @@ package(default_visibility = ["//visibility:public"])
 
 ## Convenience rules, to save the user the trouble of defining similar
 ## config_settings.  Selects can use e.g.
-## "@obazl//compilation_mode:dbg": ["-foo"]
+## "@obazl//compilation_mode:dbg?": ["-foo"]
 
 ## compilation_mode is a language- and toolchain-independent Bazel
 ## builtin, so we put it here instead of in @rules_ocaml or @ocaml.

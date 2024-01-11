@@ -1,0 +1,441 @@
+load("//config/cc:BUILD.bzl",
+     "BASE_SRCS", "BASE_DEPS", "BASE_INCLUDE_PATHS",
+     "BASE_COPTS", "BASE_DEFINES", "BASE_LINKOPTS")
+
+SRCS          = BASE_SRCS
+INCLUDE_PATHS = BASE_INCLUDE_PATHS
+COPTS         = BASE_COPTS + INCLUDE_PATHS
+DEPS          = BASE_DEPS
+DEFINES       = BASE_DEFINES + [
+     "LOCAL_REPO=\\\"{}\\\"".format(repository_name()[1:]),
+    "PROFILE_$(COMPILATION_MODE)"
+]
+LINKOPTS      = BASE_LINKOPTS
+
+PROFILE = ["PROFILE_$(COMPILATION_MODE)"]
+
+exports_files(glob(["*.c", "*.h"]))
+
+config_setting(name = "linux",
+               constraint_values = ["@platforms//os:linux"])
+
+config_setting(name = "macos",
+               constraint_values = ["@platforms//os:macos"])
+
+# filegroup(
+#     name = "debug_srcs",
+#     srcs = [
+#             "debug.c", "//lib/hdrs:debug.h",
+#             "debug_bazel.c", "//lib/hdrs:debug_bazel.h",
+#             # "debug_mibl.c", "//lib/hdrs:debug_mibl.h",
+#             "debug_s7.c", "//lib/hdrs:debug_s7.h",
+#     ],
+#     visibility = [
+#         "//lib/coswitch:__pkg__",
+#         "//repl:__pkg__"
+#     ]
+# )
+
+# filegroup(
+#     name = "handlers_srcs",
+#     srcs = [
+#         # "//lib/dune:dune_readers.c",
+#         # "//lib/hdrs:dune_readers.h",
+
+#         "//lib:handlers.c",
+#         "//lib/hdrs:handlers.h",
+#         # "handlers_findlib.c",
+#         "//lib/hdrs:handlers_findlib.h",
+#         "handlers_opam.c",
+#         "//lib/hdrs:handlers_opam.h",
+#     ],
+#     visibility = ["//lib/coswitch:__pkg__"]
+# )
+
+# filegroup(
+#     name = "coswitch_srcs",
+#     srcs = [
+#         "globals.c", "//lib/hdrs:globals.h",
+#         # "config_bazel.c", "//lib/hdrs:config_bazel.h",
+#         # "config_mibl.c", "//lib/hdrs:config_mibl.h",
+#         # "config_opam.c", "//lib/hdrs:config_opam.h",
+#         # "config_s7.c", "//lib/hdrs:config_s7.h",
+
+#         "cmd_runner.c", "//lib/hdrs:cmd_runner.h",
+#         # "mibl_s7.c", "//lib/hdrs:mibl_s7.h",
+
+#         # "error_handler_s7.c", "//lib/hdrs:error_handler_s7.h",
+#         # "error_handler_dune.c", "//lib/hdrs:error_handler_dune.h",
+#         # "error_handler_opam.c", "//lib/hdrs:error_handler_opam.h",
+#         "utils.c", "//lib/hdrs:utils.h",
+#         # "//lib/xdg:xdg.c", "//lib/hdrs:xdg.h",
+#     ],
+#     visibility = ["//lib/coswitch:__pkg__"]
+# )
+
+filegroup(
+    name = "mkhdrs_srcs",
+    srcs = glob(
+        ["*.c"],
+        exclude = ["log.c", "utarray.c"]
+    ),
+    visibility = ["//visibility:public"]
+)
+
+filegroup(
+    name = "mkhdrs_hdrs",
+    srcs = glob(
+        ["*.h"]
+    ),
+    visibility = ["//visibility:public"]
+)
+
+MIBL_SRCS = [
+    "load_project.c",
+    "globals.c",
+    # "config_bazel.c",
+    # "config_mibl.c",
+    # "config_opam.c",
+    # "config_s7.c",
+    "mibl_s7.c",
+    "deps.c",
+    "cmd_runner.c",
+    # "//lib/dune:error_handler_dune.c",
+    # "error_handler_s7.c",
+    # "fs.c",
+    # "log.c", "liblogc.h",
+    "utils.c",
+]
+
+##########
+cc_library(
+    name  = "mibl",
+    alwayslink = False, # True,
+    linkstatic = True,
+    srcs = SRCS + MIBL_SRCS + [
+        "//lib/hdrs:mkhdrs",
+        # "//lib/hdrs:load_project.h",
+        # "//lib/hdrs:globals.h",
+        # "//lib/hdrs:config_bazel.h",
+        # "//lib/hdrs:config_mibl.h",
+        # "//lib/hdrs:mibl_s7.h",
+        # "//lib/hdrs:config_opam.h",
+        # "//lib/hdrs:config_s7.h",
+        # "//lib/hdrs:deps.h",
+        # "//lib/hdrs:cmd_runner.h",
+        # "//lib/hdrs:error_handler_dune.h",
+        # "//lib/hdrs:error_handler_s7.h",
+        # "fs.h",
+        # "//lib/hdrs:utils.h",
+
+        # "//lib/dune:dune_readers.c",
+        # "//lib/hdrs:dune_readers.h",
+        # "//lib/xdg:xdg.c",
+        # "//lib/hdrs:xdg.h",
+    ] + select({
+        # "@libs7//config/clibs/link:shared?": [
+        #     "@libs7//lib/libc:c_s7",
+        #     "@libs7//lib/libcwalk:cwalk_s7",
+        #     "@libs7//lib/libmustachios:mustachios_s7",
+        #     "@libs7//lib/libjson:json_s7",
+        #     "@libs7//lib/libtoml:toml_s7",
+        # ],
+        "//conditions:default": []
+    }) + select({
+        # "//bzl/host:linux": [
+        "//config/host/build:linux?": [
+            "//lib/linux:strlcat.c",
+            "//lib/linux:strlcpy.c",
+            "//lib/linux:strnstr.c"
+        ],
+        "//conditions:default":   []
+    # }) + select({
+    #     # "//config/debug:debug?": [
+    #     "//config/profile:dev?": [
+    #         "debug.c", "//lib/hdrs:debug.h",
+    #         "debug_bazel.c", "//lib/hdrs:debug_bazel.h",
+    #         # "debug_mibl.c", "//lib/hdrs:debug_mibl.h",
+    #         "debug_s7.c", "//lib/hdrs:debug_s7.h"
+    #     ],
+    #     "//conditions:default": []
+    }),
+    # }) + select({
+    #     "//compilation_mode:dbg?": [
+    #         "debug.c", "debug.h",
+    #         "debug_mibl.c", "debug_mibl.h",
+    #         "debug_s7.c", "debug_s7.h"
+    #     ],
+    #     "//conditions:default": []
+    # }) + [
+    #     # "log.c",
+    #     # "uthash.h", "utarray.h", "utstring.h"
+    #     # "@uthash//:include"
+    # ],
+    hdrs = ["//lib/hdrs:mibl.h"], ## "liblogc.h"],
+    includes = ["hdrs"],
+    deps = DEPS + [
+        ":config",
+        "//dev",
+        # "//lib/dune",
+        # "//lib/xdg",
+        # "@inih//:inih",
+        "@uthash//lib:uthash",
+        "@xdgc//lib:xdgc",
+
+        "@libs7//lib:s7",
+        # we statically link these s7 libs for now
+        # TODO: make this configurable,
+        # for apps that do not need them all
+        "@libc_s7//lib:c_s7",
+        "@libm_s7//lib:m_s7",
+        "@cwalk_s7//lib:cwalk_s7",
+        # "@libs7//lib/static:dl_s7",
+        # "@libs7//lib/static:m_s7",
+
+        "@cjson_s7//lib:cjson_s7",
+        "@dune_s7//lib:dune_s7",
+        "@toml_s7//lib:toml_s7",
+
+    ] + select({
+        # "@libs7//config/clibs/link:archive?": [
+        #     "@libs7//lib/libc:c_s7_archive",
+        #     "@libs7//lib/libcwalk:cwalk_s7_archive",
+        #     "@libs7//lib/libmustachios:mustachios_s7_archive",
+        #     "@libs7//lib/libjson:json_s7_archive",
+        #     "@libs7//lib/libtoml:toml_s7_archive",
+        # ],
+        "//conditions:default": []
+    # }) + select({
+    #     "//config/profile:dev?": ["//lib/debug"],
+    #     "//conditions:default": []
+    }),
+    copts = COPTS + [
+        "-Idev",
+        # "-Iexternal/mibl~{}/dev".format(MIBL_VERSION),
+
+        "-Ilib",
+        # "-Iexternal/mibl~{}/lib".format(MIBL_VERSION),
+        # "-Iexternal/mibl/lib",
+
+        "-I$(GENDIR)/lib",
+        # "-I$(GENDIR)/external/mibl~{}/lib".format(MIBL_VERSION),
+        # "-I$(GENDIR)/external/mibl/lib",
+
+        "-I$(GENDIR)/external/{}/lib/hdrs".format(
+            repository_name()[1:]
+        ),
+        # "-I$(GENDIR)/external/mibl~{}/lib/hdrs".format(MIBL_VERSION),
+        # "-I$(GENDIR)/external/mibl/lib/hdrs",
+
+        # "-Iexternal/libs7/lib",
+        # "-Iexternal/libs7/config",
+        # "-Iexternal/libs7~{}/lib".format(LIBS7_VERSION),
+        # "-Iexternal/libs7~{}/config".format(LIBS7_VERSION),
+
+        "-I$(GENDIR)/external/libs7/lib/libc",
+
+        # "-Iexternal/cwalk_s7~{}/lib".format(CWALK_S7_VERSION),
+        "-I$(GENDIR)/external/libs7/lib/libcwalk",
+        "-Iexternal/libs7/lib/libmustachios",
+
+        # "-Iexternal/cjson_s7~{}/lib".format(CJSON_S7_VERSION),
+        # "-Iexternal/libs7/lib/libjson",
+
+        # "-Iexternal/toml_s7~{}/lib".format(TOML_S7_VERSION),
+        # "-I$(GENDIR)/external/toml_s7~{}/lib".format(TOML_S7_VERSION),
+        # "-Iexternal/libs7/lib/libtoml",
+
+        # "-Iexternal/inih~{}".format(INIH_VERSION),
+
+        # "-Iexternal/uthash~{}/lib".format(UTHASH_VERSION),
+
+        # "-I$(GENDIR)/external/libs7/lib"
+    ] + select({
+        "//config/debug:trace?": ["-Wno-gnu-statement-expression"],
+        "//conditions:default":   []
+    }),
+    #  + select({
+    #     # sigh. fixme: s7 v. non-s7 :debug target
+    #     "//compilation_mode:dbg?": [":debug"],
+    #     "//conditions:default": []
+    # }),
+
+    data = [
+        "//scm:srcs",
+        "//scm/mibl:srcs",
+        "//scm/dune:srcs",
+        # "//scm/findlib:srcs",
+        "//scm/opam:srcs"
+        # "//scm/codept:srcs",
+    ] +select({
+        "@libs7//config/clibs/link:runtime?": [
+            "@libs7//lib/lib/libc:c_s7",
+            "@libs7//lib/lib/libcwalk:cwalk_s7",
+            "@libs7//lib/libmustachios:mustachios_s7",
+            "@libs7//lib/lib/libjson:json_s7",
+            "@libs7//lib/lib/libtoml:toml_s7",
+        ],
+        "//conditions:default": []
+    }),
+    # data = [
+    #     "//scm:dune.scm",
+    #     "//scm/dune:srcs",
+    #     "//scm:meta.scm",
+    #     "//scm/meta:srcs",
+    #     "//scm:opam.scm",
+    #     "//scm/opam:srcs",
+    # ],
+    defines =  PROFILE,
+    local_defines = DEFINES,
+    # local_defines = select({
+    #     "//bzl/host:linux": [
+    #         "_XOPEN_SOURCE=500", # strdup
+    #         # or: "-D_POSIX_C_SOURCE=200809L", ## strdup, strndup
+    #         "_DEFAULT_SOURCE"    # dirent DT_* macros
+    #     ],
+    #     "//conditions:default":   []
+    # }) + select({
+    #     "@libs7//config/clibs/link:runtime?": ["CLIBS_LINK_RUNTIME"],
+    #     "//conditions:default":   []
+    # }) + select({
+    #     "//config/profile:dev?": ["DEVBUILD", "TRACING"],
+    #     # "//config/debug:debug?": ["DEVBUILD", "DEBUG_MIBL"],
+    #     "//conditions:default":   []
+    # }) + select({
+    #     "//config/debug:trace?": ["TRACING"], # FIXME: ???
+    #     "//conditions:default":   []
+    # }),
+    visibility = ["//visibility:public"]
+)
+
+################################################################
+CMD_HDR = "\n".join([
+    "SRC1=$(location load_project.c)",
+    "SRCDIR1=`dirname $$SRC1`;",
+])
+
+config_setting(
+    name = "dbg_mode",
+    values = {"compilation_mode": "dbg"},
+)
+
+################
+# cc_library(
+#     name = "treewalker_project",
+#     srcs = [
+#         "treewalker_project.c" , "//lib/hdrs:treewalker_project.h",
+#         # "handlers_findlib.c" , "//lib/hdrs:handlers_findlib.h",
+#         "handlers_opam.c"      , "//lib/hdrs:handlers_opam.h",
+#         "globals.c"            , "//lib/hdrs:globals.h",
+#         "config_bazel.c"       , "//lib/hdrs:config_bazel.h",
+#         "config_mibl.c"        , "//lib/hdrs:config_mibl.h",
+#         "config_opam.c"        , "//lib/hdrs:config_opam.h",
+#         "config_s7.c"     , "//lib/hdrs:config_s7.h",
+#         # "error_handler_opam.c" , "//lib/hdrs:error_handler_opam.h",
+
+#         "utils.c",
+#         "//lib/hdrs:utils.h",
+#         # "log.c",
+#     ] + select({
+#         "//bzl/host:linux": [
+#             "//lib/linux:strlcat.c", "//lib/linux:strlcpy.c", "//lib/linux:strnstr.c"],
+#         "//conditions:default":   []
+#     }),
+#     hdrs = [
+#         # "libopam_switch_converter.h",
+#         # "@libs7//lib:s7.h",
+#         # "liblogc.h",
+#     ],
+#     deps = DEPS + [
+#         # "//lib/dune",
+#         "//lib/findlib",
+#         # "//lib:mibl",
+#         # "@inih//:inih",
+#         "@uthash//lib:uthash",
+#         "@libs7//lib:s7",
+#     ] + select({
+#         "//compilation_mode:dbg?": [":debug"],
+#         "//conditions:default": []
+#     }),
+#     copts = COPTS + [
+#         "-Isrc",
+#         "-I$(GENDIR)/lib",
+
+#         "-Iexternal/mibl/lib",
+#         "-I$(GENDIR)/external/mibl/lib",
+
+#         "-I$(GENDIR)/lib/hdrs",
+#         "-I$(GENDIR)/external/mibl/lib/hdrs",
+
+#         "-I$(GENDIR)/lib/dune",
+#         "-I$(GENDIR)/external/mibl/lib/dune",
+
+#         "-I$(GENDIR)/lib/findlib",
+#         "-I$(GENDIR)/external/mibl/lib/findlib",
+
+#         "-Iexternal/libs7/lib",
+
+#         # "-Iexternal/inih~{}".format(INIH_VERSION),
+
+#         "-Iexternal/uthash~{}/lib".format(UTHASH_VERSION)
+#     ],
+#     local_defines = select({
+#         "//config/debug:debug?": ["DEVBUILD"],
+#         "//conditions:default":   []
+#     }) + select({
+#         "//config/debug:trace?": ["TRACING"],
+#         "//conditions:default":   []
+#     }),
+#     visibility = ["//visibility:public"]
+# )
+
+################################################################
+cc_library(
+    name = "config",
+    srcs = [
+        "config_bazel.c" ,
+        "config_mibl.c"  ,
+        "config_opam.c"  ,
+        "config_s7.c"    ,
+        "cmd_runner.c"   ,
+        "error_handler_s7.c",
+        "globals.c"      ,
+        "//lib/hdrs:mkhdrs"
+    ],
+    deps = DEPS + [
+        "//dev",
+        "@inih//:inih",
+        "@libs7//lib:s7",
+        "@uthash//lib:uthash",
+        "@xdgc//lib:xdgc"
+    ],
+    # + select({
+    #     "//compilation_mode:dbg?": ["//lib/debug"],
+    #     "//conditions:default": []
+    # }),
+    copts = COPTS + [
+        "-Idev",
+        # "-Iexternal/mibl~{}/dev".format(MIBL_VERSION),
+        # "-I$(GENDIR)/external/mibl~{}/dev".format(MIBL_VERSION),
+
+        "-I$(GENDIR)/lib/hdrs",
+        "-I$(GENDIR)/external/{}/lib/hdrs".format(
+            repository_name()[1:]
+        ),
+
+        # "-I$(GENDIR)/external/mibl~{}/lib/hdrs".format(
+        #     MIBL_VERSION),
+
+        # "-Iexternal/inih~{}".format(INIH_VERSION),
+        # "-Iexternal/libs7~{}/lib".format(LIBS7_VERSION),
+        # "-Iexternal/uthash~{}/lib".format(UTHASH_VERSION)
+    ],
+    local_defines = select({
+        "//config/debug:debug?": ["DEVBUILD"],
+        "//conditions:default":   []
+    }) + select({
+        "//config/debug:trace?": ["TRACING"],
+        "//conditions:default":   []
+    }),
+    visibility = ["//visibility:public"]
+)

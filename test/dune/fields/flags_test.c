@@ -9,7 +9,7 @@
 #include "utstring.h"
 
 #include "s7.h"
-#include "libmibl.h"
+#include "mibl.h"
 
 #include "unity.h"
 

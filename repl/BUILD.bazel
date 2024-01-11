@@ -1,106 +1,106 @@
-load("//:BUILD.bzl", "LIBLOG_CC_VERSION")
 load("@rules_cc//cc:defs.bzl", "cc_binary")
+load("@makeheaders//src:RULES.bzl", "makeheaders")
 
 alias(
     name = "repl",
     actual = "//mibl"
 )
 
-##########
-cc_binary(
-    name  = "xrepl",
-    linkstatic = True,
-    srcs  = [
-        "repl.c", "repl.h",
-        "xen_repl.c", "xen_repl.h",
-        # "//src:opam_config.h",
-        # "//src:bazel_config.h"
-    ] + select({
-        "//compilation_mode:dbg?": [
-            "//src:debug_srcs"
-        ],
-        "//conditions:default": []
-    }),
-    copts = select({
-        "//bzl/host:macos": ["-std=c11"],
-        "//bzl/host:linux": ["-std=gnu11"],
-        "//conditions:default": ["-std=c11"],
-    }) + [
-        "-Wall",
-        "-Wpedantic",
-        "-pedantic-errors",
-        "-Wno-unused-function",
+# ##########
+# cc_binary(
+#     name  = "xrepl",
+#     linkstatic = True,
+#     srcs  = [
+#         "repl.c", "repl.h",
+#         "xen_repl.c", "xen_repl.h",
+#         # "//src:opam_config.h",
+#         # "//src:bazel_config.h"
+#     ] + select({
+#         "//compilation_mode:dbg?": [
+#             "//src:debug_srcs"
+#         ],
+#         "//conditions:default": []
+#     }),
+#     copts = select({
+#         "//bzl/host:macos": ["-std=c11"],
+#         "//bzl/host:linux": ["-std=gnu11"],
+#         "//conditions:default": ["-std=c11"],
+#     }) + [
+#         "-Wall",
+#         "-Wpedantic",
+#         "-pedantic-errors",
+#         "-Wno-unused-function",
 
-        # "-I$(GENDIR)/src",
-        # "-I$(GENDIR)/external/mibl/src",
+#         # "-I$(GENDIR)/src",
+#         # "-I$(GENDIR)/external/mibl/src",
 
-        "-I$(GENDIR)/repl",
-        "-I$(GENDIR)/external/mibl/repl",
+#         "-I$(GENDIR)/repl",
+#         "-I$(GENDIR)/external/mibl/repl",
 
-        "-I$(GENDIR)/src/hdrs",
-        "-I$(GENDIR)/external/mibl/src/hdrs", # mibl.h is generated
+#         "-I$(GENDIR)/src/hdrs",
+#         "-I$(GENDIR)/external/mibl/src/hdrs", # mibl.h is generated
 
-        "-Iexternal/liblog_cc~{}/src".format(LIBLOG_CC_VERSION),
+#         "-Iexternal/liblogc~{}/src".format(LIBLOGC_VERSION),
 
-        "-Ivendored/gopt",
-        "-Iexternal/mibl/vendored/gopt",
+#         "-Ivendored/gopt",
+#         "-Iexternal/mibl/vendored/gopt",
 
-        "-Ivendored/uthash",
-        "-Iexternal/mibl/vendored/uthash",
+#         "-Ivendored/uthash",
+#         "-Iexternal/mibl/vendored/uthash",
 
-        "-Iexternal/libs7/src",
-        "-Iexternal/mibl/libs7/src",
+#         "-Iexternal/libs7/src",
+#         "-Iexternal/mibl/libs7/src",
 
-        "-Iexternal/libs7/vendored/linenoise",
-        "-Iexternal/mibl/libs7/vendored/linenoise",
-    ],
-    defines = select({
-        "//bzl/host:debug": ["TRACING"],
-        "//conditions:default":   []
-    }) + select({
-        "//bzl/host:linux": ["_XOPEN_SOURCE=500"], # strdup
-        "//conditions:default":   []
-    }) + [
-        "WITH_C_LOADER"
-        # "LD_LIBRARY_PATH=external/libs7/src"
-    ],
-    linkopts = select({
-        "//bzl/host:macos": [],
-        "//bzl/host:linux": [ "-Wl,-E", "-ldl"],
-        "//conditions:default": {}
-    }) + [
-        "-lm",
-        # "-lc_s7"
-    ],
-    deps = [
-        "//src:mibl",
-        "//vendored/gopt",
-        "@liblog_cc//src:logc",
-        "//vendored/uthash",
-        "@libs7//src:s7",
-    ],
-    visibility = ["//visibility:public"]
-)
+#         "-Iexternal/libs7/vendored/linenoise",
+#         "-Iexternal/mibl/libs7/vendored/linenoise",
+#     ],
+#     defines = select({
+#         "//bzl/host:debug": ["TRACING"],
+#         "//conditions:default":   []
+#     }) + select({
+#         "//bzl/host:linux": ["_XOPEN_SOURCE=500"], # strdup
+#         "//conditions:default":   []
+#     }) + [
+#         "WITH_C_LOADER"
+#         # "LD_LIBRARY_PATH=external/libs7/src"
+#     ],
+#     linkopts = select({
+#         "//bzl/host:macos": [],
+#         "//bzl/host:linux": [ "-Wl,-E", "-ldl"],
+#         "//conditions:default": {}
+#     }) + [
+#         "-lm",
+#         # "-lc_s7"
+#     ],
+#     deps = [
+#         "//src:mibl",
+#         "//vendored/gopt",
+#         "@liblogc//src:logc",
+#         "//vendored/uthash",
+#         "@libs7//src:s7",
+#     ],
+#     visibility = ["//visibility:public"]
+# )
 
-########
-genrule(
-    name = "mkhdrs",
-    srcs = [
-        "repl.c",
-        "xen_repl.c",
-    ],
-    outs = [
-        "repl.h",
-        "xen_repl.h",
-    ],
-    cmd = "\n".join([
-        "SRC1=$(location repl.c)",
-        "SRCDIR1=`dirname $$SRC1`",
-        "$(execpath @makeheaders//src:makeheaders) \\",
-        "    $(location repl.c) \\",
-        "    $(location xen_repl.c)",
-        "cp $${SRCDIR1}/*.h $(@D)",
-    ]),
-    tools = ["@makeheaders//src:makeheaders"],
-    visibility = ["//visibility:public"]
-)
+# ########
+# genrule(
+#     name = "mkhdrs",
+#     srcs = [
+#         "repl.c",
+#         "xen_repl.c",
+#     ],
+#     outs = [
+#         "repl.h",
+#         "xen_repl.h",
+#     ],
+#     cmd = "\n".join([
+#         "SRC1=$(location repl.c)",
+#         "SRCDIR1=`dirname $$SRC1`",
+#         "$(execpath @makeheaders//src:makeheaders) \\",
+#         "    $(location repl.c) \\",
+#         "    $(location xen_repl.c)",
+#         "cp $${SRCDIR1}/*.h $(@D)",
+#     ]),
+#     tools = ["@makeheaders//src:makeheaders"],
+#     visibility = ["//visibility:public"]
+# )

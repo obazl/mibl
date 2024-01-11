@@ -1,63 +1,76 @@
-load("//:BUILD.bzl", "LIBLOG_CC_VERSION")
 load("@rules_cc//cc:defs.bzl", "cc_library")
+
+load("//:BUILD.bzl",
+     "LIBLOGC_VERSION",
+     "LIBS7_VERSION",
+     "GOPT_VERSION",
+     "UNITY_VERSION",
+     "UTHASH_VERSION")
+
+load("//config/cc:BUILD.bzl",
+     SRCS = "BASE_SRCS",
+     DEPS = "BASE_DEPS",
+     "BASE_INCLUDE_PATHS",
+     "BASE_COPTS",
+     LINKOPTS = "BASE_LINKOPTS",
+     DEFINES = "BASE_DEFINES")
+
+COPTS = BASE_COPTS + BASE_INCLUDE_PATHS
 
 cc_test(
     name = "test",
     linkstatic = True,
-    srcs = ["dsl_test.c"],
-    data = ["dsl_bash_script.dune"],
-    copts = [
-        "-std=c11",
-        "-pedantic-errors",
-        "-Wall",
-        "-Werror",
-
+    srcs = SRCS + ["dsl_test.c"],
+    deps = DEPS + [
+        "//src:mibl",
+        "@gopt//src:gopt",
+        # "//vendored/gopt",
+        # "@liblogc//src:logc",
+        "@unity//src:unity",
+        # "//vendored/unity",
+        "@uthash//src:uthash",
+        # "//vendored/uthash",
+    ],
+    copts = COPTS + [
         "-I$(GENDIR)/src/hdrs",
-        "-I$(GENDIR)/external/mibl/src/hdrs",
+        # "-I$(GENDIR)/external/mibl/src/hdrs",
 
         "-Ivendored/gopt",
         "-Iexternal/mibl/vendored/gopt",
 
-        "-Iexternal/liblog_cc~{}/src".format(LIBLOG_CC_VERSION),
-
-        "-Ivendored/unity",
-        "-Iexternal/mibl/vendored/unity",
-
-        "-Ivendored/uthash",
-        "-Iexternal/mibl/vendored/uthash",
-
-        "-Iexternal/libs7/src"  # s7.h
-    ] + select({
-        "//bzl/host:debug": [""],
-        "//conditions:default":   []
-    }) + select({
-        ## macos fastbuild: -UDEBUG
-        "//conditions:default":   []
-    }),
-    defines = select({
-        "//bzl/host:debug": ["TRACING", "DEBUG_MIBL"],
-        "//conditions:default":   []
-    }) + select({
-        "//bzl/host:linux": [
-            "_XOPEN_SOURCE=500", # strdup
-            "_DEFAULT_SOURCE"    # dirent DT_* macros
-        ],
-        "//conditions:default":   []
-    }),
-    linkopts = select({
-        "//bzl/host:macos": [],
-        "//bzl/host:linux": ["-ldl", "-Wl,-export-dynamic"],
-        "//conditions:default": []
-    }) + [
-        "-lm"
+        "-Iexternal/libs7~{}/src".format(LIBS7_VERSION),
+        "-Iexternal/gopt~{}/src".format(GOPT_VERSION),
+        # "-Iexternal/liblogc~{}/src".format(LIBLOGC_VERSION),
+        "-Iexternal/unity~{}/src".format(UNITY_VERSION),
+        "-Iexternal/uthash~{}/src".format(UTHASH_VERSION),
     ],
-    deps = [
-        "//src:mibl",
-        "//vendored/gopt",
-        "@liblog_cc//src:logc",
-        "//vendored/unity",
-        "//vendored/uthash",
-    ],
+    # + select({
+    #     "//bzl/host:debug": [""],
+    #     "//conditions:default":   []
+    # }) + select({
+    #     ## macos fastbuild: -UDEBUG
+    #     "//conditions:default":   []
+    # }),
+    defines = DEFINES,
+    # select({
+    #     "//bzl/host:debug": ["TRACING", "DEBUG_MIBL"],
+    #     "//conditions:default":   []
+    # }) + select({
+    #     "//bzl/host:linux": [
+    #         "_XOPEN_SOURCE=500", # strdup
+    #         "_DEFAULT_SOURCE"    # dirent DT_* macros
+    #     ],
+    #     "//conditions:default":   []
+    # }),
+    linkopts = LINKOPTS,
+    # select({
+    #     "//bzl/host:macos": [],
+    #     "//bzl/host:linux": ["-ldl", "-Wl,-export-dynamic"],
+    #     "//conditions:default": []
+    # }) + [
+    #     "-lm"
+    # ],
+    data = ["dsl_bash_script.dune"],
     timeout = "short",
     visibility = ["//test:__subpackages__"]
 )

@@ -28,7 +28,7 @@ cc_test(
         "-Iexternal/mibl/vendored/gopt",
 
         "-Ivendored/logc",
-        "-Iexternal/liblog_cc~{}/src".format(LIBLOG_CC_VERSION),
+        "-Iexternal/liblogc~{}/src".format(LIBLOGC_VERSION),
 
         "-Ivendored/unity",
         "-Iexternal/mibl/vendored/unity",
@@ -57,7 +57,7 @@ cc_test(
     deps = [
         "//src:mibl",
         "//vendored/gopt",
-        "@liblog_cc//src:logc",
+        "@liblogc//src:logc",
         "//vendored/unity",
         "//vendored/uthash",
     ],

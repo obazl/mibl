@@ -2,7 +2,7 @@
 
 #include "libs7.h"
 
-extern s7_scheme *s7;
+/* extern s7_scheme *s7; */
 
 /* HACK: need these structs from mustach-wrap and mustach-libs7
    so we can deref void* closure in mustach.c

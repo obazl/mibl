@@ -9,12 +9,12 @@
 #include "utstring.h"
 
 #include "s7.h"
-#include "libmibl.h"
+#include "mibl.h"
 
 #include "unity.h"
 
 
-#if defined(DEVBUILD)
+#if defined(PROFILE_fastbuild)
 extern bool mibl_debug;
 extern bool mibl_debug_bazel;
 extern int  mibl_debug_level;

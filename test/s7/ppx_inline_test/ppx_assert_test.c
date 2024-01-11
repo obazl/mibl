@@ -7,7 +7,7 @@
 #include "utstring.h"
 
 #include "s7.h"
-#include "libmibl.h"
+#include "mibl.h"
 
 #include "unity.h"
 
@@ -46,7 +46,7 @@ void test_ppx_assert_test(void) {
     rootdir = "test/cases/dune",
     pathdir = "test/cases/dune/inline_tests/ppx_assert";
 
-    s7_pointer pkg_tbl = load_project(rootdir, pathdir);
+    s7_pointer pkg_tbl = load_project(s7, rootdir, pathdir);
 
     log_debug(BGRN "pkg_tbl:" CRESET "\n%s",
            s7_object_to_c_string(s7, pkg_tbl));

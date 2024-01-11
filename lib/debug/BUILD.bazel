@@ -1,0 +1,96 @@
+# load("//:BUILD.bzl",
+#      "LIBLOGC_VERSION",
+#      "LIBS7_VERSION",
+#      "UTHASH_VERSION")
+
+load("//config/cc:BUILD.bzl",
+     "BASE_SRCS", "BASE_DEPS", "BASE_INCLUDE_PATHS",
+     "BASE_COPTS", "BASE_DEFINES", "BASE_LINKOPTS")
+
+SRCS          = BASE_SRCS
+INCLUDE_PATHS = BASE_INCLUDE_PATHS
+COPTS         = BASE_COPTS + INCLUDE_PATHS
+DEPS          = BASE_DEPS
+DEFINES       = BASE_DEFINES
+LINKOPTS      = BASE_LINKOPTS
+
+LOCAL_REPO    = repository_name()[1:]
+
+# load("//:BUILD.bzl",
+#      "BASE_SRCS", "BASE_DEPS", "BASE_INCLUDE_PATHS",
+#      "BASE_COPTS", "BASE_DEFINES", "BASE_LINKOPTS",
+#      # "CJSON_S7_VERSION",
+#      # "CWALK_S7_VERSION",
+#      # "DUNE_S7_VERSION",
+#      # "INIH_VERSION",
+#      "LIBLOGC_VERSION",
+#      "LIBS7_VERSION",
+#      # "MIBL_VERSION",
+#      # "TOML_S7_VERSION",
+#      "UTHASH_VERSION")
+
+# SRCS          = BASE_SRCS
+# INCLUDE_PATHS = BASE_INCLUDE_PATHS
+# COPTS         = BASE_COPTS + INCLUDE_PATHS
+# DEPS          = BASE_DEPS
+# DEFINES       = BASE_DEFINES
+# LINKOPTS      = BASE_LINKOPTS
+
+# for //lib/hdrs:
+exports_files(["debug.c", "debug_bazel.c"])
+# , "debug_s7.c"
+
+################################################################
+cc_library(
+    name = "debug",
+    srcs = [
+        "debug.c",
+    ],
+    hdrs = ["//lib/hdrs:mkhdrs"],
+    deps = [
+        ":debug_bazel",
+        # ":debug_s7",
+        "@libs7//lib:s7",
+        "@liblogc//lib:logc",
+        "@uthash//lib:uthash",
+    ],
+    copts = [
+        "-I$(GENDIR)/{}/lib/hdrs".format(LOCAL_REPO),
+        "-I$(GENDIR)/external/{}/lib/hdrs".format(LOCAL_REPO),
+    ],
+    visibility = [
+        "//lib:__pkg__",
+        "//lib/coswitch:__pkg__",
+        "//lib/findlib:__pkg__",
+        "//repl:__pkg__"
+    ]
+)
+
+cc_library(
+    name = "debug_bazel",
+    srcs = ["debug_bazel.c"],
+    hdrs = ["//lib/hdrs:mkhdrs"], # debug_bazel.h"],
+    deps = [
+        "@liblogc//lib:logc",
+        "@uthash//lib:uthash",
+    ],
+    visibility = [
+        "//lib/coswitch:__pkg__",
+        "//repl:__pkg__"
+    ]
+)
+
+# cc_library(
+#     name = "debug_s7",
+#     srcs = ["debug_s7.c", "//lib/hdrs:mkhdrs"], # debug_s7.h"],
+#     deps = [
+#         "@libs7//lib:s7",
+#         "@liblogc//lib:logc",
+#         "@uthash//lib:uthash",
+#     ],
+#     visibility = [
+#         "//lib/coswitch:__pkg__",
+#         "//repl:__pkg__"
+#     ]
+# )
+
