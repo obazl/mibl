@@ -205,9 +205,10 @@ cc_library(
         #     "@libs7//lib/libtoml:toml_s7_archive",
         # ],
         "//conditions:default": []
-    # }) + select({
-    #     "//config/profile:dev?": ["//lib/debug"],
-    #     "//conditions:default": []
+    }) + select({
+        "@makeheaders//compilation_mode:fastbuild": [
+            "//lib/debug"],
+        "//conditions:default": []
     }),
     copts = COPTS + [
         "-Idev",

@@ -4408,12 +4408,16 @@ EXPORT s7_pointer load_project(s7_scheme *s7,
         s7_eval_c_string(s7, "(cadr (assoc-in '(:@ :pkgs) *mibl-project*))");
     s7_int gc_pkg_tbl = s7_gc_protect(s7, pkg_tbl);
     if (pkg_tbl != s7_gc_protected_at(s7, gc_pkg_tbl)) {
+#if defined(PROFILE_fastbuild)
         char *tostr1, *tostr2;
         log_error("%d: %s is not gc protected at %" print_s7_int ": %s?",
                   __LINE__,
                   tostr1 = TO_STR(pkg_tbl), gc_pkg_tbl,
                   tostr2 = TO_STR(s7_gc_protected_at(s7, gc_pkg_tbl)));
         free(tostr1); free(tostr2);
+#else
+        log_error("%d: gc protection failure", __LINE__);
+#endif
         exit(1);
     }
     (void)gc_pkg_tbl;

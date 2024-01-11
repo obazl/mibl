@@ -830,11 +830,13 @@ EXPORT void mibl_s7_set_flag(s7_scheme *s7, char *flag, bool val)
 
 EXPORT void show_s7_config(s7_scheme *s7)
 {
+    TRACE_ENTRY;
     log_info(GRN "s7 configuration summary:" CRESET);
+#if defined(PROFILE_fastbuild)
     log_info("*features*: %s", NM_TO_STR("*features*"));
     log_info("*autoload*: %s", NM_TO_STR("*autoload*"));
     log_info("*libraries*: %s", NM_TO_STR("*libraries*"));
-
+#endif
     log_info("mibl global flags:");
 
     char *exec_sexp =
