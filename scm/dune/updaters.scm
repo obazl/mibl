@@ -215,7 +215,8 @@
                                                       ;;(*libc* 'realpath)
                                                       (string-join (map (lambda (x) (format #f "~A" x))
                                                                        (list  ws-path fg-path)) "/")
-                                                     '()))
+                                                      ;;'()
+                                                      ))
                                         (cons :filegroups (cdr kv)))))
                   ;; (for-each (lambda (fg)
                   ;;             (format #t "~A: ~A~%" (yellow "fg") fg))
@@ -225,7 +226,7 @@
               filegroups)))
     ;;      (pkgs (car (assoc-val :pkgs @ws)))
     ;;      (mpkg-alist (map (lambda (kv)
-    ;;                        (let ((mibl-pkg (dune-pkg->mibl :@ (cdr kv))))
+    ;;                        (let ((mibl-pkg (dune-pkg->miblx :@ (cdr kv))))
     ;;                          (hash-table-set! pkgs (car kv) mibl-pkg)
     ;;                          mibl-pkg))
     ;;                      pkgs)))
@@ -264,74 +265,80 @@
   ;; else update :structures
   (let* ((m-assoc (filename->module-assoc tgt))
          ;; m-assoc == (A (:ml "a.ml"))
+         (_ (if (or *mibl-debug-all* *mibl-debug-updaters*) (format #t "~A: ~A\n" (red "m-assoc") m-assoc)))
          (m-name (car m-assoc))
          (pr (cadr m-assoc))
          (_ (if (or *mibl-debug-all* *mibl-debug-updaters*) (format #t "~A: ~A\n" (red "PR") pr)))
-         ;; (sigs (assoc-val :signatures pkg))
-         ;; (_ (if (or *mibl-debug-all* *mibl-debug-updaters*) (format #t "~A: ~A~%" (cyan "sigs2") sigs)))
-         (sigs (assoc :signatures pkg))
-         (_ (if (or *mibl-debug-all* *mibl-debug-updaters*) (format #t "~A: ~A~%" (cyan "sigs") sigs)))
-         ;; removes matching sig from :signatures
-         (matching-sig (if sigs
-                           (if (cdr sigs)
-                               (find-module-in-rsrc-list!? m-name tgt sigs)
-                               #f)
-                           #f))
-         (_ (if (or *mibl-debug-all* *mibl-debug-updaters*) (format #t "~A: ~A~%" (cyan "found sig?") matching-sig)))
-         )
 
-    ;; FIXME: check to see if already in pkg-modules
-    (if matching-sig
-        (begin ;; we know this file is not in :modules since it was in sigs
-          (if (or *mibl-debug-all* *mibl-debug-updaters*)
-              (format #t "~A: ~A~%" (red "updating :modules") m-name))
-          (alist-update-in! pkg `(:modules ,m-name)
-                            (lambda (old)
-                              (if (or *mibl-debug-all* *mibl-debug-updaters*)
-                                  (begin
-                                    (format #t "struct Module OLD: ~A\n" old)
-                                    (format #t "adding: ~A\n" matching-sig)
-                                    (format #t " pr: ~A\n" pr)))
-                              (if (null? old)
-                                  (cons pr
-                                        (list (cons :mli (cdr matching-sig))))
-                                  ;;(filename->module-assoc tgt)
-                                  (list
-                                   old
-                                   (cons pr (list (cons :mli (cdr matching-sig))))
-                                   ;; (list pr)
-                                   ;;(filename->module-assoc tgt)
-                                   )))))
+         (structs (assoc :structures pkg))
+         (_ (if (or *mibl-debug-all* *mibl-debug-updaters*) (format #t "~A: ~A~%" (cyan "structs") structs)))
+         (matching-struct (find-module-in-rsrc-list!? m-name tgt structs))
+         (_ (if (or *mibl-debug-all* *mibl-debug-updaters*) (format #t "~A: ~A~%" (cyan "found struct?") matching-struct))))
 
-        ;; else no sig, so update :structures
-        (let* ((_ (if (or *mibl-debug-all* *mibl-debug-updaters*) (format #t "~A: ~A~%" (yellow "updating :structures")
-                          m-name)))
-               (dynamics (assoc-in '(:structures :dynamic) pkg))
-               )
-          (if (or *mibl-debug-all* *mibl-debug-updaters*)
-              (format #t "~A: ~A~%" (white "(:structures :dynamic) : ") dynamics))
-          (alist-update-in! pkg `(:structures :dynamic)
-                                (lambda (old)
-                                  (if (or *mibl-debug-all* *mibl-debug-updaters*)
-                                      (begin
-                                        (format #t "structures OLD: ~A\n" old)
-                                        (format #t "adding: ~A\n" pr)))
-                                  (if (null? old)
-                                      (list
-                                       (cons m-name (cdr pr)))
-                                      ;; (list m-name (cdr pr))
-                                      ;;(filename->module-assoc tgt)
-                                      (append
-                                       old
-                                       (list (cons m-name (cdr pr))) ;;)))
-                                       ;; (list (cons m-name (cdr pr)))
-                                       ;; structures
-                                       ;;(filename->module-assoc tgt)
-                                       ))))
-          )))
+    (if (not matching-struct)
+        (let* ((sigs (assoc :signatures pkg))
+              (_ (if (or *mibl-debug-all* *mibl-debug-updaters*) (format #t "~A: ~A~%" (cyan "sigs") sigs)))
+              ;; removes matching sig from :signatures
+              (matching-sig (if sigs
+                                (if (cdr sigs)
+                                    (find-module-in-rsrc-list!? m-name tgt sigs)
+                                    #f)
+                                #f))
+              (_ (if (or *mibl-debug-all* *mibl-debug-updaters*) (format #t "~A: ~A~%" (cyan "found sig?") matching-sig)))
+              )
+
+          ;; FIXME: check to see if already in pkg-modules
+          (if matching-sig
+              (begin ;; we know this file is not in :modules since it was in sigs
+                (if (or *mibl-debug-all* *mibl-debug-updaters*)
+                    (format #t "~A: ~A~%" (red "updating :modules 1") m-name))
+                (alist-update-in! pkg `(:modules ,m-name)
+                                  (lambda (old)
+                                    (if (or *mibl-debug-all* *mibl-debug-updaters*)
+                                        (begin
+                                          (format #t "struct Module OLD: ~A\n" old)
+                                          (format #t "adding: ~A\n" matching-sig)
+                                          (format #t " pr: ~A\n" pr)))
+                                    (if (null? old)
+                                        (cons pr
+                                              (list (cons :mli (cdr matching-sig))))
+                                        ;;(filename->module-assoc tgt)
+                                        (list
+                                         old
+                                         (cons pr (list (cons :mli (cdr matching-sig))))
+                                         ;; (list pr)
+                                         ;;(filename->module-assoc tgt)
+                                         )))))
+
+              ;; else no sig, so update :structures
+              (let* ((_ (if (or *mibl-debug-all* *mibl-debug-updaters*) (format #t "~A: ~A~%" (yellow "updating :structures")
+                                                                                m-name)))
+                     (dynamics (assoc-in '(:structures :dynamic) pkg))
+                     )
+                (if (or *mibl-debug-all* *mibl-debug-updaters*)
+                    (format #t "~A: ~A~%" (white "(:structures :dynamic) : ") dynamics))
+                (alist-update-in! pkg `(:structures :dynamic)
+                                  (lambda (old)
+                                    (if (or *mibl-debug-all* *mibl-debug-updaters*)
+                                        (begin
+                                          (format #t "structures OLD: ~A\n" old)
+                                          (format #t "adding: ~A\n" pr)))
+                                    (if (null? old)
+                                        (list
+                                         (cons m-name (cdr pr)))
+                                        ;; (list m-name (cdr pr))
+                                        ;;(filename->module-assoc tgt)
+                                        (append
+                                         old
+                                         (list (cons m-name (cdr pr))) ;;)))
+                                         ;; (list (cons m-name (cdr pr)))
+                                         ;; structures
+                                         ;;(filename->module-assoc tgt)
+                                         ))))
+                ))))
   (if (or *mibl-debug-all* *mibl-debug-updaters*)
       (format #t "~A: ~A~%" (bgblue "pkg w/updated structs") pkg))
-  pkg)
+  pkg))
 
 (define (-update-pkg-files-with-sig! pkg tgt)
   (if (or *mibl-debug-all* *mibl-debug-updaters*)
@@ -357,7 +364,7 @@
     (if matching-struct
         (begin ;; we know this file is not in :modules since it was in structs
           (if (or *mibl-debug-all* *mibl-debug-updaters*)
-              (format #t "~A: ~A~%" (red "updating :modules") m-name))
+              (format #t "~A: ~A~%" (red "updating :modules 2") m-name))
           (alist-update-in! pkg `(:modules ,m-name)
                             (lambda (old)
                               (if (or *mibl-debug-all* *mibl-debug-updaters*)
@@ -413,7 +420,7 @@
                               (cons :ml_ (string->symbol (format #f "~A.ml" principal-fname)))
                               (cons :mli_ (string->symbol (format #f "~A.mli" principal-fname)))))))
     (if (or *mibl-debug-all* *mibl-debug-updaters*)
-        (format #t "~A: ~A~%" (red "updating :modules") m-assoc))
+        (format #t "~A: ~A~%" (red "updating :modules 3") m-assoc))
     (if pkg-modules
         (set-cdr! pkg-modules (append (cdr pkg-modules) m-assoc))
         (alist-update-in! pkg `(:modules)

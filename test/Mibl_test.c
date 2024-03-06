@@ -4,7 +4,7 @@
 #include <sys/errno.h>
 
 #include "gopt.h"
-#include "log.h"
+#include "liblogc.h"
 #include "utarray.h"
 #include "utstring.h"
 
@@ -70,7 +70,7 @@ int _update_mibl_config(struct option options[])
 void _update_s7_globals(struct option options[])
 {
     /* if (options[FLAG_QUIET].count) */
-        mibl_s7_set_flag("*mibl-quiet*", true);
+    mibl_s7_set_flag(s7, "*mibl-quiet*", true);
 
     /* if (options[FLAG_VERBOSE].count) */
     /*     mibl_s7_set_flag("*mibl-verbose*", true); */
@@ -404,7 +404,7 @@ void _set_options(struct option options[])
     if (options[FLAG_VERBOSE].count) {
         log_info("verbose ct: %d", options[FLAG_VERBOSE].count);
         verbose = true;
-        verbosity = options[FLAG_VERBOSE].count;
+        /* verbosity = options[FLAG_VERBOSE].count; */
     }
 
     if (options[FLAG_DEBUG].count) {
@@ -455,7 +455,7 @@ void _set_options(struct option options[])
 #endif
     }
     if (options[FLAG_DEBUG_SCM_LOADS].count) {
-        mibl_s7_set_flag("*mibl-debug-s7-loads*", true);
+        mibl_s7_set_flag(s7, "*mibl-debug-s7-loads*", true);
     }
 
     if (options[FLAG_TRACE].count) {
@@ -580,7 +580,8 @@ int main(int argc, char **argv)
 
     _update_mibl_config(options);
 
-    mibl_s7_init2(NULL, // options[OPT_MAIN].argument,
+    mibl_s7_init2(s7,
+                  NULL, // options[OPT_MAIN].argument,
                   NULL); // options[OPT_WS].argument);
 
     _update_s7_globals(options);

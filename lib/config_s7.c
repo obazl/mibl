@@ -80,6 +80,9 @@ char *callback = "camlark_handler"; /* fn in callback_script_file  */
 s7_int gc_wss;
 s7_int gc_mibl_project;
 
+s7_pointer mibl_kw;
+s7_pointer mibl_sym;
+
 s7_pointer dune_project_sym;
 s7_pointer dune_stanzas_kw;
 s7_pointer dune_stanzas_sym;
@@ -94,6 +97,7 @@ s7_pointer structs_kw;
 s7_pointer mll_kw;
 s7_pointer mly_kw;
 s7_pointer mllib_kw;
+s7_pointer mllibs_kw;
 s7_pointer cppo_kw;
 s7_pointer cc_kw;
 s7_pointer cc_srcs_kw;
@@ -151,11 +155,13 @@ static char *mibl_s7_flags[] = {
     "*mibl-debug-genrules*",
     "*mibl-debug-lexyacc*",
     "*mibl-debug-mibl*",
+    "*mibl-debug-miblx*",
     "*mibl-debug-modules*",
     "*mibl-debug-prologues*",
     "*mibl-debug-ppx*",
     "*mibl-debug-rule-stanzas*",
     "*mibl-debug-s7*",
+    "*mibl-debug-s7-entries*",
     "*mibl-debug-s7-loads*",
     "*mibl-debug-shared*",
     "*mibl-debug-show-pkgs*",
@@ -193,6 +199,7 @@ static char *mibl_s7_flags[] = {
     "*mibl-show-parsetree*",
     "*mibl-show-project*",
     "*mibl-show-starlark*",
+    "*mibl-trace-s7*",
     "*mibl-unwrapped-libs-to-archives*",
     "*mibl-wrapped-libs-to-ns-archives*",
     "*mibl-verbose*",
@@ -200,6 +207,24 @@ static char *mibl_s7_flags[] = {
     NULL /* do not remove */
 };
 char **mibl_s7_flag;
+
+EXPORT void print_config_s7_flags(void)
+{
+    printf("Ad-hoc flags; pass with --flag=<flag>\n");
+    mibl_s7_flag = mibl_s7_flags;
+    int len;
+    while (*mibl_s7_flag != NULL) {
+        if (strncmp(*mibl_s7_flag, "*mibl-debug", 11) == 0) {
+            len = strlen(*mibl_s7_flag) - 7;
+            printf("\t%.*s\n", len, &(*mibl_s7_flag)[6]);
+        }
+        if (strncmp(*mibl_s7_flag, "*mibl-trace", 11) == 0) {
+            len = strlen(*mibl_s7_flag) - 7;
+            printf("\t%.*s\n", len, &(*mibl_s7_flag)[6]);
+        }
+        mibl_s7_flag++;
+    }
+}
 
 /* EXPORT s7_pointer g_effective_ws_root(s7_scheme *s7,  s7_pointer args) */
 /* { */
@@ -360,7 +385,7 @@ s7_pointer init_scheme_fns(s7_scheme *s7)
             log_error("unbound symbol: set-cdr!");
 #if defined(PROFILE_fastbuild)
             s7_pointer lp = s7_load_path(s7);
-            LOG_S7_DEBUG("*load-path*", lp);
+            LOG_S7_DEBUG(0, "*load-path*", lp);
 #endif
             s7_error(s7, s7_make_symbol(s7, "unbound-symbol"),
                      s7_list(s7, 1, s7_make_string(s7, "set-cdr!")));
@@ -373,7 +398,7 @@ s7_pointer init_scheme_fns(s7_scheme *s7)
             log_error("unbound symbol: quote");
 #if defined(PROFILE_fastbuild)
             s7_pointer lp = s7_load_path(s7);
-            LOG_S7_DEBUG("*load-path* 2", lp);
+            LOG_S7_DEBUG(0, "*load-path* 2", lp);
 #endif
             s7_error(s7, s7_make_symbol(s7, "unbound-symbol"),
                      s7_list(s7, 1, s7_make_string(s7, "quote")));
@@ -400,7 +425,7 @@ s7_pointer _load_acons(s7_scheme *s7)
             log_error("unbound symbol: acons");
 #if defined(PROFILE_fastbuild)
             s7_pointer lp = s7_load_path(s7);
-            LOG_S7_DEBUG("*load-path* 3", lp);
+            LOG_S7_DEBUG(0, "*load-path* 3", lp);
 #endif
             s7_error(s7, s7_make_symbol(s7, "unbound-symbol"),
                      s7_list(s7, 1, s7_make_string(s7, "acons")));
@@ -419,7 +444,7 @@ s7_pointer _load_assoc(s7_scheme *s7)
             log_error("unbound symbol: assoc");
 #if defined(PROFILE_fastbuild)
             s7_pointer lp = s7_load_path(s7);
-            LOG_S7_DEBUG("*load-path* 4", lp);
+            LOG_S7_DEBUG(0, "*load-path* 4", lp);
 #endif
             s7_error(s7, s7_make_symbol(s7, "unbound-symbol"),
                      s7_list(s7, 1, s7_make_string(s7, "assoc")));
@@ -436,7 +461,7 @@ s7_pointer _load_assoc_in(s7_scheme *s7)
             log_error("unbound symbol: assoc-in");
 #if defined(PROFILE_fastbuild)
             s7_pointer lp = s7_load_path(s7);
-            LOG_S7_DEBUG("*load-path* 5", lp);
+            LOG_S7_DEBUG(0, "*load-path* 5", lp);
 #endif
             s7_error(s7, s7_make_symbol(s7, "unbound-symbol"),
                      s7_list(s7, 1, s7_make_string(s7, "assoc-in")));
@@ -453,7 +478,7 @@ s7_pointer _load_assoc_val(s7_scheme *s7)
             log_error("unbound symbol: assoc-in");
 #if defined(PROFILE_fastbuild)
             s7_pointer lp = s7_load_path(s7);
-            LOG_S7_DEBUG("*load-path* 6", lp);
+            LOG_S7_DEBUG(0, "*load-path* 6", lp);
 #endif
             s7_error(s7, s7_make_symbol(s7, "unbound-symbol"),
                      s7_list(s7, 1, s7_make_string(s7, "assoc-in")));
@@ -470,7 +495,7 @@ s7_pointer _load_append(s7_scheme *s7)
             log_error("unbound symbol: append");
 #if defined(PROFILE_fastbuild)
             s7_pointer lp = s7_load_path(s7);
-            LOG_S7_DEBUG("*load-path* 7", lp);
+            LOG_S7_DEBUG(0, "*load-path* 7", lp);
 #endif
             s7_error(s7, s7_make_symbol(s7, "unbound-symbol"),
                      s7_list(s7, 1, s7_make_string(s7, "append")));
@@ -487,7 +512,7 @@ s7_pointer _load_list_set(s7_scheme *s7)
             log_error("unbound symbol: list-set!");
 #if defined(PROFILE_fastbuild)
             s7_pointer lp = s7_load_path(s7);
-            LOG_S7_DEBUG("*load-path* 8", lp);
+            LOG_S7_DEBUG(0, "*load-path* 8", lp);
 #endif
             s7_error(s7, s7_make_symbol(s7, "unbound-symbol"),
                      s7_list(s7, 1, s7_make_string(s7, "list-set!")));
@@ -503,7 +528,7 @@ s7_pointer _load_sort(s7_scheme *s7)
         log_error("unbound symbol: sort!");
 #if defined(PROFILE_fastbuild)
         s7_pointer lp = s7_load_path(s7);
-        LOG_S7_DEBUG("*load-path* 9", lp);
+        LOG_S7_DEBUG(0, "*load-path* 9", lp);
 #endif
         s7_error(s7, s7_make_symbol(s7, "unbound-symbol"),
                  s7_list(s7, 1, s7_make_string(s7, "sort!")));
@@ -518,7 +543,7 @@ s7_pointer _load_string_lt(s7_scheme *s7)
         log_error("unbound symbol: string<?");
 #if defined(PROFILE_fastbuild)
         s7_pointer lp = s7_load_path(s7);
-        LOG_S7_DEBUG("*load-path* 10", lp);
+        LOG_S7_DEBUG(0, "*load-path* 10", lp);
 #endif
         s7_error(s7, s7_make_symbol(s7, "unbound-symbol"),
                  s7_list(s7, 1, s7_make_string(s7, "string<?")));
@@ -620,10 +645,10 @@ s7_scheme *_s7_init(void)
 
 #if defined(PROFILE_fastbuild)
     s7_pointer lp = s7_load_path(s7);
-    LOG_S7_DEBUG("*load-path* 11", lp);
-    if (mibl_debug) {
-        log_debug("mibl_runfiles_root: %s", utstring_body(mibl_runfiles_root));
-    }
+    LOG_S7_DEBUG(0, "*load-path* 11", lp);
+    /* if (mibl_debug) { */
+        LOG_DEBUG(0, "mibl_runfiles_root: %s", utstring_body(mibl_runfiles_root));
+    /* } */
 #endif
     build_ws_dir= getenv("BUILD_WORKSPACE_DIRECTORY");
     char *test_target = getenv("TEST_TARGET");
@@ -674,7 +699,7 @@ s7_scheme *_s7_init(void)
 #if defined(PROFILE_fastbuild)
     /* s7_pointer */ lp = s7_load_path(s7);
     char *s = s7_object_to_c_string(s7, lp);
-    log_debug("load-path: %s", s);
+    LOG_DEBUG(0, "load-path: %s", s);
     free(s);
 #endif
 
@@ -729,6 +754,9 @@ void _define_mibl_s7_keywords(s7_scheme *s7)
     TRACE_ENTRY;
 
     /* initialize s7 stuff */
+    mibl_kw = s7_make_keyword(s7, "mibl"),
+    mibl_sym = s7_make_symbol(s7, "mibl"),
+
     dune_project_sym = s7_make_symbol(s7, "dune-project"),
     dune_stanzas_kw = s7_make_keyword(s7, "dune-stanzas");
     dune_stanzas_sym = s7_make_symbol(s7, "dune");
@@ -743,6 +771,7 @@ void _define_mibl_s7_keywords(s7_scheme *s7)
     mll_kw = s7_make_keyword(s7, "lex");
     mly_kw = s7_make_keyword(s7, "yacc");
     mllib_kw = s7_make_keyword(s7, "mllib");
+    mllibs_kw = s7_make_keyword(s7, "mllibs");
     cppo_kw = s7_make_keyword(s7, "cppo");
     files_kw   = s7_make_keyword(s7, "files");
     json_kw   = s7_make_keyword(s7, "json");
@@ -780,6 +809,7 @@ void _define_mibl_s7_flags(s7_scheme *s7)
     s7_eval_c_string(s7, "(set! *mibl-shared-deps* #t)");
     s7_eval_c_string(s7, "(set! *mibl-shared-opts* #t)");
     s7_eval_c_string(s7, "(set! *mibl-wrapped-libs-to-ns-archives* #t)");
+    s7_eval_c_string(s7, "(set! *mibl-unwrapped-libs-to-archives* #t)");
 }
 
 void _define_mibl_s7_vars(s7_scheme *s7)
@@ -798,6 +828,18 @@ void _define_mibl_s7_vars(s7_scheme *s7)
     /* mibl_read_thunk = s7_make_function(s7, "mibl-read-thunk", */
     /*                                    _mibl_read_thunk, */
     /*                                    0, 0, false, ""); */
+}
+
+void _define_mibl_s7_functions(s7_scheme *s7)
+{
+    TRACE_ENTRY;
+    s7_define_function(s7, "opam-fts",
+                       g_opam_fts,
+                       1,         /* required: module name */
+                       0,         /* optional: 0 */
+                       false,     /* rest args: none */
+                       "(opam-fts module) finds module in opam"
+                       );
 }
 
 /* FIXME: if var does not exist, create it.
@@ -820,11 +862,7 @@ EXPORT void mibl_s7_set_flag(s7_scheme *s7, char *flag, bool val)
     utstring_renew(setter);
     utstring_printf(setter, "(set! %s %s)",
                     flag, val? "#t": "#f");
-#if defined(PROFILE_fastbuild)
-    if (mibl_debug) {
-        log_debug("Setting s7 global var: %s", utstring_body(setter));
-    }
-#endif
+    LOG_DEBUG(0, "Setting s7 global var: %s", utstring_body(setter));
     s7_eval_c_string(s7, utstring_body(setter));
 }
 
@@ -853,7 +891,7 @@ EXPORT void show_s7_config(s7_scheme *s7)
     s7_flush_output_port(s7, s7_current_output_port(s7));
 
     /* s7_pointer lp = s7_load_path(s7); */
-    /* LOG_S7_DEBUG("*load-path*" lp); */
+    /* LOG_S7_DEBUG(0, "*load-path*" lp); */
     fflush(NULL);
     /* log_info("mibl_runfiles_root: %s", utstring_body(mibl_runfiles_root)); */
 
@@ -884,9 +922,11 @@ EXPORT s7_scheme *mibl_s7_init(void)
 
     _define_mibl_s7_vars(s7);
 
+    _define_mibl_s7_functions(s7);
+
 #if defined(PROFILE_fastbuild)
     s7_pointer lp = s7_load_path(s7);
-    LOG_S7_DEBUG("mibl_s7_init *load-path*", lp);
+    LOG_S7_DEBUG(0, "mibl_s7_init *load-path*", lp);
 #endif
 
     /* FIXME: this should be a var, not a fn */

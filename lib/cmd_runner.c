@@ -35,6 +35,18 @@ bool mibl_debug_cmd_runner = false;
 extern bool mibl_debug_deps;
 #endif
 
+#if defined(PROFILE_fastbuild)
+#define TRACE_FLAG mibl_trace
+extern bool    TRACE_FLAG;
+#define DEBUG_LEVEL mibl_debug
+extern int     DEBUG_LEVEL;
+#define S7_DEBUG_LEVEL libs7_debug
+extern int libs7_debug;
+extern int s7plugin_debug;
+
+extern bool mibl_debug_runfiles;
+#endif
+
 #if INTERFACE
 #define BUFSZ 4096 * 4
 #endif
@@ -43,8 +55,8 @@ char buffer[BUFSZ];
 
 EXPORT char * run_cmd(char *executable, char **argv)
 {
-#if defined(TRACING)
-    if (mibl_debug_cmd_runner) {
+/* #if defined(TRACING) */
+    if (mibl_debug > 2) {
         char **ptr = argv;
         UT_string *tmp;
         utstring_new(tmp);
@@ -53,18 +65,17 @@ EXPORT char * run_cmd(char *executable, char **argv)
             ptr++;
         }
 
-        if (mibl_debug_deps) {
+        /* if (mibl_debug > 0) { */
             log_debug(RED "run_cmd:" CRESET " %s", utstring_body(tmp));
             char **p = argv;
             while(*p != NULL) {
                 log_debug("arg: %s", *p);
                 p++;
             }
-        }
+        /* } */
         utstring_free(tmp);
     }
-#endif
-
+/* #endif */
     pid_t pid;
     int rc;
 
@@ -126,7 +137,7 @@ EXPORT char * run_cmd(char *executable, char **argv)
     // FIXME: get absolute path of codept
     // FIXME: restrict environ
 
-    /* log_debug("spawning %s", executable); */
+    LOG_DEBUG(2, "spawning %s", executable);
     errno = 0;
     rc = posix_spawnp(&pid, executable, &action, NULL, argv, environ);
 
@@ -152,10 +163,10 @@ EXPORT char * run_cmd(char *executable, char **argv)
         posix_spawn_file_actions_destroy(&action);
         return NULL;
     }
-#if defined(TRACING)
-    if (mibl_debug_deps)
-        log_trace("waitpid for pid %d returned %d", pid, waitrc);
-#endif
+/* #if defined(TRACING) */
+/*     if (mibl_debug_deps) */
+    LOG_DEBUG(2, "waitpid for pid %d returned %d", pid, waitrc);
+/* #endif */
     /* if (waitrc == 0) { */
     // child exit OK
     if ( WIFEXITED(status) ) {
@@ -173,16 +184,19 @@ EXPORT char * run_cmd(char *executable, char **argv)
 
         if (status) {
             /* process exited normally but returned non-zero rc */
-            log_debug("reading cerr_pipe");
+            LOG_DEBUG(1, "reading cerr_pipe", "");
             bytes_read = read(cerr_pipe[0], &buffer[0], BUFSZ);
-            log_debug("readed %d bytes from cerr_pipe", bytes_read);
+            LOG_DEBUG(1, "readed %d bytes from cerr_pipe", bytes_read);
             if (bytes_read > 0) {
-                fprintf(stdout, "Read message: %s", buffer);
+                LOG_DEBUG(1, "Read message: %s", buffer);
             }
             close(cout_pipe[0]);
             close(cerr_pipe[0]);
             posix_spawn_file_actions_destroy(&action);
-            return NULL; //exit(EXIT_FAILURE);
+            /* FIXME: sometimes we expect failure, e.g. running 'ar -t foo.a bar.o' */
+            /* as opposed to a cmd that fails due to bad syntax etc. */
+            /* we should detect this and return something useful */
+            return NULL;
         }
 
         /* process exited normally, returning rc 0 */

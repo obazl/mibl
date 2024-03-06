@@ -1,15 +1,16 @@
 (if *mibl-debug-s7-loads*
-    (format #t "loading mibl_main.scm~%"))
+    (format #t "loading mibl_expand.scm~%"))
 
-(load "mibl.scm")
+(load "mibl_debug.scm")
+
+;;(load "mibl.scm")
 
 ;;(require mibl.scm)
 
 (load "libmibl.scm")
 
-
 ;; (define* (-main root-path pkg-path)
-;;   (format #t "mibl_main: -main routine\n"))
+;;   (format #t "mibl_expand: -main routine\n"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (-mibl-load-project root path)
@@ -24,7 +25,7 @@
     _wss))
 
 ;; (define (-resolve-labels ws)
-;;   (normalize-lib-deps! (assoc-val ws *mibl-project*)))
+;;   (expand-lib-deps! (assoc-val ws *mibl-project*)))
 
 ;; (define (-miblarkize ws)
 ;;   (let* ((@ws (assoc-val ws *mibl-project*))
@@ -39,12 +40,15 @@
 ;;               pkgs)))
 
 (define* (-main root-path ws-path)
-  (format #t "-main (mibl_main.scm)\n")
+  (mibl-trace-entry "mibl_expand" "-main")
+  ;; (format #t "-main (mibl_expand.scm)\n")
+  ;; (format #t "ws path: ~A\n" ws-path)
+  ;; (let ((_ (values))) asdf asdf )
   (load "libmibl.scm")
   (if *mibl-clean-mibl*
       (mibl-clean-mibl)
       (call-with-exit (lambda (return)
-                        (mibl:parsetree->mibl ;; in libmibl.scm
+                        (mibl:parsetree->miblx ;; in libmibl.scm
                          (lambda () ;; our return thunk
                            (if *mibl-show-mibl*
                                (begin
@@ -59,4 +63,6 @@
                          )))))
 
 (if *mibl-debug-s7-loads*
-    (format #t "loaded mibl_main.scm~%"))
+    (format #t "loaded mibl_expand.scm~%"))
+
+

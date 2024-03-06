@@ -78,7 +78,8 @@ EXPORT void opam_configure(char *_opam_switch)
     /* FIXME: handle switch arg */
     /* FIXME: argv */
     char *exe = NULL, *result = NULL;
-    if (strlen(_opam_switch) == 0) {
+    /* if (strlen(_opam_switch) == 0) { */
+    if (_opam_switch == NULL) {
 
         exe = "opam";
         char *argv[] = {"opam", "var", "switch", NULL};

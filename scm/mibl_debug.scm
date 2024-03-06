@@ -1,24 +1,33 @@
-;; (set! *mibl-debug-s7* #t)
+(set! *mibl-debug-s7* #t)
+
 (define-expansion* (mibl-trace-entry hdr msg (color ublue) (test #f))
-  (if *mibl-debug-s7*
+  (if (eq? (symbol->value '*mibl-debug-s7-entries*) #t)
+      ;; (values)
+  ;; (if *mibl-debug-s7*
       `(if ,test
            (begin
              (format #t "~A: ~A~%" (,color ,hdr) ,msg)
              (flush-output-port))
-           (if ,(eq? (symbol->value '*mibl-debug-all*) #t)
+           (if ,(eq? (symbol->value '*mibl-debug-s7-entries*) #t)
                (begin
-                 (format #t "~A: ~A~%" (,color ,hdr) ,msg)
+                 (format #t "~A ~A: ~A~%" (,color "ENTRY") ,hdr ,msg)
                  (flush-output-port))
-                (values)))
-      (values)))
+               ,(values)
+               ))
+      ;;(format #t "hdr: ~A~%" hdr)
+      ;; ""
+      (values)
+      ))
 
 (define-expansion* (mibl-trace hdr msg (color blue) (test #f))
-  (if *mibl-debug-s7*
+  (if (eq? (symbol->value '*mibl-trace-s7*) #t)
+  ;;(if *mibl-debug-s7*
+      ;; (values)
       `(if ,test
            (begin
              (format #t "~A: ~A~%" (,color ,hdr) ,msg)
              (flush-output-port))
-           (if ,(eq? (symbol->value '*mibl-debug-all*) #t)
+           (if ,(eq? (symbol->value '*mibl-trace-s7*) #t)
                (begin
                  (format #t "~A: ~A~%" (,color ,hdr) ,msg)
                  (flush-output-port))
@@ -26,7 +35,9 @@
       (values)))
 
 (define-expansion* (mibl-trace-let hdr msg (color blue) (test #f))
-  (if *mibl-debug-s7*
+  (if (eq? (symbol->value '*mibl-debug-s7*) #t)
+  ;; (if *mibl-debug-s7*
+      ;; (values)
       `(_ (if ,test
               (begin
                 (format #t "~A: ~A~%" (,color ,hdr) ,msg)

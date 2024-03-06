@@ -9,15 +9,15 @@ link:http://projects.camlcity.org/projects/dl/findlib-1.9.4/doc/ref-html/r759.ht
 files.
 
 If you prefer acronyms: **M**eta-**ibl**
-("ibl" is Arabic for "camel"). Or _muta'ibbil_,  متئبّل . If you prefer recursion: **M**ibl **i**ntegrates
+("ibl" (إبل) is Arabic for "camel"). Or _muta'ibbil_,  متئبّل . If you prefer recursion: **M**ibl **i**ntegrates
 **b**uild **l**anguages.
 
 IMPORTANT: **STATUS**: Alpha
 
 `mibl` is derived from
-link:https://ccrma.stanford.edu/software/snd/snd/s7.html[s7]. See
+link:https://ccrma.stanford.edu/software/snd/snd/s7.html[s7,window=_blank]. See
 link:https://iainctduncan.github.io/scheme-for-max-docs/s7.html[Why S7
-Scheme?] for reasons why.
+Scheme?,window=_blank] for reasons why.
 
 == Using mibl
 

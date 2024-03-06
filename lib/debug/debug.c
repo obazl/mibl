@@ -1,4 +1,4 @@
-#include <errno.h>
+#include <sys/errno.h>
 #include <execinfo.h>
 #if INTERFACE
 #include <stdbool.h>

@@ -134,14 +134,10 @@ char **scm_dir;
 
 LOCAL void _config_s7_load_path_bazel_env(s7_scheme *s7)
 {
-    log_debug("mibl_s7 LOCAL_REPO: " LOCAL_REPO);
     TRACE_ENTRY;
     /* s7_pointer tmp_load_path = s7_list(s7, 0); */
-#if defined(PROFILE_fastbuild)
 #ifdef LOCAL_REPO
-    if (mibl_debug)
-        log_debug("bazel local repo: " LOCAL_REPO);
-#endif
+    LOG_DEBUG(0, "bazel local repo: '%s'", LOCAL_REPO);
 #endif
     scm_dir = scm_runfiles_dirs;
     char *scmdir;
@@ -163,20 +159,20 @@ LOCAL void _config_s7_load_path_bazel_env(s7_scheme *s7)
         free(scmdir);
         (void)*scm_dir++;
     }
-    char *mibl_repo;
+    char *mibl_runfiles;
     /* log_debug("mibl BAZEL_CURRENT_REPOSITORY: '%s'", BAZEL_CURRENT_REPOSITORY); */
     /* log_debug("PWD: '%s'", getcwd(NULL,0)); */
     if (strlen(LOCAL_REPO) == 0) {
-        mibl_repo = realpath("scm", NULL);
+        mibl_runfiles = realpath("scm", NULL);
     } else {
-        mibl_repo = realpath("external/" LOCAL_REPO "/scm", NULL);
+        mibl_runfiles = realpath("external/" LOCAL_REPO "/scm", NULL);
     }
-    log_debug("MIBL REPO: %s", mibl_repo);
-    s7_add_to_load_path(s7, mibl_repo);
+    LOG_DEBUG(0, "MIBL runfiles: %s", mibl_runfiles);
+    s7_add_to_load_path(s7, mibl_runfiles);
 
     s7_pointer lp = s7_load_path(s7);
     char *s = s7_object_to_c_string(s7, lp);
-    log_debug("load-path: %s", s);
+    LOG_DEBUG(0, "load-path: %s", s);
     free(s);
 
     //FIXME: uas s7_add_to_load_path!!!
@@ -620,7 +616,7 @@ LOCAL void _mibl_s7_configure_x(s7_scheme *s7)
     }
 #if defined(PROFILE_fastbuild)
     if (mibl_debug)
-        LOG_S7_DEBUG("exclusions list", _s7_exclusions);
+        LOG_S7_DEBUG(0, "exclusions list", _s7_exclusions);
 #endif
     s7_define_variable(s7, "*mibl-scan-exclusions*", _s7_exclusions);
 }
@@ -635,7 +631,7 @@ EXPORT void set_load_path(s7_scheme *s7) // char *scriptfile)
 #if defined(PROFILE_fastbuild)
     if (mibl_debug) {
         s7_pointer lp = s7_load_path(s7);
-        LOG_S7_DEBUG("*load-path*", lp);
+        LOG_S7_DEBUG(0, "*load-path*", lp);
     }
 #endif
 
@@ -670,7 +666,7 @@ EXPORT void set_load_path(s7_scheme *s7) // char *scriptfile)
         s7_pointer lp = s7_load_path(s7);
         (void)lp;
         if (mibl_debug) {
-            LOG_S7_DEBUG("2 *LOAD-PATH*", lp);
+            LOG_S7_DEBUG(0, "2 *LOAD-PATH*", lp);
         }
 #endif
     }
@@ -691,7 +687,7 @@ EXPORT void set_load_path(s7_scheme *s7) // char *scriptfile)
             #if defined(PROFILE_fastbuild)
                     if (mibl_debug) {
                         s7_pointer lp = s7_load_path(s7);
-                        LOG_S7_DEBUG("1 *LOAD-PATH*", lp);
+                        LOG_S7_DEBUG(0, "1 *LOAD-PATH*", lp);
                     }
             #endif
 
@@ -775,6 +771,10 @@ void _mibl_s7_configure_paths(s7_scheme *s7,
     /*     exit(EXIT_FAILURE); */
     /* } */
 
+    /* LOG_DEBUG(0, "loading alist.scm", ""); */
+    /* if (!s7_load(s7, "alist.scm")) { */
+    /*     log_error("Can't load alist.scm"); */
+    /* } */
     init_scheme_fns(s7);       /* call _after_ loading dune.scm */
 
     /* chdir(rootws);            /\* always run from base ws root *\/ */
@@ -816,6 +816,8 @@ EXPORT struct mibl_config_s *mibl_s7_init2(s7_scheme *s7,
     // may call config_xdg_dirs()
     bazel_configure(ws_root);
 
+    opam_configure(NULL);
+
     /* reads miblrc, sets struct mibl_config, may set s7 flags */
     mibl_configure();  // read miblrc; may call s7_set
 
@@ -834,7 +836,7 @@ EXPORT struct mibl_config_s *mibl_s7_init2(s7_scheme *s7,
         log_info("pwd: %s", getcwd(NULL,0));
 #if defined(PROFILE_fastbuild)
         s7_pointer lp =s7_load_path(s7);
-        LOG_S7_DEBUG("*load-path*", lp);
+        LOG_S7_DEBUG(0, "*load-path*", lp);
 #endif
     }
 
@@ -848,16 +850,168 @@ EXPORT struct mibl_config_s *mibl_s7_init2(s7_scheme *s7,
 }
 
 /* run a script (which may or may not run load-project) */
-EXPORT void mibl_s7_run(s7_scheme *s7, char *main_script, char *ws)
+/* EXPORT void mibl_s7_run(s7_scheme *s7, char *main_script, char *ws) */
+
+/* run mibl_expand.scm -main */
+EXPORT void mibl_s7_expand(s7_scheme *s7, char *ws)
 {
     TRACE_ENTRY;
 #if defined(TRACING)
-        log_trace("main script: %s, ws: %s", main_script, ws);
+    /* log_trace("main script: %s, ws: %s", main_script, ws); */
+    log_trace("cwd: %s", getcwd(NULL, 0));
+#endif
+
+    char *main_script = "mibl_expand.scm";
+
+    /* if (verbose) { */
+    /*     log_debug("mibl_run: %s, %s", main_script, ws); */
+    /*     log_debug("mibl_run cwd: %s", getcwd(NULL, 0)); */
+    /* } */
+
+    /* mibl_s7_ingest(s7, ws); */
+
+    /* **************************************************************** */
+    /* parsetree processing: one of */
+    /* a. mustache:render */
+    /* b. mibl:expand */
+    /* c. other scm sript? */
+
+    /* or: pass arbitrary script and run -main. script decides which
+       of a-c to run. */
+
+    /* legacy: */
+    /* now run the s7 script on the parsetree */
+    /* s7_pointer lp = s7_load_path(s7); */
+    /* LOG_S7_DEBUG(0, "*load-path*", lp); */
+    /* if (main_script) { */
+    /*     if (!s7_load(s7, main_script)) { */
+    /*         log_error(RED "Could not load main_script '%s'; exiting\n", */
+    /*                   main_script); */
+    /*         fflush(NULL); */
+    /*         exit(EXIT_FAILURE); */
+    /*     } else { */
+    /*         if (verbose && verbosity > 1) */
+    /*             log_debug("loaded main_script: %s", main_script); */
+    /*     } */
+    /* } else { */
+    LOG_INFO(2, GRN "INFO: " CRESET "main_script is NULL, defaulting to %s", main_script);
+    if (!s7_load(s7, main_script)) {
+        log_error(RED "Could not load main_script '%s'; exiting\n",
+                  main_script);
+        fflush(NULL);
+        exit(EXIT_FAILURE);
+    } else {
+        if (verbose && verbosity > 1)
+            log_debug("loaded main_script: %s", main_script);
+    }
+        /* exit(EXIT_FAILURE); */
+        /* return; */
+    /* } */
+
+    s7_pointer _main = s7_name_to_value(s7, "-main");
+
+    if (_main == s7_undefined(s7)) {
+        log_error(RED "Could not find procedure -main; exiting\n");
+        exit(EXIT_FAILURE);
+    }
+
+    s7_pointer _s7_ws;
+    if (ws) {
+        /* _s7_ws = s7_make_string(s7, ws); */
+        _s7_ws = s7_nil(s7);
+    } else {
+        _s7_ws = s7_nil(s7);
+    }
+
+    s7_pointer _s7_args;
+
+    /* if (rootpath) { */
+    /*     _s7_args = s7_list(s7, 2, */
+    /*                        s7_make_string(s7, rootpath), */
+    /*                        _s7_ws); */
+    /* } else { */
+    _s7_args = s7_list(s7, 2,
+                       s7_nil(s7),
+                       _s7_ws);
+    /* } */
+
+#if defined(PROFILE_fastbuild)
+    if (mibl_debug) LOG_S7_DEBUG(0, "s7 args", _s7_args);
+#endif
+
+    /* s7_gc_on(s7, s7_f(s7)); */
+
+
+    /* s7_int main_gc_loc = s7_gc_protect(s7, _main); */
+
+    if (verbose && verbosity > 2) {
+        LOG_S7_DEBUG(0, "calling s7", _main);
+    }
+    if (verbose)
+        log_info("workspace root: %s", ws);
+
+    /* **************************************************************** */
+
+    /* trap error messages */
+    s7_pointer old_port = s7_set_current_error_port(s7, s7_open_output_string(s7));
+    if (old_port != s7_nil(s7))
+        gc_loc = s7_gc_protect(s7, old_port);
+
+    /* log_debug("running -main from %s", getcwd(NULL, 0)); */
+    /* this does the actual conversion: */
+    s7_pointer result = s7_call(s7, _main, _s7_args);
+    /* log_debug("ran -main"); */
+    if (result == s7_undefined(s7)) {
+        log_error("running -main failed");
+        exit(EXIT_FAILURE); //FIXME: graceful exit
+    }
+    /* look for error messages */
+    errmsg = s7_get_output_string(s7, s7_current_error_port(s7));
+
+    /* if we got something, wrap it in "[]" */
+    s7_close_output_port(s7, s7_current_error_port(s7));
+    s7_set_current_error_port(s7, old_port);
+    if (gc_loc != -1)
+        s7_gc_unprotect_at(s7, gc_loc);
+
+    if ((errmsg) && (*errmsg)) {
+        fprintf(stdout, "[%s]\n", errmsg);
+        return;
+    }
+
+    /* **************************************************************** */
+
+    /* log_info("RESULT: %s\n", TO_STR(result)); */
+    /* fprintf(stderr, "s7_gc_unprotect_at _main: %ld\n", (long)_main); */
+    s7_gc_unprotect_at(s7, (s7_int)_main);
+
+    errmsg = (char*)s7_get_output_string(s7, s7_current_error_port(s7));
+    if ((errmsg) && (*errmsg)) {
+        log_error("[%s\n]", errmsg);
+        s7_quit(s7);
+        exit(EXIT_FAILURE);
+    }
+
+    /* now *mibl-project* contains the transformed parsetree */
+    if (s7_name_to_value(s7, "*mibl-quiet*") == s7_f(s7)) {
+        log_info("Parsetree (expanded):");
+        mibl_show_parsetree(s7);
+    }
+
+    if (s7_name_to_value(s7, "*mibl-emit-mibl*") == s7_t(s7)) {
+            /* log_debug("EMITTING PROJECT"); */
+        _emit_mibl_file(s7, "PROJECT");
+    }
+}
+
+EXPORT void mibl_s7_ingest(s7_scheme *s7, char *ws)
+{
+    TRACE_ENTRY;
+#if defined(TRACING)
         log_trace("cwd: %s", getcwd(NULL, 0));
 #endif
 
     /* if (verbose) { */
-    /*     log_debug("mibl_run: %s, %s", main_script, ws); */
     /*     log_debug("mibl_run cwd: %s", getcwd(NULL, 0)); */
     /* } */
 
@@ -939,6 +1093,11 @@ EXPORT void mibl_s7_run(s7_scheme *s7, char *main_script, char *ws)
         gc_loc = s7_gc_protect(s7, old_port);
 
     result = s7_eval_c_string(s7, utstring_body(sexp));
+    if (result == s7_undefined(s7)) {
+        log_error("s7_eval_c_string failure");
+        //FIXME: graceful exit
+        exit(EXIT_FAILURE);
+    }
     utstring_free(sexp);
 
     /* look for error messages */
@@ -978,18 +1137,8 @@ EXPORT void mibl_s7_run(s7_scheme *s7, char *main_script, char *ws)
     /* } */
 
     if (s7_name_to_value(s7, "*mibl-show-parsetree*") == s7_t(s7)) {
-        log_debug("SHOW PARSETREE");
-        UT_string *sexp;
-        utstring_new(sexp);
-        utstring_printf(sexp, "(mibl-pretty-print *mibl-project*)");
-        s7_pointer x = s7_eval_c_string(s7, utstring_body(sexp));
-        (void)x;
-        s7_newline(s7,  s7_current_output_port(s7));
-        s7_flush_output_port(s7, s7_current_output_port(s7));
-        /* char *s = TO_STR(ptree); */
-        /* log_debug("%s", s); */
-        /* free(s); */
-        return;
+        log_info("Showing parsetree (raw):");
+        mibl_show_parsetree(s7);
     }
 
     if (mibl_config.emit_parsetree) {
@@ -1006,108 +1155,26 @@ EXPORT void mibl_s7_run(s7_scheme *s7, char *main_script, char *ws)
             return;
         }
     }
-
-    /* **************************************************************** */
-    /* parsetree processing: one of */
-    /* a. mustache:render */
-    /* b. mibl:normalize */
-    /* c. other scm sript? */
-
-    /* or: pass arbitrary script and run -main. script decides which
-       of a-c to run. */
-
-    /* legacy: */
-    /* now run the s7 script on the parsetree */
-    /* s7_pointer lp = s7_load_path(s7); */
-    /* LOG_S7_DEBUG("*load-path*", lp); */
-    if (main_script) {
-        if (!s7_load(s7, main_script)) {
-            log_error(RED "Could not load main_script '%s'; exiting\n",
-                      main_script);
-            fflush(NULL);
-            exit(EXIT_FAILURE);
-        } else {
-            if (verbose && verbosity > 1)
-                log_debug("loaded main_script: %s", main_script);
-        }
-    } else {
-        log_info(GRN "INFO: " CRESET "main_script is NULL, defaulting to mibl_main.scm");
-        main_script = "mibl_main.scm";
-        if (!s7_load(s7, main_script)) {
-            log_error(RED "Could not load main_script '%s'; exiting\n",
-                      main_script);
-            fflush(NULL);
-            exit(EXIT_FAILURE);
-        } else {
-            if (verbose && verbosity > 1)
-                log_debug("loaded main_script: %s", main_script);
-        }
-        /* exit(EXIT_FAILURE); */
-        /* return; */
+    if (s7_name_to_value(s7, "*mibl-quiet*") == s7_f(s7)) {
+        log_info("Parsetree (raw):");
+        mibl_show_parsetree(s7);
     }
+    // TEST
+    /* opam_fts("fmt"); */
+}
 
-    s7_pointer _main = s7_name_to_value(s7, "-main");
-
-    if (_main == s7_undefined(s7)) {
-        log_error(RED "Could not find procedure -main; exiting\n");
-        exit(EXIT_FAILURE);
-    }
-
-    s7_pointer _s7_ws;
-    if (ws) {
-        _s7_ws = s7_make_string(s7, ws);
-    } else {
-        _s7_ws = s7_nil(s7);
-    }
-
-    s7_pointer _s7_args;
-
-    /* if (rootpath) { */
-    /*     _s7_args = s7_list(s7, 2, */
-    /*                        s7_make_string(s7, rootpath), */
-    /*                        _s7_ws); */
-    /* } else { */
-    _s7_args = s7_list(s7, 2,
-                       s7_nil(s7),
-                       _s7_ws);
-    /* } */
-
-#if defined(PROFILE_fastbuild)
-    if (mibl_debug) LOG_S7_DEBUG("s7 args", _s7_args);
-#endif
-
-    /* s7_gc_on(s7, s7_f(s7)); */
-
-
-    /* s7_int main_gc_loc = s7_gc_protect(s7, _main); */
-
-    if (verbose && verbosity > 2) {
-        LOG_S7_DEBUG("calling s7", _main);
-    }
-    if (verbose)
-        log_info("workspace root: %s", ws);
-
-    /* **************************************************************** */
-    /* this does the actual conversion: */
-    result = s7_apply_function(s7, _main, _s7_args);
-    (void)result; /* FIXME: check result */
-    /* **************************************************************** */
-
-    /* log_info("RESULT: %s\n", TO_STR(result)); */
-    /* fprintf(stderr, "s7_gc_unprotect_at _main: %ld\n", (long)_main); */
-    s7_gc_unprotect_at(s7, (s7_int)_main);
-
-    errmsg = (char*)s7_get_output_string(s7, s7_current_error_port(s7));
-    if ((errmsg) && (*errmsg)) {
-        log_error("[%s\n]", errmsg);
-        s7_quit(s7);
-        exit(EXIT_FAILURE);
-    }
-
-    /* now *mibl-project* contains the transformed parsetree */
-
-    if (s7_name_to_value(s7, "*mibl-emit-mibl*") == s7_t(s7)) {
-            /* log_debug("EMITTING PROJECT"); */
-        _emit_mibl_file(s7, "PROJECT");
-    }
+void mibl_show_parsetree(s7_scheme *s7)
+{
+    TRACE_ENTRY;
+    UT_string *sexp;
+    utstring_new(sexp);
+    utstring_printf(sexp, "(mibl-pretty-print *mibl-project*)");
+    s7_pointer x = s7_eval_c_string(s7, utstring_body(sexp));
+    (void)x;
+    s7_newline(s7,  s7_current_output_port(s7));
+    s7_flush_output_port(s7, s7_current_output_port(s7));
+    /* char *s = TO_STR(ptree); */
+    /* log_debug("%s", s); */
+    /* free(s); */
+    return;
 }

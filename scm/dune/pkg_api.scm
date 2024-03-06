@@ -14,7 +14,7 @@
       (format #t "~A: ~A~%" (blue "normalize-pkg-path") path))
   ;; path is not in pkg-path dir
   ;; (let ((rp ((*libc* 'realpath) path '())))
-  (let ((rp (libc:realpath path '())))
+  (let ((rp (libc:realpath path)))
     (if *mibl-debug-all*
         (begin
           (format #t "f rel path: ~A\n" path)
@@ -79,11 +79,11 @@
               (format #t "~A: ~A~%" (white "statics") statics)
               (format #t "~A: ~A~%" (white "dynamics") dynamics)))
 
-        (let ((match (find-if (lambda (sig)
+        (let ((match (find-if (lambda (rsrc)
                                 (if *mibl-debug-all*
-                                    (format #t "~A: ~A~%" (green "sig") sig))
+                                    (format #t "~A: ~A~%" (green "rsrc") rsrc))
                                 (equal? (format #f "~A" m-name)
-                                        (format #f "~A" (car sig))))
+                                        (format #f "~A" (car rsrc))))
                               (cdr fileset))))
           (if *mibl-debug-all*
               (format #t "~A: ~A~%" (red "MATCH") match))
@@ -98,15 +98,17 @@
                   (set-cdr! fileset new)
                   match))
 
-              (let ((match (find-if (lambda (sig)
+              (let ((match (find-if (lambda (rsrc)
                                       (if *mibl-debug-all*
-                                          (format #t "dynamic ~A: ~A~%" (green "sig") sig))
-                                      #f)
+                                          (format #t "dynamic ~A: ~A~%" (green "rsrc") rsrc))
+                                      (equal? (format #f "~A" m-name)
+                                              (format #f "~A" (car rsrc))))
+                                      ;; #f)
                                     (if dynamics
                                         (cdr dynamics)
                                         '()))))
                 (if match
-                    #f
+                    #t
                     #f)))))
       #f))
 

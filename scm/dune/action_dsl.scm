@@ -312,7 +312,7 @@
       ;; inductive cases
       ((bash)
        ;; HEURISTIC: first word of cmd string is tool
-       (let* ((bash-cmd (destructure-shell-cmd action-list :shell 'bash))
+       (let* ((bash-cmd (destructure-shell-cmd action-list :shell 'bash3))
               (bash-lines (assoc-val :cmd-lines bash-cmd)))
          (mibl-trace "bash-lines" bash-lines :test #f)
          (if (truthy? bash-lines)

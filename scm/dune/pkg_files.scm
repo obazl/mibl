@@ -209,10 +209,16 @@
                                                       (if (list? (cdr mli-static))
                                                           (begin
                                                             (mibl-trace "mli-static" mli-static)
-                                                            (let ((filtered (filter (lambda (dep) (not (vector? dep))) (cdr mli-static))))
-                                                              (set-cdr! mli-static filtered)
-                                                              ;; (format #t "~A: ~A~%" (uwhite "filtered mli") mli-static)
-                                                              ))))
+                                                            (let ((filtered (filter (lambda (dep)
+                                                                                      (not (vector? dep)))
+                                                                                    (cdr mli-static))))
+                                                              (begin
+                                                                ;; (format #t "FFFF ~A~%" filtered)
+                                                                (set-cdr! mli-static filtered)
+                                                                ;; (set-cdr! mli-static :FOO)))))
+                                                                ;; (format #t "~A: ~A~%" (uwhite "filtered mli") mli-static)
+                                                                )))))
+                                                              ;; ))))
                                               (if-let ((mli-dynamic (assoc :mli_ (cdr module))))
                                                       (if (list? (cdr mli-dynamic))
                                                           (begin
@@ -339,11 +345,38 @@
 ;;              )
 ;;         ))))
 
+;; find module anywhere in local workspace
+(define module-name->local-target
+  (let ((+documentation+ "Search entire ws for <module> (normalized module name)")
+        (+signature+ '(module-name->local-target return module ws-id pkg)))
+    (lambda (return module ws-id pkg)
+      (mibl-trace-entry "module-name->local-target" module :test *mibl-debug-deps*)
+      ;; (format #t "WS: ~A~%" ws-id)
+      (let* ((@ws (assoc-val ws-id *mibl-project*))
+             (pkgs (car (assoc-val :pkgs @ws)))
+             (mpkg-alist (map (lambda (pkg-assoc)
+                                ;; pkg-assoc key: pkg path (string)
+                                ;; val: assoc-list
+                                ;; (format #t "~A: ~A~%" "pkg" (car pkg-assoc))
+                                (if-let ((mdep (module-name->tagged-label module (cdr pkg-assoc))))
+                                        ;; ((mdep (module-name->tagged-label dep pkg))
+                                        (begin
+                                          ;; (mibl-trace "FOUND :local dep" mdep :test *mibl-debug-deps*)
+                                          (return mdep)))
+                                )
+                              pkgs)))
+        #f))))
+        ;; (format #t "MPKG ALIST: ~A~%" mpkg-alist)
+        ;; (if (eq? module 'Suba)
+        ;;     '(:mod //foo:Suba)
+        ;;     #f)))))
+
 (define module-name->tagged-label
-  (let ((+documentation+ "Search pkg :modules and :structures for <module> (normalized module name)")
+  (let ((+documentation+ "Search pkg :modules, :structures, :signatures for <module> (normalized module name)")
         (+signature+ '(module-name->tagged-label module pkg)))
     (lambda (module pkg)
-      (mibl-trace "module-name->tagged-label" module)
+      (mibl-trace-entry "module-name->tagged-label" module :test *mibl-debug-deps*)
+      (mibl-trace "pkg" (assoc-val :pkg-path pkg) :test *mibl-debug-deps*)
       (let* ((pkg-modules (if-let ((files (assoc-val :modules pkg)))
                                   files '()))
              (mibl-trace-let "pkg-modules" pkg-modules)
@@ -355,9 +388,10 @@
                          (equal? (format #f "~A" module)
                                  (format #f "~A" (car mod))))
                        pkg-modules)))
-        (mibl-trace "found module entry?" entry)
+        (mibl-trace "found pkg-module entry?"  entry :test *mibl-debug-deps*)
+        ;; (mibl-trace "pkg" (assoc :pkg-path pkg) :test *mibl-debug-deps*)
         (if entry
-            entry
+            `(:mod (:pkg ,(assoc-val :pkg-path pkg)) ,(car entry))
             ;; else srch pkg-structs
             (let* ((structs-static (if-let ((ss (assoc-in '(:structures :static) pkg))) (cdr ss) '()))
                    (structs-dynamic (if-let ((ss (assoc-in '(:structures :dynamic) pkg))) (cdr ss) '()))
@@ -369,7 +403,26 @@
                                (equal? (format #f "~A" module)
                                        (format #f "~A" (car struct))))
                              pkg-structs)))
-              entry))))))
+              (mibl-trace "found pkg-struct entry?" entry :test *mibl-debug-deps*)
+              (if entry
+                  `(:struct (:pkg ,(assoc-val :pkg-path pkg)) ,(car entry))
+                  ;; `(:struct ,(car entry))
+                  (let* ((sigs-static (if-let ((ss (assoc-in '(:signatures :static) pkg))) (cdr ss) '()))
+                         (sigs-dynamic (if-let ((ss (assoc-in '(:signatures :dynamic) pkg))) (cdr ss) '()))
+                         (pkg-sigs (append sigs-static sigs-dynamic))
+                         (mibl-trace-let "pkg-sigs" pkg-sigs)
+                         (entry
+                          (find-if (lambda (struct)
+                                     ;; (format #t "~A: ~A~%" (white "struct") struct)
+                                     (equal? (format #f "~A" module)
+                                             (format #f "~A" (car struct))))
+                                   pkg-sigs)))
+                    (mibl-trace "found pkg-sig entry?" entry :test *mibl-debug-deps*)
+                    (if entry
+                        `(:sig (:pkg ,(assoc-val :pkg-path pkg)) ,(car entry))
+                        ;; `(:sig ,(car entry))
+                        entry)))))))))
+              ;; entry))))))
 
 (define (-find-m-file-in-pkg-modules arg pkg)
   (if *mibl-debug-all*
@@ -477,6 +530,7 @@
 ;;FIXME: rename
 ;; may update deps
 (define (find-file-in-pkg-files!? arg deps pkg)
+  (mibl-trace-entry "find-file-in-pkg-files!?" arg)
   (if *mibl-debug-all*
       (begin
         (format #t "~A: ~A~%" (ublue "find-file-in-pkg-files") arg)

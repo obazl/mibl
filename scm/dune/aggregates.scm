@@ -17,7 +17,7 @@
            (assoc :signatures pkg)
            (assoc :structures pkg)))
          (_ (if *mibl-debug-modules*
-                (_ (format #t "~A: ~A\n" (uwhite "1 submods+sigs-list") submods+sigs-list))))
+                (format #t "~A: ~A\n" (uwhite "1 submods+sigs-list") submods+sigs-list)))
          (submods+sigs-list (if (equal? (cadr submods+sigs-list)
                                      '(:signatures))
                                 (list (car submods+sigs-list))

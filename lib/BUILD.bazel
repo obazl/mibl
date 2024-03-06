@@ -8,7 +8,7 @@ COPTS         = BASE_COPTS + INCLUDE_PATHS
 DEPS          = BASE_DEPS
 DEFINES       = BASE_DEFINES + [
      "LOCAL_REPO=\\\"{}\\\"".format(repository_name()[1:]),
-    "PROFILE_$(COMPILATION_MODE)"
+    # "PROFILE_$(COMPILATION_MODE)"
 ]
 LINKOPTS      = BASE_LINKOPTS
 
@@ -105,6 +105,8 @@ MIBL_SRCS = [
     # "fs.c",
     # "log.c", "liblogc.h",
     "utils.c",
+
+    "opam_fts.c"
 ]
 
 ##########
@@ -175,10 +177,13 @@ cc_library(
     includes = ["hdrs"],
     deps = DEPS + [
         ":config",
-        "//dev",
+        # "//dev",
         # "//lib/dune",
         # "//lib/xdg",
         # "@inih//:inih",
+
+        "@findlibc//lib:findlibc",
+
         "@uthash//lib:uthash",
         "@xdgc//lib:xdgc",
 
@@ -265,10 +270,10 @@ cc_library(
 
     data = [
         "//scm:srcs",
-        "//scm/mibl:srcs",
+        "//scm/mibl0:srcs",
         "//scm/dune:srcs",
-        # "//scm/findlib:srcs",
         "//scm/opam:srcs"
+        # "//scm/findlib:srcs",
         # "//scm/codept:srcs",
     ] +select({
         "@libs7//config/clibs/link:runtime?": [
@@ -406,7 +411,7 @@ cc_library(
         "//lib/hdrs:mkhdrs"
     ],
     deps = DEPS + [
-        "//dev",
+        # "//dev",
         "@inih//:inih",
         "@libs7//lib:s7",
         "@uthash//lib:uthash",

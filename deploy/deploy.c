@@ -4,7 +4,7 @@
 #include <unistd.h>
 
 /* #include "ini.h" */
-#include "log.h"
+#include "liblogc.h"
 
 /* #include "linenoise.h" */
 /* #include "s7.h" */

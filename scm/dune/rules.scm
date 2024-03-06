@@ -110,7 +110,9 @@
 
 (define (-handle-rule-targets ws rule-alist deps pkg)
   (if (or *mibl-debug-rule-stanzas* *mibl-debug-all*)
-      (format #t "~A: ~A~%" (ublue "-handle-rule-targets") rule-alist))
+      (begin
+        (format #t "~A: ~A~%" (ublue "-handle-rule-targets") rule-alist)
+        (format #t "~A: ~A~%" (blue "deps") deps)))
   ;; 'target' and 'targets' fields list files generated
   ;; by the action. Add them to the pkg :modules and :files
   ;; alists.
@@ -134,7 +136,17 @@
                                    #f
                                    stdout))
                              #f))
-         (_ (if (or *mibl-debug-rule-stanzas* *mibl-debug-all*) (format #t "~A: ~A~%" (green "stdout-tgt") stdout-tgt)))
+         (_ (if (or *mibl-debug-rule-stanzas* *mibl-debug-all*)
+                (format #t "~A: ~A~%" (green "stdout-tgt") stdout-tgt)))
+
+         (targets (if (truthy? stdout-tgt)
+                       (cons stdout-tgt targets)
+                       targets))
+
+         ;; (_ (format #t "LOAD PATH: ~A~%" *load-path*))
+
+         (_ (load "utils.scm")) ;; for remove-duplicate
+         ;; FIXME: should alread be loaded?
 
          ;; if with-stdout-to is listed in targets, remove dups
          (targets (remove-duplicates

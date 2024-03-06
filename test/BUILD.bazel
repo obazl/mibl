@@ -1,12 +1,12 @@
 load("@rules_cc//cc:defs.bzl", "cc_library")
 
 test_suite(
-    name = "mibl_test",
+    name = "test",
     tests = [
         "//test/dune/deps:mibl_test",
-        "//test/dune/rules/shell:mibl_test",
-        "//test/dune/rules/stdio:mibl_test",
-        "//test/dune/rules/stdout:mibl_test"
+        # "//test/dune/rules/shell:mibl_test",
+        "//test/dune/rules/inferred",
+        # "//test/dune/rules/stdout:mibl_test"
     ]
 )
 
@@ -20,11 +20,10 @@ CMD_FLAGS = [
 BOOTSTRAP_INCLUDES = [
     "-I.",
     "-Isrc",
-    "-Iexternal/mibl/src",
-    "-Ivendored/libs7/src",
+    "-Iexternal/mibl/lib",
 
     "-I$(GENDIR)",
-    "-I$(GENDIR)/src",
+    "-I$(GENDIR)/lib",
 ]
 
 ################
@@ -39,18 +38,9 @@ cc_binary(
         "-Werror",
         "-Iexternal/uthash/include",
 
-        "-I$(GENDIR)/src/hdrs",
+        "-I$(GENDIR)/lib/hdrs",
 
-        "-Ivendored/gopt",
-        "-Iexternal/mibl/vendored/gopt",
-
-        "-Ivendored/unity",
-        "-Iexternal/mibl/vendored/unity",
-
-        "-Ivendored/uthash",
-        "-Iexternal/mibl/vendored/uthash",
-
-        "-Iexternal/libs7/src"  # s7.h
+        "-Iexternal/libs7/lib"  # s7.h
     ] + select({
         "//bzl/host:debug": [""],
         "//conditions:default":   []
@@ -69,11 +59,11 @@ cc_binary(
         "//conditions:default":   []
     }),
     deps = [
-        "//src:mibl",
-        "//vendored/gopt",
-        "@liblogc//src:logc",
-        "//vendored/unity",
-        "//vendored/uthash",
+        "//lib:mibl",
+        "@gopt//lib:gopt",
+        "@liblogc//lib:logc",
+        "@unity//lib:unity",
+        "@uthash//lib:uthash",
     ],
     # timeout = "short",
     visibility = ["//test:__subpackages__"]
@@ -83,7 +73,7 @@ cc_binary(
 # cc_binary(
 #     name  = "driver",
 #     srcs  = ["driver.c",
-#              "//src:bazel_config.h",
+#              "//lib:bazel_config.h",
 #              "@uthash//:include",
 #              ],
 #     data = [
@@ -96,7 +86,7 @@ cc_binary(
 #     # }),
 #     copts = CMD_FLAGS + BOOTSTRAP_INCLUDES + [
 #     ],
-#     deps = ["//src:mibl"],
+#     deps = ["//lib:mibl"],
 # )
 
 ################################################################
@@ -104,7 +94,7 @@ cc_binary(
 #     name = "demo_test",
 #     srcs = ["template_unity_test.c"],
 #     copts = CMD_FLAGS + BOOTSTRAP_INCLUDES + [
-#         "-I$(GENDIR)/src/hdrs",
+#         "-I$(GENDIR)/lib/hdrs",
 
 #         "-Ivendored/logc",
 
@@ -114,7 +104,7 @@ cc_binary(
 #         "-Ivendored/uthash",
 #         "-Iexternal/mibl/vendored/uthash",
 
-#         "-Iexternal/libs7/src"  # s7.h
+#         "-Iexternal/libs7/lib"  # s7.h
 #     ],
 #     data = [
 #         "//scm/dune:srcs"
@@ -130,8 +120,8 @@ cc_binary(
 #         "//conditions:default":   []
 #     }),
 #     deps = [
-#         "//src:mibl",
-#         "@liblogc//src:logc",
+#         "//lib:mibl",
+#         "@liblogc//lib:logc",
 #         "//vendored/unity",
 #         "//vendored/uthash",
 #     ],

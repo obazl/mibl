@@ -82,11 +82,38 @@
     ;; (:stdlib . stdlib)
     (str . str)
     (threads . threads)
-    (unix . unix)))
+    (unix . unix)
+    ))
+
+;;TEST
+(define (glob-opam key)
+  (format #t "GLOBBING~%")
+  (let* ((pattern "**/**/fmt.*")
+         (g (libc:glob.make)))
+    (let ((old-wd (pwd)))
+      ;; change to effective ws root before globbing
+      (libc:chdir "/Users/gar/.opam/5.1.1/lib")
+      (format #t "cwd after chdir: ~A\n" (pwd))
+      (libc:glob pattern libc:GLOB_BRACE g)
+      (let ((globbed (libc:glob.gl-pathv g)))
+        (format #t "globbed: ~A\n" globbed)
+  ))))
+;; TEST
+(define (test-ftw key)
+  (format #t "FTW~%")
+  (libc:ftw
+   "/Users/gar/.opam/5.1.1/lib"
+   (lambda (a b c)
+     (format #t "a: ~A~%" a)
+     ;; (format #t "c: ~A~%" c)
+     ;;(format () "~A ~A~%" a ((libc:stat.st_size) b))
+     0)
+   10)
+  )
 
 ;; a dep sym, e.g. (:deps (:remote bigarray parsexp sexplib0)) may be:
 ;; :here (current pkg), :local (other pkg in ws), :remote (other bazel ws)
-;; :builtin (e.g. bigarray, num), or :opam
+;; :builtin (e.g. bigarray, num), or :opam?
 
 ;; Dune's (libraries ...) only lists pkgs, :here should not
 ;; occur. But we also use this routine to resolve deps in pkg-files,
@@ -100,75 +127,129 @@
   ;; 'foo, :foo, :lib:foo, :exe:foo, etc.
   ;; assume ref is to lib, so search for :lib:foo
 
-  (if-let ((x (assoc-val dep ocaml-std-pkgs)))
-          ;; builtin ocaml pkgs - distributed with but not automatically handled by compiler
+  (call-with-exit
+   (lambda (return)
+
+   (if-let ((x (assoc-val dep ocaml-std-pkgs)))
+           ;; builtin ocaml pkgs - distributed with but not automatically handled by compiler
           (begin
             (mibl-trace "builtin" x :test *mibl-debug-deps*)
             ;;(string->symbol (format #f "@ocaml//~A" x))
-            `(:builtin . ,x)
-            )
-          ;; else try :here
-          (if-let ((module-tlbl (module-name->tagged-label dep pkg)))
-                  (begin
-                    (mibl-trace "FOUND :here dep" module-tlbl :test *mibl-debug-deps*)
-                    `(:here . ,dep))
+            (return `(:builtin . ,x))))
 
-                  ;; else try :local by lookup in exports tbl
-                  ;; requires one lookup per possible key
-                  ;; first lookup, :lib:foo
-                  (let* ((pkg-path (assoc-val :pkg-path pkg))
-                         (key (string->keyword (format #f "lib:~A" dep)))
-                         (mibl-trace-let "trying 1" key :test *mibl-debug-deps*)
-                         (resolved (hash-table-ref exports key)))
-                    (if resolved
-                        (let* ((pkg (assoc-val :pkg resolved))
-                               (mibl-trace-let "pkg" pkg :test *mibl-debug-deps*)
-                               (mibl-trace-let "this pkg-path" pkg-path :test *mibl-debug-deps*)
-                               (tgt (assoc-val :tgt resolved))
-                               (mibl-trace-let "tgt" tgt :test *mibl-debug-deps*))
-                          ;; (if (equal? pkg pkg-path)
-                          ;;     (string->symbol (format #f ":~A" tgt))
-                          ;;     (string->symbol (format #f "//~A:~A" pkg tgt)))
-                          `(:local (:pkg . ,pkg) (:tgt . ,tgt))
-                          )
-                        ;; else second lookup, :foo
-                        (let* ((key (string->keyword
-                                     (format #f "~A" dep)))
-                               (mibl-trace-let "trying2" key :test *mibl-debug-deps*)
-                               ;; (_ (if *mibl-debug-all* (format #t "~A: ~A~%" (bgblue "exports") exports)))
-                               ;; (_ (mibl-debug-print-exports-table ws-id))
-                               (resolved (hash-table-ref exports key)))
-                          (if resolved
-                              (let* ((pkg (assoc-val :pkg resolved))
-                                     (_ (if *mibl-debug-all* (format #t "~A: ~A~%" (ured "pkg") pkg)))
-                                     (tgt (assoc-val :tgt resolved))
-                                     (_ (if *mibl-debug-all* (format #t "~A: ~A~%" (ured "tgt") tgt))))
-                                ;; (if (equal? pkg pkg-path)
-                                ;;     (string->symbol (format #f ":~A" tgt))
-                                ;;     (string->symbol (format #f "//~A:~A" pkg tgt)))
-                                `(:local (:pkg . ,pkg) (:tgt . ,tgt)))
-                              ;; else third lookup, 'foo
-                              (let* ((key (string->symbol
-                                           (format #f "~A" dep)))
-                                     (_ (if *mibl-debug-all* (format #t "~A: ~A~%" (uwhite "trying3") key)))
-                                     (resolved (hash-table-ref exports key)))
-                                (if resolved
-                                    (let* ((pkg (assoc-val :pkg resolved))
-                                           (_ (if *mibl-debug-all* (format #t "~A: ~A~%" (ured "pkg") pkg)))
-                                           (tgt (assoc-val :tgt resolved))
-                                           (_ (if *mibl-debug-all* (format #t "~A: ~A~%" (ured "tgt") tgt))))
-                                      ;; (cons dep resolved)
-                                      `(:local (:pkg . ,pkg) (:tgt . ,tgt)))
-                                    ;; else not in exports tbl
-                                    (let ((segs (string-split (format #f "~A" key) ".")))
-                                      (if *mibl-debug-all*
-                                          (format #t "~A: ~A~%" (red "unresolved; assume opam") key))
-                                      ;;FIXME FIXME
-                                      `(:unresolved . ,key)
-                                      ;; (if (= 1 (length segs))
-                                      ;;     (string->symbol (format #f "@~A//lib/~A" dep dep))
-                                      ;;     (string->symbol (format #f "@~A//lib/~{~A~^/~}" (car segs) (cdr segs))))
-                                      ))))))))))
+   ;; else try :here
+   (if-let ((mdep (module-name->tagged-label dep pkg)))
+           ;; ((mdep (module-name->tagged-label dep pkg))
+           (begin
+             (mibl-trace "FOUND :here dep" mdep :test *mibl-debug-deps*)
+             (let* ((typ (car mdep))
+                    )
+               (return `(,typ (:here ,(caddr mdep))))
+               ;;`(:here . ,dep)
+               ;;(return mdep)))
+               ;;(return `(:here ,mdep))
+               )))
+
+
+   ;; else try :local-module
+   ;; With mibl, we can also directly express dependencies on modules
+   ;; in other pkgs (directories).
+   (if-let ((mdep2 (call-with-exit
+                    (lambda (return)
+                      (module-name->local-target return dep ws-id pkg)))))
+           (begin
+             (mibl-trace "Found :local dep" mdep2 :test *mibl-debug-deps*)
+             (return mdep2)))
+             ;; (return `(:local ,mdep2))))
+
+   ;; else try :archive by lookup in exports tbl
+   ;; requires one lookup per possible key
+   ;; first lookup, :lib:foo
+   ;; FIXME: this only works for dune, where exports are archives,
+   ;; which may be referenced by public or private name.
+   (let* ((pkg-path (assoc-val :pkg-path pkg))
+          (key (string->keyword (format #f "lib:~A" dep)))
+          (mibl-trace-let "trying1" key :test *mibl-debug-deps*)
+          (resolved (hash-table-ref exports key)))
+     (if resolved
+         (let* ((pkg (assoc-val :pkg resolved))
+                (mibl-trace-let "pkg" pkg :test *mibl-debug-deps*)
+                (mibl-trace-let "this pkg-path" pkg-path :test *mibl-debug-deps*)
+                (tgt (assoc-val :tgt resolved))
+                (mibl-trace-let "tgt" tgt :test *mibl-debug-deps*))
+           ;; (if (equal? pkg pkg-path)
+           ;;     (string->symbol (format #f ":~A" tgt))
+           ;;     (string->symbol (format #f "//~A:~A" pkg tgt)))
+           (return `(:archive (:pkg . ,pkg) (:tgt . ,tgt))))
+
+         ;; else second lookup, :foo
+         (let* ((key (string->keyword
+                      (format #f "~A" dep)))
+                (mibl-trace-let "trying2" key :test *mibl-debug-deps*)
+                ;; (_ (if *mibl-debug-deps* (format #t "~A: ~A~%" (bgblue "exports") exports)))
+                ;; (_ (mibl-debug-print-exports-table ws-id))
+                (resolved (hash-table-ref exports key)))
+           (if resolved
+               (let* ((pkg (assoc-val :pkg resolved))
+                      (_ (if *mibl-debug-deps* (format #t "~A: ~A~%" (ured "pkg") pkg)))
+                      (tgt (assoc-val :tgt resolved))
+                      (_ (if *mibl-debug-deps* (format #t "~A: ~A~%" (ured "tgt") tgt))))
+                 ;; (if (equal? pkg pkg-path)
+                 ;;     (string->symbol (format #f ":~A" tgt))
+                 ;;     (string->symbol (format #f "//~A:~A" pkg tgt)))
+                 (return `(:local (:pkg . ,pkg) (:tgt . ,tgt))))
+               ;; else third lookup, 'foo
+               (let* ((key (string->symbol
+                            (format #f "~A" dep)))
+                      (_ (if *mibl-debug-deps* (format #t "~A: ~A~%" (uwhite "trying3") key)))
+                      (resolved (hash-table-ref exports key)))
+                 (if resolved
+                     (let* ((pkg (assoc-val :pkg resolved))
+                            (_ (if *mibl-debug-deps* (format #t "~A: ~A~%" (ured "pkg") pkg)))
+                            (tgt (assoc-val :tgt resolved))
+                            (_ (if *mibl-debug-deps* (format #t "~A: ~A~%" (ured "tgt") tgt))))
+                       ;; (cons dep resolved)
+                       (return `(:local (:pkg . ,pkg) (:tgt . ,tgt))))
+                     ;; else not in exports tbl
+                     (begin
+                       (if *mibl-debug-deps* (format #t "~A: ~A~%" (uwhite "trying opam") key))
+                       (let ((segs (string-split (format #f "~A" key) ".")))
+                         ;; (glob-opam key) ;; TEST
+                         ;; (test-ftw key) ;; TEST
+                         (if-let ((dep (opam-fts key)))
+                                 (if (empty? dep)
+                                     (return `(:unresolved ,key))
+                                     (return `(:opam . ,dep))
+                                     ;; (let* ((opams (fold (lambda (d accum)
+                                     ;;                       ;; (format #t "dep: ~A~%" (car d))
+                                     ;;                       ;; (format #t "accum: ~A~%" accum)
+                                     ;;                       (if (eq? :opam (car d))
+                                     ;;                           (cons (cdr d) accum)
+                                     ;;                           accum))
+                                     ;;                     '() (cdr deps)))
+                                     ;;        (opams (remove-duplicates opams))
+                                     ;;        (non-opams (fold (lambda (d accum)
+                                     ;;                           ;; (format #t "dep: ~A~%" (car d))
+                                     ;;                           ;; (format #t "accum: ~A~%" accum)
+                                     ;;                           (if (not (eq? :opam (car d)))
+                                     ;;                               (cons d accum)
+                                     ;;                               accum))
+                                     ;;                         '() (cdr deps))))
+                                     ;;   ;; (format #t "opams: ~A~%" opams)
+                                     ;;   ;; (format #t "non-opams: ~A~%" non-opams)
+                                     ;;   (if (truthy? opams)
+                                     ;;       (set-cdr! deps `((:opam ,@opams) ,@non-opams))
+                                     ;;       (set-cdr! deps non-opams)))
+                                     )
+                                 ;; should not happen?
+                                 (begin
+                                   (if *mibl-debug-deps*
+                                       (format #t "~A: ~A~%" (red "unresolved; assume opam") key))
+                                   (return `(:opam? . ,key))))
+                         ;; (if (= 1 (length segs))
+                         ;;     (string->symbol (format #f "@~A//lib/~A" dep dep))
+                         ;;     (string->symbol (format #f "@~A//lib/~{~A~^/~}" (car segs) (cdr segs))))
+                         )))))))))))
 
 (define (-fixup-conditionals! ws pkg stanza)
   (if *mibl-debug-all*
@@ -470,6 +551,7 @@
                        ))))
 
               ((:archive :ns-archive :library :ns-library)
+
                (if *mibl-debug-all*
                    (format #t "~A: ~A~%" (blue "aggregate fixup") (car stanza)))
                ;; (let ((deps (assoc-val :deps stanza-alist)))
@@ -630,18 +712,19 @@
         (let ((newdeps (map (lambda (dep)
                               (-fixup-dep-sym :@ dep pkg exports))
                             (cdr ml-deps))))
-          (mibl-trace "newdeps A" newdeps :test *mibl-debug-deps*)
-          (set-cdr! ml-deps newdeps)))
+          (mibl-trace "new ml-dep" newdeps :test *mibl-debug-deps*)
+          (if (truthy? newdeps)
+              (set-cdr! ml-deps `((:deps ,@newdeps))))))
 
-    (mibl-trace "mli-deps" ml-deps :test *mibl-debug-deps*)
+    (mibl-trace "mli-deps" mli-deps :test *mibl-debug-deps*)
     (if (list? mli-deps)
         (let ((newdeps (map (lambda (dep)
                               (-fixup-dep-sym :@ dep pkg exports))
                             (cdr mli-deps))))
-          (mibl-trace "newdeps A" newdeps :test *mibl-debug-deps*)
-          (set-cdr! mli-deps newdeps)))
+          (mibl-trace "new mli-dep" newdeps :test *mibl-debug-deps*)
+          (if (truthy? newdeps)
+              (set-cdr! mli-deps `((:deps ,@newdeps))))))
     ))
-
 
 (define (-fixup-struct-deps! ws pkg struct-spec)
   (mibl-trace-entry "-fixup-struct-deps!" struct-spec :test *mibl-debug-deps*)
@@ -664,7 +747,8 @@
                                              (-fixup-dep-sym :@ dep pkg exports))
                                            (cdr s-deps))))
                         (mibl-trace "sstruct newdeps" newdeps :test *mibl-debug-deps*)
-                        (set-cdr! s-deps newdeps)))))
+                        (if (truthy? newdeps)
+                            (set-cdr! s-deps `((:deps ,@newdeps))))))))
               statics)
     (mibl-trace "struct dynamics" dynamics :test *mibl-debug-deps*)
     (for-each (lambda (struct) ;; (Foo foo.ml ...)
@@ -679,7 +763,7 @@
                                              (-fixup-dep-sym :@ dep pkg exports))
                                            (cdr s-deps))))
                         (mibl-trace "dstruce newdeps" newdeps :test *mibl-debug-deps*)
-                        (set-cdr! s-deps newdeps)))))
+                        (set-cdr! s-deps `((:struct-deps ,@newdeps)))))))
               dynamics)
     ))
 
@@ -696,7 +780,7 @@
     (mibl-trace "fixup sig dynamics" dynamics)
     ;; first statics
     (for-each (lambda (sig) ;; (:static (Foo foo.mli ...))
-                (mibl-trace "fixup sig" sig)
+                (mibl-trace "fixup static sig" sig)
                 (let* ((s-deps (cdr sig)))
                   ;; s-deps:  (foo.mli Dep1 Dep2 ...)
                   ;; we will set-cdr! on this
@@ -707,9 +791,25 @@
                                             ;;(format #t "~A: ~A\n" (ublue "fixing") dep)
                                       (-fixup-dep-sym :@ dep pkg exports))
                                     (cdr s-deps))))
-                        (mibl-trace "newdeps C" newdeps)
-                        (set-cdr! s-deps newdeps)))))
-              statics)))
+                        (mibl-trace "new static-sig dep" newdeps)
+                        (if (truthy? newdeps)
+                            (set-cdr! s-deps `((:deps ,@newdeps))))))))
+              statics)
+        (for-each (lambda (sig) ;; (:static (Foo foo.mli ...))
+                (mibl-trace "fixup dyn sig" sig)
+                (let* ((s-deps (cdr sig)))
+                  ;; s-deps:  (foo.mli Dep1 Dep2 ...)
+                  ;; we will set-cdr! on this
+                  ;;(_ (format #t "~A: ~A\n" (ublue "sdeps") s-deps))
+                  (if (list? s-deps)
+                      (let ((newdeps (map (lambda (dep)
+                                            (mibl-trace "fixing" dep)
+                                            ;;(format #t "~A: ~A\n" (ublue "fixing") dep)
+                                      (-fixup-dep-sym :@ dep pkg exports))
+                                    (cdr s-deps))))
+                        (mibl-trace "new dynsig dep" newdeps)
+                        (set-cdr! s-deps `((:sig-deps ,@newdeps)))))))
+              dynamics)))
 
 ;; updates stanzas/pkg files. initial conditions:
 ;; * :deps derived from (libraries) fld of (library) stanza
@@ -765,3 +865,169 @@
                       )
                     pkgs)
           )))))
+
+(define (merge-mod-deps! deps)
+  (format #t "merge-mod-deps! ~A~%" deps)
+  (let* ((mod-deps (fold (lambda (d accum)
+                          ;; (format #t "dep: ~A~%" (car d))
+                          ;; (format #t "accum: ~A~%" accum)
+                          (if (eq? :mod (car d))
+                              (if (eq? :here (caadr d))
+                                  (cons (cadr d) accum)
+                                  (cons (cdr d) accum))
+                              accum))
+                        '() (cdr deps)))
+           ;; (mod-deps (remove-duplicates mod-deps))
+           (non-mod-deps (fold (lambda (d accum)
+                              ;; (format #t "dep: ~A~%" (car d))
+                              ;; (format #t "accum: ~A~%" accum)
+                              (if (not (eq? :mod (car d)))
+                                  (cons d accum)
+                                  accum))
+                            '() (cdr deps))))
+      ;; (format #t "mod-deps: ~A~%" mod-deps)
+      ;; (format #t "non-mod-deps: ~A~%" non-mod-deps)
+      (if (truthy? mod-deps)
+          (set-cdr! deps `((:modules ,@mod-deps) ,@non-mod-deps))
+          (set-cdr! deps non-mod-deps))))
+
+(define (merge-struct-deps! deps)
+  (format #t "merge-struct-deps! ~A~%" deps)
+  (let* ((mod-deps (fold (lambda (d accum)
+                          ;; (format #t "dep: ~A~%" (car d))
+                          ;; (format #t "accum: ~A~%" accum)
+                          (if (eq? :struct (car d))
+                              (if (eq? :here (caadr d))
+                                  (cons (cadr d) accum)
+                                  (cons (cdr d) accum))
+                              accum))
+                        '() (cdr deps)))
+           ;; (mod-deps (remove-duplicates mod-deps))
+           (non-mod-deps (fold (lambda (d accum)
+                              ;; (format #t "dep: ~A~%" (car d))
+                              ;; (format #t "accum: ~A~%" accum)
+                              (if (not (eq? :struct (car d)))
+                                  (cons d accum)
+                                  accum))
+                            '() (cdr deps))))
+      ;; (format #t "mod-deps: ~A~%" mod-deps)
+      ;; (format #t "non-mod-deps: ~A~%" non-mod-deps)
+      (if (truthy? mod-deps)
+          (set-cdr! deps `((:structs ,@mod-deps) ,@non-mod-deps))
+          (set-cdr! deps non-mod-deps))))
+
+(define (merge-sig-deps! deps)
+  (format #t "merge-sig-deps! ~A~%" deps)
+  (let* ((mod-deps (fold (lambda (d accum)
+                          ;; (format #t "dep: ~A~%" (car d))
+                          ;; (format #t "accum: ~A~%" accum)
+                          (if (eq? :sig (car d))
+                              (if (eq? :here (caadr d))
+                                  (cons (cadr d) accum)
+                                  (cons (cdr d) accum))
+                              accum))
+                        '() (cdr deps)))
+           ;; (mod-deps (remove-duplicates mod-deps))
+           (non-mod-deps (fold (lambda (d accum)
+                              ;; (format #t "dep: ~A~%" (car d))
+                              ;; (format #t "accum: ~A~%" accum)
+                              (if (not (eq? :sig (car d)))
+                                  (cons d accum)
+                                  accum))
+                            '() (cdr deps))))
+      ;; (format #t "mod-deps: ~A~%" mod-deps)
+      ;; (format #t "non-mod-deps: ~A~%" non-mod-deps)
+      (if (truthy? mod-deps)
+          (set-cdr! deps `((:sigs ,@mod-deps) ,@non-mod-deps))
+          (set-cdr! deps non-mod-deps))))
+
+(define (merge-opams! deps)
+  (format #t "merge-opams! ~A~%" deps)
+  (let* ((opams (fold (lambda (d accum)
+                        ;; (format #t "dep: ~A~%" (car d))
+                        ;; (format #t "accum: ~A~%" accum)
+                        (if (eq? :opam (car d))
+                            (cons (cdr d) accum)
+                            accum))
+                      '() (cdr deps)))
+         (opams (remove-duplicates opams))
+         (non-opams (fold (lambda (d accum)
+                            ;; (format #t "dep: ~A~%" (car d))
+                            ;; (format #t "accum: ~A~%" accum)
+                            (if (not (eq? :opam (car d)))
+                                (cons d accum)
+                                accum))
+                          '() (cdr deps))))
+    ;; (format #t "opams: ~A~%" opams)
+    ;; (format #t "non-opams: ~A~%" non-opams)
+    (if (truthy? opams)
+        (set-cdr! deps `((:opam ,@opams) ,@non-opams))
+        (set-cdr! deps non-opams))))
+
+(define merge-file-deps!
+(let ((+documentation+ "Merge :deps in :modules, :structures, :signatures.")
+      (+signature+ '(merge-file-deps! ws-id)))
+  (lambda (ws-id)
+    (mibl-trace-entry "merge-file-deps!" ws-id :test *mibl-debug-deps*)
+    (let* ((ws (assoc-val ws-id *mibl-project*))
+           (pkgs (car (assoc-val :pkgs ws))))
+      (for-each (lambda (pkg-kv)
+                  (format #t "pkg: ~A~%" (car pkg-kv))
+                  (if-let ((modules (assoc-val :modules (cdr pkg-kv))))
+                          (for-each (lambda (m)
+                                      ;; (format #t "module: ~A~%" m)
+                                      (let* ((ml (assoc-val :ml (cdr m)))
+                                             (mli (assoc-val :mli (cdr m))))
+                                        ;; (format #t "ml: ~A~%" ml)
+                                        ;; (format #t "mli: ~A~%" mli)
+                                        (if (list? ml)
+                                            (begin
+                                              (if-let ((deps (assoc :deps (cdr ml))))
+                                                      (begin
+                                                        (merge-opams! deps)
+                                                        (merge-mod-deps! deps)
+                                                        (merge-struct-deps! deps)
+                                                        (merge-sig-deps! deps)
+                                                        )))
+                                            )
+                                        (if (list? mli)
+                                            (if-let ((deps (assoc :deps (cdr mli))))
+                                                    (begin
+                                                        (merge-opams! deps)
+                                                        (merge-mod-deps! deps)
+                                                        (merge-struct-deps! deps)
+                                                        (merge-sig-deps! deps))))
+                                                ))
+                                        modules))
+                      (if-let ((structs (assoc-val :structures (cdr pkg-kv))))
+                              (let* ((statics (if-let ((deps (assoc-val :static structs)))
+                                                      deps '()))
+                                     (dynamics (if-let ((deps (assoc-val :dynamic structs)))
+                                                       deps '())))
+                                (for-each (lambda (struct)
+                                            (format #t "static struct: ~A~%" struct)
+                                            (if (list? (cdr struct))
+                                                (if-let ((deps (assoc :deps (cddr struct))))
+                                                        (merge-opams! deps))))
+                                          statics)
+                                (for-each (lambda (struct)
+                                            (format #t "dyn struct: ~A~%" struct))
+                                          dynamics)))
+                      (if-let ((sigs (assoc-val :signatures (cdr pkg-kv))))
+                              (let* ((statics (if-let ((deps (assoc-val :static sigs)))
+                                                      deps '()))
+                                     (dynamics (if-let ((deps (assoc-val :dynamic sigs)))
+                                                       deps '())))
+                                (for-each (lambda (sig)
+                                            (format #t "static sig: ~A~%" sig)
+                                            (if (list? (cdr sig))
+                                                (if-let ((deps (assoc :deps (cddr sig))))
+                                                        (merge-opams! deps))))
+                                          statics)
+                                (for-each (lambda (sig)
+                                            (format #t "dyn sig: ~A~%" sig))
+                                          dynamics)))
+                      )
+                    pkgs))
+      (values)
+      )))

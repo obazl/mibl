@@ -1,0 +1,78 @@
+exports_files(["mibl.c", "run_mibl.sh"])
+
+load("@makeheaders//rules:makeheaders.bzl", "makeheaders")
+
+load("//config/cc:BUILD.bzl",
+     "BASE_SRCS", "BASE_DEPS", "BASE_INCLUDE_PATHS",
+     "BASE_COPTS", "BASE_DEFINES", "BASE_LINKOPTS")
+
+## macros:
+load(":BUILD.bzl", "mibl")
+
+SRCS          = BASE_SRCS
+INCLUDE_PATHS = BASE_INCLUDE_PATHS
+COPTS         = BASE_COPTS + INCLUDE_PATHS
+DEPS          = BASE_DEPS
+DEFINES       = BASE_DEFINES
+LINKOPTS      = BASE_LINKOPTS
+
+# produce executable ingest w/lib libmibl.a
+# mibl(name = "mibl")
+
+# script(name = "report")
+# script(name = "convert", main = "mibl_main.scm")
+
+cc_binary(
+    name  = "dune",
+    # args  = _args,
+    linkstatic = True,
+    srcs  = SRCS + [
+        "mibl_ingest.c", ":mkhdrs"
+    ],
+    deps = DEPS + [
+        "//lib:mibl",           # libmibl
+
+        "@gopt//lib:gopt",
+        "@uthash//lib:uthash",
+        # "@inih//:inih",
+    ],
+    copts = COPTS + [
+        "-I$(GENDIR)/ingest",               # mibl.h
+        "-I$(GENDIR)/external/{}/ingest".format( # mibl.h
+            repository_name()[1:]
+        ),
+        "-I$(GENDIR)/src/hdrs",                # mibl.h
+    ],
+    local_defines = DEFINES,
+    # local_defines = select({
+    #     "//config/debug:debug?": ["DEVBUILD"],
+    #     "//conditions:default":   []
+    # }) + select({
+    #     "//config/debug:trace?": ["TRACING"],
+    #     "//conditions:default":   []
+    # }) + select({
+    #     "//bzl/host:linux": ["_XOPEN_SOURCE=500"], # strdup
+    #     "//conditions:default":   []
+    # }) + [
+    #     # "WITH_C_LOADER"
+    #     ],
+    linkopts = LINKOPTS,
+    # select({
+    #     "//bzl/host:macos": [],
+    #     "//bzl/host:linux": ["-ldl", "-lm"],
+    #     "//conditions:default": {}
+    # }),
+    data = [
+        "//scm:srcs",
+        "//scm/dune:srcs",
+        "//scm/findlib:srcs",
+        "//scm/opam:srcs",
+    ],
+    visibility = ["//visibility:public"]
+)
+
+################
+makeheaders(
+    name = "mkhdrs",
+    hdrs_srcs = ["mibl_ingest.c"]
+)

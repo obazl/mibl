@@ -186,7 +186,7 @@ s7_pointer _codept_deps(s7_scheme *s7, UT_array *_ocaml_src_dirs)
         s7_pointer r = s7_eval_c_string_with_environment(s7, sexp, env);
         (void)r;
         s7_newline(s7, s7_current_output_port(s7));
-        /* LOG_S7_DEBUG("DEPS-LIST", tostr1); */
+        /* LOG_S7_DEBUG(0, "DEPS-LIST", tostr1); */
         s7_flush_output_port(s7, s7_current_output_port(s7));
     }
 
@@ -198,7 +198,7 @@ s7_pointer _codept_deps(s7_scheme *s7, UT_array *_ocaml_src_dirs)
 
     s7_pointer deps_list = s7_eval_c_string_with_environment(s7, sexp, env);
     (void)deps_list;
-    /* LOG_S7_DEBUG("DEPS_LIST", deps_list); */
+    /* LOG_S7_DEBUG(0, "DEPS_LIST", deps_list); */
 
    return deps_list;
 }
@@ -267,7 +267,7 @@ s7_pointer _codept_deps_pkg(s7_scheme *s7, char *pkgdir)
         s7_pointer r = s7_eval_c_string_with_environment(s7, sexp, env);
         (void)r;
         s7_newline(s7, s7_current_output_port(s7));
-        /* LOG_S7_DEBUG("DEPS-LIST", r); */
+        /* LOG_S7_DEBUG(0, "DEPS-LIST", r); */
         s7_flush_output_port(s7, s7_current_output_port(s7));
     }
 
@@ -294,10 +294,10 @@ s7_pointer analyze_deps_file(s7_scheme *s7, char *pkg, char *tgt)
     TRACE_ENTRY;
 #if defined(PROFILE_fastbuild)
     if (mibl_debug) {
-        log_trace(RED "analyze_deps_file" CRESET);
-        log_debug("pkg: '%s'", pkg); //ftsentry->fts_path);
-        log_debug("tgt: '%s'", tgt); //ftsentry->fts_name);
-        log_trace("cwd: %s", getcwd(NULL,0));
+        LOG_TRACE(0, RED "analyze_deps_file" CRESET, "");
+        LOG_DEBUG(0, "pkg: '%s'", pkg); //ftsentry->fts_path);
+        LOG_DEBUG(0, "tgt: '%s'", tgt); //ftsentry->fts_name);
+        LOG_TRACE(0, "cwd: %s", getcwd(NULL,0));
         /* char **p; */
         /* p = NULL; */
         /* log_debug("ocaml src dirs:"); */
@@ -305,7 +305,7 @@ s7_pointer analyze_deps_file(s7_scheme *s7, char *pkg, char *tgt)
         /*     log_info("\t%s",*p); */
         /* } */
     }
-    log_info(RED "analyze traversal ct:" CRESET " %d", tct);
+    LOG_INFO(0, RED "analyze traversal ct:" CRESET " %d", tct);
 #endif
 
     UT_string *fname;
@@ -345,15 +345,13 @@ s7_pointer analyze_deps_file(s7_scheme *s7, char *pkg, char *tgt)
         return s7_nil(s7);
     }
 
-#if defined(PROFILE_fastbuild)
-    log_debug("CODEPT result string: %s", result);
-#endif
+    LOG_DEBUG(0, "CODEPT result string: %s", result);
 
     s7_pointer depgraph_port = s7_open_input_string(s7, result);
     s7_gc_protect_via_stack(s7, depgraph_port);
 #if defined(PROFILE_fastbuild)
     if (mibl_config.debug_deps)
-        LOG_S7_DEBUG("depgraph_port", depgraph_port);
+        LOG_S7_DEBUG(0, "depgraph_port", depgraph_port);
 #endif
     s7_pointer depgraph = s7_read(s7, depgraph_port);
 
@@ -362,7 +360,7 @@ s7_pointer analyze_deps_file(s7_scheme *s7, char *pkg, char *tgt)
     s7_close_input_port(s7, depgraph_port);
 
 #if defined(PROFILE_fastbuild)
-    LOG_S7_DEBUG("depgraph", depgraph);
+    LOG_S7_DEBUG(0, "depgraph", depgraph);
 #endif
 
     s7_pointer env = s7_inlet(s7,
@@ -372,7 +370,7 @@ s7_pointer analyze_deps_file(s7_scheme *s7, char *pkg, char *tgt)
                                               depgraph)));
     s7_gc_protect_via_stack(s7, env);
 #if defined(PROFILE_fastbuild)
-    LOG_S7_DEBUG("env", env);
+    LOG_S7_DEBUG(0, "env", env);
 #endif
     /* gc_env = s7_gc_protect(s7, env); */
 
@@ -386,7 +384,7 @@ s7_pointer analyze_deps_file(s7_scheme *s7, char *pkg, char *tgt)
         /* if (old_port != s7_nil(s7)) */
 	/*     gc_x = s7_gc_protect(s7, old_port); */
         s7_pointer r = s7_eval_c_string_with_environment(s7, sexpx, env);
-        LOG_S7_DEBUG("raw", r);
+        LOG_S7_DEBUG(0, "raw", r);
         (void)r; // no need to gc protect
         errmsg = s7_get_output_string(s7, s7_current_error_port(s7));
         /* if we got something, wrap it in "[]" */
@@ -411,12 +409,12 @@ s7_pointer analyze_deps_file(s7_scheme *s7, char *pkg, char *tgt)
     s7_pointer deps_list = s7_eval_c_string_with_environment(s7, sexp, env);
     gc_deps_list = s7_gc_protect(s7, deps_list);
 #if defined(PROFILE_fastbuild)
-    LOG_S7_DEBUG("DEPS_list", deps_list);
+    LOG_S7_DEBUG(0, "DEPS_list", deps_list);
 #endif
 
     /* (void)deps_list; */
 #if defined(PROFILE_fastbuild)
-    LOG_S7_DEBUG("DEPS_LIST", deps_list);
+    LOG_S7_DEBUG(0, "DEPS_LIST", deps_list);
 #endif
 
     s7_gc_unprotect_via_stack(s7, depgraph);
@@ -465,7 +463,7 @@ s7_pointer analyze_deps_file(s7_scheme *s7, char *pkg, char *tgt)
 
 /*     s7_pointer depgraph_port = s7_open_input_string(s7, result); */
 /*     s7_pointer depgraph = s7_read(s7, depgraph_port); */
-/*     LOG_S7_DEBUG("DEPGRAPH", depgraph); */
+/*     LOG_S7_DEBUG(0, "DEPGRAPH", depgraph); */
 
 /*     s7_pointer env = s7_inlet(s7, */
 /*                               s7_list(s7, 1, */
@@ -479,7 +477,7 @@ s7_pointer analyze_deps_file(s7_scheme *s7, char *pkg, char *tgt)
 /*         s7_pointer r = s7_eval_c_string_with_environment(s7, sexp, env); */
 /*         (void)r; */
 /*         s7_newline(s7, s7_current_output_port(s7)); */
-/*         /\* LOG_S7_DEBUG("DEPS-LIST:", r); *\/ */
+/*         /\* LOG_S7_DEBUG(0, "DEPS-LIST:", r); *\/ */
 /*         s7_flush_output_port(s7, s7_current_output_port(s7)); */
 /*     } */
 
@@ -491,7 +489,7 @@ s7_pointer analyze_deps_file(s7_scheme *s7, char *pkg, char *tgt)
 
 /*     s7_pointer deps_list = s7_eval_c_string_with_environment(s7, sexp, env); */
 /*     (void)deps_list; */
-/*     /\* LOG_S7_DEBUG("DEPS_LIST", deps_list); *\/ */
+/*     /\* LOG_S7_DEBUG(0, "DEPS_LIST", deps_list); *\/ */
 /*     /\* free(s); *\/ */
 
 /*    return deps_list; */
@@ -610,7 +608,7 @@ s7_pointer get_deps(s7_scheme *s7, char *_pkg, char *tgt)
     /* return s7_nil(s7); */
 
 /* #if defined(TRACING) */
-/*     LOG_S7_DEBUG("DEPS-LIST", deps_list); */
+/*     LOG_S7_DEBUG(0, "DEPS-LIST", deps_list); */
 /* #endif */
 
     /* NB: _pkg has leading "./", e.g. "./src/foo" */
@@ -641,7 +639,7 @@ s7_pointer get_deps(s7_scheme *s7, char *_pkg, char *tgt)
     s7_gc_unprotect_at(s7, gc_deps_list);
 
 #if defined(TRACING)
-    LOG_S7_DEBUG("ENV", env);
+    LOG_S7_DEBUG(0, "ENV", env);
 #endif
 
     /* char *sexp = */
@@ -701,7 +699,7 @@ s7_pointer get_deps(s7_scheme *s7, char *_pkg, char *tgt)
     /* s7_flush_output_port(s7, s7_current_output_port(s7)); */
 
 #if defined(TRACING)
-    LOG_S7_DEBUG("DEPS", deps);
+    LOG_S7_DEBUG(0, "DEPS", deps);
 #endif
     s7_flush_output_port(s7, s7_current_output_port(s7));
     s7_flush_output_port(s7, s7_current_error_port(s7));

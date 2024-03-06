@@ -1,9 +1,0 @@
-exports_files(["trace.h"])
-
-cc_library(
-    name  = "dev",
-    linkstatic = True,
-    hdrs  = ["ansi_colors.h", "debug.h", "trace.h"],
-    visibility = ["//visibility:public"]
-)
-

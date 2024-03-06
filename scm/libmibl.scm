@@ -1,21 +1,32 @@
 (if *mibl-debug-s7-loads*
     (format #t "loading libmibl.scm~%"))
 
+(unless (provided? 'alist.scm)
+  (load "alist.scm"))
+;; (load "srfi.scm")
+;;(load "libc/regex.scm")
+(load "string.scm")
+;; (load "utils.scm")
+
+;; (load "mibl_debug.scm")
+
 ;; prove that *libc* is defined and linked:
 ;; (let ((x ((*libc* 'strlen) "foo")))
 ;;   (format #t "(strlen 'foo'): ~A\n" x))
 
-(provide 'libmibl.scm)
-
 ;;(require 'dune.scm)
-(load "dune.scm")
 (load "mibl_pp.scm")
-(load "dune/pipeline.scm")
+
+(load "libdune.scm")
+;; (load "libmibl0.scm")
+(load "mibl0/mibl_main.scm")
+
+;; (load "dune/pipeline.scm")
 ;; (load "codept/codept_reader.scm")
 
-(define* (mibl:parsetree->mibl return) ;; root-path ws-path)
+(define* (mibl:parsetree->miblx return) ;; root-path ws-path)
   ;; (set! *mibl-debug-all* #t)
-  (mibl-trace-entry "libmibl.scm::parsetree->mibl" "")
+  (mibl-trace-entry "libmibl.scm::parsetree->miblx" "")
       ;; : ~A, ~A~%" root-path ws-path))
   ;; (format #t "*mibl-project*: ~A~%" *mibl-project*)
   ;; (format #t "BYE~%"))
@@ -39,14 +50,15 @@
   ;; (format #t "RETURNING XXXXXXXXXXXXXXXX\n")
   ;; (return)
 
-  (lexyacc-file-deps!)
+  (lexyacc-file-deps!) ;; dune/lexyacc.scm
 
-  (prune-pkg-file-deps!)
+  (prune-pkg-file-deps!)  ;; dune/pkg_files.scm
   ;; (format #t "DONE PRUNING XXXXXXXXXXXXXXXX\n")
   ;; (format #t "RETURNING XXXXXXXXXXXXXXXX\n")
   ;; (return)
 
-  (miblize :@) ;; dune->mibl
+  ;; what if there are no dune files?
+  ;; (dune->miblx :@)
 
   ;; (format #t "RETURNING XXXXXXXXXXXXXXXX\n")
   ;; (return)
@@ -73,7 +85,12 @@
 
   ;; (resolve-pkg-file-deps :@)  ;; OBSOLETE
 
-  (normalize-lib-deps! :@)
+  (normalize-lib-deps! :@) ;; also resolves pkg-file deps
+
+  ;; (format #t "RETURNING XXXXXXXXXXXXXXXX\n")
+  ;; (return)
+
+  (merge-file-deps! :@) ;; remove dups in file :deps
 
   ;; (format #t "RETURNING XXXXXXXXXXXXXXXX\n")
   ;; (return)
@@ -82,6 +99,9 @@
 
   ;; (format #t "RETURNING XXXXXXXXXXXXXXXX\n")
   ;; (return)
+
+  ;; after pkg-file deps have been resolved
+  (mibl0->miblx :@)
 
   (resolve-unresolved-aggregate-deps!)
 
@@ -383,3 +403,5 @@
 (define (mibl-clean-mibl)
   (format #t "cleaning mibl - NOT IMPLEMENTED yet.\n")
   )
+
+(provide 'libmibl.scm)

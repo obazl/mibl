@@ -1,23 +1,16 @@
 (if *mibl-debug-s7-loads*
-    (format #t "loading dune.scm~%"))
+    (format #t "loading libdune.scm~%"))
 
 (provide 'dune.scm)
 
 (autoload 'expanders.scm "dune/expanders.scm")
-
-(unless (provided? 'alist.scm)
-  (load "alist.scm"))
-;; (load "srfi.scm")
-;;(load "libc/regex.scm")
-(load "string.scm")
-;; (load "utils.scm")
 
 (autoload 'mibl:parsetree->mibl "libmibl.scm")
 
 (load "dune/conditionals.scm")
 (load "dune/aggregates.scm")
 (load "dune/constants.scm")
-(load "dune/debug.scm")
+;; (load "dune/debug.scm")
 (load "dune/deps.scm")
 (load "dune/dune_api.scm")
 
@@ -74,6 +67,35 @@
 (load "dune/ppx_inline_tests.scm")
 
 (load "mibl_pp.scm")
+
+;; expand dunefile to miblx (mibl, expanded)
+(define (dune->miblx ws)
+  (mibl-trace-entry "dune->miblx" ws)
+  (let* ((@ws (assoc-val ws *mibl-project*))
+         (pkgs (car (assoc-val :pkgs @ws)))
+         (mpkg-alist (map (lambda (pkg-assoc)
+                            ;; key: pkg path (string)
+                            ;; val: assoc-list
+                            ;; (format #t "~A: ~A~%" (red "pkg") (cdr pkg-assoc))
+                            (if (assoc 'dune (cdr pkg-assoc))
+
+                                (let ((mibl-pkg (dune-pkg->miblx :@ (cdr pkg-assoc))))
+                                  ;; (format #t "~A: ~A~%" (red "dune->mibld") mibl-pkg)
+                                  (hash-table-set! pkgs (car pkg-assoc) mibl-pkg)
+                                  mibl-pkg)
+                                (begin
+                                  ;; (format #t "~A: ~A~%" (red "dune->mibl: no dune file") pkg-assoc)
+                                  (cdr pkg-assoc))
+                                ))
+                         pkgs)))
+        ;; (format #t "~A: ~A~%" (blue "mpkg-alist")
+        ;;            mpkg-alist)
+        ;; (_ (for-each (lambda (k)
+        ;;                (format #t "~A: ~A~%" (blue "pkg") k))
+        ;;              (sort! (hash-table-keys pkgs) string<?)))
+    (if *mibl-debug-all*
+        (format #t "~A: ~A~%" (blue "mibl pkg ct") (length mpkg-alist)))
+    mpkg-alist))
 
 (provide 'dune.scm)
 

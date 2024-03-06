@@ -166,10 +166,10 @@
                (list 'FIXME))))
 
 ;; pkg-alist is member of (cdr stanza-assoc)
-(define (dune-stanza->mibl ws pkg-alist stanza-assoc mibl-stanzas)
+(define (dune-stanza->miblx ws pkg-alist stanza-assoc mibl-stanzas)
   (if *mibl-debug-all*
       (begin
-        (format #t "~A\n" (ublue "dune-stanza->mibl"))
+        (format #t "~A\n" (ublue "dune-stanza->miblx"))
         (format #t "~A: ~A\n" (blue "stanza-assoc") stanza-assoc)
         (format #t "~A: ~A\n" (blue "pkg") (assoc-val :pkg-path pkg-alist))
         (format #t "~A: ~A\n" (blue "mibl-stanzas") mibl-stanzas)))
@@ -324,9 +324,9 @@
 
     pkg-alist))
 
-(define (dune-pkg->mibl ws pkg-alist)
+(define (dune-pkg->miblx ws pkg-alist)
   (if *mibl-debug-all*
-      (format #t "~A: ~A\n" (bgblue "dune-pkg->mibl")
+      (format #t "~A: ~A\n" (bgblue "dune-pkg->miblx")
               (assoc-val :pkg-path pkg-alist)))
   ;; (format #t "~A: ~A\n" (green "ws") ws)
   (let* ((mibl-stanzas (list :mibl)) ;; hack to make sure pkg-alist is always an alist
@@ -340,7 +340,7 @@
                (map
                 (lambda (stanza-assoc)
  ;; (format #t "STANZA COPY: ~A\n" stanza)
-                  (let ((normed (dune-stanza->mibl ws
+                  (let ((normed (dune-stanza->miblx ws
                                  pkg-alist+ stanza-assoc mibl-stanzas)))
                     ;; pkg-path
                     ;; ;; dune-project-stanzas

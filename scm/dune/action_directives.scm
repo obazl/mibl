@@ -219,13 +219,15 @@
     ;; (error 'fixme "tmp")
     (car cmd)))
 
-(define (normalize-action-progn-dsl ws pkg action-alist targets deps)
-  (if :test *mibl-debug-action-directives*
+(define (normalize-action-progn-dsl ws pkg action-alist tools targets deps)
+  ;; (if :test *mibl-debug-action-directives*
       (begin
         (format #t "~A: ~A\n" (ublue "normalize-action-progn-dsl") action-alist)
         (format #t "~A: ~A~%" (green "pkg") pkg)
+        (format #t "~A: ~A~%" (green "tools") tools)
         (format #t "~A: ~A~%" (green "targets") targets)
-        (format #t "~A: ~A~%" (green "deps") deps)))
+        (format #t "~A: ~A~%" (green "deps") deps))
+      ;; )
 
   (let* ((progn-items (cdar action-alist))
          (_ (if :test *mibl-debug-action-directives* (format #t "progn-items: ~A\n" progn-items)))
@@ -863,8 +865,8 @@
 ;; converts (action ...) to mibl list
 (define (rule-action:normalize ws pkg stanza-alist tools targets deps) ;; rule stanza
   (mibl-trace-entry "rule-action:normalize" "" :test *mibl-debug-action-directives*)
-  (mibl-trace-entry "targets" targets)
-  (mibl-trace-entry "deps" deps)
+  ;; (mibl-trace-entry "targets" targets)
+  ;; (mibl-trace-entry "deps" deps)
   (let* ((action-assoc (assoc 'action stanza-alist))
          (action-alist (car (assoc-val 'action stanza-alist)))
          (_ (if :test *mibl-debug-action-directives* (format #t "  action alist: ~A\n" action-alist)))
@@ -882,17 +884,24 @@
                                          action action-alist
                                          tools targets deps))))
               cmd-list)
+            (begin
+              ;; FIXME: special case: (action (progn))
             (if-let ((cmd-fn (assoc-val action dune-action-cmds-dsl)))
-                    (let ((cmd-list (apply (car cmd-fn)
-                                           (list ws pkg
-                                                 action-alist tools targets deps))))
-                      ;; (if :test *mibl-debug-action-directives*
-                      ;;     (format #t "~A: ~A~%" (bggreen "normalized cmd-list") cmd-list))
+                    (begin
+                   (let* ((args (list ws pkg
+                                      action-alist
+                                      tools targets deps))
+                           (cmd-list (apply (car cmd-fn) args))
+                           )
+                     (mibl-trace-entry "cmd-list" cmd-list)
+                                       ;; :test #t)
+                      (if :test *mibl-debug-action-directives*
+                          (format #t "~A: ~A~%" (bggreen "normalized cmd-list") cmd-list))
                       ;; (error 'X "STOP cmd-list 4")
-                      cmd-list)
+                      cmd-list))
                     (begin
                       (format #t "~A: ~A~%" (red "UNHANDLED ACTION:") action)
-                      stanza)))))
+                      stanza))))))
 
 ;; action-list: (bash foo ...) or (bash "foo ...")
 ;; if arg is a string, we have a problem - no reliable way to parse
@@ -972,13 +981,13 @@
                  (xlines (map dsl:string->lines subaction-list)))
             (mibl-trace "segs" segs :test *mibl-debug-action-directives*)
             (mibl-trace "expanded lines" xlines :test *mibl-debug-action-directives*)
-            `((:shell . bash) (:cmd-lines ,@xlines))) ;; subaction-list)))
+            `((:shell . bash1) (:cmd-lines ,@xlines))) ;; subaction-list)))
           (let ((subcmd (car subaction-list))
                 (subargs (cdr subaction-list)))
             (mibl-trace "bash subcmd" subcmd :test *mibl-debug-action-directives*)
             (mibl-trace "bash subargs" subargs :test *mibl-debug-action-directives*)
             (let ((sargs (map dsl:string->lines subargs)))
               (mibl-trace "bash sargs" sargs :test *mibl-debug-action-directives*)
-              `((:shell . bash) (:tool . ,subcmd) (:args ,@sargs))))))))
+              `((:shell . bash2) (:tool . ,subcmd) (:args ,@sargs))))))))
 
 (provide 'action_directives.scm)

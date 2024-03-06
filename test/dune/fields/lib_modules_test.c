@@ -6,7 +6,7 @@
 #include <sys/errno.h>
 
 #include "gopt.h"
-#include "log.h"
+#include "liblogc.h"
 #include "utarray.h"
 #include "utstring.h"
 

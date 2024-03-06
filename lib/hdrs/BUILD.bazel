@@ -19,6 +19,7 @@ makeheaders(
         "//lib:error_handler_s7.c",
         "//lib:handlers.c",
         "//lib:handlers_opam.c",
+        "//lib:opam_fts.c",
 
         "//lib:load_project.c",
         # "//lib/coswitch:coswitch_cleaner.c",

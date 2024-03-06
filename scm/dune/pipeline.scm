@@ -1,9 +1,9 @@
 ;; Step 1:
-;; run dune-pkg->mibl for all pkgs in ws
+;; run dune-pkg->miblx for all pkgs (i.e. dunefiles) in ws
 ;; updates :pkgs entry of ws
-(define (miblize ws)
+(define (dune->mibl ws)
   (if *mibl-debug-all*
-      (format #t "~A: ~A~%" (blue "-miblize") ws))
+      (format #t "~A: ~A~%" (blue "-dune->mibl") ws))
   (let* ((@ws (assoc-val ws *mibl-project*))
          (pkgs (car (assoc-val :pkgs @ws)))
          (mpkg-alist (map (lambda (pkg-assoc)
@@ -12,12 +12,12 @@
                             ;; (format #t "~A: ~A~%" (red "pkg") (cdr pkg-assoc))
                             (if (assoc 'dune (cdr pkg-assoc))
 
-                                (let ((mibl-pkg (dune-pkg->mibl :@ (cdr pkg-assoc))))
-                                  ;; (format #t "~A: ~A~%" (red "miblized") mibl-pkg)
+                                (let ((mibl-pkg (dune-pkg->miblx :@ (cdr pkg-assoc))))
+                                  ;; (format #t "~A: ~A~%" (red "dune->mibld") mibl-pkg)
                                   (hash-table-set! pkgs (car pkg-assoc) mibl-pkg)
                                   mibl-pkg)
                                 (begin
-                                  ;; (format #t "~A: ~A~%" (red "miblize: no dune file") pkg-assoc)
+                                  ;; (format #t "~A: ~A~%" (red "dune->mibl: no dune file") pkg-assoc)
                                   (cdr pkg-assoc))
                                 ))
                          pkgs)))

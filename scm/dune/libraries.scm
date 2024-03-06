@@ -198,6 +198,19 @@
                                            ))
                                lib-flds)
                        lib-flds))
+
+         (lib-flds (if wrapped?
+                       (append (list
+                                (if *mibl-wrapped-libs-to-ns-archives*
+                                         '(:archived? #t)
+                                         '(:archived? #f)))
+                               lib-flds)
+                       (append (list
+                                (if *mibl-unwrapped-libs-to-archives*
+                                         '(:archived? #t)
+                                         '(:archived? #f)))
+                               lib-flds)))
+
          (_ (if *mibl-debug-all* (format #t "lib-flds (2): ~A~%" lib-flds)))
          (_ (if (or *mibl-debug-ppx* *mibl-debug-all*) (format #t "lib-flds ppx: ~A~%" ppx)))
          (lib-flds (if ppx
@@ -260,8 +273,7 @@
   (mibl-trace-entry "dune-library->mibl" "")
   (mibl-trace-entry "stanza" stanza)
 
-  ;; FIXME: if not wrapped => :archive
-  ;; else => :library
+  ;; NB: "wrapped" refers to namespacing, not archiving
 
   ;; add lib names to exports table
   (let* ((pkg-path (assoc-val :pkg-path pkg))

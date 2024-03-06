@@ -13,14 +13,18 @@
 
 /* #include "xen_repl.h" */
 
-#include "mibl_main.h"
+#include "mibl_ingest.h"
+
+bool mibl_expand = false;
+char *mibl_ws;
 
 #if defined(PROFILE_fastbuild)
-extern bool mibl_debug;
+extern int mibl_debug;
 extern bool mibl_debug_deps;
 bool mibl_debug_runfiles;
 extern bool mibl_debug_traversal;
 extern bool mibl_trace;
+extern int libs7_debug;
 #endif
 
 extern bool mibl_show_deps;
@@ -33,9 +37,9 @@ int  verbosity;
 extern UT_string *mibl_runfiles_root;
 
 /* extern char *ews_root; */
-extern int dir_ct;
-extern int file_ct;
-extern int dunefile_ct;
+/* extern int dir_ct; */
+/* extern int file_ct; */
+/* extern int dunefile_ct; */
 
 extern struct mibl_config_s mibl_config;
 
@@ -75,6 +79,7 @@ enum OPTS {
     FLAG_CLEAN_MIBL,
     FLAG_CLEAN_S7,
 
+    FLAG_EXPAND,
     FLAG_EMIT_PKGS,
     FLAG_EMIT_WSS,
     FLAG_EMIT_PARSETREE,
@@ -144,11 +149,15 @@ void _update_s7_globals(s7_scheme *s7, struct option options[])
     if (options[FLAG_DEBUG_EMIT].count)
         mibl_s7_set_flag(s7, "*mibl-debug-emit*", true);
 
-    if (options[FLAG_DEBUG_S7].count)
+    if (options[FLAG_DEBUG_S7].count) {
         mibl_s7_set_flag(s7, "*mibl-debug-s7*", true);
+        libs7_debug = options[FLAG_DEBUG_S7].count;
+    }
 
-    if (options[FLAG_DEBUG_S7_ALL].count)
+    if (options[FLAG_DEBUG_S7_ALL].count) {
+        mibl_s7_set_flag(s7, "*mibl-debug-s7*", true);
         mibl_s7_set_flag(s7, "*mibl-debug-all*", true);
+    }
 
     if (options[FLAG_DEBUG_S7_LOADS].count)
         mibl_s7_set_flag(s7, "*mibl-debug-s7-loads*", true);
@@ -233,6 +242,7 @@ void _print_usage(void) {
            "\tPath to script containing -main routine. (OPTIONAL)\n");
     printf("\n");
     printf("Flags:\n");
+    printf("\t-n, --expand\tExpand parsetree.\n\n");
     printf("  Emit flags control file writing.\n");
     printf("\t--emit-parsetree\tWrite files PARSETREE.{mibl,s7}.\n");
     printf("\t--emit-wss\t\tSet var *mibl-emit-wss*; default script writes WS files.\n");
@@ -277,6 +287,7 @@ void _print_debug_usage(void) {
     printf("\t    --debug-deps\tEnable deps debugging.\n");
     printf("\t    --debug-ppx\t\tEnable ppx debugging.\n");
     printf("\t    --debug-runfiles\tEnable debugging for Bazel runfiles.\n");
+    printf("\t    --debug-traversal\t\tEnable traversal debugging.\n");
     printf("\t    --debug-s7\t\tEnable s7 debugging.\n");
     printf("\t    --debug-s7-loads\tEnable s7 load debugging.\n");
     printf("\t    --debug-all\t\tEnable all s7 debugging.\n");
@@ -330,8 +341,9 @@ static struct option options[] = {
                        .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_REPORT_PARSETREE] = {.long_name="report-parsetree",
                                .flags=GOPT_ARGUMENT_FORBIDDEN},
-    [FLAG_DEBUG_S7] = {.long_name="debug-s7",
-                       .flags=GOPT_ARGUMENT_FORBIDDEN},
+    [FLAG_DEBUG_S7] = {.short_name='7', .long_name="debug-s7",
+                       .flags=GOPT_ARGUMENT_FORBIDDEN
+                       | GOPT_REPEATABLE},
     [FLAG_DEBUG_S7_ALL] = {.long_name="debug-all",
                        .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_DEBUG_S7_LOADS] = {.long_name="debug-s7-loads",
@@ -348,6 +360,10 @@ static struct option options[] = {
                          .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_CLEAN_S7] = {.long_name="clean-s7",
                          .flags=GOPT_ARGUMENT_FORBIDDEN},
+
+    [FLAG_EXPAND] = {.short_name='n',
+                        .long_name="expand",
+                      .flags=GOPT_ARGUMENT_FORBIDDEN},
 
     [FLAG_EMIT_MIBL] = {.long_name="emit-mibl",
                       .flags=GOPT_ARGUMENT_FORBIDDEN},
@@ -383,12 +399,23 @@ void _set_options(struct option options[])
             _print_debug_usage();
         else
             _print_usage();
+        if (options[FLAG_HELP].count > 2)
+            print_config_s7_flags();
         exit(EXIT_SUCCESS);
     }
 
     if (options[FLAG_VERSION].count) {
         _print_version();
         exit(EXIT_SUCCESS);
+    }
+
+    if (options[FLAG_EXPAND].count) {
+        mibl_expand = true;
+    }
+
+    if (options[OPT_WS].count) {
+        mibl_ws = strndup(options[OPT_WS].argument,
+                          strlen(options[OPT_WS].argument));
     }
 
     if (options[FLAG_VERBOSE].count) {
@@ -399,7 +426,7 @@ void _set_options(struct option options[])
 
     if (options[FLAG_DEBUG].count) {
 #if defined(PROFILE_fastbuild)
-        mibl_debug = true;
+        mibl_debug = options[FLAG_DEBUG].count;
 #endif
     }
 
@@ -424,17 +451,24 @@ void _set_options(struct option options[])
     if (options[FLAG_DEBUG_TRAVERSAL].count) {
 #if defined(PROFILE_fastbuild)
         mibl_debug_traversal = true;
+        libs7_debug++;
 #else
         log_error("--debug-traversal requires dev build (-c dbg)");
         exit(EXIT_FAILURE);
 #endif
     }
 
+#if defined(PROFILE_fastbuild)
+    if (options[FLAG_DEBUG_S7].count) {
+        libs7_debug = options[FLAG_DEBUG_S7].count;
+    }
+#endif
+
     if (options[FLAG_TRACE].count) {
         /* printf("trace ct: %d\n", options[FLAG_TRACE].count); */
-#if defined(TRACING)
+/* #if defined(TRACING) */
         mibl_trace = true;
-#endif
+/* #endif */
     }
 
     if (options[FLAG_SHOW_DEPS].count) {
@@ -465,9 +499,9 @@ int main(int argc, char **argv) // , char **envp)
     utstring_new(mibl_runfiles_root);
     utstring_printf(mibl_runfiles_root, "%s", getcwd(NULL, 0));
 
-    s7_scheme *s7 = mibl_s7_init();
-
     _update_mibl_config(options);
+
+    s7_scheme *s7 = mibl_s7_init();
 
     mibl_s7_init2(s7,
                   NULL, // options[OPT_SCRIPT].argument,
@@ -488,30 +522,40 @@ int main(int argc, char **argv) // , char **envp)
     /*     exit(EXIT_SUCCESS); */
     /* } */
 
-    if (options[OPT_SCRIPT].count) {
-        log_debug("running script %s", options[OPT_SCRIPT].argument);
-        log_debug("w opt: %s",options[OPT_WS].argument);
-        mibl_s7_run(s7, options[OPT_SCRIPT].argument, options[OPT_WS].argument);
-    }
-    else if (mibl_config.halt_after_parsetree) {
-        mibl_s7_run(s7, NULL, NULL); /* FIXME */
-    } else {
-        log_debug("running mibl_main");
-        mibl_s7_run(s7, "mibl_main.scm", NULL);
-        /* xen_repl(argc, argv); */
+    log_debug("MAIN mibl_debug: %d", mibl_debug);
 
-        s7_pointer lp = s7_load_path(s7);
-        char *s = s7_object_to_c_string(s7, lp);
-        log_debug("load-path: %s", s);
-        free(s);
+    mibl_s7_ingest(s7, NULL);
 
-        char *script = "mibl_repl.scm";
-        if (!s7_load(s7, script)) {
-            log_error("failed: load %s", script);
-            log_info("cwd: %s", getcwd(NULL,0));
-        }
-        s7_eval_c_string(s7, "((*repl* 'run))");
+    if (!mibl_expand) {
+        mibl_s7_expand(s7, NULL); //mibl_ws);
     }
+
+    /* if (options[OPT_SCRIPT].count) { */
+    /*     log_debug("running script %s", options[OPT_SCRIPT].argument); */
+    /*     log_debug("w opt: %s",options[OPT_WS].argument); */
+    /*     mibl_s7_run(s7, options[OPT_SCRIPT].argument, options[OPT_WS].argument); */
+    /* } */
+    /* else if (mibl_config.halt_after_parsetree) { */
+    /*     mibl_s7_ingest(s7, NULL); */
+    /*     /\* mibl_s7_run(s7, NULL, NULL); /\\* FIXME *\\/ *\/ */
+    /* } else { */
+    /*     log_debug("running mibl_main"); */
+    /*     mibl_s7_ingest(s7, NULL); */
+    /*     /\* mibl_s7_run(s7, "mibl_main.scm", NULL); *\/ */
+    /*     /\* xen_repl(argc, argv); *\/ */
+
+    /*     /\* s7_pointer lp = s7_load_path(s7); *\/ */
+    /*     /\* char *s = s7_object_to_c_string(s7, lp); *\/ */
+    /*     /\* log_debug("load-path: %s", s); *\/ */
+    /*     /\* free(s); *\/ */
+
+    /*     /\* char *script = "mibl_repl.scm"; *\/ */
+    /*     /\* if (!s7_load(s7, script)) { *\/ */
+    /*     /\*     log_error("failed: load %s", script); *\/ */
+    /*     /\*     log_info("cwd: %s", getcwd(NULL,0)); *\/ */
+    /*     /\* } *\/ */
+    /*     /\* s7_eval_c_string(s7, "((*repl* 'run))"); *\/ */
+    /* } */
 
     if (verbose)
         log_info("script exit...");

@@ -464,10 +464,10 @@
 
     (for-each (lambda (kv)
                 (if *mibl-debug-all*
-                    (format #t "~A: ~A~%" (blue "dune-pkg->mibl") kv))
+                    (format #t "~A: ~A~%" (blue "dune-pkg->miblx") kv))
                 ;; dir may have dune-project but no dune file:
                 (if (not (null? (cdr kv)))
-                    ;; (dune-pkg->mibl ws (cdr kv)))
+                    ;; (dune-pkg->miblx ws (cdr kv)))
                     (dune-stanzas->mibl (cdr kv)))
                 )
               pkgs)))
