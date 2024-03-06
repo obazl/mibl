@@ -1,0 +1,32 @@
+;; (:libraries
+;;  (:default
+;;   ;; (:ns #f)
+;;   ;; (:archived #f)
+;;   (:manifest A B))
+;;  (foolib
+;;   (:manifest Foo Bar)))
+;; ;; (:glob "A*" (:exclude "Afoo") (:include B))
+
+;; (:modules
+;;  (:default (:copts -opaque -x) (:linkopts -foo)
+;;            (:deps logs.fmt))
+;;  (A (:ml (:+copts -bar) (:-copts -x) (:linkopts -baz)
+;;          (:+deps fmt.tty))
+;;     (:mli (:+deps fmt.tty) (:-deps logs.fmt))))
+
+(:generator
+ (:name foogen)
+ (:inputs foo.dat)
+ (:outputs foo.ml)
+ (:tools genfoo.sh)
+ (:shell bash)
+ (:cmd (:tool genfoo.sh) -x (:input foo.dat) > (:output foo.ml)))
+
+(:generator
+ (:name bargen)
+ (:inputs bar.dat)
+ (:outputs bar.ml)
+ (:tools genbar.sh)
+ (:shell bash)
+ (:cmd (:tool genbar.sh) -x (:input bar.dat) > (:output bar.ml)))
+

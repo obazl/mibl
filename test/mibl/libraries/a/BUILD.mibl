@@ -1,0 +1,15 @@
+(:libraries
+ (:default
+  ;; (:ns #f)
+  ;; (:archived #f)
+  (:manifest A B))
+ (foolib
+  (:manifest Foo Bar)))
+;; (:glob "A*" (:exclude "Afoo") (:include B))
+
+(:modules
+ (:default (:copts -opaque -x) (:linkopts -foo)
+           (:deps logs.fmt))
+ (A (:ml (:+copts -bar) (:-copts -x) (:linkopts -baz)
+         (:+deps fmt.tty))
+    (:mli (:+deps fmt.tty) (:-deps logs.fmt))))

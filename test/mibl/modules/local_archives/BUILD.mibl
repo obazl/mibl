@@ -1,0 +1,15 @@
+;; case: dependency on an archived module
+;; dune: may depend on a "library" (i.e. archive) in same project
+;; i.e. dependency name may be "public" (installed) or private
+
+;; in this case the source file can only depend on a module/sig, as usual
+;; task is to map that to an archive dep
+
+(:modules
+ ;; this indicates that all modules/sigs in this dir
+ ;; MAY depend on the archive under install name foo.bar
+ ;; IOW, foo.bar is a resource for looking up module deps
+ (:default (:deps foo.bar)))
+
+;; task then is to determine which source files depend on
+;; modules contained in foo.bar archive.

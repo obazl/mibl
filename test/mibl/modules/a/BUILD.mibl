@@ -1,0 +1,10 @@
+;; NB: no need for a library stanza unless you
+;; need to refer to a group of modules by one name
+;; (archived or not)
+
+(:modules
+ (:default (:copts -opaque -x) (:linkopts -foo)
+           (:deps logs.fmt))
+ (A (:ml (:+copts -bar) (:-copts -x) (:linkopts -baz)
+         (:+deps fmt.tty))
+    (:mli (:+deps fmt.tty) (:-deps logs.fmt))))
