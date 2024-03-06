@@ -1,0 +1,6 @@
+(library
+ (name unwrapped_default_mwe)
+ (public_name unwrapped-default-mwe)
+ (wrapped false)
+ ;;(modules :standard) ;; default: include all
+ (flags (:standard -linkall)))

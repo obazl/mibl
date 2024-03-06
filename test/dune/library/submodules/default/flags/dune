@@ -1,0 +1,5 @@
+(library
+ (name lib_wflags)
+ (public_name lib-wflags)
+ ;;(modules :standard) ;; default: include all
+ (flags (:standard -linkall)))

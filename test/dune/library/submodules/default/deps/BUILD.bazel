@@ -1,0 +1,40 @@
+load("@rules_ocaml//build:rules.bzl",
+     "ocaml_ns_archive",
+     "ocaml_module",
+)
+
+package(default_visibility = ["//visibility:public"])
+
+LIB_WDEPS_DEPS = [
+        "foo",
+        "bar"
+]
+
+#############################
+####  Aggregate Targets  ####
+
+#################
+ocaml_ns_archive(
+    name       = "lib_wdeps",
+    submodules = [
+        ":A",
+        ":B"
+    ],
+)
+
+#############################
+####  Singleton Targets  ####
+
+ocaml_module(
+    name          = "A",
+    struct        = "a.ml",
+    sig           = "a.mli",
+    deps          = LIB_WDEPS_DEPS,
+)
+
+ocaml_module(
+    name          = "B",
+    struct        = "b.ml",
+    deps          = LIB_WDEPS_DEPS,
+)
+

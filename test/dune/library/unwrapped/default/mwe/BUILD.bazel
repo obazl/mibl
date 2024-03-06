@@ -1,0 +1,36 @@
+load("@rules_ocaml//build:rules.bzl",
+     "ocaml_archive",
+     "ocaml_module",
+)
+
+package(default_visibility = ["//visibility:public"])
+
+UNWRAPPED_DEFAULT_MWE_OPTS = [
+        "-linkall"
+]
+
+#############################
+####  Aggregate Targets  ####
+
+##############
+ocaml_archive(
+    name     = "unwrapped_default_mwe",
+    manifest = [":A", ":Gen"],
+)
+
+#############################
+####  Singleton Targets  ####
+
+ocaml_module(
+    name          = "A",
+    struct        = "a.ml",
+    sig           = "a.mli",
+    opts          = UNWRAPPED_DEFAULT_MWE_OPTS,
+)
+
+ocaml_module(
+    name          = "Gen",
+    struct        = "gen.ml",
+    opts          = UNWRAPPED_DEFAULT_MWE_OPTS,
+)
+

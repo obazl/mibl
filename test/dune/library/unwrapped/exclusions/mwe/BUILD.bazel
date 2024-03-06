@@ -1,0 +1,49 @@
+load("@rules_ocaml//build:rules.bzl",
+     "ocaml_archive",
+     "ocaml_module",
+)
+
+package(default_visibility = ["//visibility:public"])
+
+UNWRAPPED_EXCLUSIONS_MWE_OPTS = [
+        "-linkall"
+]
+
+#############################
+####  Aggregate Targets  ####
+
+##############
+ocaml_archive(
+    name     = "unwrapped_exclusions_mwe",
+    manifest = [":A", ":C", ":D", ":Gen"],
+)
+
+#############################
+####  Singleton Targets  ####
+
+ocaml_module(
+    name          = "A",
+    struct        = "a.ml",
+    sig           = "a.mli",
+    opts          = UNWRAPPED_EXCLUSIONS_MWE_OPTS,
+)
+
+ocaml_module(
+    name          = "C",
+    struct        = "c.ml",
+    opts          = UNWRAPPED_EXCLUSIONS_MWE_OPTS,
+)
+
+ocaml_module(
+    name          = "D",
+    struct        = "d.ml",
+    sig           = "d.mli",
+    opts          = UNWRAPPED_EXCLUSIONS_MWE_OPTS,
+)
+
+ocaml_module(
+    name          = "Gen",
+    struct        = "gen.ml",
+    opts          = UNWRAPPED_EXCLUSIONS_MWE_OPTS,
+)
+
